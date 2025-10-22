@@ -150,11 +150,14 @@ $logos_result = $logoController->getAllLogos();
                                                     </td>
                                                     <td><?php echo date('M j, Y', strtotime($logo['upload_timestamp'])); ?></td>
                                                     <td>
-                                                        <button class="btn btn-sm btn-info" 
+                                                        <!-- <button class="btn btn-sm btn-info" 
                                                                 onclick="editLogo(<?php echo $logo['id']; ?>)"
                                                                 data-bs-toggle="tooltip" title="Edit">
                                                             <i class="fas fa-edit"></i>
-                                                        </button>
+                                                        </button> -->
+                                                        <a href="edit-logo.php?id=<?php echo $logo['id']; ?>" class="btn btn-sm btn-info">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
                                                         <button class="btn btn-sm btn-danger" 
                                                                 onclick="deleteLogo(<?php echo $logo['id']; ?>)"
                                                                 data-bs-toggle="tooltip" title="Delete">
@@ -263,6 +266,8 @@ $logos_result = $logoController->getAllLogos();
     </div>
 
     <script src="js/app.js"></script>
+        <script src="js/main.js"></script>
+
     <script>
         function editLogo(id) {
             // Implement edit functionality

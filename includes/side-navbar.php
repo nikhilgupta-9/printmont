@@ -56,12 +56,18 @@
 					<li class="sidebar-item active"><a class='sidebar-link' href='add-banner.php'>Add Banner</a></li>
 					<li class="sidebar-item">
 						<a class='sidebar-link' href='logo-management.php'>Logo's
-							<!-- <span class="sidebar-badge badge bg-primary">Pro</span> -->
+							<span class="sidebar-badge badge bg-primary">Pro</span>
 						</a>
 					</li>
 					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-crypto.html'>Crypto <span
 								class="sidebar-badge badge bg-primary">Pro</span></a></li>
 				</ul>
+			</li>
+
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='view-categories.php'>
+					 <i class="align-middle" data-feather="grid"></i>  <span class="align-middle">Category</span>
+				</a>
 			</li>
 
 			<li class="sidebar-item active">
@@ -102,6 +108,7 @@
 					<i class="align-middle" data-feather="user"></i> <span class="align-middle">Profile</span>
 				</a>
 			</li>
+
 
 			<li class="sidebar-item">
 				<a class='sidebar-link' href='pages-invoice.html'>
