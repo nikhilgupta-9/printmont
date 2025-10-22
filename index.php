@@ -3,7 +3,7 @@ require_once 'config/constants.php';
 require_once 'controllers/AuthController.php';
 require_once 'controllers/ProductController.php';
 
-header('Content-Type: application/json');
+// header('Content-Type: application/json');
 
 $request_method = $_SERVER['REQUEST_METHOD'];
 $request_uri = $_SERVER['REQUEST_URI'];
