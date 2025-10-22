@@ -75,7 +75,7 @@
 					<i class="align-middle" data-feather="sliders"></i> <span class="align-middle">Dashboards</span>
 				</a>
 				<ul id="dashboards" class="sidebar-dropdown list-unstyled collapse show" data-bs-parent="#sidebar">
-					<li class="sidebar-item active"><a class='sidebar-link' href='index.html'>Analytics</a></li>
+					<li class="sidebar-item active"><a class='sidebar-link' href='dashboard.php'>Dashboard</a></li>
 					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-ecommerce-2.html'>E-Commerce <span
 								class="sidebar-badge badge bg-primary">Pro</span></a></li>
 					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-crypto.html'>Crypto <span
