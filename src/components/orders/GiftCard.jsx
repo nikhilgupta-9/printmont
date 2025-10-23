@@ -49,20 +49,10 @@ const GiftCard = () => {
             <div className="col-md-7">
               <form>
                 <div className="mb-3">
-                  <input
-                    type="email"
-                    className="form-control"
-                    placeholder="Receiver's Email ID *"
-                    required
-                  />
+                  <input id="gift-receiver-email" name="gift-receiver-email" type="email" className="form-control" placeholder="Receiver's Email ID *" required />
                 </div>
                 <div className="mb-3">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Receiver's Name *"
-                    required
-                  />
+                  <input id="gift-receiver-name" name="gift-receiver-name" type="text" className="form-control" placeholder="Receiver's Name *" required/>
                 </div>
 
                 <div className="row g-2 mb-3">
@@ -71,14 +61,16 @@ const GiftCard = () => {
                       className="form-select"
                       onChange={(e) => setCardValue(Number(e.target.value))}
                     >
-                      <option value="0">Card Value in ₹</option>
-                      <option value="500">₹500</option>
-                      <option value="1000">₹1000</option>
-                      <option value="2000">₹2000</option>
+                      <option id="gift-card-0" value="0">Card Value in ₹</option>
+                      <option id="gift-card-500" value="500">₹500</option>
+                      <option id="gift-card-1000" value="1000">₹1000</option>
+                      <option id="gift-card-2000" value="2000">₹2000</option>
                     </select>
                   </div>
                   <div className="col-md-6">
                     <input
+                    id="card-amount-quantity"
+                    name="card-amount-quantity"
                       type="number"
                       className="form-control"
                       min="1"
@@ -90,6 +82,8 @@ const GiftCard = () => {
 
                 <div className="mb-3">
                   <input
+                    name="gifter-name"
+                    id="gifter-name"
                     type="text"
                     className="form-control"
                     placeholder="Gifter's Name (Optional)"
@@ -99,6 +93,8 @@ const GiftCard = () => {
                 <div className="mb-3">
                   <textarea
                     className="form-control"
+                    id="gifter-message"
+                    name="gifter-message"
                     placeholder="Write a message (Optional, 100 characters)"
                     maxLength={100}
                   ></textarea>

@@ -8,7 +8,7 @@ const Banner = ({ images = [] }) => {
      <div className="container-fluid m-0 p-0  ">
       <div className="row g-1 m-0 px-1 container-fluid d-flex">
         {images.map((image, index) => (
-          <div className="col-md-6" key={index}>
+          <div className="col-md-6" style={{maxHeight:"350px"}} key={index}>
             {/* <div className=''> */}
               <img
               src={image.src}
@@ -16,6 +16,7 @@ const Banner = ({ images = [] }) => {
               className="rounded"
               width="100%"
               height="auto"
+              style={{maxHeight:"350px", objectFit:"contain"}}
             />
             {/* </div> */}
           </div>

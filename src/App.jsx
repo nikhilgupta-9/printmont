@@ -13,6 +13,8 @@ import Orders from "./components/orders/Orders";
 import User from "./components/user/User";
 import Login from "./components/user/Login";
 import GiftCard from "./components/orders/GiftCard";
+import ProductDetails from "./components/products/ProductDetails";
+import AllProducts from "./components/products/AllProducts";
 
 function App() {
   return (
@@ -31,6 +33,8 @@ function App() {
         <Route path="/orders" element={<Orders/>}/>
 
         <Route path="/login" element={<Login/>}/>
+        <Route path="/product" element={<ProductDetails/>}/>
+        <Route path="/allproducts" element={<AllProducts/>}/>
 
       </Routes>
       <Footer />

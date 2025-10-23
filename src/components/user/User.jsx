@@ -6,8 +6,6 @@ import {
   FaWallet,
   FaGift,
   FaLock,
-  FaSignOutAlt,
-  FaShoppingBag,
   FaBoxOpen,
   FaPowerOff,
   FaMapMarkerAlt,
@@ -17,10 +15,10 @@ import { IoIosArrowForward } from 'react-icons/io';
 
 const User = () => {
   return (
-    <div className="container-fluid custom-bg p-4">
+    <div className="container bg-transparent p-0">
       <div className="row p-0 m-0">
         {/* Sidebar */}
-        <div className="card border-0 bg-transparent m-0 p-0" style={{ width: "20rem" }}>
+        <div className="card bg-transparent border-0 m-0 p-2 col-3">
           {/* User Info */}
           <div className=' bg-white shadow-sm rounded p-2'>
             <div className="card-body d-flex align-items-center">
@@ -172,7 +170,7 @@ const User = () => {
         </div>
 
         {/* Right Side Content */}
-        <div className="col-md-8 col-lg-9">
+        <div className="col-9 p-2">
           <Outlet />
         </div>
       </div>

@@ -3,13 +3,13 @@ import React from 'react'
 import Categories from './category-list/Categories'
 import BannerTwo from './sections/BannerTwo'
 import Bannerthree from './Bannerthree'
-import FirstCrousel from './carousel/FirstCrousel'
+import FirstCrousel from './carousel/FirstCarousel'
 import Slider from './carousel/Slider'
 import SectionOne from './sections/SectionOne'
 import SecondCarousel from './carousel/SecondCarousel'
 
 
-import { bannerImages, bestHealth, bestsellerProduct, bestsellerProducts, budsItems, dealsandcategories, girloutfit, gridproducts, gridsectionfirst, gridsectionsecond, homeDecorItems, mensFashionItems, mobileItems, productList, sampleProducts, specialoffer, tablewareItems, womensFashionItems } from '../../../data/data'
+import { bannerImages, bannerSet1, bannerTwoDesktop, bannerTwoMobile, bestHealth, bestsellerProduct, bestsellerProducts, budsItems, dealsandcategories, fristcrouselImg, girloutfit, gridproducts, gridsectionfirst, gridsectionsecond, homeDecorItems, mensFashionItems, mobileItems, productList, sampleProducts, sectiontwoimg, specialoffer, tablewareItems, womensFashionItems } from '../../../data/data'
 import SingleProduct from './carousel/Singleproduct'
 import SectionTwo from './sections/SectionTwo'
 import ProductGrid from './sections/ProductGrid'
@@ -21,25 +21,30 @@ import ProductList from './sections/ProductList'
 import SectionSix from './sections/SectionGrid'
 import SectionGrid from './sections/SectionGrid'
 import BrandDirectory from './sections/BrandDirectory'
+import Header from '../header/Header'
+import MobileHeader from '../header/MobileHeader'
+import FirstCarousel from './carousel/FirstCarousel'
 
 const MobHome = () => {
   return (
     
     <>
-    <div className='bg-white'>
-        <div> <Categories/></div>
+    <div className='bg-white w-100'>
+      <div>
+        {/* <Header/> */}
+      </div>
+        <div className='top-5'> <Categories/></div>
 
-        <div><FirstCrousel/></div>
-
+        <div><FirstCarousel images={fristcrouselImg} carouselId="mainCarousel" /></div>
         <div><Slider/></div>
 
-        <div><SectionOne/></div>
+        <div><SectionOne banners={bannerSet1}/></div>
 
         <div className='bg-white'>
             <SingleProduct products={girloutfit} title="Recently Viewed" />
         </div>
 
-        <div><SectionTwo/></div>
+        <div><SectionTwo images={sectiontwoimg}/></div>
 
         <div><ProductGrid title="End of Season Sale" products={gridproducts} /></div>
 
@@ -105,11 +110,11 @@ const MobHome = () => {
         <SingleProduct products={girloutfit} title="Women's" />
       </div>
 
-      <div><SectionOne/></div>
+      <div><SectionOne banners={bannerSet1}/></div>
 
 
       <div>
-         <BannerTwo/>
+        <BannerTwo desktopImages={bannerTwoDesktop} mobileImages={bannerTwoMobile} />
       </div>
       
       <div>
@@ -121,10 +126,12 @@ const MobHome = () => {
             />
         </div>
 
-        <div className='mt-2'>
+      <div className='mt-2'>
         <SecondCarousel products={dealsandcategories} title="Top Deals on categories" />
       </div>
-        <div><ProductList products={productList}/></div>
+        <div>
+          <ProductList products={productList}/>
+        </div>
       <div>
          <SectionFour columns={[ {
                      title: 'Home Decor Items',
@@ -231,11 +238,11 @@ const MobHome = () => {
 
 
 
-        {/* <div className=''><Bannerthree/></div> */}
+        <div className=''><Bannerthree/></div>
         
-        {/* <div>
+        <div>
             <Banner images={bannerImages} />
-        </div> */}
+        </div>
 
         <div className='mt-2'>
           <BrandDirectory/>

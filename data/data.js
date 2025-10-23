@@ -17,11 +17,26 @@ export const categoriesData = [
     { name: "Corporate Gift", img: "./section-img/pro7.jpg", url:'#' },
 
 ]
+
+
 export const fristcrouselImg = [
-    '/crouselimages/slider-1.jpeg',
-    '/crouselimages/slider-2.jpeg',
-    '/crouselimages/slider-3.jpeg',
-]
+    {
+        small: '/first-carousel-img/small-first-carousel-1.png', // Used below 768px
+        large: '/first-carousel-img/big-first-carousel-1.png' // Used at or above 768px
+    },
+    {
+        small: '/first-carousel-img/small-first-carousel-2.png',
+        large: '/first-carousel-img/big-first-carousel-2.png'
+    },
+    {
+        small: '/first-carousel-img/small-first-carousel-3.png',
+        large: '/first-carousel-img/big-first-carousel-3.png'
+    },
+    {
+        small: '/first-carousel-img/small-first-carousel-4.png',
+        large: '/first-carousel-img/big-first-carousel-4.png'
+    },
+];
 
 // src/data/products.js
 export const bestsellerProducts = [
@@ -89,6 +104,14 @@ export const bestsellerProducts = [
         discount: "60% Off",
         badge:"Best Seller"
     },
+];
+
+
+export const sectiontwoimg = [
+  {
+    small: './section-img/banner-5-mob.png',
+    large: './section-img/banner-5.jpeg',
+  },
 ];
 
 // duplicate data same as upperdata only badge remove
@@ -884,3 +907,19 @@ export const gridsectionsecond = [
       alt: 'lap-hoodie'
     }
   ];
+  
+  export const bannerSet1 = [
+    '/banners/banner-901.png',
+    '/banners/banner-902.png',
+    '/banners/banner-905.png',
+    '/banners/banner-904.png',
+  ];
+export const bannerTwoDesktop = [
+  { src: "./section-img/girl-with-bag.jpg", alt: "girl-with-bag" },
+  { src: "./section-img/online-shopping.jpg", alt: "online-shopping" },
+  { src: "./section-img/footwear.jpg", alt: "footwear" },
+];
+export const bannerTwoMobile = [
+  { src: "/banners/banner2-1.png", alt: "banner-mobile-1" },
+  { src: "/banners/banner2-2.png", alt: "banner-mobile-2" },
+];

@@ -8,7 +8,7 @@ import { Link } from 'react-router';
 const SecondCarousel = ({
   products,
   title = "Products",
-  badgeText = "Customizable"
+  badgeText = ""
 }) => {
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -54,12 +54,16 @@ const SecondCarousel = ({
   }, []);
 
   return (
-    <div className="horizontal-scroll-wrapper position-relative bg-white pt-3 m-0 m-md-1 border bd">
-      <div className='d-flex justify-content-between align-items-center'>
+    <div className="horizontal-scroll-wrapper position-relative bg-white pt-3 m-0 border bd">
+      <div className='d-flex justify-content-between align-items-start'>
         <p className="fw-semibold fs-5 fs-lg-4  mb-3 ms-3 ">{title}</p>
-        <button className="bg-theme border bd px-1 py-1 px-lg-2 py-lg-1 circle d-flex align-items-center justify-content-center">
+        {/* <button className="bg-theme border bd px-1 py-1 px-lg-2 py-lg-1 circle d-flex align-items-center justify-content-center">
           <span className='d-none d-lg-flex'>View All{" "}</span>
           <MdKeyboardArrowRight size={19} />
+        </button> */}
+        <button className="bg-theme border bd px-2 py-1 rounded d-none d-lg-flex">
+          View All
+          <MdExpandLess size={20} style={{ transform: "rotate(90deg)" }} />
         </button>
 
       </div>
@@ -106,13 +110,13 @@ const SecondCarousel = ({
               {/* <p className="medium mb-0 title text-truncate px-2">{product.title}</p> */}
               <Link
                 to="#"
-                className="product-name text-truncate d-block txsm px-1 text-center">
+                className="product-name text-truncate d-block small px-1 text-center">
                 {product.title}
               </Link>
               <p className="mb-0 title p-1">
                 ₹{product.price}{" "}
-                <del className="text-muted title">₹{product.originalPrice}</del>{" "}
-                <span className="text-success fw-bold">{product.discount}</span>
+                <del className="txsm text-muted title">₹{product.originalPrice}</del>{" "}
+                <span className="text-success fw-bold txsm">{product.discount}</span>
               </p>
             </div>
           </div>

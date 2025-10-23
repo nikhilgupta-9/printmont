@@ -47,10 +47,10 @@ const Profile = () => {
 
   return (
     <div className="card p-4 border bd">
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex justify-content-start gap-3 align-items-center mb-3">
         <h5 className="mb-0">Personal Information</h5>
         {!isEditing ? (
-          <a href="#" className="text-primary" onClick={handleEdit}>Edit</a>
+          <a href="#" className="text-primary text-decoration-none small" onClick={handleEdit}>Edit</a>
         ) : (
           <div>
             <button className="btn btn-sm btn-success me-2" onClick={handleSave}>Save</button>
@@ -61,35 +61,35 @@ const Profile = () => {
 
       <div className="row">
         <div className="col-md-6 mb-3">
-          <label className="form-label">First Name</label>
           <input
             type="text"
             name="firstName"
-            className="form-control"
+            className="form-control p-3"
             value={tempProfile.firstName}
             onChange={handleChange}
             readOnly={!isEditing}
+            placeholder='Enter your first name'
           />
         </div>
         <div className="col-md-6 mb-3">
-          <label className="form-label">Last Name</label>
           <input
             type="text"
             name="lastName"
-            className="form-control"
+            className="form-control p-3"
             value={tempProfile.lastName}
             onChange={handleChange}
             readOnly={!isEditing}
+            placeholder='Enter your last name'
           />
         </div>
       </div>
 
       {/* Gender */}
-      <div className="mb-4">
+      <div className="mb-5">
         <label className="form-label d-block">Your Gender</label>
         <div className="form-check form-check-inline">
           <input
-            className="form-check-input"
+            className="form-check-input p-2"
             type="radio"
             name="gender"
             value="Male"
@@ -101,7 +101,7 @@ const Profile = () => {
         </div>
         <div className="form-check form-check-inline">
           <input
-            className="form-check-input"
+            className="form-check-input p-2"
             type="radio"
             name="gender"
             value="Female"
@@ -114,17 +114,17 @@ const Profile = () => {
       </div>
 
       {/* Email */}
-      <div className="mb-4">
-        <div className="d-flex justify-content-between align-items-center">
-          <h6 className="mb-1">Email Address</h6>
+      <div className="mb-5">
+        <div className="d-flex justify-content-start gap-3 align-items-center mb-3">
+          <h6 className="">Email Address</h6>
           {!isEditing && (
-            <a href="#" className="text-primary" onClick={handleEdit}>Edit</a>
+            <a href="#" className="text-primary text-decoration-none small" onClick={handleEdit}>Edit</a>
           )}
         </div>
         <input
           type="email"
           name="email"
-          className="form-control"
+          className="form-control p-3"
           value={tempProfile.email}
           onChange={handleChange}
           readOnly={!isEditing}
@@ -133,16 +133,16 @@ const Profile = () => {
 
       {/* Mobile */}
       <div className="mb-3">
-        <div className="d-flex justify-content-between align-items-center">
+        <div className="d-flex justify-content-start gap-3 align-items-center mb-3">
           <h6 className="mb-1">Mobile Number</h6>
           {!isEditing && (
-            <a href="#" className="text-primary" onClick={handleEdit}>Edit</a>
+            <a href="#" className="text-primary small text-decoration-none" onClick={handleEdit}>Edit</a>
           )}
         </div>
         <input
           type="text"
           name="mobile"
-          className="form-control"
+          className="form-control p-3"
           value={tempProfile.mobile}
           onChange={handleChange}
           readOnly={!isEditing}
