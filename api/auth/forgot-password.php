@@ -1,4 +1,5 @@
 <?php
+session_start(); // Add this at the very top
 require_once '../../config/database.php';
 require_once '../../controllers/AuthController.php';
 
@@ -22,8 +23,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['forgot_password'])) {
     $result = $authController->forgotPassword($email);
     
     if ($result['success']) {
-        $message = $result['message'];
-        $message_type = 'success';
+        // Check if redirect is needed BEFORE any HTML output
+        if (isset($result['redirect'])) {
+            header("Location: " . $result['redirect']);
+            exit();
+        } else {
+            $message = $result['message'];
+            $message_type = 'success';
+        }
     } else {
         $message = $result['message'];
         $message_type = 'error';
@@ -37,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['forgot_password'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forgot Password - PrintMont Admin</title>
     <style>
+        /* Add all your CSS styles here (remove the link to style.css) */
         * {
             margin: 0;
             padding: 0;
@@ -146,15 +154,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['forgot_password'])) {
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-
         .alert {
             padding: 12px 15px;
             border-radius: 8px;
@@ -225,7 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['forgot_password'])) {
     <div class="forgot-container">
         <div class="forgot-header">
             <h1>Reset Password</h1>
-            <p>Enter your email to receive reset instructions</p>
+            <p>Enter your email to receive OTP</p>
         </div>
         
         <div class="forgot-body">
@@ -238,9 +237,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['forgot_password'])) {
             <div class="instructions">
                 <strong>How to reset your password:</strong>
                 <ol>
-                    <li>Enter your email address below</li>
-                    <li>Check your email for reset instructions</li>
-                    <li>Click the reset link (valid for 1 hour)</li>
+                    <li>Enter your registered email address below</li>
+                    <li>Check your email for OTP (6-digit code)</li>
+                    <li>Enter the OTP on next screen (valid for 15 minutes)</li>
                     <li>Create a new password</li>
                 </ol>
             </div>
@@ -256,7 +255,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['forgot_password'])) {
                 </div>
 
                 <button type="submit" class="btn btn-primary" id="submitBtn">
-                    Send Reset Instructions
+                    Send OTP
                 </button>
             </form>
 
@@ -278,12 +277,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['forgot_password'])) {
             }
             
             btn.disabled = true;
-            btn.innerHTML = 'Sending...';
+            btn.innerHTML = 'Sending OTP...';
             
             // Re-enable button after 5 seconds in case of error
             setTimeout(() => {
                 btn.disabled = false;
-                btn.innerHTML = 'Send Reset Instructions';
+                btn.innerHTML = 'Send OTP';
             }, 5000);
         });
 

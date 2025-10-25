@@ -305,15 +305,167 @@ class AuthController
 
     // Forgot password - generate reset token
     public function forgotPassword($email)
+{
+    // Start session if not already started - ADD THIS
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    // Validate email
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return ['success' => false, 'message' => 'Invalid email format'];
+    }
+
+    // Check if user exists
+    $query = "SELECT id, username, email, status FROM users 
+          WHERE email = ? AND status = 'active' LIMIT 1";
+
+    $stmt = $this->conn->prepare($query);
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows == 1) {
+        $user = $result->fetch_assoc();
+
+        // Generate OTP (6-digit code)
+        $otp = sprintf("%06d", mt_rand(1, 999999));
+        $otp_expiry = date('Y-m-d H:i:s', time() + 900); // 15 minutes expiry
+
+        // Store OTP in database using existing reset_token columns or new OTP columns
+        $update_query = "UPDATE users 
+                     SET reset_otp = ?, reset_otp_expiry = ? 
+                     WHERE id = ?";
+
+        $update_stmt = $this->conn->prepare($update_query);
+        $update_stmt->bind_param("ssi", $otp, $otp_expiry, $user['id']);
+
+        if ($update_stmt->execute()) {
+            // Send OTP to email
+            $emailSent = $this->sendOTPToEmail($user['email'], $user['username'], $otp);
+
+            if ($emailSent) {
+                // Store email in session for verification
+                $_SESSION['reset_email'] = $user['email'];
+                $_SESSION['otp_verified'] = false;
+
+                // Debug: Log session setting
+                error_log("Session set - reset_email: " . $_SESSION['reset_email']);
+
+                return [
+                    'success' => true,
+                    'message' => 'OTP has been sent to your email address.',
+                    'redirect' => 'verify_otp.php'
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Failed to send OTP email. Please try again.'];
+            }
+        } else {
+            return ['success' => false, 'message' => 'Failed to generate OTP'];
+        }
+    } else {
+        // Don't reveal if email exists or not
+        $this->randomDelay();
+        return [
+            'success' => true,
+            'message' => 'If the email is registered, OTP will be sent.'
+        ];
+    }
+}
+
+    private function sendOTPToEmail($email, $username, $otp)
     {
-        // Validate email
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return ['success' => false, 'message' => 'Invalid email format'];
+        try {
+            // Check if PHPMailer is available
+            if (!class_exists('PHPMailer\PHPMailer\PHPMailer')) {
+                error_log("PHPMailer class not found");
+                return false;
+            }
+
+            require_once '../../vendor/autoload.php';
+
+            $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+
+            // Server settings
+            $mail->isSMTP();
+            $mail->Host = 'smtp.hostinger.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'no-reply@printmont.com';
+            $mail->Password = 'aU9>l2S2Ve*m';
+            $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = 587;
+
+            // Enable verbose debug output
+            $mail->SMTPDebug = 2; // Set to 2 for detailed debug info
+            $mail->Debugoutput = 'error_log';
+
+            // Recipients
+            $mail->setFrom('no-reply@printmont.com', 'PrintMont Admin');
+            $mail->addAddress($email, $username);
+            $mail->addReplyTo('no-reply@printmont.com', 'PrintMont Admin');
+
+            // Content
+            $mail->isHTML(true);
+            $mail->Subject = 'Password Reset OTP - PrintMont Admin';
+
+            $mail->Body = "
+        <html>
+        <head>
+            <title>Password Reset OTP</title>
+            <style>
+                body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+                .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; }
+                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 20px; }
+                .otp-code { font-size: 32px; font-weight: bold; text-align: center; color: #667eea; margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; letter-spacing: 5px; }
+                .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e1e5e9; color: #666; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>Password Reset Request</h2>
+                </div>
+                
+                <p>Hello <strong>$username</strong>,</p>
+                
+                <p>You have requested to reset your password for your PrintMont Admin account. Use the OTP below to verify your identity:</p>
+                
+                <div class='otp-code'>$otp</div>
+                
+                <p><strong>This OTP is valid for 15 minutes.</strong></p>
+                
+                <p>If you didn't request this reset, please ignore this email. Your account remains secure.</p>
+                
+                <div class='footer'>
+                    <p>This is an automated message. Please do not reply to this email.</p>
+                    <p>&copy; " . date('Y') . " PrintMont Admin. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>";
+
+            // Plain text version for email clients that don't support HTML
+            $mail->AltBody = "Password Reset OTP\n\nHello $username,\n\nYou have requested to reset your password. Your OTP is: $otp\n\nThis OTP is valid for 15 minutes.\n\nIf you didn't request this reset, please ignore this email.";
+
+            $mail->send();
+            error_log("OTP email successfully sent to: $email");
+            return true;
+
+        } catch (Exception $e) {
+            error_log("Email sending failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function verifyOTP($email, $otp)
+    {
+        // Validate OTP
+        if (empty($otp) || !preg_match('/^[0-9]{6}$/', $otp)) {
+            return ['success' => false, 'message' => 'Invalid OTP format'];
         }
 
-        // Check if user exists
-        $query = "SELECT id, username, email, status FROM " . $this->table_name . " 
-              WHERE email = ? AND status = 'active' LIMIT 1";
+        $query = "SELECT id, reset_otp, reset_otp_expiry FROM users 
+          WHERE email = ? AND status = 'active' LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param("s", $email);
@@ -323,37 +475,25 @@ class AuthController
         if ($result->num_rows == 1) {
             $user = $result->fetch_assoc();
 
-            // Generate secure reset token
-            $reset_token = bin2hex(random_bytes(32));
-            $reset_token_expiry = date('Y-m-d H:i:s', time() + 3600); // 1 hour expiry
+            // Check if OTP matches and is not expired
+            if ($user['reset_otp'] === $otp && strtotime($user['reset_otp_expiry']) > time()) {
+                // Clear OTP after successful verification
+                $clear_query = "UPDATE users SET reset_otp = NULL, reset_otp_expiry = NULL WHERE id = ?";
+                $clear_stmt = $this->conn->prepare($clear_query);
+                $clear_stmt->bind_param("i", $user['id']);
+                $clear_stmt->execute();
 
-            // Store token in database
-            $update_query = "UPDATE " . $this->table_name . " 
-                         SET reset_token = ?, reset_token_expiry = ? 
-                         WHERE id = ?";
+                // Set session for password reset
+                $_SESSION['otp_verified'] = true;
+                $_SESSION['reset_user_id'] = $user['id'];
 
-            $update_stmt = $this->conn->prepare($update_query);
-            $update_stmt->bind_param("ssi", $reset_token, $reset_token_expiry, $user['id']);
-
-            if ($update_stmt->execute()) {
-                // Send reset email (in production)
-                $this->sendResetEmail($user['email'], $user['username'], $reset_token);
-
-                return [
-                    'success' => true,
-                    'message' => 'Password reset instructions have been sent to your email.'
-                ];
+                return ['success' => true, 'message' => 'OTP verified successfully'];
             } else {
-                return ['success' => false, 'message' => 'Failed to generate reset token'];
+                return ['success' => false, 'message' => 'Invalid or expired OTP'];
             }
-        } else {
-            // Don't reveal if email exists or not
-            $this->randomDelay();
-            return [
-                'success' => true,
-                'message' => 'If the email exists, reset instructions will be sent.'
-            ];
         }
+
+        return ['success' => false, 'message' => 'Invalid OTP'];
     }
 
     // Verify reset token
