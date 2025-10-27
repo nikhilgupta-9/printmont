@@ -9,7 +9,7 @@ $authController = new AuthController($db);
 
 // Redirect if already logged in
 if ($authController->isLoggedIn()) {
-    header("Location: dashboard.php");
+    header("Location: ../../dashboard.php");
     exit();
 }
 

@@ -1,4 +1,5 @@
 <?php
+session_start(); // Add this at the very top
 require_once '../../config/database.php';
 require_once '../../controllers/AuthController.php';
 
@@ -6,9 +7,15 @@ $database = new Database();
 $db = $database->getConnection();
 $authController = new AuthController($db);
 
-// Redirect if already logged in
-if ($authController->isLoggedIn()) {
-    header("Location: dashboard.php");
+// Debug: Check session status
+error_log("Login page - Session status: " . session_status());
+error_log("Login page - Session logged_in: " . ($_SESSION['logged_in'] ?? 'not set'));
+
+// Check if user is already logged in - but only redirect if properly logged in
+if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true && 
+    isset($_SESSION['user_id']) && isset($_SESSION['email'])) {
+    error_log("User already logged in, redirecting to dashboard");
+    header("Location: ../../dashboard.php");
     exit();
 }
 
@@ -23,10 +30,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
     $result = $authController->login($email, $password);
     
     if ($result['success']) {
-        header("Location: dashboard.php");
+        // Debug: Verify session was set
+        error_log("Login successful - Session verified: " . ($_SESSION['logged_in'] ?? 'false'));
+        error_log("Session user_id: " . ($_SESSION['user_id'] ?? 'not set'));
+        
+        header("Location: ../../dashboard.php");
         exit();
     } else {
         $error_message = $result['message'];
+        error_log("Login failed: " . $result['message']);
     }
 }
 ?>

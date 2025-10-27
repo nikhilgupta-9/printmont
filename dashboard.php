@@ -1,95 +1,18 @@
 <?php
-require_once 'config/constants.php';
-require_once 'controllers/AuthController.php';
-require_once 'controllers/ProductController.php';
+// dashboard.php
+session_start();
 
-// header('Content-Type: application/json');
+// Debug session
+error_log("Dashboard - Session logged_in: " . ($_SESSION['logged_in'] ?? 'not set'));
+error_log("Dashboard - Session user_id: " . ($_SESSION['user_id'] ?? 'not set'));
 
-$request_method = $_SERVER['REQUEST_METHOD'];
-$request_uri = $_SERVER['REQUEST_URI'];
-
-// Simple routing
-$path = parse_url($request_uri, PHP_URL_PATH);
-$path = str_replace('/flipkart-admin-php', '', $path); // Adjust based on your folder
-
-switch ($path) {
-    case '/api/auth/login':
-        if ($request_method == 'POST') {
-            $auth = new AuthController();
-            $auth->login();
-        } else {
-            http_response_code(405);
-            echo json_encode(array("error" => "Method not allowed"));
-        }
-        break;
-
-    case '/api/auth/me':
-        if ($request_method == 'GET') {
-            $auth = new AuthController();
-            $auth->getCurrentUser();
-        } else {
-            http_response_code(405);
-            echo json_encode(array("error" => "Method not allowed"));
-        }
-        break;
-
-    case '/api/products':
-        $product = new ProductController();
-        if ($request_method == 'GET') {
-            $product->getAllProducts();
-        } elseif ($request_method == 'POST') {
-            $product->createProduct();
-        } else {
-            http_response_code(405);
-            echo json_encode(array("error" => "Method not allowed"));
-        }
-        break;
-
-    case (preg_match('#^/api/products/(\d+)$#', $path, $matches) ? true : false):
-        $product_id = $matches[1];
-        $product = new ProductController();
-        if ($request_method == 'GET') {
-            $product->getProduct($product_id);
-        } elseif ($request_method == 'PUT') {
-            $product->updateProduct($product_id);
-        } else {
-            http_response_code(405);
-            echo json_encode(array("error" => "Method not allowed"));
-        }
-        break;
-
-    case '/api/health':
-        echo json_encode(array("message" => "Flipkart Admin PHP API is running!"));
-        break;
-
-    default:
-        http_response_code(404);
-        echo json_encode(array("error" => "Endpoint not found"));
-        break;
-}
-?>
-<?php
-// filepath: c:\xampp\htdocs\printmont-admin\dashboard.php
-require_once 'config/database.php';
-require_once 'controllers/AuthController.php';
-
-$database = new Database();
-$db = $database->getConnection();
-$authController = new AuthController($db);
-
-// Check if user is logged in and session is valid
-if (!$authController->isLoggedIn() || !$authController->checkSessionTimeout()) {
+// Check if user is properly logged in
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || 
+    !isset($_SESSION['user_id']) || !isset($_SESSION['email'])) {
+    error_log("Dashboard access denied - redirecting to login");
     header("Location: login.php");
     exit();
 }
-
-// Check if user has admin role
-if (!$authController->hasRole('admin')) {
-    header("Location: unauthorized.php");
-    exit();
-}
-
-// Rest of your dashboard page content goes here
 ?>
 
 <!DOCTYPE html>
