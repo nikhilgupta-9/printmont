@@ -3,7 +3,7 @@
         'name' => 'user/printmont-admin',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '35397a21a8528317d488d9bd073c228e3aeaacea',
+        'reference' => '53ec773cd6ad91267f597ab722ab06d4d6fc6734',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -31,7 +31,7 @@
         'user/printmont-admin' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '35397a21a8528317d488d9bd073c228e3aeaacea',
+            'reference' => '53ec773cd6ad91267f597ab722ab06d4d6fc6734',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

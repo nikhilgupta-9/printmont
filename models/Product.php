@@ -74,10 +74,10 @@ class Product {
         return array(
             "products" => $stmt->fetchAll(PDO::FETCH_ASSOC),
             "pagination" => array(
-                "current_page" => $page,
-                "per_page" => $limit,
-                "total" => $total,
-                "total_pages" => ceil($total / $limit)
+            "current_page" => $page,
+            "per_page" => $limit,
+            "total" => $total,
+            "total_pages" => ceil($total / $limit)
             )
         );
     }
