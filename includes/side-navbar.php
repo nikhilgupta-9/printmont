@@ -44,15 +44,28 @@
 		</div>
 
 		<ul class="sidebar-nav">
+
+		<li class="sidebar-item active">
+				<a data-bs-target="#dashboards" data-bs-toggle="collapse" class="sidebar-link">
+					<i class="align-middle" data-feather="sliders"></i> <span class="align-middle">Dashboards</span>
+				</a>
+				<ul id="dashboards" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+					<li class="sidebar-item active"><a class='sidebar-link' href='dashboard.php'>Dashboard</a></li>
+					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-ecommerce-2.html'>E-Commerce <span
+								class="sidebar-badge badge bg-primary">Pro</span></a></li>
+					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-crypto.html'>Crypto <span
+								class="sidebar-badge badge bg-primary">Pro</span></a></li>
+				</ul>
+			</li>
 			<li class="sidebar-header">
 				Pages
 			</li>
 
 			<li class="sidebar-item active">
-				<a data-bs-target="#dashboards" data-bs-toggle="collapse" class="sidebar-link">
+				<a data-bs-target="#homepage" data-bs-toggle="collapse" class="sidebar-link">
 					<i class="align-middle" data-feather="sliders"></i> <span class="align-middle">Home Page</span>
 				</a>
-				<ul id="dashboards" class="sidebar-dropdown list-unstyled collapse show" data-bs-parent="#sidebar">
+				<ul id="homepage" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
 					<li class="sidebar-item active"><a class='sidebar-link' href='add-banner.php'>Add Banner</a></li>
 					<li class="sidebar-item">
 						<a class='sidebar-link' href='logo-management.php'>Logo's
@@ -63,28 +76,85 @@
 								class="sidebar-badge badge bg-primary">Pro</span></a></li>
 				</ul>
 			</li>
-
-			<li class="sidebar-item">
-				<a class='sidebar-link' href='view-categories.php'>
-					 <i class="align-middle" data-feather="grid"></i>  <span class="align-middle">Category</span>
-				</a>
+			<li class="sidebar-header">
+				Order Status
 			</li>
 
 			<li class="sidebar-item active">
-				<a data-bs-target="#dashboards" data-bs-toggle="collapse" class="sidebar-link">
-					<i class="align-middle" data-feather="sliders"></i> <span class="align-middle">Dashboards</span>
+				<a data-bs-target="#orders" data-bs-toggle="collapse" class="sidebar-link">
+					<i class="align-middle" data-feather="shopping-bag"></i> <span class="align-middle">Orders</span>
 				</a>
-				<ul id="dashboards" class="sidebar-dropdown list-unstyled collapse show" data-bs-parent="#sidebar">
-					<li class="sidebar-item active"><a class='sidebar-link' href='dashboard.php'>Dashboard</a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-ecommerce-2.html'>E-Commerce <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-crypto.html'>Crypto <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
+				<ul id="orders" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+					<li class="sidebar-item active"><a class='sidebar-link' href='add-banner.php'>All Orders</a>
+					</li>
+					<li class="sidebar-item active"><a class='sidebar-link' href='add-banner.php'>Pending Orders</a>
+					</li>
+					<li class="sidebar-item"><a class='sidebar-link' href='logo-management.php'>Processing Orders</a>
+					</li>
+					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-crypto.html'>Delivered Orders</a>
+					</li>
+					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-crypto.html'>Completed Orders</a>
+					</li>
+					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-crypto.html'>Declined Orders</a>
+					</li>
+					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-crypto.html'>Total Sold Orders</a>
+					</li>
+				</ul>
+			</li>
+
+			<li class="sidebar-item active">
+				<a data-bs-target="#products" data-bs-toggle="collapse" class="sidebar-link">
+					<i class="align-middle" data-feather="shopping-bag"></i> <span class="align-middle">Products</span>
+				</a>
+				<ul id="products" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+					<li class="sidebar-item active"><a class='sidebar-link' href='add-banner.php'>Add New Products</a>
+					</li>
+					<li class="sidebar-item active"><a class='sidebar-link' href='add-banner.php'>All Products</a>
+					</li>
+					<li class="sidebar-item"><a class='sidebar-link' href='logo-management.php'>Deactivate Product</a>
+					</li>
+					
+				</ul>
+			</li>
+
+			<li class="sidebar-item active">
+				<a data-bs-target="#manage-categories" data-bs-toggle="collapse" class="sidebar-link">
+					<i class="align-middle" data-feather="shopping-bag"></i> <span class="align-middle">Categories</span>
+				</a>
+				<ul id="manage-categories" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+					<li class="sidebar-item active"><a class='sidebar-link' href='add-banner.php'>Main Categories</a>
+					</li>
+					<li class="sidebar-item active"><a class='sidebar-link' href='add-banner.php'>Sub Categories</a>
+					</li>
+					<li class="sidebar-item"><a class='sidebar-link' href='logo-management.php'>Sub Sub Categories</a>
+					</li>
+					
+				</ul>
+			</li>
+
+			<li class="sidebar-item active">
+				<a data-bs-target="#blog" data-bs-toggle="collapse" class="sidebar-link">
+					<i class="align-middle" data-feather="shopping-bag"></i> <span class="align-middle">Blogs</span>
+				</a>
+				<ul id="blog" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+					<li class="sidebar-item active"><a class='sidebar-link' href='all-blogs.php'>All Blogs</a>
+					</li>
+					<li class="sidebar-item active"><a class='sidebar-link' href='add-banner.php'>Add New Blog</a>
+					</li>
+					
 				</ul>
 			</li>
 
 			<li class="sidebar-item">
-				<a data-bs-target="#pages" data-bs-toggle="collapse" class="sidebar-link collapsed">
+				<a class='sidebar-link' href='view-categories.php'>
+					<i class="align-middle" data-feather="grid"></i> <span class="align-middle">Category</span>
+				</a>
+			</li>
+
+			
+
+			<li class="sidebar-item">
+				<a data-bs-target="#pages" data-bs-toggle="collapse" class="sidebar-link ">
 					<i class="align-middle" data-feather="layout"></i> <span class="align-middle">Pages</span>
 				</a>
 				<ul id="pages" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
@@ -103,11 +173,8 @@
 				</ul>
 			</li>
 
-			<li class="sidebar-item">
-				<a class='sidebar-link' href='pages-profile.html'>
-					<i class="align-middle" data-feather="user"></i> <span class="align-middle">Profile</span>
-				</a>
-			</li>
+			
+			
 
 
 			<li class="sidebar-item">
