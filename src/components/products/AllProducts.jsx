@@ -141,7 +141,7 @@ const AllProducts = () => {
   // --- END PAGINATION UI ---
 
   return (
-    <div className="all-products-container p-0 m-0 position-relative">
+    <div className="all-products-container p-0 m-0 position-relative mt-0 mt-lg-2">
       {/* --- Mobile Header for Filter/Sort --- */}
       <div className="d-flex justify-content-between align-items-center p-1 d-lg-none bg-white shadow-sm sticky-top">
         <div className="w-100 d-flex justify-content-evenly align-items-center">
@@ -166,14 +166,14 @@ const AllProducts = () => {
       </div>
 
       {/* --- Main Layout: Sidebar + Products --- */}
-      <div className="d-flex flex-wrap">
+      <div className="d-flex flex-wrap mt-0 mt-lg-4">
         {/* ✅ Filter Sidebar */}
         <div
-          className={`filters-sidebar bg-white border-end p-2 ${
+          className={`filters-sidebar bg-white border-end p-2${
             showFilters ? "show" : ""
           }`}
         >
-          <FilterSidebar onClose={() => setShowFilters(false)} />
+          <FilterSidebar onClose={() => setShowFilters(true)} />
         </div>
 
         {/* ✅ Product Grid Section */}

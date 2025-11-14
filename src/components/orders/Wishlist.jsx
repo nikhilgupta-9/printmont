@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FaTrashAlt } from 'react-icons/fa';
 import toast, { Toaster } from 'react-hot-toast';
 import { CartData } from '../../../data/data';
+import { Link } from 'react-router';
 
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState(CartData);
@@ -29,7 +30,8 @@ const Wishlist = () => {
 
         <div className="list-group list-group-flush">
           {wishlist.map((item, index) => (
-            <div
+            <div>
+              <div
               key={index}
               className="list-group-item d-flex align-items-start justify-content-between wish-hov"
             >
@@ -52,12 +54,12 @@ const Wishlist = () => {
                 </div>
 
                 <div className="d-flex flex-column justify-content-start align-items-start">
-                  <a
+                  <Link
                     href={item.link}
                     className="d-block product-name fw-semibold mb-1 text-decoration-none"
                   >
                     {item.title}
-                  </a>
+                  </Link>
                   <div className="d-flex align-items-center gap-2">
                     <h5 className="mb-0 fs-4 text-dark">₹{item.price}</h5>
                     {item.oldPrice && (
@@ -69,13 +71,19 @@ const Wishlist = () => {
                       <span className="text-success fw-bold txsm">{item.discount}</span>
                     )}
                   </div>
+                  <button
+                  className="btn btn-sm btn-primary d-flex d-lg-none" onClick={() => handleAddToCart(item)}
+                >
+                  Add to Cart
+                </button>
                 </div>
+                {/*  */}
               </div>
 
               {/* Right: Buttons */}
-              <div className="d-flex align-items-center gap-2">
+              <div className="d-flex align-items-center gap-2 ">
                 <button
-                  className="btn btn-sm btn-primary " onClick={() => handleAddToCart(item)}
+                  className="btn btn-sm btn-primary d-none d-lg-flex" onClick={() => handleAddToCart(item)}
                 >
                   Add to Cart
                 </button>
@@ -87,7 +95,9 @@ const Wishlist = () => {
                 </button>
               </div>
             </div>
+            </div>
           ))}
+          
 
           {wishlist.length === 0 && (
             <div className="text-center text-muted p-4">Your wishlist is empty.</div>

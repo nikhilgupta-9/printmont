@@ -14,7 +14,7 @@ import { Link } from "react-router";
 const Footer = () => {
   return (
     <>
-      <div className="d-none d-lg-block"><IconX /></div>
+      <div className="d-none d-xl-block"><IconX /></div>
       <footer className="foot-bg text-light pt-5 pb-2 small-screen-foot">
         <div className="container-fluid px-5">
           <div className="row g-4">
@@ -28,7 +28,6 @@ const Footer = () => {
                     <li><Link to="/contact" className="text-light text-decoration-none">Contact Us</Link></li>
                     <li><Link to="/about" className="text-light text-decoration-none">About Us</Link></li>
                     <li><Link to="/careers" className="text-light text-decoration-none">Careers</Link></li>
-                    <li><Link to="/affiliate" className="text-light text-decoration-none">Affiliate Program</Link></li>
                     <li><Link to="/blog" className="text-light text-decoration-none">Blog</Link></li>
                   </ul>
 
@@ -38,10 +37,10 @@ const Footer = () => {
                 <div className="col-6 col-md-3">
                   <h6 className="text-uppercase small text-white-50">Policy Info</h6>
                   <ul className="list-unstyled txsm d-flex flex-column gap-1">
-                    <li><Link to="/terms" className="text-light text-decoration-none">Terms & Conditions</Link></li>
-                    <li><Link to="/privacy" className="text-light text-decoration-none">Privacy Policy</Link></li>
-                    <li><Link to="/shipping" className="text-light text-decoration-none">Shipping Policy</Link></li>
-                    <li><Link to="/returns" className="text-light text-decoration-none">Return & Refund Policy</Link></li>
+                    <li><Link to="/policy/terms" className="text-light text-decoration-none">Terms & Conditions</Link></li>
+                    <li><Link to="/policy/privacy" className="text-light text-decoration-none">Privacy Policy</Link></li>
+                    <li><Link to="/policy/shipping" className="text-light text-decoration-none">Shipping Policy</Link></li>
+                    <li><Link to="/policy/returns" className="text-light text-decoration-none">Return & Refund Policy</Link></li>
                   </ul>
 
                 </div>
@@ -50,7 +49,7 @@ const Footer = () => {
                 <div className="col-6 col-md-3">
                   <h6 className="text-uppercase small text-white-50">Quick Links</h6>
                   <ul className="list-unstyled txsm d-flex flex-column gap-1">
-                    <li><Link to="/help" className="text-light text-decoration-none">Help Center</Link></li>
+                    <li><Link to="/help-center" className="text-light text-decoration-none">Help Center</Link></li>
                     <li><Link to="/security" className="text-light text-decoration-none">Security</Link></li>
                     <li><Link to="/sitemap" className="text-light text-decoration-none">Sitemap</Link></li>
                     <li><Link to="/faq" className="text-light text-decoration-none">FAQ</Link></li>
@@ -63,7 +62,7 @@ const Footer = () => {
                 <div className="col-6 col-md-3">
                   <h6 className="text-uppercase small text-white-50">Support</h6>
                   <ul className="list-unstyled txsm d-flex flex-column gap-1">
-                    <li><Link to="/account" className="text-light text-decoration-none">Account Settings</Link></li>
+                    <li><Link to="/user/profile" className="text-light text-decoration-none">Account Settings</Link></li>
                     <li><Link to="/orders" className="text-light text-decoration-none">My Orders</Link></li>
                     <li><Link to="/wallet" className="text-light text-decoration-none">My Wallet</Link></li>
                     <li><Link to="/track-order" className="text-light text-decoration-none">Track Orders</Link></li>
@@ -126,16 +125,19 @@ const Footer = () => {
           <div className="row text-center text-md-start align-items-center pb-3">
             <div className="col-12 col-md-6 d-flex flex-wrap justify-content-around justify-content-md-start gap-5 small">
               <span>
-                <img src="/become-seller.png" alt="" width={"20px"} height={"20px"} /> Become a Seller
+                <img src="/become-seller.png" alt="" width={"20px"} height={"20px"} /> <Link to={'#'} className="link-text-white">Become a Seller</Link>
               </span>
               <span>
-                <img src="/advertising.png" alt="" width={"20px"} height={"20px"} /> Advertising
+                <img src="/advertising.png" alt="" width={"20px"} height={"20px"}/>
+                <Link to={'#'} className="link-text-white"> Advertising</Link> 
               </span>
               <span>
-                <img src="/printmont-coin.png" alt="" width={"20px"} height={"20px"} /> Printmont Coins
+                <img src="/printmont-coin.png" alt="" width={"20px"} height={"20px"} />
+                <Link to={'/printmont-coin'} className="link-text-white"> Printmont Coins</Link> 
               </span>
               <span>
-                <img src="/Help-center.png" alt="" width={"20px"} height={"20px"} /> Help Center
+                <img src="/Help-center.png" alt="" width={"20px"} height={"20px"}/>
+                <Link to={'help-center'} className="link-text-white"> Help Center</Link>
               </span>
             </div>
             <div className="col-12 col-md-3 small text-center">

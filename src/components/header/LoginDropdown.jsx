@@ -1,8 +1,12 @@
 import React from "react";
-import { FaSignOutAlt, FaRegUser } from "react-icons/fa";
+import { FaSignOutAlt, FaRegUser,  FaGift } from "react-icons/fa";
 import { Link,} from "react-router-dom";
 import { LiaShoppingBagSolid, LiaTruckMovingSolid } from "react-icons/lia";
 import { CiWallet } from "react-icons/ci";
+import { CgProfile } from "react-icons/cg";
+import { GiCardboardBoxClosed, GiWallet } from "react-icons/gi";
+import { RiLogoutCircleRLine, RiTruckLine } from "react-icons/ri";
+
 
 
 const LoginDropdown = () => {
@@ -11,7 +15,7 @@ const LoginDropdown = () => {
       {/* Trigger */}
       <div className=" px-3 py-1 rounded d-flex align-items-center gap-2">
         <FaRegUser color="#007bff"size={20} />
-        <Link to="/login" className="text-muted fw-semibold text-decoration-none">Login</Link>
+        <Link to="/login" className="text-muted fw-semibold text-decoration-none ">Login</Link>
       </div>
 
       {/* Dropdown */}
@@ -22,14 +26,15 @@ const LoginDropdown = () => {
         </div>
 
         <ul className="list-unstyled mb-0">
-          <li className="dropdown-item-custom"><img src="/printmont-coin.png" className="me-1 rounded-circle shadow-md" alt="" width={18} height={18}/>
-          <Link to={'#'} className="text-decoration-none text-black">Printmont Coins</Link>
+          <li className="dropdown-item-custom"><CgProfile size={19} className="me-2 text-theme" /> <Link to={'/user/profile'} className="text-decoration-none text-black">My Profile</Link></li>
+          <li className="dropdown-item-custom"><img src="/printmont-coin.png" className="me-2 rounded-circle shadow-md" alt="" width={20} height={20}/>
+          <Link to={'/printmont-coin'} className="text-decoration-none text-black">Printmont Coins</Link>
           </li>
-          <li className="dropdown-item-custom"><FaRegUser className="me-2" /> <Link to={'/user/profile'} className="text-decoration-none text-black">My Profile</Link></li>
-          <li className="dropdown-item-custom text-black"><LiaTruckMovingSolid  className="me-2" /> <Link to={'#'} className="text-decoration-none text-black">Track Your Orders</Link></li>
-          <li className="dropdown-item-custom text-black"><CiWallet className="me-2" /> <Link to={'#'} className="text-decoration-none text-black">Printmont Wallet</Link></li>
-          <li className="dropdown-item-custom text-black"><LiaShoppingBagSolid className="me-2 text-black" /> <Link to={'/orders'} className="text-decoration-none text-black">My Orders</Link></li>
-          <li className="dropdown-item-custom"><FaSignOutAlt className="me-2 text-dark" /> <Link to={'#'} className="text-decoration-none text-black">Log Out</Link></li>
+          <li className="dropdown-item-custom text-black"><GiCardboardBoxClosed className="me-2 text-theme" size={21} /> <Link to={'/orders'} className="text-decoration-none text-black">Orders</Link></li>
+          <li className="dropdown-item-custom text-black"><RiTruckLine className="me-2 text-theme" size={20} /> <Link to={'/track-order'} className="text-decoration-none text-black">Track your Orders</Link></li>
+          <li className="dropdown-item-custom text-black"><GiWallet className="me-2 text-theme"size={18} /> <Link to={'#'} className="text-decoration-none text-black">My Wallet</Link></li>
+          <li className="dropdown-item-custom text-black"><FaGift size={17} className="me-2 text-theme" /> <Link to={'/orders'} className="text-decoration-none text-black">Coupons</Link></li>
+          <li className="dropdown-item-custom"><RiLogoutCircleRLine size={20} className="me-2 text-theme" /> <Link to={'#'} className="text-decoration-none text-black">Log Out</Link></li>
         </ul>
       </div>
     </div>

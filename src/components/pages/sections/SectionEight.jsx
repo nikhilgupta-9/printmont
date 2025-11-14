@@ -1,75 +1,78 @@
 import React from 'react';
 import { FaChevronRight } from 'react-icons/fa';
+import { MdArrowForwardIos, MdKeyboardArrowRight } from 'react-icons/md'; // ⬅️ Imported these from SectionFour
+import { Link } from 'react-router';
 
-const SectionEight = ({ columns = [], imageColumn }) => {
-  // Render one card group (e.g. Mobile, Laptop, EarPhone)
-  const renderCardGrid = (title, items) => (
-    <div className="border bg-white rounded-3 p-3 h-100">
-      {/* Title and right arrow button */}
-      <div className="d-flex justify-content-between align-items-center mb-3 px-1">
-        <h5 className="mb-0 fw-bold">{title}</h5>
-        <button
-          className="border-0 bg-primary text-white rounded-circle d-flex justify-content-center align-items-center"
-          style={{ width: '28px', height: '28px' }}
-        >
-          <FaChevronRight size={18} />
-        </button>
-      </div>
 
-      {/* Grid of cards (2 per row) */}
-      <div className="row g-2">
-        {items.map((item, idx) => (
-          <div className="col-6" key={idx}>
-            <div className="border rounded-3 p-2 text-center bg-white h-100">
-              <img
+const renderCardGrid = (title, items) => (
+  <div className="border bg-white rounded-3 p-1 h-100 ">
+    {/* Title row */}
+    <div className="d-flex justify-content-between align-items-center mb-1 mt-2 mt-lg-0 px-1">
+      <p className="m-0 section-title fw-semibold text-black">{title}</p>
+      <button className='border-0 bg-primary text-white rounded-circle d-flex justify-content-center align-items-center fs-5 p-1'>
+        <FaChevronRight size={18} />
+      </button>
+    </div>
+
+    {/* Grid of product cards */}
+    <div className="row g-sm-0 g-1 m-0 p-0">
+      {items.map((item, idx) => (
+        <div className="col-6 mb-0 mb-lg-0 g-1" key={idx}>
+
+            <Link to={'/'} className="border bg-white rounded-3 p-2 p-lg-1 text-center cus-bg h-100 d-flex justify-content-between align-items-center flex-column text-decoration-none product">
+
+              <div className='three-coontainer-img  image-zoom-wrapper'>
+                <img
                 src={item.image}
                 alt={item.title}
-                className="img-fluid mb-2"
+
+                className="mb-2 bg-white zoom-hover "
                 style={{
-                  height: '150px',
-                  maxHeight: '180px',
                   objectFit: 'contain',
+                  width:'100%',
+                  height:'100%'
                 }}
               />
-              <h6 className="fw-bold mb-1">{item.title}</h6>
-              <p className="text-muted mb-0">{item.discount}</p>
-            </div>
+              </div>
+              <div>
+                <h6 className="fw-semibold section-product-name">{item.title}</h6>
+              <p className="text-lg-muted mb-0 section-product-name-offer text-success fw-bold">{item.discount}</p>
+              </div>
+              
+            </Link>
+            
           </div>
-        ))}
+      ))}
+    </div>
+
+    {/* ⬅️ Updated Mobile View Button to match SectionFour structure */}
+    <div className='p-1 d-flex d-lg-none'>
+      <div className='d-flex d-lg-none w-100 justify-content-center align-items-center border bd rounded bg-light'>
+        <Link href="# " className="w-100 py-2 shadow-lg text-center text-decoration-none text-dark fs-6 fw-semibold">View More <span><MdKeyboardArrowRight size={18} /></span></Link>
       </div>
     </div>
-  );
+  </div>
+);
+
+// ---
+
+const SectionEight = ({ columns = [], imageColumn, reverse = false }) => {
 
   return (
-    <div className="container-fluid custom-bg p-0 m-0 mt-2">
-      <div className="row g-1 align-items-stretch m-0 p-0">
-        {/* Loop through each product section */}
+    <div className="container-fluid p-1 m-0">
+      {/* ⬅️ Changed p-2 to p-1 to match SectionFour */}
+      <div
+        className={`row g-1 align-items-stretch ${reverse ? 'flex-lg-row-reverse' : ''
+          }`}
+      >
+        {/* Product Columns */}
         {columns.map((col, index) => (
-
           <div className="col-12 col-sm-6 col-md-12 col-lg-4" key={index}>
             {renderCardGrid(col.title, col.items)}
           </div>
         ))}
 
-        {/* Optional image column */}
-        {imageColumn && (
-          <div className="col-12 col-sm-12 col-md-12 col-lg-6">
-            <div className="border bg-white rounded-3 h-100 overflow-hidden p-0">
-              <img
-                src={imageColumn.imageUrl}
-                alt={imageColumn.alt || 'Showcase'}
-                className="w-100 h-100"
-                style={{
-                  objectFit: 'cover',
-                  display: 'block',
-                }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-      <div>
-        <button className='btn btn-primary d-flex justify-content-center align-items-center d-lg-none w-100'>View All</button>
+        
       </div>
     </div>
   );

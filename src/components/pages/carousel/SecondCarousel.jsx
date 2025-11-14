@@ -1,126 +1,203 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { FaArrowCircleRight, FaArrowCircleLeft } from "react-icons/fa";
-import { IoIosArrowBack, IoIosArrowForward } from 'react-icons/io';
-import { MdExpandLess, MdKeyboardArrowRight } from "react-icons/md";
-import { Link } from 'react-router';
+import React, { useRef, useState, useEffect } from "react";
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import { MdKeyboardArrowRight } from "react-icons/md";
+import { Link } from "react-router-dom"; // ✅ Correct import
 
-
-const SecondCarousel = ({
-  products,
-  title = "Products",
-  badgeText = ""
-}) => {
+const SecondCarousel = ({ apiUrl, title = "Products", badgeText = "" }) => {
   const scrollRef = useRef(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [screenSize, setScreenSize] = useState("sm");
+
+  // 🧠 Fetch Data from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch(apiUrl);
+        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+        const data = await res.json();
+        setProducts(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [apiUrl]);
+
+  // 🧩 Responsive and Scroll Logic
+  const updateScreenSize = () => {
+    const width = window.innerWidth;
+    if (width >= 1200) setScreenSize("xl");
+    else if (width >= 992) setScreenSize("lg");
+    else if (width >= 768) setScreenSize("md");
+    else setScreenSize("sm");
+  };
 
   const updateScrollButtons = () => {
     const container = scrollRef.current;
     if (!container) return;
-
     const { scrollLeft, scrollWidth, clientWidth } = container;
-    setCanScrollLeft(scrollLeft > 0);
-    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1); // -1 for rounding errors
+    setCanScrollLeft(scrollLeft > 5);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 5);
   };
 
   const scroll = (direction) => {
     const container = scrollRef.current;
-    const scrollAmount = 300;
+    const cardElement = container.querySelector(".scroll-card");
+    const cardWidth = cardElement ? cardElement.offsetWidth : 200;
+    const scrollAmount = cardWidth * 2;
+
     if (container) {
       container.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
       });
     }
   };
 
   useEffect(() => {
-    updateScrollButtons(); // Run once on mount
+    updateScreenSize();
+    updateScrollButtons();
 
     const container = scrollRef.current;
     if (!container) return;
 
-    // Update on scroll
     container.addEventListener("scroll", updateScrollButtons);
-
-    // Update on resize
     window.addEventListener("resize", updateScrollButtons);
+    window.addEventListener("resize", updateScreenSize);
 
-    // Cleanup
     return () => {
       container.removeEventListener("scroll", updateScrollButtons);
       window.removeEventListener("resize", updateScrollButtons);
+      window.removeEventListener("resize", updateScreenSize);
     };
-  }, []);
+  }, [products]);
+
+  const getResponsiveCardStyle = (size) => {
+    let widthPercentage;
+    switch (size) {
+      case "xl":
+        widthPercentage = "20%";
+        break; // 5 cards
+      case "lg":
+        widthPercentage = "25%";
+        break; // 4 cards
+      case "md":
+        widthPercentage = "33.333%";
+        break; // 3 cards
+      default:
+        widthPercentage = "45%";
+        break; // 2 cards
+    }
+    const margin = 5;
+    const totalGutter = 2 * margin;
+    return {
+      width: `calc(${widthPercentage} - ${totalGutter}px)`,
+      flexShrink: 0,
+      margin: `${margin}px`,
+    };
+  };
+
+  if (loading) return <div className="text-center p-5">Loading products...</div>;
+  if (error) return <div className="text-center text-danger p-5">Error: {error}</div>;
 
   return (
-    <div className="horizontal-scroll-wrapper position-relative bg-white pt-3 m-0 border bd">
-      <div className='d-flex justify-content-between align-items-start'>
-        <p className="fw-semibold fs-5 fs-lg-4  mb-3 ms-3 ">{title}</p>
-        {/* <button className="bg-theme border bd px-1 py-1 px-lg-2 py-lg-1 circle d-flex align-items-center justify-content-center">
-          <span className='d-none d-lg-flex'>View All{" "}</span>
-          <MdKeyboardArrowRight size={19} />
-        </button> */}
-        <button className="bg-theme border bd px-2 py-1 rounded d-none d-lg-flex">
-          View All
-          <MdExpandLess size={20} style={{ transform: "rotate(90deg)" }} />
-        </button>
+    <div className="horizontal-scroll-wrapper position-relative bg-white m-0 px-0 border">
+      <div className="d-flex justify-content-between align-items-center">
+        <p className="fw-semibold fs-5 fs-lg-4 my-2 ms-1">{title}</p>
 
+        {/* View All Button */}
+        <Link
+          to="/cart"
+          className="d-none d-lg-flex align-items-center justify-content-center rounded bg-theme px-2 py-1 text-white text-decoration-none me-1 my-2"
+        >
+          View All <MdKeyboardArrowRight size={19} />
+        </Link>
       </div>
 
-      {/* Show arrows conditionally */}
+      {/* Scroll Arrows */}
       {canScrollLeft && (
+        <button className="scroll-arrow left" onClick={() => scroll("left")}>
+          <span className="left-arr-carousel text-black bg-white ms-3">
+            <IoIosArrowBack />
+          </span>
+        </button>
+      )}
+      {canScrollRight && (
         <button
-          className="scroll-arrow left align-items-center justify-content-end border-0 ms-5 d-none d-lg-flex"
-          onClick={() => scroll('left')}
+          className="scroll-arrow right d-sm-none d-lg-flex align-items-center justify-content-end"
+          onClick={() => scroll("right")}
         >
-          <span className="left-arr-carousel text-black bg-white" ><IoIosArrowBack />
+          <span className="right-arr-carousel text-black bg-white">
+            <IoIosArrowForward />
           </span>
         </button>
       )}
 
-      {canScrollRight && (
-        <button
-          className="scroll-arrow right  align-items-center justify-content-end border-0 me-2 d-none d-lg-flex"
-          onClick={() => scroll('right')}
-          aria-label="Scroll right"
-        >
-          <span className=" right-arr-carousel text-black bg-white"><IoIosArrowForward /></span>
-        </button>
-      )}
-
-      <div className="scroll-container" ref={scrollRef}>
+      {/* Scrollable Container */}
+      <div
+        className="scroll-container d-flex flex-nowrap align-items-start overflow-x-scroll px-0 m-0 gap-1 px-1 py-1"
+        ref={scrollRef}
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
         {products.map((product, index) => (
-          <div className="scroll-card  border pb-1 pb-lg-0" key={index}>
-            <div className="image-container bg-white ">
+          <Link
+            key={index}
+            to="#"
+            className="scroll-card border d-flex flex-column p-1 h-100 m-0 text-decoration-none text-dark"
+            style={getResponsiveCardStyle(screenSize)}
+          >
+            <div
+              className="image-container bg-white position-relative w-100"
+              style={{
+                overflow: "hidden",
+                aspectRatio: "1 / 1",
+                marginBottom: "8px",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
               <img
                 src={product.img}
                 alt={product.title}
-                className="product-image zoom-hover"
+                className="product-image w-100 h-100"
+                style={{ objectFit: "contain" }}
               />
-              <span className="badge bg-primary position-absolute top-0 start-0 m-1">
-                {product.badge}
-              </span>
+              {product.badge && (
+                <span className="badge bg-primary position-absolute top-0 start-0 m-1">
+                  {product.badge}
+                </span>
+              )}
             </div>
 
-            <div className="text-center">
-              <div className="d-none d-lg-flex justify-content-center align-item-center bg-theme text-uppercase text-white fw-medium mt-1 fs-7 fs-md-6">
-                {badgeText}
-              </div>
-              {/* <p className="medium mb-0 title text-truncate px-2">{product.title}</p> */}
-              <Link
-                to="#"
-                className="product-name text-truncate d-block small px-1 text-center">
+            <div className="d-flex flex-column p-1 w-100 flex-grow-1 justify-content-end">
+              {badgeText && (
+                <div className="d-none d-lg-flex justify-content-center align-items-center bg-theme text-uppercase text-white fw-medium mt-1 fs-7 border w-100">
+                  {badgeText}
+                </div>
+              )}
+              <p className="product-name text-truncate fs-6 mt-1 text-center mb-1">
                 {product.title}
-              </Link>
-              <p className="mb-0 title p-1">
-                ₹{product.price}{" "}
-                <del className="txsm text-muted title">₹{product.originalPrice}</del>{" "}
-                <span className="text-success fw-bold txsm">{product.discount}</span>
+              </p>
+              <p className="mb-0 p-0 small text-center">
+                <span className="fw-bold fs-6">₹{product.price}</span>{" "}
+                <del className="text-muted" style={{ fontSize: "0.7rem" }}>
+                  ₹{product.originalPrice}
+                </del>{" "}
+                <span className="text-success fw-bold small">
+                  {product.discount}
+                </span>
               </p>
             </div>
-          </div>
+          </Link>
         ))}
+        <div style={{ width: "10px", flexShrink: 0 }}></div>
       </div>
     </div>
   );

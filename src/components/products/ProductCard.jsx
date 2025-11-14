@@ -3,6 +3,7 @@ import { GoHeartFill } from "react-icons/go";
 import { BsShieldCheck } from 'react-icons/bs';
 import { TfiAgenda } from 'react-icons/tfi';
 import './Product.css'
+import { Link } from 'react-router';
 
 // Utility map for displaying sizes
 const SIZES = {
@@ -13,9 +14,9 @@ const SIZES = {
 
 const ProductCard = ({ product }) => {
     const [isWished, setIsWished] = useState(false);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0); 
-    const [isHovering, setIsHovering] = useState(false); 
-    const intervalRef = useRef(null); 
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [isHovering, setIsHovering] = useState(false);
+    const intervalRef = useRef(null);
 
     // Helper function to format price
     const formatPrice = (price) => {
@@ -28,14 +29,14 @@ const ProductCard = ({ product }) => {
     };
 
     // --- HOVER SWIPE LOGIC ---
-    
+
     const startSwipe = () => {
         // 1. Set hovering state
-        setIsHovering(true); 
+        setIsHovering(true);
         if (!product.image || product.image.length <= 1) return;
         if (intervalRef.current) clearInterval(intervalRef.current);
         intervalRef.current = setInterval(() => {
-            setCurrentImageIndex(prevIndex => 
+            setCurrentImageIndex(prevIndex =>
                 (prevIndex + 1) % product.image.length
             );
         }, 1000);
@@ -47,10 +48,10 @@ const ProductCard = ({ product }) => {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
         }
-        setIsHovering(false); 
-        setCurrentImageIndex(0); 
+        setIsHovering(false);
+        setCurrentImageIndex(0);
     };
-    
+
     useEffect(() => {
         return () => {
             if (intervalRef.current) {
@@ -58,9 +59,9 @@ const ProductCard = ({ product }) => {
             }
         };
     }, []);
-    const imageSrc = 
-        (product.image && product.image[currentImageIndex]) || 
-        "https://placehold.co/400x550/cccccc/000?text=Image+Missing"; 
+    const imageSrc =
+        (product.image && product.image[currentImageIndex]) ||
+        "https://placehold.co/400x550/cccccc/000?text=Image+Missing";
 
     // --- YOUR ORIGINAL STYLES ---
     const cardStyle = {
@@ -103,124 +104,137 @@ const ProductCard = ({ product }) => {
         borderRadius: '12px',
         fontSize: '0.7rem',
         fontWeight: '600',
-        backgroundColor: '#d1fae5', 
-        color: '#059669', 
+        backgroundColor: '#d1fae5',
+        color: '#059669',
     };
     // ----------------------------
 
     return (
-        <div 
-            className="product-card" 
-            style={{cardStyle}}
-            // Apply hover handlers to the main card container
-            onMouseEnter={startSwipe}
-            onMouseLeave={stopSwipe}
-        >
-            
-            {/* Product Image Container */}
-            <div style={{ overflow: 'hidden', position:'relative' }}>
-                
-                {/* Wishlist Heart Icon */}
-                <button 
-                    onClick={toggleWishlist}
-                    className='heart-button-style text-muted bg-muted z-1'
-                    style={{ position: 'absolute', top: '10px', right: '10px', border: 'none', background: 'none' }}
+        <>
+            <Link to={'/product'}  // dynamic product link
+                 className="text-decoration-none text-dark"
+                 style={{ flexGrow: 1 }}>
+                <div
+                    className="product-card"
+                    onMouseEnter={startSwipe}
+                    onMouseLeave={stopSwipe}
                 >
-                    <GoHeartFill size={28} style={heartStyle}/>
-                </button>
+                    <div
+                        className="product-card"
+                        style={{ cardStyle }}
+                        // Apply hover handlers to the main card container
+                        onMouseEnter={startSwipe}
+                        onMouseLeave={stopSwipe}
+                    >
 
-                {/* The Image (Uses dynamic source and lazy loading) */}
-                <img 
-                    src={imageSrc} 
-                    alt={product.title} 
-                    style={{ 
-                        width: '100%', 
-                        height: 'auto', 
-                        objectFit: 'cover', 
-                        display: 'block',
-                        transition: 'opacity 0.3s ease-in-out', 
-                    }}
-                    className='zoom-hover'
-                    onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/400x550/cccccc/000?text=Image+Missing"; }}
-                    loading={'lazy'} 
-                />
+                        {/* Product Image Container */}
+                        <div style={{ overflow: 'hidden', position: 'relative' }}>
 
-                {/* Optional: Image Dots Indicator (Only shows when hovering and swiping) */}
-                {isHovering && product.image && product.image.length > 1 && (
-                    <div style={{ 
-                        position: 'absolute', 
-                        bottom: '8px', 
-                        left: '50%', 
-                        transform: 'translateX(-50%)', 
-                        zIndex: 10, 
-                        display: 'flex' 
-                    }}>
-                        {product.image.map((_, index) => (
-                            <span
-                                key={index}
+                            {/* Wishlist Heart Icon */}
+                            <button
+                                onClick={toggleWishlist}
+                                className='heart-button-style text-muted bg-muted z-1'
+                                style={{ position: 'absolute', top: '10px', right: '10px', border: 'none', background: 'none' }}
+                            >
+                                <GoHeartFill size={28} style={heartStyle} />
+                            </button>
+
+                            {/* The Image (Uses dynamic source and lazy loading) */}
+                            <img
+                                src={imageSrc}
+                                alt={product.title}
                                 style={{
-                                    height: '5px',
-                                    width: '5px',
-                                    backgroundColor: index === currentImageIndex ? '#333' : 'rgba(255,255,255,0.8)',
-                                    border: '1px solid #333',
-                                    borderRadius: '50%',
-                                    margin: '0 3px',
+                                    width: '100%',
+                                    height: 'auto',
+                                    objectFit: 'cover',
+                                    display: 'block',
+                                    transition: 'opacity 0.3s ease-in-out',
                                 }}
-                            ></span>
-                        ))}
-                    </div>
-                )}
-            </div>
+                                className='zoom-hover'
+                                onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400x550/cccccc/000?text=Image+Missing"; }}
+                                loading={'lazy'}
+                            />
 
-            {/* Product Details (Your original layout) */}
-            <div style={{ padding: '12px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                
-                {/* Sponsored Label */}
-                {product.sponsored && (
-                    <small style={{ color: '#666', display: 'flex', alignItems: 'center',  fontSize: '0.7rem', fontWeight: 500 }}>
-                        <TfiAgenda size={12} style={{ marginRight: '4px', color: '#999' }} />
-                        Sponsored
-                    </small>
-                )}
-
-                {/* Brand and Assured */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', }}>
-                    <span style={{ fontWeight: '700', textTransform: 'uppercase', fontSize: '0.8rem', color: '#111' }}>{product.brand}</span>
-                    {product.assured && (
-                        <div style={assuredBadgeStyle}>
-                            <BsShieldCheck size={14} style={{ marginRight: '3px' }} />
-                            Assured
+                            {/* Optional: Image Dots Indicator (Only shows when hovering and swiping) */}
+                            {isHovering && product.image && product.image.length > 1 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: '8px',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    zIndex: 10,
+                                    display: 'flex'
+                                }}>
+                                    {product.image.map((_, index) => (
+                                        <span
+                                            key={index}
+                                            style={{
+                                                height: '5px',
+                                                width: '5px',
+                                                backgroundColor: index === currentImageIndex ? '#333' : 'rgba(255,255,255,0.8)',
+                                                border: '1px solid #333',
+                                                borderRadius: '50%',
+                                                margin: '0 3px',
+                                            }}
+                                        ></span>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
 
-                {/* Product Title */}
-                <h4 className='pc-title'>
-                    {product.title}
-                </h4>
+                        {/* Product Details (Your original layout) */}
+                        <div style={{ padding: '12px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
 
-                {/* Price Section */}
-                <div className='mb-2 d-flex align-items-baseline flex-wrap'>
-                    <span style={{ fontWeight: '800', fontSize: '0.8rem', color: '#111', marginRight: '8px' }}>
-                        ₹{formatPrice(product.discountedPrice)}
-                    </span>
-                    <small style={{ color: '#888', textDecoration: 'line-through', marginRight: '4px', fontSize: '0.70rem' }}>
-                        ₹{formatPrice(product.originalPrice)}
-                    </small>
-                    <span style={{ color: '#ef4444', fontWeight: '700', fontSize: '0.70rem' }}>
-                        ({product.discountPercent}% OFF)
-                    </span>
-                </div>
+                            {/* Sponsored Label */}
+                            {product.sponsored && (
+                                <small style={{ color: '#666', display: 'flex', alignItems: 'center', fontSize: '0.7rem', fontWeight: 500 }}>
+                                    <TfiAgenda size={12} style={{ marginRight: '4px', color: '#999' }} />
+                                    Sponsored
+                                </small>
+                            )}
 
-                {/* Sizes */}
-                <div className='d-flex flex-wrap align-items-center mt-auto '>
-                    <span style={{ color: '#666', fontWeight: '600', fontSize: '0.75rem', marginRight: '4px' }} className='border'>Sizes:</span>
-                    {product.sizes.map((size) => (
-                      <span className='sizestyle' key={size}>{size}</span>
-                    ))}
+                            {/* Brand and Assured */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', }}>
+                                <span style={{ fontWeight: '700', textTransform: 'uppercase', fontSize: '0.8rem', color: '#111' }}>{product.brand}</span>
+                                {product.assured && (
+                                    <div style={assuredBadgeStyle}>
+                                        <BsShieldCheck size={14} style={{ marginRight: '3px' }} />
+                                        Assured
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Product Title */}
+                            <h4 className='pc-title'>
+                                {product.title}
+                            </h4>
+
+                            {/* Price Section */}
+                            <div className='mb-2 d-flex align-items-baseline flex-wrap'>
+                                <span style={{ fontWeight: '800', fontSize: '0.8rem', color: '#111', marginRight: '8px' }}>
+                                    ₹{formatPrice(product.discountedPrice)}
+                                </span>
+                                <small style={{ color: '#888', textDecoration: 'line-through', marginRight: '4px', fontSize: '0.70rem' }}>
+                                    ₹{formatPrice(product.originalPrice)}
+                                </small>
+                                <span style={{ color: '#ef4444', fontWeight: '700', fontSize: '0.70rem' }}>
+                                    ({product.discountPercent}% OFF)
+                                </span>
+                            </div>
+
+                            {/* Sizes */}
+                            <div className='d-flex flex-wrap align-items-center mt-auto '>
+                                <span style={{ color: '#666', fontWeight: '600', fontSize: '0.75rem', marginRight: '4px' }} className='border'>Sizes:</span>
+                                {product.sizes.map((size) => (
+                                    <span className='sizestyle' key={size}>{size}</span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </Link>
+
+        </>
     );
 };
 

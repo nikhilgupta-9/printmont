@@ -1,0 +1,35 @@
+.announcement-section {
+  background: linear-gradient(135deg, #e6f0ff, #f7f9ff);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  height: auto;
+  /* margin: 20px auto; */
+}
+
+.icon-wrapper {
+  /* background-color: #007bff; */
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+}
+
+.announcement-icon {
+  font-size: 2rem;
+}
+
+@media (max-width: 768px) {
+  .icon-wrapper {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+
+  .announcement-section {
+    text-align: center;
+    padding: 25px 15px;
+  }
+}

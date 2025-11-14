@@ -18,7 +18,7 @@ const User = () => {
     <div className="container bg-transparent p-0">
       <div className="row p-0 m-0">
         {/* Sidebar */}
-        <div className="card bg-transparent border-0 m-0 p-2 col-3">
+        <div className="card bg-transparent border-0 m-0 p-2 col-3 d-none d-lg-block">
           {/* User Info */}
           <div className=' bg-white shadow-sm rounded p-2'>
             <div className="card-body d-flex align-items-center">
@@ -69,7 +69,7 @@ const User = () => {
             </NavLink>
 
             <NavLink
-              to="addresses"
+              to="manage-address"
               className={({ isActive }) =>
                 `d-flex justify-content-between align-items-center w-100 px-4 py-2 text-start product ${
                   isActive ? 'bg-light text-primary' : ''
@@ -127,7 +127,7 @@ const User = () => {
 
           {/* Logout */}
           <NavLink
-            to="logout"
+            to="/"
             className={({ isActive }) =>
               `d-flex justify-content-between align-items-center w-100 px-3 py-2 product ${
                 isActive ? 'bg-light text-primary' : ''
@@ -146,7 +146,7 @@ const User = () => {
             <strong className="d-block mb-1">Frequently Visited:</strong>
             <div className="d-flex gap-3 flex-wrap">
               <NavLink
-                to="track-order"
+                to="/track-order"
                 className={({ isActive }) =>
                   `text-primary d-flex align-items-center ${
                     isActive ? 'text-decoration-underline' : ''
@@ -156,7 +156,7 @@ const User = () => {
                 <FaMapMarkerAlt className="me-1" /> Track Order
               </NavLink>
               <NavLink
-                to="help"
+                to="/help-center"
                 className={({ isActive }) =>
                   `text-primary d-flex align-items-center ${
                     isActive ? 'text-decoration-underline' : ''
@@ -170,7 +170,7 @@ const User = () => {
         </div>
 
         {/* Right Side Content */}
-        <div className="col-9 p-2">
+        <div className="col-12 col-lg-9  p-2">
           <Outlet />
         </div>
       </div>

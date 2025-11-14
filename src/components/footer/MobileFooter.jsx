@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 import { PiShieldCheckFill } from "react-icons/pi";
 import { FaXTwitter } from "react-icons/fa6";
+import { Link } from "react-router";
 
 const MobileFooter = () => {
     return (
@@ -35,15 +36,15 @@ const MobileFooter = () => {
 
             {/* Rounded Buttons */}
             <div className="d-flex justify-content-center gap-2 mb-3 flex-wrap">
-                <button className=" px-3 py-2 btn-small-text fw-bold">
+                <Link to={'/contact'} className=" px-3 py-2 btn-small-text fw-bold text-decoration-none">
                     CONTACT US
-                </button>
-                <button className=" px-3 btn-small-text fw-bold">
+                </Link>
+                <Link to={'/quick-links'} className=" px-3 py-2 btn-small-text fw-bold text-decoration-none">
                     QUICK LINKS
-                </button>
-                <button className=" px-3 btn-small-text fw-bold">
+                </Link>
+                <Link to={'/help-center'} className=" px-3 py-2 btn-small-text fw-bold text-decoration-none">
                     HELP NOW
-                </button>
+                </Link>
 
             </div>
 
@@ -58,11 +59,11 @@ const MobileFooter = () => {
 
             {/* Social Media */}
             <div className="d-flex justify-content-center gap-3 my-3">
-                <a href="#" className="social-icon facebook"><FaFacebookF className="fs-5"/></a>
-                <a href="#" className="social-icon twitter"><FaXTwitter /></a>
-                <a href="#" className="social-icon instagram"><FaInstagram className="fs-3"/></a>
-                <a href="#" className="social-icon linkedin"><FaLinkedinIn /></a>
-                <a href="#" className="social-icon youtube"><FaYoutube className="fs-5"/></a>
+                <a href="https://facebook.com" target="_blank" className="social-icon facebook"><FaFacebookF className="fs-5"/></a>
+                <a href="#" target="_blank" className="social-icon twitter"><FaXTwitter /></a>
+                <a href="#" target="_blank" className="social-icon instagram"><FaInstagram className="fs-3"/></a>
+                <a href="#" target="_blank" className="social-icon linkedin"><FaLinkedinIn /></a>
+                <a href="#" target="_blank" className="social-icon youtube"><FaYoutube className="fs-5"/></a>
 
             </div>
 

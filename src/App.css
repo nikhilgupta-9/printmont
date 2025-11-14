@@ -17,6 +17,31 @@ body {
 .reviews-container h5 {
   font-size: 1.1rem;
 }
+.link-text-white{
+  color: white !important;
+}
+.link-text-black{
+  color: black;
+}
+.link-text-white,.link-text-black:hover{
+  color: #0066cc !important;
+  text-decoration: none;
+}
+.red{
+  border: 2px solid red !important;
+}
+.blue{
+  border: 1px solid blue;
+}
+.bro{
+  border: 1px solid brown;
+}
+.light-bg-theme{
+  background-color: rgb(240, 242, 245);
+}
+.bg-gray{
+  background-color: rgb(224, 224, 224);
+}
 
 .progress {
   background-color: #eee;
@@ -58,6 +83,7 @@ font-size: 3rem;
   border-top-right-radius: 8px;
   border-bottom-right-radius: 8px;
   background:white;
+  /* margin-left: 35px; */
 }
 
 .mobile-footer {
@@ -233,11 +259,16 @@ footer i {
 }
 
 .zoom-hover {
-  transition: transform 0.2s ease-in-out;
+  transition: transform 0.2s ease-in;
+  /* REMOVE: overflow: hidden; */
 }
 
 .zoom-hover:hover {
   transform: scale(1.15);
+}
+
+.image-zoom-wrapper {
+  overflow: hidden;
 }
 .square-container:hover img {
   transform: scale(1.15);
@@ -394,12 +425,17 @@ border-radius: 10px;
 }
 
 .bg-theme{
-  background-color: rgb(11, 83, 161);
+  background-color: rgb(11, 83, 161) !important;
   color: white;
+}
+.text-theme{
+  color: rgb(11, 83, 161) !important;
+}
+.text-brown{
+  color: rgb(69, 7, 7);
 }
 .scroll-container {
   display: flex;
-  gap: 5px;
   overflow-x: auto;
   scroll-behavior: smooth;
 }
@@ -741,16 +777,15 @@ input:focus {
 .wishlist-icon-main {
     z-index: 10;
     cursor: pointer;
-    background-color: #fff;
+    background-color: white;
     border-radius: 50%;
     margin-top: 10px;
     margin-right: 15px;
-    padding: 9px;
-    box-shadow: 0px 0px 5px 1px rgba(0,0,0,0.1);
+    padding: 7px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #878787 !important; 
+    color: rgb(201, 200, 200) !important;
     
 }
 .wishicon{
@@ -902,7 +937,6 @@ input:focus {
   .scroll-container {
     display: flex;
     overflow-x: auto;
-    gap: 4px;
     scroll-behavior: smooth;
     padding-bottom: 10px;
     scrollbar-width: none; /* Firefox */
@@ -948,7 +982,7 @@ input:focus {
     height: 35px;
     font-size: 20px;
     cursor: pointer;
-    z-index: 10;
+    z-index: 2;
     display: none; /* hidden by default */
   }
   
@@ -1130,8 +1164,7 @@ input:focus {
 
 .categories {
   display: flex;
-  gap: 10px;
-  padding: 10px;
+  gap: 5px;
   overflow-x: auto;
 }
 
@@ -1285,6 +1318,72 @@ input:focus {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   animation: slideIn 0.3s ease-in-out;
 }
+.hover-bg-light {
+  color: black;
+  font-weight: lighter;
+  font-size: small;
+}
+
+.hover-bg-light:hover {
+  background-color: rgb(240, 245, 255);
+  transition: background-color 0.2s ease;
+  text-shadow: 0 0 0px currentColor;
+}
+
+.over {
+  color: rgb(95, 95, 95);
+}
+.over:hover {
+  color: #0066cc;
+}
+
+.categories-shadow {
+  box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px,
+    rgba(0, 0, 0, 0.23) 0px 6px 6px;
+}
+
+.transition-arrow {
+  transition: transform 0.3s ease;
+}
+.rotate-arrow {
+  transform: rotate(180deg);
+}
+
+.dropdown-panel {
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.dropdown-panel.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.pa{
+  padding: 3px;
+}
+.custom-dropdown .dropdown-toggle {
+  background-color: transparent;
+  color: rgb(11, 83, 161);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 5px;
+
+}
+
+.custom-dropdown .dropdown-toggle:hover {
+  background-color: rgb(11, 83, 161);
+  color: white;
+}
+.carousel-item img {
+  touch-action: pan-y;
+}
+
+
 
 @keyframes slideIn {
   from {
@@ -1391,7 +1490,7 @@ input:focus {
 @media (max-width: 767.98px) {
 
   .scroll-card {
-      width: 45%;
+      width: 30%;
     }
 
 
@@ -1555,6 +1654,14 @@ input:focus {
   .cus-bg{
     background-color: transparent;
   }
+  .image-container{
+    height: auto;
+    width: 140px;
+  }
+  .scroll-card{
+    width: 23%;
+  }
+  
   
 
 }

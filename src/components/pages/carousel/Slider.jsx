@@ -1,26 +1,59 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import 'swiper/css';
 import 'swiper/css/pagination';
-
-// Import Swiper React components
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 
-// Import Swiper styles
+const Slider = ({ apiUrl = '/data/slides.json' }) => {
+  const [slides, setSlides] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-const Slider = () => {
+  useEffect(() => {
+    const fetchSlides = async () => {
+      try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+
+        // Read response as text for debugging
+        const text = await response.text();
+
+        // Try to parse JSON
+        const data = JSON.parse(text);
+
+        setSlides(data);
+      } catch (err) {
+        console.error("❌ Fetch Error:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSlides();
+  }, [apiUrl]);
+
+  if (loading) return <div className="text-center p-5">Loading slider...</div>;
+  if (error) return <div className="text-center text-danger p-5">Error: {error}</div>;
+
   return (
-    <>
-      <Swiper pagination={true} modules={[Pagination]} className="mySwiper my-1 d-block d-lg-none">
-        <SwiperSlide><img src="./crouselimages/swiper-1.jpg" width={"100%"} className='object-cover-fit' alt="" /></SwiperSlide>
-        <SwiperSlide><img src="./crouselimages/swiper-2.jpg" width={"100%"} className='object-cover-fit' alt="" /></SwiperSlide>
-        <SwiperSlide><img src="./crouselimages/swiper-3.jpg" width={"100%"} className='object-cover-fit' alt="" /></SwiperSlide>
-        <SwiperSlide><img src="./crouselimages/swiper-4.jpg" width={"100%"} className='object-cover-fit' alt="" /></SwiperSlide>
-        <SwiperSlide><img src="./crouselimages/swiper-5.jpg" width={"100%"} className='object-cover-fit' alt="" /></SwiperSlide>
-        <SwiperSlide><img src="./crouselimages/swiper-6.jpeg" width={"100%"} className='object-cover-fit' alt="" /></SwiperSlide>
-      </Swiper>
-    </>
-  )
-}
+    <Swiper
+      pagination={{ clickable: true }}
+      modules={[Pagination]}
+      className="mySwiper my-1 d-block d-lg-none"
+    >
+      {slides.map((slide, index) => (
+        <SwiperSlide key={index}>
+          <img
+            src={slide.url}
+            alt={`slide-${index + 1}`}
+            width="100%"
+            className="object-cover-fit"
+          />
+        </SwiperSlide>
+      ))}
+    </Swiper>
+  );
+};
 
-export default Slider
+export default Slider;

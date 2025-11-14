@@ -31,7 +31,6 @@ export const Singleproductdata = {
   originalPrice: '16,999',
   discount: '35%',
   offerText: "Big Billion Days",
-  offerEnds: "2025-10-05T23:59:59",
   offerEnds: Date.now() + 1,
   images: [
     'https://picsum.photos/id/237/500/500',

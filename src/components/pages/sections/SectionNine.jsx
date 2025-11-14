@@ -5,11 +5,11 @@ import { sampleProducts, topImages } from '../../../../data/data';
 
 const SectionNine = () => {
     return (
-        <div className="container py-5 my-2 section-nine-bg">
+        <div className="container mx-0 px-0 py-5 my-2 section-nine-bg">
             {/* Top 3 images */}
-            <div className="row mb-3">
+            <div className="row mb-3 mx-0 px-1">
                 {topImages.map((image) => (
-                    <div className="col-4 mt-3 p-0" key={image.id}>
+                    <div className="col-4 mt-3 p-0 p-1" key={image.id}>
                         <img
                             src={image.src}
                             alt={image.alt}
@@ -21,7 +21,7 @@ const SectionNine = () => {
             </div>
 
             {/* Bottom 3 cards */}
-            <div className="row">
+            <div className="row px-2 mx-0">
                 {sampleProducts.map((product) => (
                     <div className="col-4 m-0 p-0 " key={product.id}>
                         <div className="card h-100 bd mx-1 mt-1 mb-0 ">

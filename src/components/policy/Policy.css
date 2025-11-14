@@ -1,0 +1,107 @@
+.policy-page {
+  min-height: 80vh;
+  background-color: #ff0000;
+  padding: 2rem 1rem;
+}
+
+/* ---------- Tabs ---------- */
+.policy-tab {
+  font-weight: 500;
+  color: #555 !important;
+  padding: 10px 20px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.policy-tab:hover {
+  color: #0d6efd !important;
+}
+
+.active-tab {
+  border-bottom: 3px solid #0d6efd !important;
+  color: #0d6efd !important;
+}
+
+/* ---------- Content ---------- */
+.policy-content {
+  background-color: #ffffff;
+  border-radius: 12px;
+  line-height: 1.7;
+  color: #444;
+  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.policy-content h4 {
+  color: #0d6efd;
+}
+
+.policy-content ul {
+  list-style: disc;
+  margin-left: 2rem;
+}
+
+/* ---------- RESPONSIVE DESIGN ---------- */
+@media (max-width: 992px) {
+  .policy-page {
+    padding: 1.5rem 1rem;
+  }
+
+  .policy-content {
+    padding: 1.25rem;
+  }
+
+  .policy-tab {
+    padding: 8px 14px;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .policy-page {
+    padding: 1rem;
+  }
+
+  .policy-content {
+    padding: 1rem;
+  }
+
+  /* Make tabs scrollable horizontally */
+  .nav-tabs {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    scrollbar-width: none; 
+  }
+
+  .nav-tabs::-webkit-scrollbar {
+    display: none; /* Hide scrollbar (Chrome/Safari) */
+  }
+
+  .policy-tab {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+  }
+
+  .policy-content h4 {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .policy-tab {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  .policy-content {
+    font-size: 0.9rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+}
