@@ -1,16 +1,7 @@
-# Enable Rewrite Engine
+# In your root .htaccess (if any)
 RewriteEngine On
 
-# Set the base path to your project folder
-RewriteBase /printmont-admin/
-
-# If the file or directory exists, don't rewrite it
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
-
-# Allow direct access to files inside /api/ (no rewriting)
-RewriteRule ^api/(.*)$ api/$1 [L]
-
-# Route all other requests to index.php (for frontend routing)
-RewriteRule ^ index.php [L]
+# Handle front controller
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]

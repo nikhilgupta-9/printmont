@@ -1,88 +1,56 @@
 <?php
-header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *"); // Allow cross-origin requests
-header("Access-Control-Allow-Methods: POST, GET, OPTIONS"); // Specify allowed methods
-header("Access-Control-Allow-Headers: Content-Type");
+// api/category-api.php
+header('Content-Type: application/json');
 
-require_once '../config/database.php';
-require_once '../controllers/CategoryController.php';
-
-$database = new Database();
-$db = $database->getConnection();
-$categoryController = new CategoryController($db);
-
-$method = $_SERVER['REQUEST_METHOD'];
-
-switch ($method) {
-    case 'GET':
-        // Handle GET requests (e.g., retrieving category data)
-        if (isset($_GET['id'])) {
-            // Get a specific category by ID
-            $id = intval($_GET['id']);
-            $result = $categoryController->getCategoryById($id);
-            if ($result->num_rows > 0) {
-                $category = $result->fetch_assoc();
-                echo json_encode(["success" => true, "data" => $category]);
-            } else {
-                echo json_encode(["success" => false, "message" => "Category not found"]);
-            }
-        } else {
-            // Get all categories
-            $result = $categoryController->getAllCategories();
-            $categories = [];
-            while ($row = $result->fetch_assoc()) {
-                $categories[] = $row;
-            }
-            echo json_encode(["success" => true, "data" => $categories]);
-        }
-        break;
-
-    case 'POST':
-        $action = $_POST['action'] ?? '';
-
-        try {
-            switch ($action) {
-                case 'create':
-                    // Validate input data
-                    if (empty($_POST['name'])) {
-                        throw new Exception("Category name is required");
-                    }
-
-                    $result = $categoryController->createCategory($_POST, $_FILES);
-                    echo json_encode($result);
-                    break;
-
-                case 'update':
-                    // Validate input data
-                    if (empty($_POST['name'])) {
-                        throw new Exception("Category name is required");
-                    }
-
-                    $id = intval($_POST['id'] ?? 0);
-                    $result = $categoryController->updateCategory($id, $_POST, $_FILES);
-                    echo json_encode($result);
-                    break;
-
-                case 'delete':
-                    $id = intval($_POST['id'] ?? 0);
-                    $result = $categoryController->deleteCategory($id);
-                    echo json_encode($result);
-                    break;
-
-                default:
-                    echo json_encode(["success" => false, "message" => "Invalid action"]);
-            }
-        } catch (Exception $e) {
-            echo json_encode(["success" => false, "message" => $e->getMessage()]);
-        }
-        break;
-
-    case 'OPTIONS':
-        // Handle OPTIONS requests for CORS preflight
-        http_response_code(200);
-        break;
-
-    default:
-        echo json_encode(["success" => false, "message" => "Method not allowed"]);
+// CORS headers
+$allowed_origins = ['https://printmont.me', 'http://localhost:5173', 'http://127.0.0.1:5173'];
+$http_origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($http_origin, $allowed_origins)) {
+    header("Access-Control-Allow-Origin: $http_origin");
 }
-?>
+
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Turn off error display
+ini_set('display_errors', 0);
+error_reporting(0);
+
+try {
+    require_once(__DIR__ . '/../config/database.php');
+    require_once(__DIR__ . '/../models/CategoryModel.php');  
+    require_once(__DIR__ . '/../controllers/CategoryController.php');
+
+    $categoryController = new CategoryController();
+    
+    // Clean output buffer
+    if (ob_get_length()) {
+        ob_clean();
+    }
+    
+    $categories = $categoryController->getAllCategoriesAPI();
+    
+    echo json_encode([
+        'success' => true,
+        'data' => $categories
+    ]);
+    
+    exit();
+    
+} catch (Exception $e) {
+    if (ob_get_length()) {
+        ob_clean();
+    }
+    
+    http_response_code(500);
+    echo json_encode([
+        'success' => false, 
+        'error' => 'Server error'
+    ]);
+    exit();
+}

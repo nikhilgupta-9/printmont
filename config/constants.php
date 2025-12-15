@@ -1,6 +1,5 @@
 <?php
 define('JWT_SECRET', 'your_super_secret_jwt_key_here');
-define('BASE_URL', 'https://printmon.com/');
 define('JWT_ALGORITHM', 'HS256');
 define('UPLOAD_PATH', __DIR__ . '/../uploads/');
 define('MAX_FILE_SIZE', 5 * 1024 * 1024); // 5MB
@@ -15,4 +14,5 @@ header('Access-Control-Allow-Credentials: true');
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit(0);
 }
-?>
+
+// define('BASE_URL', 'http://localhost/printmont-backend/');
