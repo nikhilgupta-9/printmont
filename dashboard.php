@@ -1,29 +1,21 @@
 <?php
-// dashboard.php
-session_start();
+require_once 'config/database.php';
+require_once 'controllers/AuthController.php';
 
-// Debug session
-error_log("Dashboard - Session logged_in: " . ($_SESSION['logged_in'] ?? 'not set'));
-error_log("Dashboard - Session user_id: " . ($_SESSION['user_id'] ?? 'not set'));
+// session_start();
 
-// Check if user is properly logged in
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || 
-    !isset($_SESSION['user_id']) || !isset($_SESSION['email'])) {
-    error_log("Dashboard access denied - redirecting to login");
-    header("Location: login.php");
-    exit();
-}
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 	<meta name="description" content="Responsive Admin &amp; Dashboard Template based on Bootstrap 5">
 	<meta name="author" content="AdminKit">
-	<meta name="keywords" content="adminkit, bootstrap, bootstrap 5, admin, dashboard, template, responsive, css, sass, html, theme, front-end, ui kit, web">
+	<meta name="keywords"
+		content="adminkit, bootstrap, bootstrap 5, admin, dashboard, template, responsive, css, sass, html, theme, front-end, ui kit, web">
 
 	<link rel="preconnect" href="https://fonts.gstatic.com/">
 	<link rel="shortcut icon" href="img/icons/icon-48x48.png" />
@@ -42,25 +34,26 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true ||
 		}
 	</style>
 	<!-- END SETTINGS -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120946860-10"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120946860-10"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-  gtag('config', 'UA-120946860-10', { 'anonymize_ip': true });
-</script></head>
+		gtag('config', 'UA-120946860-10', { 'anonymize_ip': true });
+	</script>
+</head>
 
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
 	<div class="wrapper">
 		<?php
-         include_once "includes/side-navbar.php";
-        ?>
+		include_once "includes/side-navbar.php";
+		?>
 
 		<div class="main">
 			<?php
-         include_once "includes/top-navbar.php";
-        ?>
+			include_once "includes/top-navbar.php";
+			?>
 
 			<main class="content">
 				<div class="container-fluid p-0">
@@ -181,8 +174,9 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true ||
 												</select>
 											</div>
 											<div class="col-auto">
-												<input type="text" class="form-control form-control-sm bg-light rounded-2 border-0" style="width: 100px;"
-													placeholder="Search..">
+												<input type="text"
+													class="form-control form-control-sm bg-light rounded-2 border-0"
+													style="width: 100px;" placeholder="Search..">
 											</div>
 										</form>
 									</div>
@@ -364,7 +358,8 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true ||
 												<div class="d-flex flex-column w-100">
 													<span class="me-2 mb-1 text-muted">65%</span>
 													<div class="progress progress-sm bg-success-light w-100">
-														<div class="progress-bar bg-success" role="progressbar" style="width: 65%;"></div>
+														<div class="progress-bar bg-success" role="progressbar"
+															style="width: 65%;"></div>
 													</div>
 												</div>
 											</td>
@@ -404,7 +399,8 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true ||
 												<div class="d-flex flex-column w-100">
 													<span class="me-2 mb-1 text-muted">33%</span>
 													<div class="progress progress-sm bg-danger-light w-100">
-														<div class="progress-bar bg-danger" role="progressbar" style="width: 33%;"></div>
+														<div class="progress-bar bg-danger" role="progressbar"
+															style="width: 33%;"></div>
 													</div>
 												</div>
 											</td>
@@ -444,7 +440,8 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true ||
 												<div class="d-flex flex-column w-100">
 													<span class="me-2 mb-1 text-muted">50%</span>
 													<div class="progress progress-sm bg-warning-light w-100">
-														<div class="progress-bar bg-warning" role="progressbar" style="width: 50%;"></div>
+														<div class="progress-bar bg-warning" role="progressbar"
+															style="width: 50%;"></div>
 													</div>
 												</div>
 											</td>
@@ -484,7 +481,8 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true ||
 												<div class="d-flex flex-column w-100">
 													<span class="me-2 mb-1 text-muted">80%</span>
 													<div class="progress progress-sm bg-success-light w-100">
-														<div class="progress-bar bg-success" role="progressbar" style="width: 80%;"></div>
+														<div class="progress-bar bg-success" role="progressbar"
+															style="width: 80%;"></div>
 													</div>
 												</div>
 											</td>
@@ -524,7 +522,8 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true ||
 												<div class="d-flex flex-column w-100">
 													<span class="me-2 mb-1 text-muted">78%</span>
 													<div class="progress progress-sm bg-primary-light w-100">
-														<div class="progress-bar bg-primary" role="progressbar" style="width: 78%;"></div>
+														<div class="progress-bar bg-primary" role="progressbar"
+															style="width: 78%;"></div>
 													</div>
 												</div>
 											</td>
@@ -567,15 +566,15 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true ||
 			</main>
 
 			<?php
-             include_once "inclues/footer.php";
-            ?>
+			include_once "includes/footer.php";
+			?>
 		</div>
 	</div>
 
 	<script src="js/app.js"></script>
 
 	<script>
-		document.addEventListener("DOMContentLoaded", function() {
+		document.addEventListener("DOMContentLoaded", function () {
 			var ctx = document.getElementById("chartjs-dashboard-line").getContext("2d");
 			var gradientLight = ctx.createLinearGradient(0, 0, 0, 225);
 			gradientLight.addColorStop(0, "rgba(215, 227, 244, 1)");
@@ -649,7 +648,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true ||
 		});
 	</script>
 	<script>
-		document.addEventListener("DOMContentLoaded", function() {
+		document.addEventListener("DOMContentLoaded", function () {
 			// Pie chart
 			new Chart(document.getElementById("chartjs-dashboard-pie"), {
 				type: "pie",
@@ -679,7 +678,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true ||
 		});
 	</script>
 	<script>
-		document.addEventListener("DOMContentLoaded", function() {
+		document.addEventListener("DOMContentLoaded", function () {
 			// Bar chart
 			new Chart(document.getElementById("chartjs-dashboard-bar"), {
 				type: "bar",
@@ -723,47 +722,47 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true ||
 		});
 	</script>
 	<script>
-		document.addEventListener("DOMContentLoaded", function() {
+		document.addEventListener("DOMContentLoaded", function () {
 			var markers = [{
-					coords: [31.230391, 121.473701],
-					name: "Shanghai"
-				},
-				{
-					coords: [28.704060, 77.102493],
-					name: "Delhi"
-				},
-				{
-					coords: [6.524379, 3.379206],
-					name: "Lagos"
-				},
-				{
-					coords: [35.689487, 139.691711],
-					name: "Tokyo"
-				},
-				{
-					coords: [23.129110, 113.264381],
-					name: "Guangzhou"
-				},
-				{
-					coords: [40.7127837, -74.0059413],
-					name: "New York"
-				},
-				{
-					coords: [34.052235, -118.243683],
-					name: "Los Angeles"
-				},
-				{
-					coords: [41.878113, -87.629799],
-					name: "Chicago"
-				},
-				{
-					coords: [51.507351, -0.127758],
-					name: "London"
-				},
-				{
-					coords: [40.416775, -3.703790],
-					name: "Madrid "
-				}
+				coords: [31.230391, 121.473701],
+				name: "Shanghai"
+			},
+			{
+				coords: [28.704060, 77.102493],
+				name: "Delhi"
+			},
+			{
+				coords: [6.524379, 3.379206],
+				name: "Lagos"
+			},
+			{
+				coords: [35.689487, 139.691711],
+				name: "Tokyo"
+			},
+			{
+				coords: [23.129110, 113.264381],
+				name: "Guangzhou"
+			},
+			{
+				coords: [40.7127837, -74.0059413],
+				name: "New York"
+			},
+			{
+				coords: [34.052235, -118.243683],
+				name: "Los Angeles"
+			},
+			{
+				coords: [41.878113, -87.629799],
+				name: "Chicago"
+			},
+			{
+				coords: [51.507351, -0.127758],
+				name: "London"
+			},
+			{
+				coords: [40.416775, -3.703790],
+				name: "Madrid "
+			}
 			];
 			var map = new jsVectorMap({
 				map: "world",
@@ -793,13 +792,13 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true ||
 			window.addEventListener("resize", () => {
 				map.updateSize();
 			});
-			setTimeout(function() {
+			setTimeout(function () {
 				map.updateSize();
 			}, 250);
 		});
 	</script>
 	<script>
-		document.addEventListener("DOMContentLoaded", function() {
+		document.addEventListener("DOMContentLoaded", function () {
 			var date = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
 			var defaultDate = date.getUTCFullYear() + "-" + (date.getUTCMonth() + 1) + "-" + date.getUTCDate();
 			document.getElementById("datetimepicker-dashboard").flatpickr({
@@ -811,28 +810,30 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true ||
 		});
 	</script>
 
-<script>
-  document.addEventListener("DOMContentLoaded", function(event) { 
-    setTimeout(function(){
-      if(localStorage.getItem('popState') !== 'shown'){
-        window.notyf.open({
-          type: "success",
-          message: "Get access to all 500+ components and 45+ pages with AdminKit PRO. <u><a class=\"text-white\" href=\"https://adminkit.io/pricing\" target=\"_blank\">More info</a></u> 🚀",
-          duration: 10000,
-          ripple: true,
-          dismissible: false,
-          position: {
-            x: "left",
-            y: "bottom"
-          }
-        });
+	<script>
+		document.addEventListener("DOMContentLoaded", function (event) {
+			setTimeout(function () {
+				if (localStorage.getItem('popState') !== 'shown') {
+					window.notyf.open({
+						type: "success",
+						message: "Get access to all 500+ components and 45+ pages with AdminKit PRO. <u><a class=\"text-white\" href=\"https://adminkit.io/pricing\" target=\"_blank\">More info</a></u> 🚀",
+						duration: 10000,
+						ripple: true,
+						dismissible: false,
+						position: {
+							x: "left",
+							y: "bottom"
+						}
+					});
 
-        localStorage.setItem('popState','shown');
-      }
-    }, 15000);
-  });
-</script></body>
+					localStorage.setItem('popState', 'shown');
+				}
+			}, 15000);
+		});
+	</script>
+</body>
 
 
 <!-- Mirrored from demo.adminkit.io/ by HTTrack Website Copier/3.x [XR&CO'2014], Thu, 16 Oct 2025 09:50:42 GMT -->
+
 </html>

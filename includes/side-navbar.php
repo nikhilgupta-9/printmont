@@ -1,9 +1,37 @@
+<?php
+// Uncomment and configure this section for authentication
+/*
+$database = new Database();
+$db = $database->getConnection();
+$auth = new AuthController($db);
+
+// Redirect to index.php if user is not logged in or session timed out
+if (!$auth->isLoggedIn() || !$auth->checkSessionTimeout()) {
+    // Clear session (delegate to controller if available)
+    if (method_exists($auth, 'logout')) {
+        $auth->logout(false); // pass false to avoid double redirect inside controller
+    } else {
+        $_SESSION = [];
+        if (ini_get('session.use_cookies')) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000,
+                $params['path'], $params['domain'], $params['secure'], $params['httponly']
+            );
+        }
+        session_destroy();
+    }
+
+    header('Location: index.php');
+    exit();
+}
+*/
+?>
+
 <nav id="sidebar" class="sidebar js-sidebar">
 	<div class="sidebar-content js-simplebar">
-		<a class='sidebar-brand' href='index.html'>
+		<a class='sidebar-brand' href='dashboard.php'>
 			<span class="sidebar-brand-text align-middle">
-				AdminKit
-				<sup><small class="badge bg-primary text-uppercase">Pro</small></sup>
+				Printmont Admin
 			</span>
 			<svg class="sidebar-brand-icon align-middle" width="32px" height="32px" viewBox="0 0 24 24" fill="none"
 				stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" color="#FFFFFF"
@@ -17,305 +45,220 @@
 		<div class="sidebar-user">
 			<div class="d-flex justify-content-center">
 				<div class="flex-shrink-0">
-					<img src="img/avatars/avatar.jpg" class="avatar img-fluid rounded me-1" alt="Charles Hall" />
+					<img src="img/avatars/avatar.jpg" class="avatar img-fluid rounded me-1" alt="Admin User" />
 				</div>
 				<div class="flex-grow-1 ps-2">
 					<a class="sidebar-user-title dropdown-toggle" href="#" data-bs-toggle="dropdown">
-						Charles Hall
+						Admin User
 					</a>
 					<div class="dropdown-menu dropdown-menu-start">
-						<a class='dropdown-item' href='pages-profile.html'><i class="align-middle me-1"
+						<a class='dropdown-item' href='admin-profile.php'><i class="align-middle me-1"
 								data-feather="user"></i> Profile</a>
-						<a class="dropdown-item" href="#"><i class="align-middle me-1" data-feather="pie-chart"></i>
-							Analytics</a>
+						<a class="dropdown-item" href="#"><i class="align-middle me-1" data-feather="settings"></i>
+							Settings</a>
 						<div class="dropdown-divider"></div>
-						<a class='dropdown-item' href='pages-settings.html'><i class="align-middle me-1"
-								data-feather="settings"></i> Settings &
-							Privacy</a>
-						<a class="dropdown-item" href="#"><i class="align-middle me-1" data-feather="help-circle"></i>
-							Help Center</a>
-						<div class="dropdown-divider"></div>
-						<a class="dropdown-item" href="#">Log out</a>
+						<a class="dropdown-item logout" href="logout.php">
+							<i class="align-middle me-1" data-feather="log-out"></i> Log out
+						</a>
 					</div>
-
-					<div class="sidebar-user-subtitle">Designer</div>
+					<div class="sidebar-user-subtitle">Administrator</div>
 				</div>
 			</div>
 		</div>
 
 		<ul class="sidebar-nav">
-			<li class="sidebar-header">
-				Pages
+			<!-- Dashboard -->
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='dashboard.php'>
+					<i class="align-middle" data-feather="home"></i>
+					<span class="align-middle">Dashboard</span>
+				</a>
 			</li>
 
-			<li class="sidebar-item active">
-				<a data-bs-target="#dashboards" data-bs-toggle="collapse" class="sidebar-link">
-					<i class="align-middle" data-feather="sliders"></i> <span class="align-middle">Home Page</span>
+
+			<!-- Home Page Management -->
+			<li class="sidebar-header">
+				Home Page
+			</li>
+
+			<!-- In side-navbar.php -->
+			<!-- In side-navbar.php -->
+			<li class="sidebar-item">
+				<a data-bs-target="#banners" data-bs-toggle="collapse" class="sidebar-link">
+					<i class="align-middle" data-feather="image"></i>
+					<span class="align-middle">Banners</span>
 				</a>
-				<ul id="dashboards" class="sidebar-dropdown list-unstyled collapse show" data-bs-parent="#sidebar">
-					<li class="sidebar-item active"><a class='sidebar-link' href='add-banner.php'>Add Banner</a></li>
+				<ul id="banners" class="sidebar-dropdown list-unstyled collapse show" data-bs-parent="#sidebar">
 					<li class="sidebar-item">
-						<a class='sidebar-link' href='logo-management.php'>Logo's
-							<span class="sidebar-badge badge bg-primary">Pro</span>
-						</a>
+						<a class='sidebar-link' href='banner-list.php'>All Banners</a>
 					</li>
-					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-crypto.html'>Crypto <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
+					<li class="sidebar-item">
+						<a class='sidebar-link' href='add-banner.php'>Add Banner</a>
+					</li>
+					<li class="sidebar-item">
+						<a class='sidebar-link' href='banner-layouts.php'>Banner Layouts</a>
+					</li>
+					<li class="sidebar-item">
+						<a class='sidebar-link' href='add-banner-layout.php'>Add Layout</a>
+					</li>
+					<li class="sidebar-item">
+						<a class='sidebar-link' href='assign-banners.php'>Assign Banners</a>
+					</li>
 				</ul>
+			</li>
+
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='staff.php'>
+					<i class="align-middle" data-feather="users"></i>
+					<span class="align-middle">Staff</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='logo-management.php'>
+					<i class="align-middle" data-feather="flag"></i>
+					<span class="align-middle">Logo Management</span>
+				</a>
+			</li>
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='blog-view.php'>
+					<i class="align-middle" data-feather="book"></i>
+					<span class="align-middle">Blog</span>
+				</a>
+			</li>
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='policy-edit.php'>
+					<i class="align-middle" data-feather="book"></i>
+					<span class="align-middle">Policies</span>
+				</a>
+			</li>
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='contact-view.php'>
+					<i class="align-middle" data-feather="book"></i>
+					<span class="align-middle">Contact</span>
+				</a>
+			</li>
+
+			<!-- Catalog Management -->
+			<li class="sidebar-header">
+				Catalog
 			</li>
 
 			<li class="sidebar-item">
 				<a class='sidebar-link' href='view-categories.php'>
-					 <i class="align-middle" data-feather="grid"></i>  <span class="align-middle">Category</span>
-				</a>
-			</li>
-
-			<li class="sidebar-item active">
-				<a data-bs-target="#dashboards" data-bs-toggle="collapse" class="sidebar-link">
-					<i class="align-middle" data-feather="sliders"></i> <span class="align-middle">Dashboards</span>
-				</a>
-				<ul id="dashboards" class="sidebar-dropdown list-unstyled collapse show" data-bs-parent="#sidebar">
-					<li class="sidebar-item active"><a class='sidebar-link' href='dashboard.php'>Dashboard</a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-ecommerce-2.html'>E-Commerce <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='dashboard-crypto.html'>Crypto <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-				</ul>
-			</li>
-
-			<li class="sidebar-item">
-				<a data-bs-target="#pages" data-bs-toggle="collapse" class="sidebar-link collapsed">
-					<i class="align-middle" data-feather="layout"></i> <span class="align-middle">Pages</span>
-				</a>
-				<ul id="pages" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-					<li class="sidebar-item"><a class='sidebar-link' href='pages-settings.html'>Settings</a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='pages-projects.html'>Projects <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='pages-clients.html'>Clients <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='pages-orders.html'>Orders <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='pages-pricing.html'>Pricing <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='pages-chat.html'>Chat <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='pages-blank.html'>Blank Page</a></li>
-				</ul>
-			</li>
-
-			<li class="sidebar-item">
-				<a class='sidebar-link' href='pages-profile.html'>
-					<i class="align-middle" data-feather="user"></i> <span class="align-middle">Profile</span>
-				</a>
-			</li>
-
-
-			<li class="sidebar-item">
-				<a class='sidebar-link' href='pages-invoice.html'>
-					<i class="align-middle" data-feather="credit-card"></i> <span class="align-middle">Invoice</span>
+					<i class="align-middle" data-feather="grid"></i>
+					<span class="align-middle">Categories</span>
 				</a>
 			</li>
 
 			<li class="sidebar-item">
-				<a class='sidebar-link' href='pages-tasks.html'>
-					<i class="align-middle" data-feather="list"></i> <span class="align-middle">Tasks</span>
-					<span class="sidebar-badge badge bg-primary">Pro</span>
+				<a data-bs-target="#products" data-bs-toggle="collapse" class="sidebar-link">
+					<i class="align-middle" data-feather="package"></i>
+					<span class="align-middle">Products</span>
 				</a>
-			</li>
-
-			<li class="sidebar-item">
-				<a class='sidebar-link' href='calendar.html'>
-					<i class="align-middle" data-feather="calendar"></i> <span class="align-middle">Calendar</span>
-					<span class="sidebar-badge badge bg-primary">Pro</span>
-				</a>
-			</li>
-
-			<li class="sidebar-item">
-				<a href="#auth" data-bs-toggle="collapse" class="sidebar-link collapsed">
-					<i class="align-middle" data-feather="users"></i> <span class="align-middle">Auth</span>
-				</a>
-				<ul id="auth" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-					<li class="sidebar-item"><a class='sidebar-link' href='pages-sign-in.html'>Sign In</a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='pages-sign-up.html'>Sign Up</a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='pages-reset-password.html'>Reset Password
-							<span class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='pages-404.html'>404 Page <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='pages-500.html'>500 Page <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-				</ul>
-			</li>
-
-			<li class="sidebar-header">
-				Components
-			</li>
-			<li class="sidebar-item">
-				<a data-bs-target="#ui" data-bs-toggle="collapse" class="sidebar-link collapsed">
-					<i class="align-middle" data-feather="briefcase"></i> <span class="align-middle">UI Elements</span>
-				</a>
-				<ul id="ui" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-					<li class="sidebar-item"><a class='sidebar-link' href='ui-alerts.html'>Alerts <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='ui-buttons.html'>Buttons</a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='ui-cards.html'>Cards</a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='ui-general.html'>General</a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='ui-grid.html'>Grid</a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='ui-modals.html'>Modals <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='ui-offcanvas.html'>Offcanvas <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='ui-placeholders.html'>Placeholders <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='ui-tabs.html'>Tabs <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='ui-typography.html'>Typography</a></li>
-				</ul>
-			</li>
-			<li class="sidebar-item">
-				<a data-bs-target="#icons" data-bs-toggle="collapse" class="sidebar-link collapsed">
-					<i class="align-middle" data-feather="coffee"></i> <span class="align-middle">Icons</span>
-					<span class="sidebar-badge badge bg-light">1.500+</span>
-				</a>
-				<ul id="icons" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-					<li class="sidebar-item"><a class='sidebar-link' href='icons-feather.html'>Feather</a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='icons-font-awesome.html'>Font Awesome <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-				</ul>
-			</li>
-			<li class="sidebar-item">
-				<a data-bs-target="#forms" data-bs-toggle="collapse" class="sidebar-link collapsed">
-					<i class="align-middle" data-feather="check-circle"></i> <span class="align-middle">Forms</span>
-				</a>
-				<ul id="forms" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-					<li class="sidebar-item"><a class='sidebar-link' href='forms-basic-inputs.html'>Basic Inputs</a>
-					</li>
-					<li class="sidebar-item"><a class='sidebar-link' href='forms-layouts.html'>Form Layouts <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='forms-input-groups.html'>Input Groups <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-				</ul>
-			</li>
-			<li class="sidebar-item">
-				<a class='sidebar-link' href='tables-bootstrap.html'>
-					<i class="align-middle" data-feather="list"></i> <span class="align-middle">Tables</span>
-				</a>
-			</li>
-
-			<li class="sidebar-header">
-				Plugins & Addons
-			</li>
-			<li class="sidebar-item">
-				<a data-bs-target="#form-plugins" data-bs-toggle="collapse" class="sidebar-link collapsed">
-					<i class="align-middle" data-feather="check-square"></i> <span class="align-middle">Form
-						Plugins</span>
-				</a>
-				<ul id="form-plugins" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-					<li class="sidebar-item"><a class='sidebar-link' href='forms-advanced-inputs.html'>Advanced Inputs
-							<span class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='forms-editors.html'>Editors <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='forms-validation.html'>Validation <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-				</ul>
-			</li>
-			<li class="sidebar-item">
-				<a data-bs-target="#datatables" data-bs-toggle="collapse" class="sidebar-link collapsed">
-					<i class="align-middle" data-feather="list"></i> <span class="align-middle">DataTables</span>
-				</a>
-				<ul id="datatables" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-					<li class="sidebar-item"><a class='sidebar-link' href='tables-datatables-responsive.html'>Responsive
-							Table <span class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='tables-datatables-buttons.html'>Table with
-							Buttons <span class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='tables-datatables-column-search.html'>Column
-							Search <span class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='tables-datatables-fixed-header.html'>Fixed
-							Header <span class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='tables-datatables-multi.html'>Multi Selection
-							<span class="sidebar-badge badge bg-primary">Pro</span></a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='tables-datatables-ajax.html'>Ajax Sourced
-							Data <span class="sidebar-badge badge bg-primary">Pro</span></a></li>
-				</ul>
-			</li>
-			<li class="sidebar-item">
-				<a data-bs-target="#charts" data-bs-toggle="collapse" class="sidebar-link collapsed">
-					<i class="align-middle" data-feather="bar-chart-2"></i> <span class="align-middle">Charts</span>
-				</a>
-				<ul id="charts" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-					<li class="sidebar-item"><a class='sidebar-link' href='charts-chartjs.html'>Chart.js</a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='charts-apexcharts.html'>ApexCharts <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-				</ul>
-			</li>
-			<li class="sidebar-item">
-				<a class='sidebar-link' href='notifications.html'>
-					<i class="align-middle" data-feather="bell"></i> <span class="align-middle">Notifications</span>
-					<span class="sidebar-badge badge bg-primary">Pro</span>
-				</a>
-			</li>
-			<li class="sidebar-item">
-				<a data-bs-target="#maps" data-bs-toggle="collapse" class="sidebar-link collapsed">
-					<i class="align-middle" data-feather="map"></i> <span class="align-middle">Maps</span>
-				</a>
-				<ul id="maps" class="sidebar-dropdown list-unstyled collapse " data-bs-parent="#sidebar">
-					<li class="sidebar-item"><a class='sidebar-link' href='maps-google.html'>Google Maps</a></li>
-					<li class="sidebar-item"><a class='sidebar-link' href='maps-vector.html'>Vector Maps <span
-								class="sidebar-badge badge bg-primary">Pro</span></a></li>
-				</ul>
-			</li>
-
-			<li class="sidebar-item">
-				<a data-bs-target="#multi" data-bs-toggle="collapse" class="sidebar-link collapsed">
-					<i class="align-middle" data-feather="corner-right-down"></i> <span class="align-middle">Multi
-						Level</span>
-				</a>
-				<ul id="multi" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+				<ul id="products" class="sidebar-dropdown list-unstyled collapse show" data-bs-parent="#sidebar">
 					<li class="sidebar-item">
-						<a data-bs-target="#multi-2" data-bs-toggle="collapse" class="sidebar-link collapsed">Two
-							Levels</a>
-						<ul id="multi-2" class="sidebar-dropdown list-unstyled collapse">
-							<li class="sidebar-item">
-								<a class="sidebar-link" href="#">Item 1</a>
-							</li>
-							<li class="sidebar-item">
-								<a class="sidebar-link" href="#">Item 2</a>
-							</li>
-						</ul>
+						<a class='sidebar-link' href='view-products.php'>All Products</a>
 					</li>
 					<li class="sidebar-item">
-						<a data-bs-target="#multi-3" data-bs-toggle="collapse" class="sidebar-link collapsed">Three
-							Levels</a>
-						<ul id="multi-3" class="sidebar-dropdown list-unstyled collapse">
-							<li class="sidebar-item">
-								<a data-bs-target="#multi-3-1" data-bs-toggle="collapse"
-									class="sidebar-link collapsed">Item 1</a>
-								<ul id="multi-3-1" class="sidebar-dropdown list-unstyled collapse">
-									<li class="sidebar-item">
-										<a class="sidebar-link" href="#">Item 1</a>
-									</li>
-									<li class="sidebar-item">
-										<a class="sidebar-link" href="#">Item 2</a>
-									</li>
-								</ul>
-							</li>
-							<li class="sidebar-item">
-								<a class="sidebar-link" href="#">Item 2</a>
-							</li>
-						</ul>
+						<a class='sidebar-link' href='product.php'>Add Product</a>
 					</li>
 				</ul>
+			</li>
+
+			<!-- Orders Management -->
+			<li class="sidebar-header">
+				Orders
+			</li>
+
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='all-orders.php'>
+					<i class="align-middle" data-feather="shopping-cart"></i>
+					<span class="align-middle">All Orders</span>
+					<span class="sidebar-badge badge bg-primary">120</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='pending-orders.php'>
+					<i class="align-middle" data-feather="clock"></i>
+					<span class="align-middle">Pending Orders</span>
+					<span class="sidebar-badge badge bg-warning">8</span>
+				</a>
+			</li>
+
+			<!-- Customers -->
+			<li class="sidebar-header">
+				Customers
+			</li>
+
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='customer-list.php'>
+					<i class="align-middle" data-feather="users"></i>
+					<span class="align-middle">Customers</span>
+					<span class="sidebar-badge badge bg-primary">1.2K</span>
+				</a>
+			</li>
+
+			<!-- Analytics -->
+			<li class="sidebar-header">
+				Analytics
+			</li>
+
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='sales-report.php'>
+					<i class="align-middle" data-feather="bar-chart-2"></i>
+					<span class="align-middle">Sales Report</span>
+				</a>
+			</li>
+
+			<!-- Marketing -->
+			<li class="sidebar-header">
+				Marketing
+			</li>
+
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='coupons.php'>
+					<i class="align-middle" data-feather="percent"></i>
+					<span class="align-middle">Coupons</span>
+				</a>
+			</li>
+
+			<!-- Settings -->
+			<li class="sidebar-header">
+				Settings
+			</li>
+
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='admin-profile.php'>
+					<i class="align-middle" data-feather="user"></i>
+					<span class="align-middle">Admin Profile</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item">
+				<a class='sidebar-link' href='settings.php'>
+					<i class="align-middle" data-feather="settings"></i>
+					<span class="align-middle">System Settings</span>
+				</a>
 			</li>
 		</ul>
 
+		<!-- Quick Stats -->
 		<div class="sidebar-cta">
 			<div class="sidebar-cta-content">
-				<strong class="d-inline-block mb-2">Weekly Sales Report</strong>
-				<div class="mb-3 text-sm">
-					Your weekly sales report is ready for download!
+				<strong class="d-inline-block mb-2">Today's Stats</strong>
+				<div class="mb-2 text-sm">
+					<small>Orders: <strong class="text-success">15</strong></small>
 				</div>
-
+				<div class="mb-2 text-sm">
+					<small>Revenue: <strong class="text-success">₹25,430</strong></small>
+				</div>
+				<div class="mb-3 text-sm">
+					<small>Visitors: <strong class="text-success">1,234</strong></small>
+				</div>
 				<div class="d-grid">
-					<a href="https://adminkit.io/" class="btn btn-outline-primary" target="_blank">Download</a>
+					<a href="dashboard.php" class="btn btn-outline-primary btn-sm">View Dashboard</a>
 				</div>
 			</div>
 		</div>

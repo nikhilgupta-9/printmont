@@ -103,7 +103,7 @@ class AuthController
         }
     }
     // Logout method
-    public function logout()
+    public function logout($redirect = true)
     {
         // Unset all session variables
         $_SESSION = array();
@@ -111,6 +111,11 @@ class AuthController
         // Destroy session
         if (session_status() == PHP_SESSION_ACTIVE) {
             session_destroy();
+        }
+
+        if ($redirect) {
+            header('Location: ../index.php'); // adjust path as needed
+            exit();
         }
 
         return ['success' => true, 'message' => 'Logout successful'];

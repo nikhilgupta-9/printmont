@@ -1,154 +1,293 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../middleware/JWTHandler.php';
-require_once __DIR__ . '/../models/Product.php';
+require_once(__DIR__ . '/../models/ProductModel.php');
+require_once(__DIR__ . '/../models/CategoryModel.php');
 
 class ProductController {
-    private $db;
-    private $product;
-    private $jwt;
+    private $productModel;
+    private $categoryModel;
 
     public function __construct() {
-        $database = new Database();
-        $this->db = $database->getConnection();
-        $this->product = new Product($this->db);
-        $this->jwt = new JWTHandler();
+        $this->productModel = new ProductModel();
+        $this->categoryModel = new CategoryModel();
     }
 
-    private function authenticate() {
-        $token = $this->jwt->getTokenFromHeader();
-        if (!$token) {
-            http_response_code(401);
-            echo json_encode(array("error" => "No token provided"));
-            return false;
+     // API Methods - Fetch Only
+    public function getAllProductsApi() {
+        $products = $this->productModel->getAllProducts();
+        
+        // Format products for API response
+        $formattedProducts = [];
+        foreach ($products as $product) {
+            $formattedProducts[] = $this->formatProductForApi($product);
         }
+        
+        return $formattedProducts;
+    }
 
-        $decoded = $this->jwt->validateToken($token);
-        if (!$decoded) {
-            http_response_code(401);
-            echo json_encode(array("error" => "Invalid token"));
-            return false;
+    public function getProductByIdApi($id) {
+        $product = $this->productModel->getProductById($id);
+        if ($product) {
+            return $this->formatProductForApi($product);
         }
-
-        return $decoded;
+        return null;
     }
 
-    public function getAllProducts() {
-        header('Content-Type: application/json');
+    private function formatProductForApi($product) {
+        // Get base URL for absolute image paths
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+        $host = $_SERVER['HTTP_HOST'];
+        $basePath = dirname(dirname($_SERVER['SCRIPT_NAME']));
+        $baseUrl = $protocol . "://" . $host . $basePath . "/";
         
-        $user = $this->authenticate();
-        if (!$user) return;
-
-        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
-        $search = isset($_GET['search']) ? $_GET['search'] : '';
-        $category = isset($_GET['category']) ? $_GET['category'] : '';
-
-        $result = $this->product->getAllProducts($page, $limit, $search, $category);
-        
-        echo json_encode($result);
-    }
-
-    public function getProduct($id) {
-        header('Content-Type: application/json');
-        
-        $user = $this->authenticate();
-        if (!$user) return;
-
-        $this->product->id = $id;
-        if ($this->product->getProductById()) {
-            echo json_encode(array(
-                "product" => array(
-                    "id" => $this->product->id,
-                    "name" => $this->product->name,
-                    "description" => $this->product->description,
-                    "category_id" => $this->product->category_id,
-                    "brand" => $this->product->brand,
-                    "price" => $this->product->price,
-                    "discount_price" => $this->product->discount_price,
-                    "stock_quantity" => $this->product->stock_quantity,
-                    "sku" => $this->product->sku,
-                    "status" => $this->product->status,
-                    "featured" => $this->product->featured,
-                    "created_at" => $this->product->created_at
-                )
-            ));
-        } else {
-            http_response_code(404);
-            echo json_encode(array("error" => "Product not found"));
-        }
-    }
-
-    public function createProduct() {
-        header('Content-Type: application/json');
-        
-        $user = $this->authenticate();
-        if (!$user) return;
-
-        $data = json_decode(file_get_contents("php://input"));
-
-        // Validate required fields
-        $required = ['name', 'category_id', 'price', 'sku'];
-        foreach ($required as $field) {
-            if (!isset($data->$field) || empty($data->$field)) {
-                http_response_code(400);
-                echo json_encode(array("error" => "Field '$field' is required"));
-                return;
+        // Format images with full URLs
+        $formattedImages = [];
+        if (!empty($product['images'])) {
+            foreach ($product['images'] as $image) {
+                $imagePath = $image['image_url'];
+                // Convert relative path to absolute URL
+                $absoluteUrl = $baseUrl . $imagePath;
+                
+                $formattedImages[] = [
+                    'id' => (int)$image['id'],
+                    'image_url' => $absoluteUrl,
+                    'is_primary' => (bool)$image['is_primary'],
+                    'display_order' => (int)$image['display_order'],
+                    'created_at' => $image['created_at']
+                ];
             }
         }
 
-        $this->product->name = $data->name;
-        $this->product->description = $data->description ?? '';
-        $this->product->category_id = $data->category_id;
-        $this->product->brand = $data->brand ?? '';
-        $this->product->price = $data->price;
-        $this->product->discount_price = $data->discount_price ?? null;
-        $this->product->stock_quantity = $data->stock_quantity ?? 0;
-        $this->product->sku = $data->sku;
-        $this->product->status = $data->status ?? 'active';
-        $this->product->featured = $data->featured ?? false;
+        return [
+            'id' => (int)$product['id'],
+            'name' => $product['name'],
+            'description' => $product['description'],
+            'category_id' => (int)$product['category_id'],
+            'category_name' => $product['category_name'] ?? null,
+            'brand' => $product['brand'],
+            'price' => (float)$product['price'],
+            'discount_price' => $product['discount_price'] ? (float)$product['discount_price'] : null,
+            'stock_quantity' => (int)$product['stock_quantity'],
+            'sku' => $product['sku'],
+            'status' => $product['status'],
+            'featured' => (bool)$product['featured'],
+            'images' => $formattedImages,
+            'created_at' => $product['created_at'],
+            'updated_at' => $product['updated_at']
+        ];
+    }
 
-        if ($this->product->create()) {
-            http_response_code(201);
-            echo json_encode(array("message" => "Product created successfully", "id" => $this->product->id));
-        } else {
-            http_response_code(500);
-            echo json_encode(array("error" => "Unable to create product"));
+
+    public function getCategories() {
+        return $this->categoryModel->getAllCategories();
+    }
+
+     public function addProduct($data, $files) {
+        try {
+            // Validate required fields
+            $required = ['name', 'category_id', 'price', 'stock_quantity', 'sku'];
+            foreach ($required as $field) {
+                if (empty($data[$field])) {
+                    throw new Exception("Field $field is required");
+                }
+            }
+
+            // Prepare product data
+            $productData = [
+                'name' => trim($data['name']),
+                'description' => trim($data['description'] ?? ''),
+                'category_id' => $data['category_id'],
+                'brand' => trim($data['brand'] ?? ''),
+                'price' => floatval($data['price']),
+                'discount_price' => !empty($data['discount_price']) ? floatval($data['discount_price']) : null,
+                'stock_quantity' => intval($data['stock_quantity']),
+                'sku' => trim($data['sku']),
+                'status' => $data['status'] ?? 'active',
+                'featured' => isset($data['featured']) ? 1 : 0
+            ];
+
+            // Handle image upload
+            $images = [];
+            if (!empty($files['images']['name'][0])) {
+                $images = $this->handleImageUpload($files['images']);
+            }
+
+            // Create product
+            $productId = $this->productModel->createProduct($productData, $images);
+            
+            return ['success' => true, 'product_id' => $productId];
+            
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 
-    public function updateProduct($id) {
-        header('Content-Type: application/json');
+    private function handleImageUpload($files) {
+        $uploadedImages = [];
+        $uploadDir = 'uploads/products/';
         
-        $user = $this->authenticate();
-        if (!$user) return;
-
-        $data = json_decode(file_get_contents("php://input"));
-
-        $this->product->id = $id;
-        if (!$this->product->getProductById()) {
-            http_response_code(404);
-            echo json_encode(array("error" => "Product not found"));
-            return;
+        // Create directory if it doesn't exist
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
         }
 
-        // Update fields
-        if (isset($data->name)) $this->product->name = $data->name;
-        if (isset($data->description)) $this->product->description = $data->description;
-        if (isset($data->category_id)) $this->product->category_id = $data->category_id;
-        if (isset($data->brand)) $this->product->brand = $data->brand;
-        if (isset($data->price)) $this->product->price = $data->price;
-        if (isset($data->discount_price)) $this->product->discount_price = $data->discount_price;
-        if (isset($data->stock_quantity)) $this->product->stock_quantity = $data->stock_quantity;
-        if (isset($data->status)) $this->product->status = $data->status;
-        if (isset($data->featured)) $this->product->featured = $data->featured;
+        foreach ($files['tmp_name'] as $key => $tmp_name) {
+            if ($files['error'][$key] === UPLOAD_ERR_OK) {
+                // Validate file type
+                $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                $fileType = mime_content_type($tmp_name);
+                
+                if (!in_array($fileType, $allowedTypes)) {
+                    throw new Exception("Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.");
+                }
 
-        if ($this->product->update()) {
-            echo json_encode(array("message" => "Product updated successfully"));
-        } else {
-            http_response_code(500);
-            echo json_encode(array("error" => "Unable to update product"));
+                // Generate unique filename
+                $fileName = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9-_\.]/', '', $files['name'][$key]);
+                $filePath = $uploadDir . $fileName;
+                
+                if (move_uploaded_file($tmp_name, $filePath)) {
+                    $uploadedImages[] = [
+                        'image_url' => $filePath,
+                        'is_primary' => ($key === 0), // First image as primary
+                        'display_order' => $key
+                    ];
+                } else {
+                    throw new Exception("Failed to upload image: " . $files['name'][$key]);
+                }
+            }
         }
+
+        return $uploadedImages;
+    }
+
+    // Other methods for edit, list, delete...
+     public function getAllProducts() {
+        return $this->productModel->getAllProducts();
+    }
+
+
+      public function getProductById($id) {
+        return $this->productModel->getProductById($id);
+    }
+
+    public function updateProduct($id, $data, $files) {
+        try {
+            $required = ['name', 'category_id', 'price', 'stock_quantity', 'sku'];
+            foreach ($required as $field) {
+                if (empty($data[$field])) {
+                    throw new Exception("Field $field is required");
+                }
+            }
+
+            $productData = [
+                'name' => trim($data['name']),
+                'description' => trim($data['description'] ?? ''),
+                'category_id' => $data['category_id'],
+                'brand' => trim($data['brand'] ?? ''),
+                'price' => floatval($data['price']),
+                'discount_price' => !empty($data['discount_price']) ? floatval($data['discount_price']) : null,
+                'stock_quantity' => intval($data['stock_quantity']),
+                'sku' => trim($data['sku']),
+                'status' => $data['status'] ?? 'active',
+                'featured' => isset($data['featured']) ? 1 : 0
+            ];
+
+            $images = [];
+            if (!empty($files['images']['name'][0])) {
+                $images = $this->handleImageUpload($files['images']);
+            }
+
+            $success = $this->productModel->updateProduct($id, $productData, $images);
+            
+            if ($success) {
+                return ['success' => true];
+            } else {
+                throw new Exception("Failed to update product");
+            }
+            
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    private function handleUpdateProduct($id) {
+        try {
+            $required = ['name', 'category_id', 'price', 'stock_quantity', 'sku'];
+            foreach ($required as $field) {
+                if (empty($_POST[$field])) {
+                    throw new Exception("Field $field is required");
+                }
+            }
+
+            $productData = [
+                'name' => trim($_POST['name']),
+                'description' => trim($_POST['description'] ?? ''),
+                'category_id' => $_POST['category_id'],
+                'brand' => trim($_POST['brand'] ?? ''),
+                'price' => floatval($_POST['price']),
+                'discount_price' => !empty($_POST['discount_price']) ? floatval($_POST['discount_price']) : null,
+                'stock_quantity' => intval($_POST['stock_quantity']),
+                'sku' => trim($_POST['sku']),
+                'status' => $_POST['status'] ?? 'active',
+                'featured' => isset($_POST['featured']) ? 1 : 0
+            ];
+
+            $images = [];
+            if (!empty($_FILES['images']['name'][0])) {
+                $images = $this->handleImageUpload($_FILES['images']);
+            }
+
+            $success = $this->productModel->updateProduct($id, $productData, $images);
+            
+            if ($success) {
+                return ['success' => true];
+            } else {
+                throw new Exception("Failed to update product");
+            }
+            
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    // private function handleImageUpload($files) {
+    //     $uploadedImages = [];
+    //     $uploadDir = 'uploads/products/';
+        
+    //     if (!is_dir($uploadDir)) {
+    //         mkdir($uploadDir, 0755, true);
+    //     }
+
+    //     foreach ($files['tmp_name'] as $key => $tmp_name) {
+    //         if ($files['error'][$key] === UPLOAD_ERR_OK) {
+    //             $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    //             $fileType = mime_content_type($tmp_name);
+                
+    //             if (!in_array($fileType, $allowedTypes)) {
+    //                 throw new Exception("Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.");
+    //             }
+
+    //             $fileName = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9-_\.]/', '', $files['name'][$key]);
+    //             $filePath = $uploadDir . $fileName;
+                
+    //             if (move_uploaded_file($tmp_name, $filePath)) {
+    //                 $uploadedImages[] = [
+    //                     'image_url' => $filePath,
+    //                     'is_primary' => ($key === 0),
+    //                     'display_order' => $key
+    //                 ];
+    //             } else {
+    //                 throw new Exception("Failed to upload image: " . $files['name'][$key]);
+    //             }
+    //         }
+    //     }
+
+    //     return $uploadedImages;
+    // }
+
+
+
+    public function deleteProduct($id) {
+        return $this->productModel->deleteProduct($id);
     }
 }
 ?>

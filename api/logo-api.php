@@ -4,8 +4,8 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
-require_once '../config/database.php';
-require_once '../controllers/LogoController.php';
+require_once(__DIR__ . '/../config/database.php');
+require_once(__DIR__ . '/../controllers/LogoController.php');
 
 $database = new Database();
 $db = $database->getConnection();
@@ -18,28 +18,41 @@ switch ($method) {
     case 'GET':
         if (isset($_GET['id'])) {
             $stmt = $logoController->getLogoById($_GET['id']);
-            if ($stmt->rowCount() > 0) {
-                $logo = $stmt->fetch(PDO::FETCH_ASSOC);
-                echo json_encode(array("success" => true, "data" => $logo));
+            if ($stmt && $stmt->num_rows > 0) {
+                $logo = $stmt->fetch_assoc();
+                echo json_encode(["success" => true, "data" => $logo]);
             } else {
-                echo json_encode(array("success" => false, "message" => "Logo not found"));
+                echo json_encode(["success" => false, "message" => "Logo not found"]);
             }
+
         } elseif (isset($_GET['type'])) {
             $stmt = $logoController->getLogosByType($_GET['type']);
-            $logos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode(array("success" => true, "data" => $logos));
+            $logos = [];
+            if ($stmt && $stmt->num_rows > 0) {
+                while ($row = $stmt->fetch_assoc()) {
+                    $logos[] = $row;
+                }
+            }
+            echo json_encode(["success" => true, "data" => $logos]);
+
         } elseif (isset($_GET['active_type'])) {
             $stmt = $logoController->getActiveLogoByType($_GET['active_type']);
-            if ($stmt->rowCount() > 0) {
-                $logo = $stmt->fetch(PDO::FETCH_ASSOC);
-                echo json_encode(array("success" => true, "data" => $logo));
+            if ($stmt && $stmt->num_rows > 0) {
+                $logo = $stmt->fetch_assoc();
+                echo json_encode(["success" => true, "data" => $logo]);
             } else {
-                echo json_encode(array("success" => false, "message" => "No active logo found"));
+                echo json_encode(["success" => false, "message" => "No active logo found"]);
             }
+
         } else {
             $stmt = $logoController->getAllLogos();
-            $logos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode(array("success" => true, "data" => $logos));
+            $logos = [];
+            if ($stmt && $stmt->num_rows > 0) {
+                while ($row = $stmt->fetch_assoc()) {
+                    $logos[] = $row;
+                }
+            }
+            echo json_encode(["success" => true, "data" => $logos]);
         }
         break;
 
@@ -49,19 +62,19 @@ switch ($method) {
         break;
 
     case 'PUT':
-        parse_str(file_get_contents("php://input"), $put_vars);
+        $input = json_decode(file_get_contents("php://input"), true);
         $result = $logoController->updateLogo($input['id'], $input, $_FILES['logo_file'] ?? null);
         echo json_encode($result);
         break;
 
     case 'DELETE':
-        parse_str(file_get_contents("php://input"), $delete_vars);
+        $input = json_decode(file_get_contents("php://input"), true);
         $result = $logoController->deleteLogo($input['id']);
         echo json_encode($result);
         break;
 
     default:
-        echo json_encode(array("success" => false, "message" => "Invalid request method"));
+        echo json_encode(["success" => false, "message" => "Invalid request method"]);
         break;
 }
 ?>

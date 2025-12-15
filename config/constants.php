@@ -14,4 +14,5 @@ header('Access-Control-Allow-Credentials: true');
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit(0);
 }
-?>
+
+define('BASE_URL', 'http://localhost/printmont-admin/');
