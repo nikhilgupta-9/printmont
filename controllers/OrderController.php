@@ -1,6 +1,5 @@
 <?php
 require_once(__DIR__ . '/../config/database.php');
-// require_once 'models/Database.php';
 require_once(__DIR__ . '/../models/Order.php');
 
 class OrderController
@@ -80,6 +79,11 @@ class OrderController
         return $this->order->deliveredOrders($page, $limit, $filters);
     }
 
+    public function getcompletedOrders($limit = 10, $page = 1, $filters = [])
+    {
+        return $this->order->completedOrders($limit, $page, $filters);
+    }
+
     public function getCancelledOrders($page = 1, $limit = 10, $filters = [])
     {
         return $this->order->cancelledOrders($page, $limit, $filters);
@@ -123,16 +127,17 @@ class OrderController
     }
 
     // Update order status
-    public function updateOrderStatusAPI($orderId, $status, $notes = '', $createdBy = null) {
+    public function updateOrderStatusAPI($orderId, $status, $notes = '', $createdBy = null)
+    {
         try {
             $validStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
-            
+
             if (!in_array($status, $validStatuses)) {
                 throw new Exception("Invalid order status");
             }
 
             $success = $this->order->updateOrderStatus($orderId, $status, $notes, $createdBy);
-            
+
             return [
                 'success' => $success,
                 'message' => 'Order status updated successfully'
@@ -145,11 +150,12 @@ class OrderController
         }
     }
 
-     // Get customer orders
-    public function getCustomerOrders($userId) {
+    // Get customer orders
+    public function getCustomerOrders($userId)
+    {
         try {
             $orders = $this->order->getOrdersByCustomer($userId);
-            
+
             return [
                 'success' => true,
                 'data' => $orders,
@@ -162,11 +168,13 @@ class OrderController
             ];
         }
     }
-     // Get dashboard statistics
-    public function getDashboardStats() {
+    
+    // Get dashboard statistics
+    public function getDashboardStats()
+    {
         try {
             $stats = $this->order->getDashboardStats();
-            
+
             return [
                 'success' => true,
                 'data' => $stats
@@ -177,6 +185,13 @@ class OrderController
                 'error' => $e->getMessage()
             ];
         }
+    }
+
+    // Fixed getAllSoldOrders method - calls the Order model instead of trying to run SQL directly
+    public function getAllSoldOrders($limit = 15, $page = 1, $filters = [])
+    {
+        // Simply call the Order model's method
+        return $this->order->getAllSoldOrders($limit, $page, $filters);
     }
 }
 ?>

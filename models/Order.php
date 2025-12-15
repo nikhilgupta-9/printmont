@@ -532,5 +532,199 @@ public function getRecentPendingOrders($limit = 5) {
     
     return $orders;
 }
+public function completedOrders($limit = 10, $page = 1, $filters = [])
+{
+    // Calculate offset for pagination
+    $offset = ($page - 1) * $limit;
+    
+    // Build WHERE clause based on filters
+    $where_clauses = ["o.status = 'delivered'"];
+    $params = [];
+    $types = "";
+    
+    if (!empty($filters['payment_status'])) {
+        $where_clauses[] = "o.payment_status = ?";
+        $params[] = $filters['payment_status'];
+        $types .= "s";
+    }
+    
+    if (!empty($filters['search'])) {
+        $where_clauses[] = "(o.order_number LIKE ? OR o.customer_name LIKE ? OR o.customer_email LIKE ?)";
+        $search_term = "%" . $filters['search'] . "%";
+        $params[] = $search_term;
+        $params[] = $search_term;
+        $params[] = $search_term;
+        $types .= "sss";
+    }
+    
+    if (!empty($filters['date_from'])) {
+        $where_clauses[] = "DATE(o.created_at) >= ?";
+        $params[] = $filters['date_from'];
+        $types .= "s";
+    }
+    
+    if (!empty($filters['date_to'])) {
+        $where_clauses[] = "DATE(o.created_at) <= ?";
+        $params[] = $filters['date_to'];
+        $types .= "s";
+    }
+    
+    $where_sql = implode(" AND ", $where_clauses);
+    
+    // First, get total count for pagination
+    $count_query = "SELECT COUNT(DISTINCT o.id) as total 
+                    FROM {$this->table_orders} o
+                    WHERE {$where_sql}";
+    
+    $count_stmt = $this->conn->prepare($count_query);
+    if (!empty($params)) {
+        $count_stmt->bind_param($types, ...$params);
+    }
+    $count_stmt->execute();
+    $count_result = $count_stmt->get_result();
+    $total_count = $count_result->fetch_assoc()['total'];
+    $total_pages = ceil($total_count / $limit);
+    
+    // Get orders with pagination
+    $query = "SELECT o.*, 
+                     COUNT(oi.id) as items_count,
+                     SUM(oi.quantity) as total_quantity
+              FROM {$this->table_orders} o
+              LEFT JOIN {$this->table_order_items} oi ON o.id = oi.order_id
+              WHERE {$where_sql}
+              GROUP BY o.id
+              ORDER BY o.created_at DESC 
+              LIMIT ? OFFSET ?";
+    
+    // Add pagination parameters
+    $params[] = $limit;
+    $params[] = $offset;
+    $types .= "ii";
+    
+    $stmt = $this->conn->prepare($query);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $orders = [];
+    while ($row = $result->fetch_assoc()) {
+        $orders[] = $row;
+    }
+    
+    return [
+        'orders' => $orders,
+        'total_count' => $total_count,
+        'total_pages' => $total_pages,
+        'current_page' => $page
+    ];
+}
+
+// Add this method to your Order model
+public function getAllSoldOrders($limit = 15, $page = 1, $filters = [])
+{
+    // Calculate offset for pagination
+    $offset = ($page - 1) * $limit;
+    
+    // Build WHERE clause (exclude cancelled orders)
+    $where_clauses = ["o.status != 'cancelled'"];
+    $params = [];
+    $types = "";
+    
+    if (!empty($filters['status'])) {
+        $where_clauses[] = "o.status = ?";
+        $params[] = $filters['status'];
+        $types .= "s";
+    }
+    
+    if (!empty($filters['payment_status'])) {
+        $where_clauses[] = "o.payment_status = ?";
+        $params[] = $filters['payment_status'];
+        $types .= "s";
+    }
+    
+    if (!empty($filters['payment_method'])) {
+        $where_clauses[] = "o.payment_method = ?";
+        $params[] = $filters['payment_method'];
+        $types .= "s";
+    }
+    
+    if (!empty($filters['search'])) {
+        $where_clauses[] = "(o.order_number LIKE ? OR o.customer_name LIKE ? OR o.customer_email LIKE ? OR o.customer_phone LIKE ?)";
+        $search_term = "%" . $filters['search'] . "%";
+        $params[] = $search_term;
+        $params[] = $search_term;
+        $params[] = $search_term;
+        $params[] = $search_term;
+        $types .= "ssss";
+    }
+    
+    if (!empty($filters['date_from'])) {
+        $where_clauses[] = "DATE(o.created_at) >= ?";
+        $params[] = $filters['date_from'];
+        $types .= "s";
+    }
+    
+    if (!empty($filters['date_to'])) {
+        $where_clauses[] = "DATE(o.created_at) <= ?";
+        $params[] = $filters['date_to'];
+        $types .= "s";
+    }
+    
+    $where_sql = implode(" AND ", $where_clauses);
+    
+    // Get total count
+    $count_query = "SELECT COUNT(DISTINCT o.id) as total 
+                    FROM {$this->table_orders} o
+                    WHERE {$where_sql}";
+    
+    $count_stmt = $this->conn->prepare($count_query);
+    if (!empty($params)) {
+        $count_stmt->bind_param($types, ...$params);
+    }
+    $count_stmt->execute();
+    $count_result = $count_stmt->get_result();
+    $total_row = $count_result->fetch_assoc();
+    $total_count = $total_row['total'] ?? 0;
+    $total_pages = ceil($total_count / $limit);
+    $count_stmt->close();
+    
+    // Get orders with pagination
+    $query = "SELECT o.*, 
+                     COUNT(oi.id) as items_count,
+                     COALESCE(SUM(oi.quantity), 0) as total_quantity
+              FROM {$this->table_orders} o
+              LEFT JOIN {$this->table_order_items} oi ON o.id = oi.order_id
+              WHERE {$where_sql}
+              GROUP BY o.id
+              ORDER BY o.created_at DESC 
+              LIMIT ? OFFSET ?";
+    
+    // Add pagination parameters
+    $params[] = $limit;
+    $params[] = $offset;
+    $types .= "ii";
+    
+    $stmt = $this->conn->prepare($query);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $orders = [];
+    while ($row = $result->fetch_assoc()) {
+        $orders[] = $row;
+    }
+    $stmt->close();
+    
+    return [
+        'orders' => $orders,
+        'total_count' => $total_count,
+        'total_pages' => $total_pages,
+        'current_page' => $page
+    ];
+}
 }
 ?>

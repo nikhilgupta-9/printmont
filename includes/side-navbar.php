@@ -364,7 +364,7 @@ $menu_access = [
 							<a class='sidebar-link' href='pending-orders.php'>Pending Orders</a>
 						</li>
 						<li class="sidebar-item">
-							<a class='sidebar-link' href='processing-orders.php'>Processing Orders</a>
+							<a class='sidebar-link' href='processing-order.php'>Processing Orders</a>
 						</li>
 						<li class="sidebar-item">
 							<a class='sidebar-link' href='delivered-orders.php'>Delivered Orders</a>

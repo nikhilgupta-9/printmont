@@ -4,18 +4,18 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 // Define BASE_URL outside the class
-define("BASE_URL", "https://printmont.com/");
-// define("BASE_URL", "http://localhost/printmont-backend/");
+// define("BASE_URL", "https://printmont.com/");
+define("BASE_URL", "http://localhost/printmont-admin/");
 
 class Database {
     private $host = "localhost";
-    private $db_name = "u427250797_print_mont_adm";
-    private $username = "u427250797_print_mont_adm";
-    private $password = "!!e|b9gW";
+    // private $db_name = "u427250797_print_mont_adm";
+    // private $username = "u427250797_print_mont_adm";
+    // private $password = "!!e|b9gW";
 
-    // private $db_name = "flipkart_admin";
-    // private $username = "root";
-    // private $password = "";
+    private $db_name = "flipkart_admin";
+    private $username = "root";
+    private $password = "";
     public $conn;
 
     public function getConnection() {
