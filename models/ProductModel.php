@@ -40,46 +40,83 @@ class ProductModel {
     }
 
     public function createProduct($data, $images = []) {
-        $this->db->beginTransaction();
+    $this->db->beginTransaction();
+    
+    try {
+        // Insert product with SEO fields
+        $query = "INSERT INTO products 
+                  (name, description, brand, price, discount_price, stock_quantity, sku, 
+                   status, featured, meta_title, meta_description, meta_keywords,
+                   top_selection, our_bestseller, top_rated, top_deal_by_categories, 
+                   promotional_content, created_at, updated_at) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
         
-        try {
-            // Insert product
-            $query = "INSERT INTO products (name, description, category_id, brand, price, discount_price, stock_quantity, sku, status, featured, top_selection, our_bestseller, top_rated, top_deal_by_categories) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            
-            $params = [
-                $data['name'],
-                $data['description'] ?? '',
-                $data['category_id'],
-                $data['brand'] ?? '',
-                $data['price'],
-                $data['discount_price'] ?? null,
-                $data['stock_quantity'],
-                $data['sku'],
-                $data['status'] ?? 'active',
-                $data['featured'] ?? 0,
-                $data['top_selection'] ?? 0,
-                $data['our_bestseller'] ?? 0,
-                $data['top_rated'] ?? 0,
-                $data['top_deal_by_categories'] ?? 0
-            ];
-            
-            $productId = $this->db->insert($query, $params);
-            
-            // Insert images if provided
-            if (!empty($images)) {
-                $this->addProductImages($productId, $images);
-            }
-            
-            $this->db->commit();
-            return $productId;
-            
-        } catch (Exception $e) {
-            $this->db->rollback();
-            throw $e;
+        $params = [
+            $data['name'],
+            $data['description'] ?? '',
+            $data['brand'] ?? '',
+            $data['price'],
+            $data['discount_price'] ?? null,
+            $data['stock_quantity'],
+            $data['sku'],
+            $data['status'] ?? 'active',
+            $data['featured'] ?? 0,
+            $data['meta_title'] ?? '',
+            $data['meta_description'] ?? '',
+            $data['meta_keywords'] ?? '',
+            $data['top_selection'] ?? 0,
+            $data['our_bestseller'] ?? 0,
+            $data['top_rated'] ?? 0,
+            $data['top_deal_by_categories'] ?? 0,
+            $data['promotional_content'] ?? ''
+        ];
+        
+        $productId = $this->db->insert($query, $params);
+        
+        // Insert categories (multiple categories support)
+        if (!empty($data['categories']) && is_array($data['categories'])) {
+            $this->addProductCategories($productId, $data['categories']);
         }
+        
+        // Insert images if provided
+        if (!empty($images)) {
+            $this->addProductImages($productId, $images);
+        }
+        
+        $this->db->commit();
+        return $productId;
+        
+    } catch (Exception $e) {
+        $this->db->rollback();
+        throw $e;
     }
+}
 
+private function addProductCategories($productId, $categoryIds) {
+    foreach ($categoryIds as $index => $categoryId) {
+        $isPrimary = ($index === 0) ? 1 : 0;
+        
+        $query = "INSERT INTO product_categories 
+                  (product_id, category_id, is_primary, created_at) 
+                  VALUES (?, ?, ?, NOW())";
+        
+        $params = [$productId, $categoryId, $isPrimary];
+        $this->db->insert($query, $params);
+    }
+}
+
+private function addProductImages($productId, $images) {
+    foreach ($images as $index => $image) {
+        $isPrimary = ($index === 0) ? 1 : 0;
+        
+        $query = "INSERT INTO product_images 
+                  (product_id, image_url, is_primary, display_order, created_at) 
+                  VALUES (?, ?, ?, ?, NOW())";
+        
+        $params = [$productId, $image['image_url'], $isPrimary, $index];
+        $this->db->insert($query, $params);
+    }
+}
     public function updateProduct($id, $data, $images = []) {
         $this->db->beginTransaction();
         
@@ -154,19 +191,19 @@ class ProductModel {
         return $this->db->fetchAll($query, [$productId]);
     }
 
-    private function addProductImages($productId, $images) {
-        foreach ($images as $image) {
-            $query = "INSERT INTO product_images (product_id, image_url, is_primary, display_order) 
-                      VALUES (?, ?, ?, ?)";
+    // private function addProductImages($productId, $images) {
+    //     foreach ($images as $image) {
+    //         $query = "INSERT INTO product_images (product_id, image_url, is_primary, display_order) 
+    //                   VALUES (?, ?, ?, ?)";
             
-            $this->db->execute($query, [
-                $productId,
-                $image['image_url'],
-                $image['is_primary'] ? 1 : 0,
-                $image['display_order']
-            ]);
-        }
-    }
+    //         $this->db->execute($query, [
+    //             $productId,
+    //             $image['image_url'],
+    //             $image['is_primary'] ? 1 : 0,
+    //             $image['display_order']
+    //         ]);
+    //     }
+    // }
 
     // Status-based Product Retrieval 
     public function getDeactiveProducts() {
@@ -599,5 +636,24 @@ public function getProductsByCategorySlug($slug, $limit = 50) {
     return $products;
 }
 
+public function generateSlug($name)
+{
+    // Convert to lowercase
+    $slug = strtolower($name);
+    
+    // Replace spaces with hyphens
+    $slug = preg_replace('/\s+/', '-', $slug);
+    
+    // Remove special characters
+    $slug = preg_replace('/[^a-z0-9\-]/', '', $slug);
+    
+    // Remove multiple hyphens
+    $slug = preg_replace('/-+/', '-', $slug);
+    
+    // Trim hyphens from beginning and end
+    $slug = trim($slug, '-');
+    
+    return $slug;
+}
 }
 ?>

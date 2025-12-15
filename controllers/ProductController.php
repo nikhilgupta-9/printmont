@@ -89,44 +89,60 @@ class ProductController
     }
 
     public function addProduct($data, $files)
-    {
-        try {
-            // Validate required fields
-            $required = ['name', 'category_id', 'price', 'stock_quantity', 'sku'];
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    throw new Exception("Field $field is required");
-                }
+{
+    try {
+        // Validate required fields
+        $required = ['name', 'price', 'stock_quantity', 'sku'];
+        foreach ($required as $field) {
+            if (empty($data[$field])) {
+                throw new Exception("Field $field is required");
             }
-
-            // Prepare product data
-            $productData = [
-                'name' => trim($data['name']),
-                'description' => trim($data['description'] ?? ''),
-                'category_id' => $data['category_id'],
-                'brand' => trim($data['brand'] ?? ''),
-                'price' => floatval($data['price']),
-                'discount_price' => !empty($data['discount_price']) ? floatval($data['discount_price']) : null,
-                'stock_quantity' => intval($data['stock_quantity']),
-                'sku' => trim($data['sku']),
-                'status' => $data['status'] ?? 'active',
-                'featured' => isset($data['featured']) ? 1 : 0
-            ];
-
-            // Handle image upload
-            $images = [];
-            if (!empty($files['images']['name'][0])) {
-                $images = $this->handleImageUpload($files['images']);
-            }
-
-            // Create product
-            $productId = $this->productModel->createProduct($productData, $images);
-
-            return ['success' => true, 'product_id' => $productId];
-        } catch (Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
         }
+
+        // Validate categories
+        if (empty($data['categories']) || !is_array($data['categories'])) {
+            throw new Exception("At least one category is required");
+        }
+
+        // Prepare product data with SEO fields
+        $productData = [
+            'name' => trim($data['name']),
+            'description' => trim($data['description'] ?? ''),
+            'brand' => trim($data['brand'] ?? ''),
+            'price' => floatval($data['price']),
+            'discount_price' => !empty($data['discount_price']) ? floatval($data['discount_price']) : null,
+            'stock_quantity' => intval($data['stock_quantity']),
+            'sku' => trim($data['sku']),
+            'status' => $data['status'] ?? 'active',
+            'featured' => isset($data['featured']) ? 1 : 0,
+            // SEO fields
+            'meta_title' => trim($data['meta_title'] ?? ''),
+            'meta_description' => trim($data['meta_description'] ?? ''),
+            'meta_keywords' => trim($data['meta_keywords'] ?? ''),
+            // Promotional fields
+            'top_selection' => isset($data['top_selection']) ? 1 : 0,
+            'our_bestseller' => isset($data['our_bestseller']) ? 1 : 0,
+            'top_rated' => isset($data['top_rated']) ? 1 : 0,
+            'top_deal_by_categories' => isset($data['top_deal_by_categories']) ? 1 : 0,
+            'promotional_content' => trim($data['promotional_content'] ?? ''),
+            // Categories array (for separate handling)
+            'categories' => $data['categories']
+        ];
+
+        // Handle image upload
+        $images = [];
+        if (!empty($files['images']['name'][0])) {
+            $images = $this->handleImageUpload($files['images']);
+        }
+
+        // Create product with multiple categories
+        $productId = $this->productModel->createProduct($productData, $images);
+
+        return ['success' => true, 'product_id' => $productId];
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
     }
+}   
 
     private function handleImageUpload($files)
     {
