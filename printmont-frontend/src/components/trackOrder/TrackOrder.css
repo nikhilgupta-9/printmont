@@ -1,0 +1,146 @@
+.track-order-section {
+  background-color: rgb(238, 243, 251);
+  min-height: 80vh;
+  position: relative;
+}
+
+.track-title-btn {
+  background-color: #8e8785 !important;
+  border: none;
+  color: black !important;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 5px;
+}
+
+.instruction-text {
+  color: #333;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.form-input {
+  border-radius: 5px;
+  height: 45px;
+}
+
+.track-btn {
+  background-color: #005a9c;
+  border: none;
+  color: #fff;
+  height: 45px;
+  font-weight: 600;
+  border-radius: 5px;
+}
+
+.track-btn:hover {
+  background-color: #061b2b;
+}
+
+/* Sticky Button for Mobile */
+.sticky-track-btn {
+  width: 100%;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #005a9c;
+  /* padding: 10px 15px; */
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.15);
+  z-index: 5;
+}
+
+.sticky-track-btn .track-btn {
+  height: 48px;
+  background-color: #005a9c;
+  border: none;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* Order Card */
+.order-card {
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Image Fix */
+.product-image-wrapper {
+  width: 100%;
+  max-width: 130px;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+/* Status */
+.tracking-status {
+  border-left: 2px solid #28a745;
+  margin-left: 8px;
+  padding-left: 10px;
+}
+
+.see-updates {
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.chat-link {
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.search-by {
+  align-items: flex-start !important;
+  flex-direction: column;
+}
+
+.search-by strong {
+  margin-bottom: 5px;
+}
+
+@media (max-width: 767px) {
+  .track-order-section {
+    padding-bottom: 70px;
+  }
+
+  .track-title-btn {
+    width: 100%;
+    font-size: 15px;
+  }
+
+  .search-by {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .order-card {
+    padding: 15px !important;
+  }
+
+  .product-image-wrapper {
+    max-width: 100px;
+    margin: 0 auto;
+  }
+
+  .order-card h5 {
+    font-size: 15px;
+  }
+
+  .order-card h6 {
+    font-size: 14px;
+  }
+
+  .tracking-status {
+    margin-left: 5px;
+  }
+}

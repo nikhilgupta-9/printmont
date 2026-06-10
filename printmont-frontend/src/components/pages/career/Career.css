@@ -1,0 +1,25 @@
+.career-page {
+  background-color: #fff;
+  color: #000;
+}
+
+.career-card {
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
+}
+
+.career-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.career-card h6 {
+  font-weight: 600;
+}
+
+.badge {
+  font-size: 0.75rem;
+  border-radius: 25px;
+  padding: 4px 10px;
+}

@@ -1,0 +1,67 @@
+
+.help-icon{
+  width: 70px;
+}
+.help-text{
+  
+  /* display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center; */
+}
+.help-text p{
+    font-size: medium;
+    line-height: 1.2;
+  }
+@media (max-width: 768px) {
+  .container {
+    /* padding: 0.75rem !important; */
+  }
+  .accordion-button {
+    font-size: 14px;
+  }
+  .help-icon{
+    width: 30px;
+  }
+  .help-text p{
+    font-size: small;
+    line-height: 1.2;
+  }
+  .help-text h6{
+    font-size: medium;
+  }
+  .help-bd{
+    border-bottom: 2px solid gray;
+  }
+}
+.faq-category-item {
+  background-color: #f4f6f7;
+  border: none;
+  border-radius: 0;
+}
+
+.faq-category-item.active {
+  background-color: #e8efff !important;
+  /* font-weight: 600; */
+  color: #0d6efd !important;
+}
+
+.rotate-up {
+  transform: rotate(180deg);
+  transition: 0.3s;
+}
+
+.rotate-down {
+  transform: rotate(0deg);
+  transition: 0.3s;
+}
+.accordion-button{
+  font-weight: 500 ;
+}
+
+@media (min-width: 992px) {
+  /* On large screens, sidebar has fixed look */
+  .faq-category-item {
+    cursor: pointer;
+  }
+}

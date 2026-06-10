@@ -1,0 +1,163 @@
+:root {
+  --theme-color: rgb(11, 83, 161);
+}
+
+.support-page {
+  background-color: #f5f7fa;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar-card {
+  border: none;
+  border-radius: 12px;
+}
+
+.search-box .form-control {
+  padding-left: 35px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.search-icon {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  color: gray;
+  font-size: 14px;
+}
+
+.sidebar-item {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  color: #333;
+  font-size: 15px;
+  padding: 10px 12px;
+}
+
+.sidebar-item:hover {
+  background-color: rgba(11, 83, 161, 0.08);
+  cursor: pointer;
+}
+
+.sidebar-item.active {
+  background-color: var(--theme-color) !important;
+  color: white !important;
+  font-weight: 500;
+  box-shadow: 0 0 5px rgba(11, 83, 161, 0.3);
+}
+
+/* Content */
+.text-primary-color {
+  color: var(--theme-color);
+}
+
+.product-card {
+  border-color: rgba(11, 83, 161, 0.15) !important;
+  border-radius: 10px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 10px rgba(11, 83, 161, 0.15);
+}
+
+.product-img {
+  width: 70px;
+  height: 70px;
+  object-fit: cover;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.btn-theme,
+.btn-theme:hover,
+.btn-theme:focus {
+  background-color: var(--theme-color);
+  border: none;
+  color: white;
+  font-weight: 500;
+  padding: 6px 14px;
+  transition: background-color 0.3s;
+}
+
+.content-card,
+.faq-card {
+  border: none;
+  border-radius: 12px;
+}
+
+/* FAQ */
+.faq-item p:first-child {
+  color: #222;
+}
+
+.faq-item p.text-muted {
+  font-size: 14px;
+}
+:root {
+  --theme-color: rgb(11, 83, 161);
+}
+
+/* Scrollable horizontal tabs for small screens */
+.mobile-scroll-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 10px;
+  padding: 6px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  scrollbar-width: none;
+}
+
+.mobile-scroll-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-tab-item {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  /* background-color: #f1f3f5; */
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.scroll-tab-item.active {
+  background-color: var(--theme-color);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(11, 83, 161, 0.3);
+}
+
+.scroll-tab-item:hover {
+  background-color: rgba(11, 83, 161, 0.1);
+}
+
+/* Keep rest of your support.css same as before */
+
+
+/* Responsive tweaks */
+@media (max-width: 767px) {
+  .sidebar-card {
+    margin-bottom: 1rem;
+  }
+
+  .product-card {
+    text-align: center;
+  }
+
+  .product-img {
+    margin-bottom: 10px;
+  }
+
+  .btn-theme {
+    width: 100%;
+  }
+}

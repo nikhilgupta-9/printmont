@@ -1,0 +1,54 @@
+.notification-page {
+  background-color: #f4f6f8;
+}
+
+.sidebar-item {
+  color: red;
+}
+
+.sidebar-item:hover {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.main-content {
+  position: relative;
+}
+
+.notification-section .toggle-icon {
+  font-size: 18px;
+  color: #555;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.notification-section .toggle-icon:hover {
+  text-decoration: none;
+}
+
+.form-check-label {
+  display: flex;
+  flex-direction: column;
+}
+
+.section-label span {
+  line-height: 1.3;
+}
+
+hr {
+  margin: 12px 0;
+  color: #eee;
+}
+
+/* ✅ Active tab style */
+.nav-pills .nav-link.active {
+  background-color: #0d6efd !important;
+  color: #fff !important;
+  font-weight: 500;
+  border-radius: 8px;
+}
+
+.nav-pills .nav-link:hover {
+  background-color: #e9ecef;
+  color: #0d6efd;
+}

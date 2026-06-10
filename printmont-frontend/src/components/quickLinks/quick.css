@@ -1,0 +1,27 @@
+.quicklinks-container {
+  /* max-width: 480px; */
+  margin: 0 auto;
+  border: 1px solid #ddd;
+  /* height: 100vh; */
+  /* overflow-y: auto; */
+  background-color: #f8f9fa;
+}
+
+.icon-placeholder {
+  width: 36px;
+  height: 36px;
+}
+
+.footer {
+  border-top: 1px solid #ccc;
+}
+.head-text{
+    color: rgb(38, 37, 37);
+    font-size: 1rem;
+}
+.inner-text{
+    font-size: 0.8rem;
+}
+.quick-title{
+    color: rgb(39, 36, 36);
+}
