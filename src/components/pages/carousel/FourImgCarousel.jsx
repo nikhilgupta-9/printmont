@@ -32,7 +32,33 @@ const FourImgCarousel = ({ apiUrl }) => {
         const res = await fetch(apiUrl);
         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
         const data = await res.json();
-        setImages(data);
+
+        let bannerList = [];
+        if (data && data.success && data.data) {
+          if (data.data.home_mid_section_2 && data.data.home_mid_section_2.banners) {
+            bannerList = data.data.home_mid_section_2.banners;
+          } else if (Array.isArray(data.data)) {
+            bannerList = data.data;
+          }
+        } else if (Array.isArray(data)) {
+          bannerList = data;
+        }
+
+        const formattedImages = bannerList.map((item) => {
+          let src = '';
+          if (typeof item === 'string') src = item;
+          else if (item.url) src = item.url;
+          else if (item.src) src = item.src;
+          else if (item.images) src = item.images.desktop || item.images.mobile || '';
+          else src = item.image_url_desktop || item.image_url_mobile || '';
+
+          return {
+            src: src,
+            alt: item.alt || item.title || "",
+          };
+        });
+
+        setImages(formattedImages);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -61,7 +87,19 @@ const FourImgCarousel = ({ apiUrl }) => {
     ],
   };
 
-  if (loading) return <div className="text-center p-5">Loading carousel...</div>;
+  if (loading) {
+    return (
+      <div className="container-fluid mx-0 mt-2 p-0 px-1">
+        <div className="row g-2 m-0">
+          {[1, 2, 3, 4].map((item) => (
+            <div key={item} className="col-6 col-md-3 px-1">
+              <div className="shimmer-bg skeleton-grid-3 w-100"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (error) return <div className="text-center text-danger p-5">Error: {error}</div>;
 
   return (
@@ -73,6 +111,7 @@ const FourImgCarousel = ({ apiUrl }) => {
               src={img.src}
               alt={img.alt || `slide-${index}`}
               className="carousel-img"
+              loading="lazy"
               style={{ width: "100%", height: "auto", objectFit: "contain" }}
             />
           </div>

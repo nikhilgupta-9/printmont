@@ -19,7 +19,34 @@ const SecondCarousel = ({ apiUrl, title = "Products", badgeText = "" }) => {
         const res = await fetch(apiUrl);
         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
         const data = await res.json();
-        setProducts(data);
+        
+        const rawProducts = data && data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+        
+        const formattedProducts = rawProducts.map(p => {
+          if (p.img && p.title) return p;
+          
+          let primaryImg = '/default-img.jpg';
+          if (Array.isArray(p.images) && p.images.length > 0) {
+            const primary = p.images.find(img => img.is_primary) || p.images[0];
+            primaryImg = primary.image_url;
+          }
+          
+          const hasDiscount = p.discount_price !== null && p.discount_price !== undefined && p.discount_price > 0;
+          const currentPrice = hasDiscount ? p.discount_price : p.price;
+          const originalPrice = hasDiscount ? p.price : null;
+          const discountText = hasDiscount ? `${Math.round(((p.price - p.discount_price) / p.price) * 100)}% Off` : '';
+
+          return {
+            title: p.name || '',
+            img: primaryImg,
+            price: currentPrice,
+            originalPrice: originalPrice,
+            discount: discountText,
+            badge: p.our_bestseller ? 'Best Seller' : (p.top_rated ? 'Top Rated' : '')
+          };
+        });
+
+        setProducts(formattedProducts);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -103,7 +130,28 @@ const SecondCarousel = ({ apiUrl, title = "Products", badgeText = "" }) => {
     };
   };
 
-  if (loading) return <div className="text-center p-5">Loading products...</div>;
+  if (loading) {
+    return (
+      <div className="horizontal-scroll-wrapper bg-white m-0 px-0 border">
+        <div className="d-flex justify-content-between align-items-center">
+          <p className="fw-semibold fs-5 fs-lg-4 my-2 ms-1">{title}</p>
+        </div>
+        <div className="d-flex flex-nowrap overflow-x-hidden px-1 py-1 gap-1">
+          {[1, 2, 3, 4, 5].map((item) => (
+            <div
+              key={item}
+              className="scroll-card border d-flex flex-column p-1 h-100 m-0"
+              style={getResponsiveCardStyle(screenSize)}
+            >
+              <div className="shimmer-bg skeleton-img w-100" />
+              <div className="shimmer-bg skeleton-title w-75 mx-auto" />
+              <div className="shimmer-bg skeleton-price w-50 mx-auto" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (error) return <div className="text-center text-danger p-5">Error: {error}</div>;
 
   return (
@@ -168,6 +216,7 @@ const SecondCarousel = ({ apiUrl, title = "Products", badgeText = "" }) => {
                 alt={product.title}
                 className="product-image w-100 h-100"
                 style={{ objectFit: "contain" }}
+                loading="lazy"
               />
               {product.badge && (
                 <span className="badge bg-primary position-absolute top-0 start-0 m-1">

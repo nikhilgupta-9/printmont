@@ -15,13 +15,42 @@ const BannerTwo = ({ apiUrl }) => {
       if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
       const data = await response.json();
 
-      // ✅ Handle array format like:
-      // [ { type: "desktop", images: [...] }, { type: "mobile", images: [...] } ]
-      const desktopData = data.find(item => item.type === "desktop")?.images || [];
-      const mobileData = data.find(item => item.type === "mobile")?.images || [];
+      let desktopList = [];
+      let mobileList = [];
+      if (Array.isArray(data)) {
+        const desktopData = data.find(item => item.type === "desktop")?.images || [];
+        const mobileData = data.find(item => item.type === "mobile")?.images || [];
+        desktopList = desktopData.map(d => ({ src: d.src || d, alt: d.alt || '' }));
+        mobileList = mobileData.map(m => ({ src: m.src || m, alt: m.alt || '' }));
+      } else {
+        let bannerList = [];
+        if (data && data.success && data.data) {
+          if (Array.isArray(data.data)) {
+            bannerList = data.data;
+          } else {
+            const keys = Object.keys(data.data);
+            if (keys.length > 0) {
+              const firstKey = keys[0];
+              if (data.data[firstKey] && data.data[firstKey].banners) {
+                bannerList = data.data[firstKey].banners;
+              } else if (Array.isArray(data.data[firstKey])) {
+                bannerList = data.data[firstKey];
+              }
+            }
+          }
+        }
+        desktopList = bannerList.map(item => ({
+          src: item.images?.desktop || item.image_url_desktop || '',
+          alt: item.title || ''
+        }));
+        mobileList = bannerList.map(item => ({
+          src: item.images?.mobile || item.image_url_mobile || '',
+          alt: item.title || ''
+        }));
+      }
 
-      setDesktopImages(desktopData);
-      setMobileImages(mobileData);
+      setDesktopImages(desktopList);
+      setMobileImages(mobileList);
     } catch (err) {
       console.error("Error fetching banner images:", err);
       setError(err.message);
@@ -34,7 +63,24 @@ const BannerTwo = ({ apiUrl }) => {
 }, [apiUrl]);
 
 
-  if (loading) return <p className="text-center p-3">Loading banners...</p>;
+  if (loading) {
+    return (
+      <>
+        {/* Desktop View */}
+        <div className="container-fluid bg-none d-none d-md-flex align-items-center justify-content-center gap-1 mx-0 py-0 m-0">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="col-4 p-0 rounded">
+              <div className="shimmer-bg skeleton-banner-hero w-100" style={{ height: "290px" }}></div>
+            </div>
+          ))}
+        </div>
+        {/* Mobile View */}
+        <div className="container-fluid px-0 d-md-none">
+          <div className="shimmer-bg skeleton-slider-mobile w-100" style={{ height: "180px" }}></div>
+        </div>
+      </>
+    );
+  }
   if (error) return <p className="text-center text-danger p-3">{error}</p>;
 
   return (

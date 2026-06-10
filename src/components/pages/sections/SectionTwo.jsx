@@ -13,7 +13,38 @@ const SectionTwo = ({ apiurl }) => {
         const res = await fetch(apiurl);
         if (!res.ok) throw new Error(`Failed to fetch (${res.status})`);
         const data = await res.json();
-        setImages(data);
+
+        let bannerList = [];
+        if (data && data.success && data.data) {
+          if (data.data.home_mid_section_3 && data.data.home_mid_section_3.banners) {
+            bannerList = data.data.home_mid_section_3.banners;
+          } else if (Array.isArray(data.data)) {
+            bannerList = data.data;
+          }
+        } else if (Array.isArray(data)) {
+          bannerList = data;
+        }
+
+        const formattedImages = bannerList.map((item) => {
+          let large = '';
+          let small = '';
+          if (item.large && item.small) {
+            large = item.large;
+            small = item.small;
+          } else if (item.images) {
+            large = item.images.desktop || '';
+            small = item.images.mobile || '';
+          } else {
+            large = item.image_url_desktop || '';
+            small = item.image_url_mobile || '';
+          }
+          return {
+            large: large,
+            small: small,
+          };
+        });
+
+        setImages(formattedImages);
       } catch (err) {
         console.error("Error fetching images:", err);
         setError(err.message);
@@ -25,7 +56,13 @@ const SectionTwo = ({ apiurl }) => {
     fetchImages();
   }, [apiurl]); // ✅ re-run when URL changes
 
-  if (loading) return <p className="text-center p-3">Loading...</p>;
+  if (loading) {
+    return (
+      <div className="container-fluid mt-2 p-0">
+        <div className="shimmer-bg skeleton-banner-hero w-100" style={{ maxHeight: "290px" }}></div>
+      </div>
+    );
+  }
   if (error) return <p className="text-center text-danger p-3">{error}</p>;
 
   return (

@@ -28,6 +28,7 @@ const Header = () => {
   const preferenceRef = useRef();
   const loginRef = useRef();
   const searchRef = useRef();
+  const headerRef = useRef();
 
   const productSuggestions = [
     { name: "Custom Hoodie", icon: <LuChartNoAxesCombined size={16} /> },
@@ -53,8 +54,6 @@ const Header = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  if (isMobile) return <MobileHeader />;
 
   const selectKeyword = (keyword) => {
     setSearchQuery(keyword);
@@ -113,16 +112,40 @@ const Header = () => {
   fetchLogo();
 }, []);
 
+  useEffect(() => {
+    if (isMobile || !headerRef.current) return;
+
+    const updateHeaderHeight = () => {
+      document.documentElement.style.setProperty(
+        "--site-header-height",
+        `${headerRef.current.offsetHeight}px`
+      );
+    };
+
+    updateHeaderHeight();
+    const resizeObserver = new ResizeObserver(updateHeaderHeight);
+    resizeObserver.observe(headerRef.current);
+    window.addEventListener("resize", updateHeaderHeight);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateHeaderHeight);
+    };
+  }, [isMobile, logo]);
+
+  if (isMobile) return <MobileHeader />;
+
   return (
-    <div className="container-fluid p-0 sticky-navbar">
-      <div className="container-fluid bg-white headon">
-        <Navbar expand="lg" className="border-bottom py-2 container-fluid px-5">
-          <Container fluid className="d-flex align-items-center">
+    <>
+      <div ref={headerRef} className="container-fluid p-0 sticky-navbar">
+        <div className="container-fluid bg-white headon">
+          <Navbar expand="lg" className="border-bottom py-1 container-fluid px-5">
+            <Container className="d-flex align-items-center" style={{ maxWidth: '1440px' }}>
             
             {/* ✅ React Router Link for Logo */}
             <Navbar.Brand as={Link} to="/" className="me-3">
               {logo ? (
-                <img src={logo} alt="Site Logo" style={{ height: "60px" }} />
+                <img src={logo} alt="Site Logo" style={{ height: "45px" }} />
               ) : (
                 <p>Loading...</p>
               )}
@@ -301,10 +324,12 @@ const Header = () => {
                 </div>
               </Nav>
             </Navbar.Collapse>
-          </Container>
-        </Navbar>
+            </Container>
+          </Navbar>
+        </div>
       </div>
-    </div>
+      <div className="site-header-spacer" aria-hidden="true" />
+    </>
   );
 };
 

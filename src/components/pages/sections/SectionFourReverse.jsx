@@ -17,7 +17,8 @@ const SectionFourReverse = ({ apiUrl, imageColumn, backgroundImageUrl }) => {
         const res = await fetch(apiUrl);
         if (!res.ok) throw new Error('Failed to fetch data');
         const data = await res.json();
-        setColumns(data); // 👈 Make sure your API returns array of {title, items}
+        const rawData = data && data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+        setColumns(rawData);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError(err.message);
@@ -93,7 +94,28 @@ const SectionFourReverse = ({ apiUrl, imageColumn, backgroundImageUrl }) => {
   );
 
   // ✅ Loading / Error states
-  if (loading) return <p className="text-center py-5">Loading...</p>;
+  if (loading) {
+    return (
+      <div className="container-fluid p-1 m-0">
+        <div className="row g-1 align-items-center px-1">
+          {[1, 2, 3].map((col) => (
+            <div className="col-12 col-sm-6 col-md-12 col-lg-4" key={col}>
+              <div className="border bg-white rounded-3 p-3 h-100">
+                <div className="shimmer-bg skeleton-title w-50 mb-3" style={{ margin: '0' }} />
+                <div className="row g-2">
+                  {[1, 2, 3, 4].map((item) => (
+                    <div className="col-6" key={item}>
+                      <div className="shimmer-bg skeleton-img w-100" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (error) return <p className="text-center text-danger py-5">Error: {error}</p>;
   if (!columns.length) return <p className="text-center py-5">No data found</p>;
 

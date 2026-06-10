@@ -16,6 +16,7 @@ const MobileHeader = () => {
   const [recentSearches, setRecentSearches] = useState(["T-Shirt", "Mug", "Notebook"]);
 
   const searchRef = useRef();
+  const headerRef = useRef();
 
   const productSuggestions = [
     { name: "Custom Hoodie", icon: <LuChartNoAxesCombined size={16} /> },
@@ -42,6 +43,27 @@ const MobileHeader = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!headerRef.current) return;
+
+    const updateHeaderHeight = () => {
+      document.documentElement.style.setProperty(
+        "--site-header-height",
+        `${headerRef.current.offsetHeight}px`
+      );
+    };
+
+    updateHeaderHeight();
+    const resizeObserver = new ResizeObserver(updateHeaderHeight);
+    resizeObserver.observe(headerRef.current);
+    window.addEventListener("resize", updateHeaderHeight);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateHeaderHeight);
+    };
+  }, []);
+
   const selectKeyword = (keyword) => {
     setSearchQuery(keyword);
     setShowSearchDropdown(false);
@@ -56,7 +78,7 @@ const MobileHeader = () => {
 
   return (
     <>
-      <div className='bg-white shadow-sm position-relative'>
+      <div ref={headerRef} className="site-header bg-white shadow-sm w-100">
         {/* === TOPBAR (logo + icons) === */}
         <div className="d-flex justify-content-between align-items-center px-3 py-2">
           <div className="d-flex align-items-center gap-3">
@@ -151,6 +173,7 @@ const MobileHeader = () => {
           )}
         </div>
       </div>
+      <div className="site-header-spacer" aria-hidden="true" />
 
       {/* Offcanvas Sidebar (unchanged) */}
       <div className="offcanvas offcanvas-start w-75" tabIndex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">

@@ -1,44 +1,82 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { TbCategory2 } from "react-icons/tb";
 import { IoIosArrowDown, IoIosArrowForward } from "react-icons/io";
 import { Link } from "react-router-dom";
 import { categoriesData } from "../../../../data/categoriesdata";
 
-const Categories = ({ showImages = true, space="", color = '', bg = '' }) => {
-  const [showimg, setShowimg] = useState(true);
+const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky = false }) => {
   const [show, setShow] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const [categoryHeight, setCategoryHeight] = useState(0);
   const [activeCategory, setActiveCategory] = useState(null);
   const [activeSub, setActiveSub] = useState(null);
+  const categoryRef = useRef(null);
+  const lastScrollYRef = useRef(0);
+  const frameRef = useRef(null);
 
   useEffect(() => {
+    if (!isSticky) return;
+
     const handleScroll = () => {
-      if (window.innerWidth >= 992) {
+      if (frameRef.current) return;
+
+      frameRef.current = window.requestAnimationFrame(() => {
         const currentScrollY = window.scrollY;
-        if (currentScrollY > lastScrollY && currentScrollY > 150) setShow(false);
-        else if (currentScrollY < lastScrollY - 20) setShow(true);
-        setLastScrollY(currentScrollY);
-      } else setShow(true);
+        const threshold = window.innerWidth < 992 ? 80 : 150;
+
+        if (currentScrollY <= 10) {
+          setShow(true);
+        } else if (
+          currentScrollY > lastScrollYRef.current &&
+          currentScrollY > threshold
+        ) {
+          setShow(false);
+        } else if (currentScrollY < lastScrollYRef.current) {
+          setShow(true);
+        }
+
+        lastScrollYRef.current = currentScrollY;
+        frameRef.current = null;
+      });
     };
 
+    lastScrollYRef.current = window.scrollY;
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (frameRef.current) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, [isSticky]);
 
-  
+  useLayoutEffect(() => {
+    if (!isSticky || !categoryRef.current) return;
+
+    const updateCategoryHeight = () => {
+      setCategoryHeight(categoryRef.current.offsetHeight);
+    };
+
+    updateCategoryHeight();
+    const resizeObserver = new ResizeObserver(updateCategoryHeight);
+    resizeObserver.observe(categoryRef.current);
+
+    return () => resizeObserver.disconnect();
+  }, [isSticky, showImages, space]);
 
   return (
-    <div
-      className="container-fluid bg-transparent px-0 py-0 pb-0 m-0 mx-0 shadow-sm start-0 w-100 categories-main"
-      style={{
-        transform:
-          show || window.innerWidth < 992
-            ? "translateY(0)"
-            : "translateY(-100%)",
-        transition: "transform 0.4s ease-in-out",
-        zIndex: 5,
-      }}
-    >
+    <>
+      <div
+        ref={categoryRef}
+        className={`container-fluid bg-transparent px-0 py-0 pb-0 m-0 mx-0 shadow-sm start-0 w-100 ${
+          isSticky ? "categories-sticky" : "categories-main"
+        }`}
+        style={isSticky ? {
+          transform: show ? "translateY(0)" : "translateY(-100%)",
+          transition: "transform 0.3s ease-in-out",
+          pointerEvents: show ? "auto" : "none",
+          zIndex: 1020,
+        } : {}}
+      >
       {/* SMALL SCREENS */}
       <div className="d-flex d-lg-none overflow-x-auto gap-2 px-2 align-items-center hide-scrollbar bg-white" style={{padding:`${space}`}}>
         {/* <div
@@ -60,7 +98,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '' }) => {
           >
             {showImages && (
             <img
-              src={item.img}
+              src={item.img && item.img.startsWith('./') ? item.img.substring(1) : item.img}
               alt={item.name}
               className="rounded mb-1 border categoires-img-width"
               style={{ objectFit: "cover" }}
@@ -74,8 +112,9 @@ const Categories = ({ showImages = true, space="", color = '', bg = '' }) => {
       </div>
 
       {/* LARGE SCREENS */}
-      <div className="d-none d-lg-flex justify-content-evenly w-100 position-relative text-nowrap small border-2 border border-white" style={{padding:`${space}`, backgroundColor:`${bg}`}} >
-        {categoriesData.map((item, index) => (
+      <div className="d-none d-lg-flex justify-content-center w-100 position-relative text-nowrap small border-2 border border-white" style={{padding:`${space}`, backgroundColor:`${bg}`}} >
+        <div className="d-flex justify-content-evenly w-100 mx-auto" style={{ maxWidth: '1440px' }}>
+          {categoriesData.map((item, index) => (
           <div
             key={index}
             className="d-flex flex-column align-items-center text-center mb-0 position-relative over"
@@ -91,7 +130,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '' }) => {
           >
             {showImages && (
             <img
-              src={item.img}
+              src={item.img && item.img.startsWith('./') ? item.img.substring(1) : item.img}
               alt={item.name}
               className="rounded mb-1 categoires-img-width"
               style={{ objectFit: "cover" }}
@@ -177,10 +216,18 @@ const Categories = ({ showImages = true, space="", color = '', bg = '' }) => {
             )}
           </div>
         ))}
-        
+        </div>
       </div>
       
-    </div>
+      </div>
+      {isSticky && (
+        <div
+          className="categories-sticky-spacer"
+          style={{ height: categoryHeight ? `${categoryHeight}px` : undefined }}
+          aria-hidden="true"
+        />
+      )}
+    </>
   );
 };
 

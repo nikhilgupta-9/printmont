@@ -15,13 +15,34 @@ const Slider = ({ apiUrl = '/data/slides.json' }) => {
         const response = await fetch(apiUrl);
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
-        // Read response as text for debugging
-        const text = await response.text();
+        const data = await response.json();
+        
+        let slideList = [];
+        if (data && data.success && data.data) {
+          if (data.data.home_hero && data.data.home_hero.banners) {
+            slideList = data.data.home_hero.banners;
+          } else if (Array.isArray(data.data)) {
+            slideList = data.data;
+          }
+        } else if (Array.isArray(data)) {
+          slideList = data;
+        }
 
-        // Try to parse JSON
-        const data = JSON.parse(text);
+        const formattedSlides = slideList.map((item) => {
+          if (item.url) return item;
+          let imgUrl = '';
+          if (item.images) {
+            imgUrl = item.images.mobile || item.images.desktop || '';
+          } else {
+            imgUrl = item.image_url_mobile || item.image_url_desktop || '';
+          }
+          return {
+            url: imgUrl,
+            target: item.target_url || item.target || '#'
+          };
+        });
 
-        setSlides(data);
+        setSlides(formattedSlides);
       } catch (err) {
         console.error("❌ Fetch Error:", err);
         setError(err.message);
@@ -33,7 +54,13 @@ const Slider = ({ apiUrl = '/data/slides.json' }) => {
     fetchSlides();
   }, [apiUrl]);
 
-  if (loading) return <div className="text-center p-5">Loading slider...</div>;
+  if (loading) {
+    return (
+      <div className="my-1 d-block d-lg-none px-2">
+        <div className="shimmer-bg skeleton-slider-mobile w-100"></div>
+      </div>
+    );
+  }
   if (error) return <div className="text-center text-danger p-5">Error: {error}</div>;
 
   return (

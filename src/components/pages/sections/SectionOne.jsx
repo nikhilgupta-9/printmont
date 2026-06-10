@@ -11,13 +11,28 @@ const SectionOne = ({ apiUrl }) => {
         const response = await fetch(apiUrl);
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
-        const text = await response.text(); // for debugging
+        const data = await response.json();
 
-        const data = JSON.parse(text);
+        let bannerList = [];
+        if (data && data.success && data.data) {
+          if (data.data.home_above_fold && data.data.home_above_fold.banners) {
+            bannerList = data.data.home_above_fold.banners;
+          } else if (Array.isArray(data.data)) {
+            bannerList = data.data;
+          }
+        } else if (Array.isArray(data)) {
+          bannerList = data;
+        }
 
-        // Case 1: data is [{ "url": "..." }]
-        // Case 2: data is ["img1.jpg", "img2.jpg"]
-        const imageArray = data.map(item => item.url || item);
+        const imageArray = bannerList.map(item => {
+          if (typeof item === 'string') return item;
+          if (item.url) return item.url;
+          if (item.images) {
+            return item.images.desktop || item.images.mobile || '';
+          }
+          return item.image_url_desktop || item.image_url_mobile || '';
+        });
+
         setBanners(imageArray);
       } catch (err) {
         console.error("❌ Error fetching banners:", err);
@@ -30,7 +45,19 @@ const SectionOne = ({ apiUrl }) => {
     fetchBanners();
   }, [apiUrl]);
 
-  if (loading) return <div className="text-center p-5">Loading banners...</div>;
+  if (loading) {
+    return (
+      <div className="container-fluid m-0 p-0">
+        <div className="row g-1 m-0 px-1 container-fluid d-flex">
+          {[1, 2, 3, 4].map((item) => (
+            <div className="col-6 col-lg-3 rounded-md" key={item}>
+              <div className="shimmer-bg skeleton-grid-3 w-100"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (error) return <div className="text-center text-danger p-5">Error: {error}</div>;
 
   return (

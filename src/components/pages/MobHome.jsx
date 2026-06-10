@@ -28,28 +28,28 @@ const baseURL = import.meta.env.VITE_BASE_URL;
 
   return (    
     <>
-    <div className='bg-white w-100'>
+    <div className='bg-white w-100 home-mobile-content'>
       <div>
       </div>
-        <div className='top-5'> <Categories/></div>
+        <div className='top-5'> <Categories isSticky={true}/></div>
 
         <div>
           {/* <FirstCarousel images={fristcrouselImg} carouselId="mainCarousel" /> */}
           <FirstCarousel apiUrl={`${baseURL}api/banner_api.php`} basePath={`${baseURL}uploads/banners/`}/>
         </div>
 
-        <Slider apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+        <Slider apiUrl={`${baseURL}api/banner_api.php`} />
 
 
         <div>
-            <SectionOne apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url"/>
+            <SectionOne apiUrl={`${baseURL}api/banner_api.php`}/>
             </div>
 
         <div className='bg-white'>
             <SingleProduct products={girloutfit} title="Recently Viewed" />
         </div>
 
-        <div><SectionTwo images={sectiontwoimg} apiurl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url"/></div>
+        <div><SectionTwo images={sectiontwoimg} apiurl={`${baseURL}api/banner_api.php`}/></div>
 
         <div><ProductGrid title="End of Season Sale" products={gridproducts} /></div>
 
@@ -77,7 +77,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
         <div className='bg-white'>
             {/* Pass data from API only for one section like home decor or dinnerware */}
             <SectionFour
-              apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url"
+              apiUrl={`${baseURL}api/home-product-api.php?action=grouped_categories`}
               backgroundImageUrl="./bg/bg-3.png"
               imageColumn={{
                 imageUrl: "/girl-product-img/girl-1.webp",
@@ -96,21 +96,21 @@ const baseURL = import.meta.env.VITE_BASE_URL;
 
         <div className='mt-2'>
         {/* <SecondCarousel products={bestsellerProduct} title="Top Selection" /> */}
-        <SecondCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" title="Top Selection" badgeText="Customizable" />
+        <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Top Selection" badgeText="Customizable" />
       </div>
 
       <div><Banner images={bannerImages} /></div>
 
       <div className='mt-2'>
         {/* <SecondCarousel products={bestsellerProducts} title="Discount For You" /> */}
-        <SecondCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" title="Discount For You" badgeText="Customizable" />
+        <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Discount For You" badgeText="Customizable" />
       </div>
 
       <div><Banner images={bannerImages} /></div>
 
       <div className='mt-2'>
         {/* <SecondCarousel products={dealsandcategories} title="Top Deals on categories" /> */}
-        <SecondCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" title="Top Deals on categories" badgeText="Customizable" />
+        <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Top Deals on categories" badgeText="Customizable" />
       </div>
 
       <div><Banner images={bannerImages} /></div>
@@ -124,7 +124,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
 
       <div>
         {/* <BannerTwo desktopImages={bannerTwoDesktop} mobileImages={bannerTwoMobile} /> */}        
-            <BannerTwo apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+            <BannerTwo apiUrl={`${baseURL}api/banner_api.php`} />
       </div>
       
       <div>
@@ -137,8 +137,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
         </div>
 
       <div className='mt-2'>
-        <SecondCarousel products={dealsandcategories} title="Top Deals on categories" />
-        <SecondCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" title="Top Deals on categories" badgeText="Customizable" />        
+        <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Top Deals on categories" badgeText="Customizable" />        
       </div>
         <div>
           <ProductList products={productList}/>
@@ -215,12 +214,12 @@ const baseURL = import.meta.env.VITE_BASE_URL;
 
         <div>
           {/* <SecondCarousel products={bestHealth} title="Best of Health & Wellness" /> */}
-        <SecondCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" title="Best of Health & Wellness" badgeText="Customizable" />
+        <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Best of Health & Wellness" badgeText="Customizable" />
         </div>
 
         <div>
           {/* <SecondCarousel products={sampleProducts} title="Electronics" /> */}
-          <SecondCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" title="Electronics" badgeText="Customizable" />
+          <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`} title="Electronics" badgeText="Customizable" />
           
         </div>
 
@@ -230,7 +229,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
 
         <div>
           {/* <SecondCarousel products={bestHealth} title="Home Usage" /> */}
-          <SecondCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" title="Home Usage" badgeText="Customizable" />
+          <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Home Usage" badgeText="Customizable" />
         </div>
 
         <div className='mt-2'>

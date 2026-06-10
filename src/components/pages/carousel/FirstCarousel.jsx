@@ -15,12 +15,34 @@ const FirstCarousel = ({ apiUrl, carouselId = 'carouselExample', basePath = '' }
         const data = await response.json();
         console.log('Carousel API Data:', data);
 
+        let bannerList = [];
+        if (data && data.success && data.data) {
+          if (data.data.home_hero && data.data.home_hero.banners) {
+            bannerList = data.data.home_hero.banners;
+          } else if (Array.isArray(data.data)) {
+            bannerList = data.data;
+          }
+        } else if (Array.isArray(data)) {
+          bannerList = data;
+        }
+
         // Map API response to expected format
-        const formattedData = data.map(item => ({
-          large: `${basePath}${item.image_url_desktop}`,
-          small: `${basePath}${item.image_url_mobile}`,
-          target: item.target_url
-        }));
+        const formattedData = bannerList.map(item => {
+          let large = '';
+          let small = '';
+          if (item.images) {
+            large = item.images.desktop || '';
+            small = item.images.mobile || '';
+          } else {
+            large = item.image_url_desktop ? `${basePath}${item.image_url_desktop}` : '';
+            small = item.image_url_mobile ? `${basePath}${item.image_url_mobile}` : '';
+          }
+          return {
+            large: large,
+            small: small,
+            target: item.target_url || item.target || '#'
+          };
+        });
 
         setImages(formattedData);
       } catch (err) {
@@ -33,7 +55,13 @@ const FirstCarousel = ({ apiUrl, carouselId = 'carouselExample', basePath = '' }
     fetchCarouselImages();
   }, [apiUrl, basePath]);
 
-  if (loading) return <div className="text-center p-5">Loading carousel...</div>;
+  if (loading) {
+    return (
+      <div className="container-fluid m-0 p-0 p-md-2">
+        <div className="shimmer-bg skeleton-banner-hero w-100"></div>
+      </div>
+    );
+  }
   if (error) return <div className="text-center p-5 text-danger">Error: {error}</div>;
 
   return (

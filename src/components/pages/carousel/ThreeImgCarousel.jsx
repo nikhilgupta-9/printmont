@@ -31,15 +31,32 @@ const ThreeImgCarousel = ({ apiUrl }) => {
         const response = await fetch(apiUrl);
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
-        const text = await response.text();
+        const data = await response.json();
 
-        const data = JSON.parse(text);
+        let bannerList = [];
+        if (data && data.success && data.data) {
+          if (data.data.home_mid_section_1 && data.data.home_mid_section_1.banners) {
+            bannerList = data.data.home_mid_section_1.banners;
+          } else if (Array.isArray(data.data)) {
+            bannerList = data.data;
+          }
+        } else if (Array.isArray(data)) {
+          bannerList = data;
+        }
 
-        // Handle both [{ "src": "..." }] or [{ "url": "..." }] or ["..."]
-        const formattedImages = data.map((item) => ({
-          src: item.src || item.url || item,
-          alt: item.alt || "",
-        }));
+        const formattedImages = bannerList.map((item) => {
+          let src = '';
+          if (typeof item === 'string') src = item;
+          else if (item.url) src = item.url;
+          else if (item.src) src = item.src;
+          else if (item.images) src = item.images.desktop || item.images.mobile || '';
+          else src = item.image_url_desktop || item.image_url_mobile || '';
+
+          return {
+            src: src,
+            alt: item.alt || item.title || "",
+          };
+        });
 
         setImages(formattedImages);
       } catch (err) {
@@ -79,8 +96,19 @@ const ThreeImgCarousel = ({ apiUrl }) => {
     ],
   };
 
-  if (loading)
-    return <div className="text-center p-5">Loading carousel...</div>;
+  if (loading) {
+    return (
+      <div className="container-fluid mx-0 mt-2 p-0 px-1">
+        <div className="row g-2 m-0">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="col-12 col-md-4 px-1">
+              <div className="shimmer-bg skeleton-grid-3 w-100"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (error)
     return <div className="text-center text-danger p-5">Error: {error}</div>;
 
@@ -93,6 +121,7 @@ const ThreeImgCarousel = ({ apiUrl }) => {
               src={img.src}
               alt={img.alt || `slide-${index}`}
               className="carousel-img"
+              loading="lazy"
               style={{
                 width: "100%",
                 height: "auto",

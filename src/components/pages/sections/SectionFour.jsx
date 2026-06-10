@@ -14,7 +14,8 @@ const SectionFour = ({ apiUrl, imageColumn, backgroundImageUrl }) => {
       try {
         const response = await fetch(apiUrl);
         const data = await response.json();
-        setColumns(data);
+        const rawData = data && data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+        setColumns(rawData);
       } catch (error) {
         console.error('Error fetching API:', error);
       } finally {
@@ -76,7 +77,28 @@ const SectionFour = ({ apiUrl, imageColumn, backgroundImageUrl }) => {
     </div>
   );
 
-  if (loading) return <p className="text-center py-5">Loading...</p>;
+  if (loading) {
+    return (
+      <div className="container-fluid p-1 m-0">
+        <div className="row g-1 align-items-center px-1">
+          {[1, 2, 3].map((col) => (
+            <div className="col-12 col-sm-6 col-md-12 col-lg-4" key={col}>
+              <div className="border bg-white rounded-3 p-3 h-100">
+                <div className="shimmer-bg skeleton-title w-50 mb-3" style={{ margin: '0' }} />
+                <div className="row g-2">
+                  {[1, 2, 3, 4].map((item) => (
+                    <div className="col-6" key={item}>
+                      <div className="shimmer-bg skeleton-img w-100" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (!columns.length) return <p className="text-center py-5">No data found</p>;
 
   return (

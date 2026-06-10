@@ -29,86 +29,76 @@ console.log(baseURL)
   return (
     <>
       {/* Desktop Home */}
-      <div className='d-none d-lg-flex custom-bg'>
-        <div className='relative w-100'>
-          <div>
-            <Categories space={"5px 0px"} bg='white'/>
-          </div>
+      <div className='d-none d-lg-block custom-bg w-100'>
+        <Categories space={"5px 0px"} bg='white' isSticky={true}/>
 
-          <div>
-            {/* <FirstCarousel images={`${baseURL}api/banner-api.php`} carouselId="mainCarousel" /> */}
-            <FirstCarousel apiUrl={`${baseURL}api/banner_api.php`} basePath={`${baseURL}uploads/banners/`}/>
+        <div className='home-desktop-content mx-auto home-desktop-wrapper'>
+          <div className='relative w-100'>
+            <div>
+              {/* <FirstCarousel images={`${baseURL}api/banner-api.php`} carouselId="mainCarousel" /> */}
+              <FirstCarousel apiUrl={`${baseURL}api/banner_api.php`} basePath={`${baseURL}uploads/banners/`}/>
+            </div>
 
-          </div>
-
-          <Slider apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+          <Slider apiUrl={`${baseURL}api/banner_api.php`} />
 
 
           <div className='bg-transparent'>
             {/* <SectionOne banners={bannerSet1}/> */}
-            <SectionOne apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+            <SectionOne apiUrl={`${baseURL}api/banner_api.php`} />
 
 
           </div>
           <div>
             {/* <ThreeImgCarousel images={threeimgcarousel} /> */}
-            <ThreeImgCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+            <ThreeImgCarousel apiUrl={`${baseURL}api/banner_api.php`} />
           </div>
           <div>
             {/* <FourImgCarousel images={fourimgcarousel}/> */}
-            <FourImgCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+            <FourImgCarousel apiUrl={`${baseURL}api/banner_api.php`} />
           </div>
 
           <div className=''>
             {/* <SecondCarousel products={bestsellerProducts} title="Our Bestellers" badgeText="Customizable" /> */}
-            <SecondCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" title="Our Bestellers" badgeText="Customizable" />
+            <SecondCarousel apiUrl={`${baseURL}api/bestseller-products.php`} title="Our Bestellers" badgeText="Customizable" />
           </div>
 
           <div className='px-2'>
             {/* <SectionTwo images={sectiontwoimg} /> */}
-            <SectionTwo images={sectiontwoimg} apiurl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+            <SectionTwo images={sectiontwoimg} apiurl={`${baseURL}api/banner_api.php`} />
           </div>
           <GiftFinder />
 
           <div className='mt-lg-2 pt-lg-4 pt-1'>
             {/* <SecondCarousel products={bestsellerProduct} title="Top Selection" badgeText="Customizable" /> */}
-            <SecondCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" title="Top Selection" badgeText="Customizable" />
+            <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Top Selection" badgeText="Customizable" />
           </div>
 
           <div className='my-2 mx-0 px-0'>
-            {/* <Banner images={bannerImages} /> */}
-            <Banner apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+            <Banner apiUrl={`${baseURL}api/banner_api6.php`} />
           </div>
 
           <div className='  pt-lg-2 pt-1'>
-            {/* <SecondCarousel products={discount} title="Discount For You" badgeText="Customizable" /> */}
-            <SecondCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" title="Discount For You" badgeText="Customizable" />
+            <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Discount For You" badgeText="Customizable" />
           </div>
 
           <div>
-
-            {/* <BannerTwo desktopImages={bannerTwoDesktop} mobileImages={bannerTwoMobile} /> */}
-            <BannerTwo apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+            <BannerTwo apiUrl={`${baseURL}api/banner_api7.php`} />
           </div>
 
           <div className='my-1'>
-            {/* <SecondCarousel products={bestsellerProduct} title="Top Rated" badgeText="Customizable" /> */}
-            <SecondCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" title="Top Rated" badgeText="Customizable" />
+            <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`} title="Top Rated" badgeText="Customizable" />
           </div>
 
           <div className='my-1'>
-            {/* <BannerTwo desktopImages={bannerTwoDesktop} mobileImages={bannerTwoMobile} /> */}
-            <BannerTwo apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+            <BannerTwo apiUrl={`${baseURL}api/banner_api8.php`} />
           </div>
 
           <div className='my-1'>
-            {/* <SecondCarousel products={dealsandcategories} title="Top Deals on Catgories" badgeText="Customizable" /> */}<SecondCarousel apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" title="Top Deals and Categories" badgeText="Customizable" />
+            <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Top Deals and Categories" badgeText="Customizable" />
           </div>
 
           <div className='my-1'>
-
-            {/* <BannerTwo desktopImages={bannerTwoDesktop} mobileImages={bannerTwoMobile} /> */}
-            <BannerTwo apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+            <BannerTwo apiUrl={`${baseURL}api/banner_api9.php`} />
           </div>
 
           <div className='my-1'>
@@ -117,22 +107,17 @@ console.log(baseURL)
 
           <div>
             <SectionFour
-              apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url"
+              apiUrl={`${baseURL}api/home-product-api.php?action=grouped_categories`}
               backgroundImageUrl="https://example.com/bg.png"
-              imageColumn={{
-                imageUrl: "/girl-product-img/girl-1.webp",
-                alt: "Featured",
-              }}
             />
           </div>
 
           <div className='mt-1 mx-0'>
-            {/* <Banner images={bannerImages} /> */}
-              <Banner apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+            {/* <Banner apiUrl={`${baseURL}api/banner_api10.php`} /> */}
           </div>
           <div className='custom-bg'>
             <SectionFourReverse
-              apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url"
+              apiUrl={`${baseURL}api/home-product-api.php?action=grouped_categories`}
               backgroundImageUrl="https://example.com/bg.png"
               imageColumn={{
                 imageUrl: "/girl-product-img/girl-1.webp",
@@ -143,24 +128,21 @@ console.log(baseURL)
           </div>
 
           <div className='mt-3 mx-0 px-0'>
-            {/* <Banner images={bannerImages} /> */}
-            <Banner apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+            <Banner apiUrl={`${baseURL}api/banner_api11.php`} />
           </div>
 
           <div>
             <SectionEight columns={columns} />
           </div>
           <div className='mt-3 mx-0 px-0'>
-            {/* <BannerTwo desktopImages={bannerTwoDesktop} mobileImages={bannerTwoMobile} /> */}
-            <BannerTwo apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+            <BannerTwo apiUrl={`${baseURL}api/banner_api14.php`} />
           </div>
 
           <div>
             <SectionGrid data={gridsectionfirst} />
           </div>
           <div className='mt-3 mx-0 px-0'>
-            {/* <Banner images={bannerImages} /> */}
-            <Banner apiUrl="https://690593d8ee3d0d14c132fe4a.mockapi.io/printmont/firstcarousel/url" />
+            <Banner apiUrl={`${baseURL}api/banner_api13.php`} />
           </div>
           <div className='my-0 my-lg-4'>
             <SectionGrid data={gridsectionsecond} />
@@ -186,8 +168,8 @@ console.log(baseURL)
 
           <BulkOrder />
         </div>
-
       </div>
+    </div>
       <div className='d-block d-lg-none'>
         <MobHome />
       </div>

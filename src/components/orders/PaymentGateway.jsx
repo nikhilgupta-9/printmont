@@ -1,157 +1,135 @@
-import React, { useState } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
-// import './orders.css'; // Assuming this contains custom styles like .custom-pay-btn and .bg-theme
+import React from 'react';
+import { useCheckout } from '../../context/CheckoutContext';
 
 const paymentOptions = [
-  { id: 'upi', title: 'UPI', subtitle: 'Pay by any UPI app', offers: 'Save upto ₹50 • 5 offers available', iconClass: 'bi-phone', offerColor: 'text-success' },
-  { id: 'card', title: 'Credit / Debit / ATM Card', subtitle: 'Add and secure cards as per RBI guidelines', offers: 'Get upto 5% cashback* • 2 offers available', iconClass: 'bi-credit-card', offerColor: 'text-success' },
-  { id: 'emi', title: 'EMI', subtitle: 'Pay via your bank account', offers: null, iconClass: 'bi-calendar-check', offerColor: '' },
-  { id: 'netbanking', title: 'Net Banking', subtitle: null, offers: null, iconClass: 'bi-bank', offerColor: '' },
-  { id: 'cod', title: 'Cash on Delivery', subtitle: 'Pay ₹483 as advance and balance amount as Cash on delivery', offers: null, iconClass: 'bi-cash-stack', offerColor: '' },
-  { id: 'giftcard', title: 'Have a Flipkart Gift Card?', subtitle: null, offers: null, iconClass: 'bi-gift', offerColor: '' },
+  { id: 'upi', title: 'UPI', subtitle: 'Pay by any UPI app', offers: 'Save upto ₹50 • 5 offers available', icon: '📱' },
+  { id: 'card', title: 'Credit / Debit / ATM Card', subtitle: 'Add and secure cards as per RBI guidelines', offers: 'Get upto 5% cashback* • 2 offers available', icon: '💳' },
+  { id: 'netbanking', title: 'Net Banking', subtitle: null, offers: null, icon: '🏦' },
+  { id: 'cod', title: 'Cash on Delivery', subtitle: 'Pay ₹160 as advance and balance amount as Cash on delivery', offers: null, icon: '💵' }
 ];
 
-const finalTotalAmount = 1649; // Mock total for button display
-
 const PaymentGateway = ({ onPaymentSuccess }) => {
-  const [activeMethod, setActiveMethod] = useState('upi');
+  const { paymentMethod, setPaymentMethod, cartTotals, submitOrder } = useCheckout();
 
-  const handlePayment = () => {
-    // In a real app, this would trigger the payment process
-    console.log(`Initiating payment using ${activeMethod} for ₹${finalTotalAmount}`);
+  const handlePayment = async () => {
+    // Call the context function which posts to the backend API
+    await submitOrder();
     if (onPaymentSuccess) onPaymentSuccess();
   };
 
   const getButtonText = (method) => {
-    if (method === 'upi' || method === 'card') {
-      return `Proceed To Pay ₹${finalTotalAmount.toLocaleString('en-IN')}`;
+    if (method === 'upi' || method === 'card' || method === 'netbanking') {
+      return `PAY ₹${cartTotals.totalPayable.toLocaleString('en-IN')}`;
     }
-    // For methods like COD or Net Banking
-    return 'Complete Payment';
+    return 'CONFIRM ORDER';
   };
 
-
-  // Removed internal payment button
   const UPIForm = () => (
-    <div className="py-2">
-      <div className="d-flex align-items-center mb-4">
-        <input type="radio" id="new-upi" name="upi-option" defaultChecked className="me-2 custom-radio" />
-        <label htmlFor="new-upi" className="fw-bold me-auto">Add new UPI ID</label>
-        <a href="#" className="text-decoration-none" style={{ color: '#1a73e8', fontSize: '13px' }}>
-          How to find?
-        </a>
+    <div className="pt-3 pb-2 border-top mt-3">
+      <div className="d-flex align-items-center mb-3">
+        <input type="radio" id="new-upi" name="upi-option" defaultChecked className="form-check-input mt-0 me-2 shadow-none border-2" />
+        <label htmlFor="new-upi" className="fw-semibold me-auto text-dark" style={{fontSize: '14px'}}>Add new UPI ID</label>
+        <a href="#how-to" className="text-decoration-none fw-semibold" style={{ color: '#0b53a1', fontSize: '13px' }}>How to find?</a>
       </div>
-
-      <div className="custom-upi-input-group p-2 mb-3">
-        <label className="custom-upi-label">UPI ID</label>
-        <div className="d-flex align-items-center">
-          <input
-            type="text"
-            placeholder="Enter your UPI ID"
-            className="form-control border-0 shadow-none py-2"
-          />
-          <button className="rounded border custom-verify-btn ms-2 px-3 py-2 btn border fw-bold">
-            Verify
-          </button>
-        </div>
+      <div className="d-flex align-items-center mb-3">
+        <input type="text" placeholder="Enter your UPI ID" className="form-control shadow-none bg-white border" />
+        <button className="btn btn-outline-secondary ms-2 fw-semibold px-3 text-uppercase" style={{fontSize: '14px'}}>Verify</button>
       </div>
     </div>
   );
 
-  // Removed internal payment button
   const PlaceholderForm = ({ title }) => (
-    <div className="p-2">
-      <p className="text-muted">Content for <strong>{title}</strong> goes here.</p>
+    <div className="pt-3 pb-2 border-top mt-3">
+      <p className="text-muted small mb-0">Enter details for <strong>{title}</strong> here.</p>
     </div>
   );
 
-  const renderFormContent = () => {
-    switch (activeMethod) {
+  const renderFormContent = (method) => {
+    switch (method) {
       case 'upi': return <UPIForm />;
       case 'card': return <PlaceholderForm title="Credit / Debit / ATM Card" />;
-      case 'emi': return <PlaceholderForm title="EMI" />;
       case 'netbanking': return <PlaceholderForm title="Net Banking" />;
       case 'cod': return <PlaceholderForm title="Cash on Delivery" />;
-      case 'giftcard': return <PlaceholderForm title="Flipkart Gift Card" />;
       default: return null;
     }
   };
 
   return (
-    <>
-      <div className="d-flex flex-column flex-lg-row border bg-white shadow-sm custom-component-box">
-        {/* Left Column */}
-        <div className="custom-left-panel custom-left-panel-mobile p-0">
-          {paymentOptions.map((option) => (
-            <div
-              key={option.id}
-              className={`p-3 border-bottom custom-option-item ${activeMethod === option.id ? 'active' : ''}`}
-              onClick={() => setActiveMethod(option.id)}
-              role="button"
+    <div className="bg-white">
+      
+      {/* Payment Options Accordion */}
+      <div className="payment-options">
+        {paymentOptions.map((option) => (
+          <div key={option.id} className={`p-3 border-bottom ${paymentMethod === option.id ? 'bg-light' : 'bg-white'}`}>
+            <div 
+              className="d-flex align-items-start" 
+              onClick={() => setPaymentMethod(option.id)} 
+              style={{ cursor: 'pointer' }}
             >
-              <div className="d-flex align-items-start">
-                <div className="me-3 custom-icon-placeholder">
-                  <i className={`bi ${option.iconClass}`}></i>
+              <div className="me-3 mt-1">
+                <input 
+                  type="radio" 
+                  className="form-check-input shadow-none border-2" 
+                  checked={paymentMethod === option.id} 
+                  onChange={() => setPaymentMethod(option.id)} 
+                  style={{ width: '18px', height: '18px' }}
+                />
+              </div>
+              <div className="flex-grow-1">
+                <div className="d-flex align-items-center mb-1">
+                  <span className="me-2 fs-5">{option.icon}</span>
+                  <span className="fw-semibold text-dark" style={{ fontSize: '15px' }}>{option.title}</span>
                 </div>
-                <div className="text-content flex-grow-1">
-                  <div className="fw-bold mb-1" style={{ fontSize: '14px' }}>{option.title}</div>
-                  {option.subtitle && <div className="text-muted mb-1" style={{ fontSize: '12px' }}>{option.subtitle}</div>}
-                  {option.offers && (
-                    <div className="offers" style={{ fontSize: '12px' }}>
-                      <span className={option.offerColor}>{option.offers.split(' • ')[0]}</span>
-                      {' • '}
-                      <span className="text-muted">{option.offers.split(' • ')[1]}</span>
-                    </div>
-                  )}
-                </div>
+                {option.subtitle && <div className="text-muted mb-1" style={{ fontSize: '12px' }}>{option.subtitle}</div>}
+                {option.offers && (
+                  <div className="text-success fw-semibold" style={{ fontSize: '12px' }}>
+                    {option.offers}
+                  </div>
+                )}
+                
+                {/* Expanded Form Content */}
+                {paymentMethod === option.id && renderFormContent(option.id)}
+
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* Right Column */}
-        <div className="custom-right-panel p-4 flex-grow-1">
-          {renderFormContent()}
-
-          {/* 🛑 INLINE BUTTON (Visible only on large screens) */}
-          <div className="d-none d-lg-flex align-items-center justify-content-center  pt-3 mt-4 px-0 px-xl-5">
-            <button
-              className=" py-3 fw-bold custom-pay-btn border w-100 w-lg-50"
-              onClick={handlePayment}
-            >
-              {getButtonText(activeMethod)}
-            </button>
           </div>
-
-          {/* 🛑 SPACER (Visible only on small screens to prevent fixed bar overlap) */}
-          <div className="d-lg-none" style={{ height: '70px' }}></div>
-
-        </div>
+        ))}
       </div>
 
-      {/* 🛑 FIXED BUTTON BAR (Visible only on small screens) */}
-      <div
-        className="fixed-bottom-bar d-lg-none"
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: '10px 15px',
-          backgroundColor: 'white',
-          boxShadow: '0 -2px 5px rgba(0,0,0,0.1)',
-          zIndex: 10
-        }}
-      >
+      {/* 🛑 INLINE BUTTON (Desktop) */}
+      <div className="d-none d-md-flex justify-content-end p-3 bg-white mt-2">
         <button
-          className="btn w-100 py-2 fw-bold custom-pay-btn" // Assuming custom-pay-btn has background color
+          className="btn btn-theme text-white fw-bold px-5 py-2 text-uppercase"
+          style={{ backgroundColor: '#0b53a1', fontSize: '16px' }}
           onClick={handlePayment}
-          style={{ backgroundColor: '#ff9800', color: 'white', border: 'none' }} // Fallback style for clarity
         >
-          {getButtonText(activeMethod)}
+          {getButtonText(paymentMethod)}
         </button>
       </div>
-    </>
+
+      {/* Spacer for Mobile */}
+      <div className="d-md-none" style={{ height: '70px' }}></div>
+
+      {/* 🛑 FIXED BUTTON BAR (Mobile) */}
+      <div className="d-md-none fixed-bottom bg-white border-top shadow-lg z-3">
+        <div className="d-flex align-items-center justify-content-between p-3" style={{ padding: '0 !important' }}>
+          <div className="flex-fill ps-3 bg-white h-100 d-flex flex-column justify-content-center border-end">
+             <span className="text-muted small fw-semibold" style={{fontSize: '11px'}}>Total Amount</span>
+             <span className="fw-bold fs-5 text-dark lh-1">₹{cartTotals.totalPayable.toLocaleString('en-IN')}</span>
+          </div>
+          <button
+            className="btn btn-theme flex-fill py-3 fw-bold text-uppercase text-white rounded-0"
+            onClick={handlePayment}
+            style={{ backgroundColor: '#0b53a1', fontSize: '15px' }}
+          >
+            {getButtonText(paymentMethod).replace(`₹${cartTotals.totalPayable.toLocaleString('en-IN')}`, '').trim() || 'PAY NOW'} 
+            {/* The button will say PAY on right, amount on left for mobile */}
+            {getButtonText(paymentMethod).includes('PAY') && ' PAY'}
+          </button>
+        </div>
+      </div>
+
+    </div>
   );
 };
 
