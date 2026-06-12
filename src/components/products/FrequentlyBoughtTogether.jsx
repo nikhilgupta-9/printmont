@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { FaStar } from "react-icons/fa";
-import "./product.css";
+import "./Product.css";
 
 const products = [
   {
