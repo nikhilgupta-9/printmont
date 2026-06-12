@@ -124,7 +124,7 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
     // --- Default Header View (from the image) ---
     return (
         <>
-            <div ref={headerRef} className='theme shadow-sm position-fixed w-100 py-2 border-bottom px-0 px-lg-5' style={{ zIndex: '100' }}>
+            <div ref={headerRef} className='theme shadow-sm position-fixed w-100 py-2 border-bottom px-0 px-lg-5' style={{ zIndex: '1030' }}>
                 <div className="d-flex align-items-center justify-content-between p-2 ">
                     {/* LEFT SIDE: Back Arrow, Logo, Title */}
                     <div className="d-flex align-items-center gap-2 flex-grow-1">
