@@ -202,8 +202,8 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
                 </div>
             </div>
             <Categories showImages={false} space="5px 0" bg="rgb(11, 83, 161)" color="white" isSticky={true} />
-            <div style={{ height: "65px" }} className="d-none d-lg-block"></div>
-            <div style={{ height: "55px" }} className="d-block d-lg-none"></div>
+            <div style={{ height: "calc(var(--site-header-height, 65px) + 15px)" }} className="d-none d-lg-block"></div>
+            <div style={{ height: "calc(var(--site-header-height, 55px) + 10px)" }} className="d-block d-lg-none"></div>
         </>
     );
 };
