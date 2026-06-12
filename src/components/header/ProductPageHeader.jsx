@@ -14,6 +14,28 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
     // State to toggle between the default header and the active search bar
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const headerRef = React.useRef(null);
+
+    React.useEffect(() => {
+        if (!headerRef.current) return;
+
+        const updateHeaderHeight = () => {
+            document.documentElement.style.setProperty(
+                "--site-header-height",
+                `${headerRef.current.offsetHeight}px`
+            );
+        };
+
+        updateHeaderHeight();
+        const resizeObserver = new ResizeObserver(updateHeaderHeight);
+        resizeObserver.observe(headerRef.current);
+        window.addEventListener("resize", updateHeaderHeight);
+
+        return () => {
+            resizeObserver.disconnect();
+            window.removeEventListener("resize", updateHeaderHeight);
+        };
+    }, []);
 
     const handleBackClick = () => {
         // If search is active, close the search view first
@@ -102,9 +124,8 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
     // --- Default Header View (from the image) ---
     return (
         <>
-            <div className='theme shadow-sm position-fixed w-100 py-2 border-bottom px-0 px-lg-5' style={{ zIndex: '100' }}>
+            <div ref={headerRef} className='theme shadow-sm position-fixed w-100 py-2 border-bottom px-0 px-lg-5' style={{ zIndex: '100' }}>
                 <div className="d-flex align-items-center justify-content-between p-2 ">
-
                     {/* LEFT SIDE: Back Arrow, Logo, Title */}
                     <div className="d-flex align-items-center gap-2 flex-grow-1">
 
@@ -179,10 +200,10 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
 
                     </div>
                 </div>
-                <Categories showImages={false} space="5px 0" bg="rgb(11, 83, 161)" color="white" />
             </div>
-            <div style={{ height: "115px" }} className="d-none d-lg-block"></div>
-            <div style={{ height: "95px" }} className="d-block d-lg-none"></div>
+            <Categories showImages={false} space="5px 0" bg="rgb(11, 83, 161)" color="white" isSticky={true} />
+            <div style={{ height: "65px" }} className="d-none d-lg-block"></div>
+            <div style={{ height: "55px" }} className="d-block d-lg-none"></div>
         </>
     );
 };

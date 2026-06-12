@@ -113,7 +113,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
 
       {/* LARGE SCREENS */}
       <div className="d-none d-lg-flex justify-content-center w-100 position-relative text-nowrap small border-2 border border-white" style={{padding:`${space}`, backgroundColor:`${bg}`}} >
-        <div className="d-flex justify-content-evenly w-100 mx-auto" style={{ maxWidth: '1440px' }}>
+        <div className="d-flex justify-content-evenly w-100 mx-auto" style={{ maxWidth: showImages ? '1440px' : '100%' }}>
           {categoriesData.map((item, index) => (
           <div
             key={index}
@@ -126,7 +126,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
               setActiveCategory(null);
               setActiveSub(null);
             }}
-            style={{ width: "70px", cursor: "pointer" }}
+            style={{ width: showImages ? "70px" : "auto", cursor: "pointer", padding: showImages ? "0" : "0 15px" }}
           >
             {showImages && (
             <img
