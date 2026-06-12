@@ -24,6 +24,5 @@ dist-ssr
 *.sw?
 
 # Backend ignore patterns
-printmont-backend/vendor/
-printmont-backend/uploads/
+printmont-backend/
 *.zip
