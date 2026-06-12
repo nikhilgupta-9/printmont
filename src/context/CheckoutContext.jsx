@@ -59,11 +59,13 @@ export const CheckoutProvider = ({ children }) => {
   const updateQuantity = (id, newQuantity) => {
     if (newQuantity < 1) return;
     setCartItems(items => items.map(item => item.id === id ? { ...item, quantity: newQuantity } : item));
+    setSavedItems(items => items.map(item => item.id === id ? { ...item, quantity: newQuantity } : item));
     // Optional: Call PUT /api/cart-api.php here
   };
 
   const removeItem = (id) => {
     setCartItems(items => items.filter(item => item.id !== id));
+    setSavedItems(items => items.filter(item => item.id !== id));
     // Optional: Call DELETE /api/cart-api.php here
   };
 
