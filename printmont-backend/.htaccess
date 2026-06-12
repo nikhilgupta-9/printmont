@@ -1,0 +1,7 @@
+# In your root .htaccess (if any)
+RewriteEngine On
+
+# Handle front controller
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]

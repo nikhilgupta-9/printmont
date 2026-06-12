@@ -211,7 +211,7 @@ export const ReviewForm = ({ onSubmitReview, specKeys }) => {
 // B. ReviewCard Component {Customer text comment box}
 // =========================================================
 
-export const ReviewCard = ({ review }) => {
+export const ReviewCard = ({ review, onImageClick }) => {
   const [likes, setLikes] = useState(review.likes || 0);
   const [dislikes, setDislikes] = useState(review.dislikes || 0);
   const [showMoreImages, setShowMoreImages] = useState(false);
@@ -249,22 +249,20 @@ export const ReviewCard = ({ review }) => {
         {/* === Image Preview Section === */}
         {totalImages > 0 && (
           <div className="d-flex flex-wrap gap-2 mb-2 px-2 review-image-preview">
-            {previewImages.map((img, index) => {
-              const remaining = totalImages - 3;
-
-              // last visible preview image (with overlay)
-              if (index === 2 && remaining > 0) {
-                return (
+            {showMoreImages ? (
+              // Expanded Mode: Render ALL images inline with a collapse button
+              <>
+                {review.images.map((img, index) => (
                   <div
                     key={index}
-                    className="position-relative border rounded overflow-hidden"
+                    className="border rounded overflow-hidden"
                     style={{
-                      width: "80px",
-                      height: "80px",
+                      width: "70px",
+                      height: "70px",
                       cursor: "pointer",
                       flexShrink: 0,
                     }}
-                    onClick={() => setShowMoreImages(true)}
+                    onClick={() => onImageClick && onImageClick(img)}
                   >
                     <img
                       src={img}
@@ -272,95 +270,113 @@ export const ReviewCard = ({ review }) => {
                       className="w-100 h-100"
                       style={{
                         objectFit: "cover",
-                        filter: "brightness(50%)",
                       }}
                     />
-                    <span
-                      className="position-absolute top-50 start-50 translate-middle text-white fw-semibold"
+                  </div>
+                ))}
+                {/* Collapse / Show Less tile */}
+                <div
+                  className="d-flex align-items-center justify-content-center border rounded text-secondary bg-light"
+                  style={{
+                    width: '70px',
+                    height: '70px',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold'
+                  }}
+                  onClick={() => setShowMoreImages(false)}
+                >
+                  Show Less
+                </div>
+              </>
+            ) : (
+              // Collapsed Mode: Render only up to 3 thumbnails with a "+N" indicator on the third
+              previewImages.map((img, index) => {
+                const remaining = totalImages - 3;
+
+                // 3rd visible thumbnail with remaining overlay
+                if (index === 2 && remaining > 0) {
+                  return (
+                    <div
+                      key={index}
+                      className="position-relative border rounded overflow-hidden"
                       style={{
-                        fontSize: "0.9rem",
-                        whiteSpace: "nowrap",
+                        width: "70px",
+                        height: "70px",
+                        cursor: "pointer",
+                        flexShrink: 0,
                       }}
+                      onClick={() => setShowMoreImages(true)}
                     >
-                      +{remaining}
-                    </span>
+                      <img
+                        src={img}
+                        alt={`Review ${index}`}
+                        className="w-100 h-100"
+                        style={{
+                          objectFit: "cover",
+                          filter: "brightness(50%)",
+                        }}
+                      />
+                      <span
+                        className="position-absolute top-50 start-50 translate-middle text-white fw-semibold"
+                        style={{
+                          fontSize: "0.9rem",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        +{remaining}
+                      </span>
+                    </div>
+                  );
+                }
+
+                // Normal image preview thumbnail
+                return (
+                  <div
+                    key={index}
+                    className="border rounded overflow-hidden"
+                    style={{
+                      width: "70px",
+                      height: "70px",
+                      cursor: "pointer",
+                      flexShrink: 0,
+                    }}
+                    onClick={() => onImageClick && onImageClick(img)}
+                  >
+                    <img
+                      src={img}
+                      alt={`Review ${index}`}
+                      className="w-100 h-100"
+                      style={{
+                        objectFit: "cover",
+                      }}
+                    />
                   </div>
                 );
-              }
-
-              // Normal images
-              return (
-                <div
-                  key={index}
-                  className="border rounded overflow-hidden"
-                  style={{
-                    width: "80px",
-                    height: "80px",
-                    cursor: "pointer",
-                    flexShrink: 0,
-                  }}
-                >
-                  <img
-                    src={img}
-                    alt={`Review ${index}`}
-                    className="w-100 h-100"
-                    style={{
-                      objectFit: "cover",
-                    }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* === Rest Images Section === */}
-        {showMoreImages && remainingImages.length > 0 && (
-          <div className="px-2 py-2">
-            <Row>
-              {remainingImages.map((img, i) => (
-                <Col
-                  key={i}
-                  xs={6}
-                  sm={4}
-                  md={3}
-                  lg={2}
-                  className="mb-3 d-flex justify-content-center"
-                >
-                  <img
-                    src={img}
-                    alt={`Extra ${i}`}
-                    className="img-fluid rounded"
-                    style={{
-                      height: "120px",
-                      width: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                </Col>
-              ))}
-            </Row>
+              })
+            )}
           </div>
         )}
 
         {/* === Like / Dislike Section === */}
-        <div className="d-flex align-items-center justify-content-start px-2">
-          <span className="me-3 text-muted small">Was this review helpful?</span>
-          <div>
-            <Button
-              size="sm"
+        <div className="d-flex flex-wrap align-items-center gap-2 px-2 mt-2">
+          <span className="text-muted small text-nowrap">Was this review helpful?</span>
+          <div className="d-flex align-items-center gap-1">
+            <button
               onClick={() => setLikes((l) => l + 1)}
-              className="me-2 bg-transparent text-dark border-0"
+              className="btn btn-sm d-flex align-items-center gap-1 bg-transparent text-dark border-0 p-1"
             >
-              <FaThumbsUp className="mb-1" color="gray" /> {likes}
-            </Button>
-            <Button
-              size="sm"
+              <FaThumbsUp size="14" color="gray" />
+              <span className="small">{likes}</span>
+            </button>
+            <button
               onClick={() => setDislikes((d) => d + 1)}
-              className="bg-transparent text-dark border-0"
+              className="btn btn-sm d-flex align-items-center gap-1 bg-transparent text-dark border-0 p-1"
             >
-              <FaThumbsDown color="gray" /> {dislikes}
-            </Button>
+              <FaThumbsDown size="14" color="gray" />
+              <span className="small">{dislikes}</span>
+            </button>
           </div>
         </div>
       </Card.Body>

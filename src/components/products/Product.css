@@ -524,3 +524,489 @@ body {
   rotate: 90deg;
   
 }
+
+/* ==========================================================================
+   Premium Mockup Redesign Styles
+   ========================================================================== */
+.product-details-page-wrapper {
+  background-color: #f8f9fa;
+  font-family: 'Inter', sans-serif;
+}
+
+.custom-vertical-arrow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 25px;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+  margin: 5px 0;
+}
+.custom-vertical-arrow:hover {
+  background-color: #f1f1f1;
+}
+
+.vertical-thumbnail-item {
+  padding: 4px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.thumbnail-img {
+  width: 65px;
+  height: 65px;
+  object-fit: contain;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #fff;
+}
+.thumbnail-img:hover {
+  border-color: #0d6efd;
+}
+.active-thumbnail {
+  border: 2.5px solid #0d6efd !important;
+  box-shadow: 0 0 5px rgba(13, 110, 253, 0.3);
+}
+
+.main-image-display-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.bestseller-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background-color: #388e3c;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  z-index: 5;
+}
+
+.floating-actions-wrapper {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.floating-action-btn {
+  background-color: #ffffff;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  transition: all 0.2s ease;
+}
+.floating-action-btn:hover {
+  transform: scale(1.1);
+}
+
+.main-img-zoomable {
+  transition: transform 0.3s ease;
+}
+.main-img-zoomable:hover {
+  transform: scale(1.06);
+}
+
+/* Action Buttons below main image */
+.add-to-cart-btn {
+  background-color: #ffc107;
+  color: #212529;
+  border: none;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+.add-to-cart-btn:hover {
+  background-color: #e0a800;
+}
+.buy-now-btn {
+  background-color: #2f5acf;
+  color: #ffffff;
+  border: none;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+.buy-now-btn:hover {
+  background-color: #1a42b1;
+}
+
+/* Countdown Timer */
+.sales-timer-badge {
+  background-color: #fff5f5;
+  border: 1px solid #ffc9c9;
+  border-radius: 6px;
+  padding: 8px 12px;
+  width: fit-content;
+}
+.sales-timer-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e03131;
+}
+
+/* Coupon dashed cards */
+.coupon-offer-card {
+  min-width: 200px;
+  transition: all 0.2s ease;
+}
+.coupon-offer-card:hover {
+  transform: translateY(-2px);
+}
+.border-dashed-green {
+  border: 1.5px dashed #2f9e44 !important;
+}
+.bg-light-green {
+  background-color: #ebfbee !important;
+}
+
+/* Custom Dropdown selects */
+.custom-dropdown {
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  background-color: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.custom-dropdown:focus {
+  border-color: #0d6efd;
+  background-color: #fff;
+  box-shadow: 0 0 0 0.2rem rgba(13,110,253,.15);
+}
+
+/* Print locations pills */
+.location-purple-pill {
+  background-color: #7048e8;
+  font-size: 0.85rem;
+}
+.remove-pill-cross {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.remove-pill-cross:hover {
+  color: #ffc9c9;
+}
+
+/* Sizing split up inputs */
+.size-split-item {
+  background-color: #f8f9fa;
+}
+.size-input-box {
+  font-weight: 700;
+  border-color: #ced4da;
+}
+.size-input-box:focus {
+  border-color: #0d6efd;
+}
+
+/* Calculation summary */
+.total-price-summary-box {
+  background-color: #f1f3f5 !important;
+}
+
+/* Design Buttons */
+.upload-design-btn {
+  background-color: #1864ab;
+  transition: all 0.2s ease;
+}
+.upload-design-btn:hover {
+  background-color: #1c7ed6;
+}
+.create-design-btn {
+  border-width: 2px !important;
+  transition: all 0.2s ease;
+}
+.create-design-btn:hover {
+  background-color: #f1f3f5 !important;
+}
+
+/* Promo Banner Slider */
+.bg-light-red {
+  background-color: #fff5f5 !important;
+  border: 1.5px solid #ffc9c9 !important;
+}
+
+/* Coin Banner */
+.printmont-coin-banner {
+  background-color: #fff9db;
+  border-color: #ffe066 !important;
+}
+
+/* Bank Offer list styles */
+.all-offers-accordion {
+  background-color: #ffffff;
+}
+.bank-offer-row {
+  font-size: 0.85rem;
+}
+.bg-cyan {
+  background-color: #15aabf !important;
+}
+
+/* About Tab Styling */
+.tab-btn {
+  font-size: 1rem;
+  color: #495057;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+}
+.active-product-tab {
+  color: #0d6efd !important;
+  border-bottom: 2px solid #0d6efd !important;
+}
+
+/* Alternating rows */
+.brand-banner-alternating-row {
+  transition: box-shadow 0.3s ease;
+}
+.brand-banner-alternating-row:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.bg-purple {
+  background-color: #7048e8 !important;
+}
+
+@media (max-width: 991px) {
+  .product-details-info-section {
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+  }
+}
+
+/* Size-reduction overrides for compact layout */
+.product-details-info-section {
+  font-size: 0.82rem;
+}
+
+.product-title-text {
+  font-size: 1.35rem !important;
+  line-height: 1.25;
+}
+
+.price-current {
+  font-size: 1.6rem !important;
+}
+
+.price-original {
+  font-size: 0.85rem !important;
+}
+
+.custom-dropdown {
+  padding: 6px 10px !important;
+  font-size: 0.8rem !important;
+  height: auto !important;
+}
+
+.product-details-info-section select,
+.product-details-info-section input {
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+}
+
+.size-input-box {
+  font-size: 0.8rem !important;
+  padding: 4px !important;
+  height: 28px !important;
+}
+
+.size-label {
+  font-size: 0.75rem !important;
+  margin-bottom: 4px !important;
+}
+
+.coupon-offer-card {
+  padding: 10px !important;
+}
+
+.coupon-desc {
+  font-size: 0.7rem !important;
+}
+
+.coupon-code-badge {
+  padding: 2px 6px !important;
+  font-size: 0.7rem !important;
+}
+
+.total-price-summary-box {
+  padding: 10px 15px !important;
+  font-size: 0.8rem !important;
+}
+
+.total-price-summary-box .fs-5 {
+  font-size: 0.95rem !important;
+}
+
+.total-price-summary-box .fs-4 {
+  font-size: 1.15rem !important;
+}
+
+.upload-design-btn, .create-design-btn {
+  padding: 10px !important;
+  font-size: 0.85rem !important;
+}
+
+.action-buttons-wrapper .add-to-cart-btn, 
+.action-buttons-wrapper .buy-now-btn {
+  padding: 10px !important;
+  font-size: 0.85rem !important;
+}
+
+.thumbnail-img {
+  width: 58px !important;
+  height: 58px !important;
+}
+
+.vertical-thumbnails-container {
+  width: 80px !important;
+  height: 320px !important;
+  align-self: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  user-select: none;
+  position: relative;
+}
+
+.thumbnails-scroll-list {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+.vertical-thumbnail-item {
+  width: 58px !important;
+  height: 58px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.custom-vertical-arrow {
+  width: 63px !important;
+  height: 24px !important;
+  background-color: #ffffff !important;
+  border: 1px solid #ced4da !important;
+  border-radius: 0px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  outline: none;
+  margin: 0 !important;
+}
+
+.custom-vertical-arrow:hover:not(:disabled) {
+  background-color: #f1f3f5 !important;
+  border-color: #adb5bd !important;
+}
+
+.custom-vertical-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+@media (min-width: 992px) {
+  .left-sticky-gallery-panel {
+    position: sticky !important;
+    top: 100px !important;
+    height: calc(100vh - 130px) !important;
+    max-height: 680px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+}
+
+.about-product-tabs-row .tab-btn {
+  font-size: 0.9rem !important;
+  padding: 6px 15px !important;
+}
+
+/* Coupon cards layout */
+.coupon-cards-grid {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+.coupon-offer-card {
+  flex: 1 1 50% !important;
+  min-width: 0 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 8px !important;
+  padding: 12px 14px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+@media (max-width: 576px) {
+  .coupon-cards-grid {
+    flex-wrap: wrap !important;
+  }
+  .coupon-offer-card {
+    flex: 1 1 100% !important;
+  }
+}
+
+/* Wallet offer styles */
+.info-icon-circle {
+  border: 1.5px solid #888888 !important;
+  border-radius: 50% !important;
+  width: 16px !important;
+  height: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 10px !important;
+  font-weight: bold !important;
+  color: #888888 !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  user-select: none;
+}
+.offer-wallet-logo {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+  border-color: #dee2e6 !important;
+}
+
+@media (min-width: 1600px) {
+  .product-details-page-wrapper {
+    max-width: 1536px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 3rem !important;
+    padding-right: 3rem !important;
+  }
+}
