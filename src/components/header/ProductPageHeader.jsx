@@ -179,7 +179,7 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
 
                     </div>
                 </div>
-                <Categories showImages={false} space="5px 0" bg="white" color="#333" />
+                <Categories showImages={false} space="5px 0" bg="rgb(11, 83, 161)" color="white" />
             </div>
             <div style={{ height: "115px" }} className="d-none d-lg-block"></div>
             <div style={{ height: "95px" }} className="d-block d-lg-none"></div>

@@ -31,7 +31,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
     <div className='bg-white w-100 home-mobile-content'>
       <div>
       </div>
-        <div className='top-5'> <Categories bg='rgb(11, 83, 161)' color='white' isSticky={true}/></div>
+        <div className='top-5'> <Categories isSticky={true}/></div>
 
         <div>
           {/* <FirstCarousel images={fristcrouselImg} carouselId="mainCarousel" /> */}

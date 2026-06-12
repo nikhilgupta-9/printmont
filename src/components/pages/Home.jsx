@@ -30,7 +30,7 @@ console.log(baseURL)
     <>
       {/* Desktop Home */}
       <div className='d-none d-lg-block custom-bg w-100'>
-        <Categories space={"5px 0px"} bg='rgb(11, 83, 161)' color='white' isSticky={true}/>
+        <Categories space={"5px 0px"} bg='white' isSticky={true}/>
 
         <div className='home-desktop-content mx-auto home-desktop-wrapper'>
           <div className='relative w-100'>
