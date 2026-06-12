@@ -53,6 +53,7 @@ const Footer = () => {
                     <li><Link to="/security" className="text-light text-decoration-none">Security</Link></li>
                     <li><Link to="/sitemap" className="text-light text-decoration-none">Sitemap</Link></li>
                     <li><Link to="/faq" className="text-light text-decoration-none">FAQ</Link></li>
+                    <li><Link to="/product" className="text-light text-decoration-none text-warning fw-semibold">Product Details (Temp)</Link></li>
                   </ul>
 
                 </div>

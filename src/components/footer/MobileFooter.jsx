@@ -45,6 +45,9 @@ const MobileFooter = () => {
                 <Link to={'/help-center'} className=" px-3 py-2 btn-small-text fw-bold text-decoration-none">
                     HELP NOW
                 </Link>
+                <Link to={'/product'} className=" px-3 py-2 btn-small-text fw-bold text-decoration-none text-warning">
+                    PRODUCT DETAILS (TEMP)
+                </Link>
 
             </div>
 

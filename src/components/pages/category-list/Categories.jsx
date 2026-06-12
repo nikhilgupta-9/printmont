@@ -78,7 +78,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
         } : {}}
       >
       {/* SMALL SCREENS */}
-      <div className="d-flex d-lg-none overflow-x-auto gap-2 px-2 align-items-center hide-scrollbar bg-white" style={{padding:`${space}`}}>
+      <div className="d-flex d-lg-none overflow-x-auto gap-2 px-2 align-items-center hide-scrollbar" style={{padding:`${space}`, backgroundColor:`${bg || '#ffffff'}`}}>
         {/* <div
           className="d-flex flex-column align-items-center justify-content-around text-center flex-shrink-0 bg-white p-1 border-end border border-white me-1"
           style={{
@@ -104,7 +104,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
               style={{ objectFit: "cover" }}
             />
             )}
-            <small className="text-truncate w-100 fw-bold text-muted categories-text">
+            <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
               {item.name}
             </small>
           </div>

@@ -6,6 +6,8 @@ import { FaRegCircleUser } from "react-icons/fa6";
 import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import { Link, useNavigate } from 'react-router-dom';
+import Categories from '../pages/category-list/Categories';
+
 
 const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
     const navigate = useNavigate();
@@ -177,8 +179,10 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
 
                     </div>
                 </div>
+                <Categories showImages={false} space="5px 0" bg="white" color="#333" />
             </div>
-            <div className='p-4 mb-2'></div>
+            <div style={{ height: "115px" }} className="d-none d-lg-block"></div>
+            <div style={{ height: "95px" }} className="d-block d-lg-none"></div>
         </>
     );
 };
