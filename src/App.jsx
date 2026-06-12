@@ -18,7 +18,7 @@ import AllProducts from "./components/products/AllProducts";
 import Cart from "./components/orders/Cart";
 import Blog from "./components/pages/blog/Blog";
 import BlogPostPage from "./components/pages/blog/BlogPostPage";
-import CheckApi from "./components/checkapi";
+import CheckApi from "./components/CheckApi";
 import HelpCenter from "./components/helpCenter/HelpCenter";
 import ContactUs from "./components/contact/ContactUs";
 import QuickLinks from "./components/quickLinks/QuickLinks";
