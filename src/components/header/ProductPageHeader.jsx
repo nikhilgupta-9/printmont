@@ -3,14 +3,22 @@ import { IoSearchSharp } from "react-icons/io5";
 import { BsArrowLeft, BsXLg } from "react-icons/bs"; // BsXLg is the close icon
 import { GiShoppingCart } from "react-icons/gi";
 import { FaRegCircleUser } from "react-icons/fa6";
+import { FaHeart } from 'react-icons/fa';
 import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Categories from '../pages/category-list/Categories';
+import { useCheckout } from '../../context/CheckoutContext';
 
 
 const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const checkoutContext = useCheckout();
+    const cartItems = checkoutContext ? checkoutContext.cartItems : [];
+    
+    const isProductPage = location.pathname.startsWith('/product');
+
     // State to toggle between the default header and the active search bar
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -49,7 +57,6 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
     };
 
     // --- Mock Suggestion Box Component ---
-    // You would replace this with your actual API logic and suggestions
     const SearchSuggestions = () => {
         const suggestions = ["T-Shirts for Men", "Blue T-Shirts", "Custom T-Shirts", "Men's V-Neck"];
 
@@ -68,7 +75,6 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
                                 className="list-group-item list-group-item-action d-flex align-items-center"
                                 onClick={() => {
                                     setSearchTerm(suggestion);
-                                    // You would typically redirect to search results here
                                 }}
                                 style={{ cursor: 'pointer' }}
                             >
@@ -102,17 +108,13 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
                         autoFocus // Automatically focus the input when search opens
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        // Add an event handler for when the user submits the search (e.g., presses Enter)
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                                // Add navigation to search results page here
                                 console.log("Searching for:", searchTerm);
                                 setIsSearchActive(false);
                             }
                         }}
                     />
-
-                    {/* Clear Button */}
 
                 </div>
                 {/* Search Suggestions Box */}
@@ -129,8 +131,6 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
                     {/* LEFT SIDE: Back Arrow, Logo, Title */}
                     <div className="d-flex align-items-center gap-2 flex-grow-1">
 
-                        {/* Back Arrow */}
-
                         <div className='d-flex d-lg-none align-items-center'>
                             {showBackButton && (
                                 <BsArrowLeft
@@ -143,17 +143,19 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
                             )}
                             {/* Logo/Icon */}
                             <Link to="/" className="d-flex align-items-center">
-                                <img src="./PrintwhiteLogo.png" alt="Logo" style={{ height: "24px", marginRight: '5px' }} />
+                                <img src="/PrintwhiteLogo.png" alt="Logo" style={{ height: "24px", marginRight: '5px' }} />
                             </Link>
 
-                            {/* Page Title */}
-                            <span className="fw-medium text-uppercase text-light text-truncate" style={{ fontSize: '15px' }}>
-                                {pageTitle}
-                            </span>
+                            {/* Page Title - Hidden on Product Details mobile page */}
+                            {!isProductPage && (
+                                <span className="fw-medium text-uppercase text-light text-truncate" style={{ fontSize: '15px' }}>
+                                    {pageTitle}
+                                </span>
+                            )}
                         </div>
                         <div className='d-none d-lg-flex align-items-center gap-5 w-100'>
                             <Link to={'/'}>
-                            <img src="/PrintLogo.png" alt="" height={45}/>
+                                <img src="/PrintLogo.png" alt="" height={45}/>
                             </Link>
                             <div className='border w-50 rounded light-bg-theme d-flex align-items-center gap-3 px-2'>
                                 <button className='border-0'>
@@ -166,22 +168,59 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
 
                     {/* RIGHT SIDE: Icons (Search, Cart, Login) */}
                     <div className="">
-
                         <div className='d-flex align-items-center gap-3 px-3 d-lg-none'>
                             {/* Search Icon - Toggles the search state */}
                             <div onClick={() => setIsSearchActive(true)} style={{ cursor: 'pointer' }} className="text-dark">
                                 <IoSearchSharp color='white' size={22} />
                             </div>
 
-                            {/* Cart Icon */}
-                            <Link to="/cart" className="position-relative text-dark">
-                                <GiShoppingCart color='white' size={25} />
-                            </Link>
+                            {isProductPage ? (
+                                <>
+                                    {/* Wishlist Heart Icon with Badge (Mock count: 4 to match Figma design exactly) */}
+                                    <Link to="/user/wishlist" className="position-relative text-dark d-flex align-items-center">
+                                        <FaHeart color='white' size={20} />
+                                        <span className="position-absolute rounded-circle bg-white text-primary fw-bold d-flex align-items-center justify-content-center" 
+                                              style={{ 
+                                                  top: '-8px', 
+                                                  right: '-8px', 
+                                                  fontSize: '9px', 
+                                                  width: '15px', 
+                                                  height: '15px', 
+                                                  border: '1px solid rgb(11, 83, 161)' 
+                                              }}>
+                                            4
+                                        </span>
+                                    </Link>
 
-                            {/* Login/User Text */}
-                            <Link to="/login" className="text-light fw-medium text-decoration-none d-flex align-items-center gap-1 ">
-                                Login
-                            </Link>
+                                    {/* Cart Icon with Badge (count from checkoutContext or fallback to 2 to match Figma) */}
+                                    <Link to="/cart" className="position-relative text-dark d-flex align-items-center">
+                                        <GiShoppingCart color='white' size={24} />
+                                        <span className="position-absolute rounded-circle bg-white text-primary fw-bold d-flex align-items-center justify-content-center" 
+                                              style={{ 
+                                                  top: '-8px', 
+                                                  right: '-8px', 
+                                                  fontSize: '9px', 
+                                                  width: '15px', 
+                                                  height: '15px', 
+                                                  border: '1px solid rgb(11, 83, 161)' 
+                                              }}>
+                                            {cartItems.length > 0 ? cartItems.length : 2}
+                                        </span>
+                                    </Link>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Cart Icon */}
+                                    <Link to="/cart" className="position-relative text-dark">
+                                        <GiShoppingCart color='white' size={25} />
+                                    </Link>
+
+                                    {/* Login/User Text */}
+                                    <Link to="/login" className="text-light fw-medium text-decoration-none d-flex align-items-center gap-1 ">
+                                        Login
+                                    </Link>
+                                </>
+                            )}
                         </div>
                         <div className='d-none d-lg-flex align-items-center '>
                             <DropdownButton id="dropdown-button-dark-example2"  title={<>
@@ -194,14 +233,14 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
                                 <Dropdown.Divider />
                                 <Dropdown.Item href="#/action-4">Separated link</Dropdown.Item>
                             </DropdownButton>
-                            
-
                         </div>
-
                     </div>
                 </div>
             </div>
-            <Categories showImages={false} space="5px 0" bg="rgb(11, 83, 161)" color="white" isSticky={true} />
+            {/* Hide categories section on product detail page only on mobile screen (< 992px) */}
+            <div className={isProductPage ? "d-none d-lg-block" : ""}>
+                <Categories showImages={false} space="5px 0" bg="rgb(11, 83, 161)" color="white" isSticky={true} />
+            </div>
             <div style={{ height: "var(--site-header-height, 65px)" }} className="d-none d-lg-block"></div>
             <div style={{ height: "var(--site-header-height, 55px)" }} className="d-block d-lg-none"></div>
         </>

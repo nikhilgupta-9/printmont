@@ -4,6 +4,7 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import 'swiper/css';
 import 'swiper/css/scrollbar';
+import 'swiper/css/pagination';
 
 import {
   FaShoppingCart,
@@ -30,7 +31,7 @@ import {
 
 import SliderReact from 'react-slick';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Scrollbar } from 'swiper/modules';
+import { Scrollbar, Pagination } from 'swiper/modules';
 import ProductReview from './ProductReview';
 import ProductQASection from './ProductQASection';
 import FrequentlyBoughtTogether from './FrequentlyBoughtTogether';
@@ -231,8 +232,8 @@ const ProductDetails = () => {
                     <div className="product-image-section-mobile position-relative">
                       <div className="bestseller-badge">Best Seller</div>
                       <Swiper
-                        scrollbar={{ hide: true }}
-                        modules={[Scrollbar]}
+                        pagination={{ clickable: true }}
+                        modules={[Scrollbar, Pagination]}
                         className="mySwiper"
                         slidesPerView={1}
                       >
@@ -404,75 +405,158 @@ const ProductDetails = () => {
                 {/* Filter Dropdowns Grid */}
                 <div className="filter-dropdowns-section mb-4 border-bottom pb-3">
                   <h5 className="section-subtitle-text fw-bold text-dark mb-3">Customization Options</h5>
-                  <Row className="g-3">
-                    <Col xs={12} sm={6}>
-                      <label className="form-label-text fw-bold text-secondary mb-1">Tshirt Type</label>
-                      <select className="form-select custom-dropdown" value={tshirtType} onChange={e => setTshirtType(e.target.value)}>
+                  
+                  {/* Mobile View: Aligned side-by-side */}
+                  <div className="d-block d-lg-none">
+                    <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
+                      <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Tshirt Type</span>
+                      <select className="form-select custom-dropdown" style={{ width: '65%' }} value={tshirtType} onChange={e => setTshirtType(e.target.value)}>
                         <option>Round Neck</option>
                         <option>Polo Collar</option>
                         <option>V Neck</option>
                       </select>
-                    </Col>
-                    <Col xs={12} sm={6}>
-                      <label className="form-label-text fw-bold text-secondary mb-1">Style</label>
-                      <select className="form-select custom-dropdown" value={style} onChange={e => setStyle(e.target.value)}>
+                    </div>
+
+                    <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
+                      <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Style</span>
+                      <select className="form-select custom-dropdown" style={{ width: '65%' }} value={style} onChange={e => setStyle(e.target.value)}>
                         <option>Unisex Round Neck</option>
                         <option>Regular Fit</option>
                         <option>Slim Fit</option>
                       </select>
-                    </Col>
-                    <Col xs={12} sm={6}>
-                      <label className="form-label-text fw-bold text-secondary mb-1">Material / Fabric</label>
-                      <select className="form-select custom-dropdown" value={material} onChange={e => setMaterial(e.target.value)}>
+                    </div>
+
+                    <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
+                      <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Material / Fabric</span>
+                      <select className="form-select custom-dropdown" style={{ width: '65%' }} value={material} onChange={e => setMaterial(e.target.value)}>
                         <option>100% Cotton 180gsm</option>
                         <option>Cotton Blend 200gsm</option>
                         <option>Polyester 160gsm</option>
                       </select>
-                    </Col>
-                    <Col xs={12} sm={6}>
-                      <label className="form-label-text fw-bold text-secondary mb-1">Print Type</label>
-                      <select className="form-select custom-dropdown" value={printType} onChange={e => setPrintType(e.target.value)}>
+                    </div>
+
+                    <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
+                      <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Print Type</span>
+                      <select className="form-select custom-dropdown" style={{ width: '65%' }} value={printType} onChange={e => setPrintType(e.target.value)}>
                         <option>Full Colour Print</option>
                         <option>Screen Print</option>
                         <option>Embroidery</option>
                       </select>
-                    </Col>
-                    <Col xs={12} sm={6}>
-                      <label className="form-label-text fw-bold text-secondary mb-1">Fabric Colour</label>
-                      <select className="form-select custom-dropdown" value={fabricColour} onChange={e => setFabricColour(e.target.value)}>
+                    </div>
+
+                    <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
+                      <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Fabric Colour</span>
+                      <select className="form-select custom-dropdown" style={{ width: '65%' }} value={fabricColour} onChange={e => setFabricColour(e.target.value)}>
                         <option>White</option>
                         <option>Rust Brown</option>
                         <option>Black</option>
                         <option>Navy Blue</option>
                       </select>
-                    </Col>
-                    <Col xs={12} sm={6}>
-                      <label className="form-label-text fw-bold text-secondary mb-1">Front Print Size</label>
-                      <select className="form-select custom-dropdown" value={frontPrintSize} onChange={e => setFrontPrintSize(e.target.value)}>
+                    </div>
+
+                    <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
+                      <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Front Print Size</span>
+                      <select className="form-select custom-dropdown" style={{ width: '65%' }} value={frontPrintSize} onChange={e => setFrontPrintSize(e.target.value)}>
                         <option>Pocket</option>
                         <option>A4 Size</option>
                         <option>A3 Size</option>
                       </select>
-                    </Col>
-                    <Col xs={12}>
-                      <label className="form-label-text fw-bold text-secondary mb-1">Print Locations</label>
-                      <div className="d-flex flex-wrap gap-2 mb-2">
-                        {printLocations.map((loc, i) => (
-                          <div key={i} className="location-purple-pill d-flex align-items-center gap-2 bg-purple text-white px-3 py-1 rounded-pill text-sm fw-semibold">
-                            <span>{loc}</span>
-                            <span className="remove-pill-cross" onClick={() => handleRemoveLocation(loc)} style={{ cursor: 'pointer' }}>×</span>
-                          </div>
-                        ))}
+                    </div>
+
+                    <div className="customization-row-mobile d-flex align-items-start justify-content-between mb-3">
+                      <span className="customization-label-mobile fw-bold text-secondary pt-1" style={{ fontSize: '0.82rem', width: '35%' }}>Print Locations</span>
+                      <div style={{ width: '65%' }}>
+                        <div className="d-flex flex-wrap gap-2 mb-2">
+                          {printLocations.map((loc, i) => (
+                            <div key={i} className="location-purple-pill d-flex align-items-center gap-2 bg-purple text-white px-3 py-1 rounded-pill text-sm fw-semibold">
+                              <span>{loc}</span>
+                              <span className="remove-pill-cross" onClick={() => handleRemoveLocation(loc)} style={{ cursor: 'pointer' }}>×</span>
+                            </div>
+                          ))}
+                        </div>
+                        <select className="form-select custom-dropdown w-100" onChange={e => { handleAddLocation(e.target.value); e.target.value = ''; }}>
+                          <option value="">Add Print Location...</option>
+                          <option value="Front">Front</option>
+                          <option value="Back">Back</option>
+                          <option value="Left Sleeve">Left Sleeve</option>
+                          <option value="Right Sleeve">Right Sleeve</option>
+                        </select>
                       </div>
-                      <select className="form-select custom-dropdown" onChange={e => { handleAddLocation(e.target.value); e.target.value = ''; }}>
-                        <option value="">Add Print Location...</option>
-                        <option value="Front">Front</option>
-                        <option value="Back">Back</option>
-                        <option value="Left Sleeve">Left Sleeve</option>
-                        <option value="Right Sleeve">Right Sleeve</option>
-                      </select>
-                    </Col>
-                  </Row>
+                    </div>
+                  </div>
+
+                  {/* Desktop View */}
+                  <div className="d-none d-lg-block">
+                    <Row className="g-3">
+                      <Col xs={12} sm={6}>
+                        <label className="form-label-text fw-bold text-secondary mb-1">Tshirt Type</label>
+                        <select className="form-select custom-dropdown" value={tshirtType} onChange={e => setTshirtType(e.target.value)}>
+                          <option>Round Neck</option>
+                          <option>Polo Collar</option>
+                          <option>V Neck</option>
+                        </select>
+                      </Col>
+                      <Col xs={12} sm={6}>
+                        <label className="form-label-text fw-bold text-secondary mb-1">Style</label>
+                        <select className="form-select custom-dropdown" value={style} onChange={e => setStyle(e.target.value)}>
+                          <option>Unisex Round Neck</option>
+                          <option>Regular Fit</option>
+                          <option>Slim Fit</option>
+                        </select>
+                      </Col>
+                      <Col xs={12} sm={6}>
+                        <label className="form-label-text fw-bold text-secondary mb-1">Material / Fabric</label>
+                        <select className="form-select custom-dropdown" value={material} onChange={e => setMaterial(e.target.value)}>
+                          <option>100% Cotton 180gsm</option>
+                          <option>Cotton Blend 200gsm</option>
+                          <option>Polyester 160gsm</option>
+                        </select>
+                      </Col>
+                      <Col xs={12} sm={6}>
+                        <label className="form-label-text fw-bold text-secondary mb-1">Print Type</label>
+                        <select className="form-select custom-dropdown" value={printType} onChange={e => setPrintType(e.target.value)}>
+                          <option>Full Colour Print</option>
+                          <option>Screen Print</option>
+                          <option>Embroidery</option>
+                        </select>
+                      </Col>
+                      <Col xs={12} sm={6}>
+                        <label className="form-label-text fw-bold text-secondary mb-1">Fabric Colour</label>
+                        <select className="form-select custom-dropdown" value={fabricColour} onChange={e => setFabricColour(e.target.value)}>
+                          <option>White</option>
+                          <option>Rust Brown</option>
+                          <option>Black</option>
+                          <option>Navy Blue</option>
+                        </select>
+                      </Col>
+                      <Col xs={12} sm={6}>
+                        <label className="form-label-text fw-bold text-secondary mb-1">Front Print Size</label>
+                        <select className="form-select custom-dropdown" value={frontPrintSize} onChange={e => setFrontPrintSize(e.target.value)}>
+                          <option>Pocket</option>
+                          <option>A4 Size</option>
+                          <option>A3 Size</option>
+                        </select>
+                      </Col>
+                      <Col xs={12}>
+                        <label className="form-label-text fw-bold text-secondary mb-1">Print Locations</label>
+                        <div className="d-flex flex-wrap gap-2 mb-2">
+                          {printLocations.map((loc, i) => (
+                            <div key={i} className="location-purple-pill d-flex align-items-center gap-2 bg-purple text-white px-3 py-1 rounded-pill text-sm fw-semibold">
+                              <span>{loc}</span>
+                              <span className="remove-pill-cross" onClick={() => handleRemoveLocation(loc)} style={{ cursor: 'pointer' }}>×</span>
+                            </div>
+                          ))}
+                        </div>
+                        <select className="form-select custom-dropdown" onChange={e => { handleAddLocation(e.target.value); e.target.value = ''; }}>
+                          <option value="">Add Print Location...</option>
+                          <option value="Front">Front</option>
+                          <option value="Back">Back</option>
+                          <option value="Left Sleeve">Left Sleeve</option>
+                          <option value="Right Sleeve">Right Sleeve</option>
+                        </select>
+                      </Col>
+                    </Row>
+                  </div>
                 </div>
 
                 {/* Sizing & Quantity split up */}
@@ -483,11 +567,16 @@ const ProductDetails = () => {
                       <div key={size} className="size-split-item flex-fill border rounded p-2">
                         <div className="size-label fw-bold mb-2 text-dark">{size}</div>
                         <input
-                          type="number"
+                          type="text"
                           className="form-control text-center size-input-box py-1 px-1"
-                          value={sizeSplit[size]}
-                          min="0"
-                          onChange={e => handleSizeChange(size, e.target.value)}
+                          value={sizeSplit[size] === 0 || sizeSplit[size] === '' ? '' : sizeSplit[size]}
+                          placeholder="-"
+                          onChange={e => {
+                            const val = e.target.value;
+                            if (val === '' || /^[0-9]*$/.test(val)) {
+                              handleSizeChange(size, val);
+                            }
+                          }}
                         />
                       </div>
                     ))}
@@ -512,28 +601,57 @@ const ProductDetails = () => {
 
                 {/* Total Price Calculation Summary */}
                 <div className="total-price-summary-box bg-light border p-3 rounded mb-4">
-                  <Row className="align-items-center g-2">
-                    <Col xs={4} className="fw-bold text-secondary">Per piece</Col>
-                    <Col xs={8} className="fw-bold text-dark text-end">₹ {perPiecePrice}.</Col>
-
-                    <Col xs={4} className="fw-bold text-secondary">Quantity</Col>
-                    <Col xs={8} className="text-end">
-                      <span className="fw-bold text-dark">{totalQty}.</span>{' '}
-                      <span className="text-danger fw-semibold text-xs ms-1">(plus qyt price per pcs drop design send you)</span>
-                    </Col>
-
+                  {/* Mobile Layout */}
+                  <div className="d-block d-lg-none">
+                    <div className="d-flex justify-content-between mb-1 fw-bold text-secondary text-xs">
+                      <span>Per piece</span>
+                      <span className="text-dark">₹ {perPiecePrice}.</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-1 fw-bold text-secondary text-xs">
+                      <span>Quantity</span>
+                      <span className="text-dark">{totalQty}.</span>
+                    </div>
+                    <div className="text-danger fw-semibold mb-2" style={{ fontSize: '0.7rem', lineHeight: '1.2' }}>
+                      (plus qyt price per pcs drop design send you)
+                    </div>
                     {couponApplied && (
-                      <>
-                        <Col xs={4} className="fw-bold text-success">Coupon Applied</Col>
-                        <Col xs={8} className="fw-bold text-success text-end">- ₹ 50.00</Col>
-                      </>
+                      <div className="d-flex justify-content-between mb-1 fw-bold text-success text-xs">
+                        <span>Coupon Applied</span>
+                        <span>- ₹ 50.00</span>
+                      </div>
                     )}
+                    <hr className="my-2" />
+                    <div className="d-flex justify-content-between align-items-center fw-bold text-dark fs-6">
+                      <span>Total</span>
+                      <span className="text-success fs-5">₹ {totalPrice.toFixed(2)}</span>
+                    </div>
+                  </div>
 
-                    <Col xs={12} className="border-top my-2"></Col>
-                    
-                    <Col xs={4} className="fw-bold text-dark fs-5">Total</Col>
-                    <Col xs={8} className="fw-bold text-success text-end fs-4">₹ {totalPrice.toFixed(2)}</Col>
-                  </Row>
+                  {/* Desktop Layout */}
+                  <div className="d-none d-lg-block">
+                    <Row className="align-items-center g-2">
+                      <Col xs={4} className="fw-bold text-secondary">Per piece</Col>
+                      <Col xs={8} className="fw-bold text-dark text-end">₹ {perPiecePrice}.</Col>
+
+                      <Col xs={4} className="fw-bold text-secondary">Quantity</Col>
+                      <Col xs={8} className="text-end">
+                        <span className="fw-bold text-dark">{totalQty}.</span>{' '}
+                        <span className="text-danger fw-semibold text-xs ms-1">(plus qyt price per pcs drop design send you)</span>
+                      </Col>
+
+                      {couponApplied && (
+                        <>
+                          <Col xs={4} className="fw-bold text-success">Coupon Applied</Col>
+                          <Col xs={8} className="fw-bold text-success text-end">- ₹ 50.00</Col>
+                        </>
+                      )}
+
+                      <Col xs={12} className="border-top my-2"></Col>
+                      
+                      <Col xs={4} className="fw-bold text-dark fs-5">Total</Col>
+                      <Col xs={8} className="fw-bold text-success text-end fs-4">₹ {totalPrice.toFixed(2)}</Col>
+                    </Row>
+                  </div>
                 </div>
 
                 {/* Upload & Create Design buttons */}
@@ -598,7 +716,8 @@ const ProductDetails = () => {
                 </div>
 
                 {/* Trust Badges */}
-                <div className="trust-badges-row d-flex justify-content-around align-items-center bg-light border py-3 px-2 rounded mb-4 text-center">
+                {/* Desktop Trust Badges */}
+                <div className="trust-badges-row d-none d-lg-flex justify-content-around align-items-center bg-light border py-3 px-2 rounded mb-4 text-center">
                   <div className="trust-badge-item">
                     <FaSyncAlt size="20" className="text-primary mb-1" />
                     <div className="fw-bold text-xs text-dark">10-Day Return</div>
@@ -610,6 +729,33 @@ const ProductDetails = () => {
                   <div className="trust-badge-item d-flex flex-column align-items-center">
                     <img src="/Asured.png" alt="PM Assured" style={{ height: "20px", objectFit: "contain", marginBottom: "4px" }} />
                     <div className="fw-bold text-xs text-dark">PM Assured</div>
+                  </div>
+                </div>
+
+                {/* Mobile Trust Badges List (matches Figma Layout) */}
+                <div className="d-block d-lg-none mb-4 bg-white border-top border-bottom py-1">
+                  <div className="d-flex align-items-center justify-content-between py-2 border-bottom px-2">
+                    <div className="d-flex align-items-center gap-2 text-dark">
+                      <FaSyncAlt size="16" className="text-secondary" style={{ transform: 'scaleX(-1)' }} />
+                      <span className="fw-semibold" style={{ fontSize: '0.85rem' }}>
+                        <span className="text-success fw-bold">FREE Delivery</span> <span className="text-decoration-line-through text-muted" style={{fontSize: '0.8rem'}}>₹40</span> <span className="text-muted">• Delivery by 27 Jul, Saturday</span>
+                      </span>
+                    </div>
+                    <FaChevronRight size={12} className="text-secondary" />
+                  </div>
+                  <div className="d-flex align-items-center justify-content-between py-2 border-bottom px-2">
+                    <div className="d-flex align-items-center gap-2 text-dark">
+                      <FaSyncAlt size="16" className="text-secondary" />
+                      <span className="fw-semibold" style={{ fontSize: '0.85rem' }}>10 Days Return Policy</span>
+                    </div>
+                    <FaChevronRight size={12} className="text-secondary" />
+                  </div>
+                  <div className="d-flex align-items-center justify-content-between py-2 px-2">
+                    <div className="d-flex align-items-center gap-2 text-dark">
+                      <FaCheckCircle size="16" className="text-success" />
+                      <span className="fw-semibold" style={{ fontSize: '0.85rem' }}>Cash on Delivery Available</span>
+                    </div>
+                    <FaChevronRight size={12} className="text-secondary" />
                   </div>
                 </div>
 

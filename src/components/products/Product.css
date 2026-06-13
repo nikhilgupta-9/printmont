@@ -1010,3 +1010,29 @@ body {
     padding-right: 3rem !important;
   }
 }
+
+@media (max-width: 991px) {
+  .about-product-tabs-row {
+    background-color: #f1f3f5 !important;
+    padding: 4px !important;
+    border-radius: 30px !important;
+    border-bottom: none !important;
+    display: flex !important;
+    justify-content: space-between !important;
+  }
+  .about-product-tabs-row .tab-btn {
+    flex: 1 !important;
+    text-align: center !important;
+    border-bottom: none !important;
+    border-radius: 25px !important;
+    padding: 8px 10px !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    transition: all 0.2s ease !important;
+  }
+  .about-product-tabs-row .active-product-tab {
+    background-color: #0b53a1 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+  }
+}
