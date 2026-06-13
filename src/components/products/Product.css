@@ -1138,6 +1138,52 @@ body {
     background: #007bff !important;
     opacity: 1 !important;
   }
+  .product-details-info-section {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  .product-details-info-section > * {
+    margin-bottom: 12px !important;
+    margin-top: 0 !important;
+  }
+  .price-display-wrapper {
+    margin-bottom: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  .sizing-splitup-section {
+    margin-bottom: 10px !important;
+    padding-bottom: 8px !important;
+  }
+  .total-price-summary-box {
+    margin-bottom: 12px !important;
+    padding: 10px !important;
+  }
+  .check-delivery-box {
+    margin-bottom: 12px !important;
+    padding: 10px !important;
+  }
+  .coupon-discount-apply {
+    margin-bottom: 12px !important;
+    padding: 10px !important;
+  }
+  .app-main-container > .row {
+    margin-top: 12px !important;
+    margin-bottom: 0px !important;
+  }
+  .app-main-container > .row:first-child {
+    margin-top: 0px !important;
+  }
+}
+
+/* Consistent spacing between sections on desktop */
+.app-main-container > .row {
+  margin-top: 20px !important;
+  margin-bottom: 0px !important;
+}
+.app-main-container > .row:first-child {
+  margin-top: 0px !important;
 }
 
 /* Scrollbar utility to hide it on horizontal scroll containers */
