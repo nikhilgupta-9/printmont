@@ -862,7 +862,7 @@ const ProductDetails = () => {
         </Row>
 
         {/* SECTION 4: About the Product (Tabs) */}
-        <Row className="p-0 mx-0 my-4 w-100 bg-white rounded border p-3 shadow-sm">
+        <Row className="p-0 mx-0 my-4 w-100 bg-white rounded border p-3 shadow-sm about-product-section-row">
           <Col xs={12} className="p-0">
             <h4 className="fw-bold text-dark mb-3 px-1" style={{ fontSize: '1.2rem' }}>About the product</h4>
             

@@ -1012,6 +1012,18 @@ body {
 }
 
 @media (max-width: 991px) {
+  .about-product-section-row {
+    padding: 10px 8px !important;
+    margin-top: 15px !important;
+    margin-bottom: 15px !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+  }
+  .about-product-section-row h4 {
+    font-size: 0.95rem !important;
+    margin-bottom: 8px !important;
+    padding-left: 2px !important;
+  }
   .about-product-tabs-row {
     background-color: transparent !important;
     padding: 0 !important;
@@ -1019,20 +1031,22 @@ body {
     border-bottom: none !important;
     display: flex !important;
     justify-content: flex-start !important;
-    gap: 10px !important;
+    gap: 6px !important;
+    margin-bottom: 8px !important;
   }
   .about-product-tabs-row .tab-btn {
     flex: 0 1 auto !important;
     text-align: center !important;
-    border: 1px solid #e5e5e5 !important;
-    border-bottom: 1px solid #e5e5e5 !important;
-    border-radius: 10px !important;
-    padding: 8px 18px !important;
-    font-size: 0.88rem !important;
+    border: 1px solid #e2e2e2 !important;
+    border-bottom: 1px solid #e2e2e2 !important;
+    border-radius: 8px !important;
+    padding: 5px 10px !important;
+    font-size: 0.76rem !important;
     font-weight: 600 !important;
     background-color: #ffffff !important;
     color: #212529 !important;
     transition: all 0.2s ease !important;
+    white-space: nowrap !important;
   }
   .about-product-tabs-row .active-product-tab {
     background-color: #f4f5ee !important;
