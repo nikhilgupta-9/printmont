@@ -102,7 +102,7 @@ const ProductQASection = () => {
   );
 
   return (
-    <Container className="my-0 my-lg-4 border rounded p-4 bg-white">
+    <Container className="my-0 my-lg-4 border rounded p-4 bg-white product-qa-container">
       <Row className="align-items-center mb-3">
         <Col>
           <h4 className="fw-bold">Questions and Answers</h4>

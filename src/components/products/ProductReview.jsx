@@ -178,7 +178,7 @@ const ProductReview = () => {
       </div>
 
       {/* === MOBILE VIEW (Figma screen, layout strictly isolated) === */}
-      <div className="d-block d-md-none px-3 py-3 bg-white rounded border mb-4 shadow-sm">
+      <div className="d-block d-md-none px-2 py-3 bg-white mb-2">
         {/* Header Title with collapse button */}
         <div className="d-flex align-items-center justify-content-between mb-3">
           <h4 className="fw-bold text-dark mb-0" style={{ fontSize: '1.3rem', letterSpacing: '-0.3px' }}>Ratings and reviews</h4>

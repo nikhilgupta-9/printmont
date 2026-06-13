@@ -1067,6 +1067,12 @@ body {
     line-height: 1.6 !important;
     color: #495057 !important;
   }
+  .product-qa-container {
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 12px 8px !important;
+    margin: 0 !important;
+  }
 }
 
 /* Scrollbar utility to hide it on horizontal scroll containers */

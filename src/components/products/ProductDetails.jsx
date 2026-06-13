@@ -977,15 +977,27 @@ const ProductDetails = () => {
 
         {/* SECTION 6: Ratings & Reviews + Q&A Section */}
         <Row className="p-0 mx-0 my-4 w-100 g-4">
-          <Col xs={12} md={7} className="d-flex flex-column">
-            <div className="bg-white border rounded p-3 shadow-sm h-100">
+          {/* Ratings & Reviews Column */}
+          <Col xs={12} md={7} className="d-flex flex-column p-0 px-md-3">
+            {/* Desktop wrapper */}
+            <div className="d-none d-md-block bg-white border rounded p-3 shadow-sm h-100">
               <h4 className="fw-bold text-dark mb-3">Ratings & Reviews</h4>
+              <ProductReview />
+            </div>
+            {/* Mobile wrapper (direct) */}
+            <div className="d-block d-md-none">
               <ProductReview />
             </div>
           </Col>
 
-          <Col xs={12} md={5} className="d-flex flex-column">
-            <div className="bg-white border rounded p-3 shadow-sm h-100">
+          {/* Q&A Column */}
+          <Col xs={12} md={5} className="d-flex flex-column p-0 px-md-3">
+            {/* Desktop wrapper */}
+            <div className="d-none d-md-block bg-white border rounded p-3 shadow-sm h-100">
+              <ProductQASection />
+            </div>
+            {/* Mobile wrapper (direct) */}
+            <div className="d-block d-md-none">
               <ProductQASection />
             </div>
           </Col>
