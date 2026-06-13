@@ -12,6 +12,8 @@ const ProductReview = () => {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isReviewsCollapsed, setIsReviewsCollapsed] = useState(false);
   const [allReviewsModalOpen, setAllReviewsModalOpen] = useState(false);
+  const [likedReviews, setLikedReviews] = useState({});
+  const [dislikedReviews, setDislikedReviews] = useState({});
 
   // Flattened array of all customer images
   const allImages = reviews.flatMap(r => r.images || []);
@@ -38,18 +40,56 @@ const ProductReview = () => {
   };
 
   const handleLike = (index) => {
+    const isLiked = likedReviews[index];
+    const isDisliked = dislikedReviews[index];
+
+    // Toggle liked state
+    setLikedReviews(prev => ({ ...prev, [index]: !isLiked }));
+
     setReviews(prev => prev.map((rev, idx) => {
       if (idx === index) {
-        return { ...rev, likes: (rev.likes || 0) + 1 };
+        let diffLikes = isLiked ? -1 : 1;
+        let diffDislikes = 0;
+        
+        // If it was disliked, remove the dislike
+        if (!isLiked && isDisliked) {
+          diffDislikes = -1;
+          setDislikedReviews(prevD => ({ ...prevD, [index]: false }));
+        }
+
+        return { 
+          ...rev, 
+          likes: Math.max(0, (rev.likes || 0) + diffLikes),
+          dislikes: Math.max(0, (rev.dislikes || 0) + diffDislikes)
+        };
       }
       return rev;
     }));
   };
 
   const handleDislike = (index) => {
+    const isLiked = likedReviews[index];
+    const isDisliked = dislikedReviews[index];
+
+    // Toggle disliked state
+    setDislikedReviews(prev => ({ ...prev, [index]: !isDisliked }));
+
     setReviews(prev => prev.map((rev, idx) => {
       if (idx === index) {
-        return { ...rev, dislikes: (rev.dislikes || 0) + 1 };
+        let diffDislikes = isDisliked ? -1 : 1;
+        let diffLikes = 0;
+
+        // If it was liked, remove the like
+        if (!isDisliked && isLiked) {
+          diffLikes = -1;
+          setLikedReviews(prevL => ({ ...prevL, [index]: false }));
+        }
+
+        return { 
+          ...rev, 
+          likes: Math.max(0, (rev.likes || 0) + diffLikes),
+          dislikes: Math.max(0, (rev.dislikes || 0) + diffDislikes)
+        };
       }
       return rev;
     }));
@@ -320,7 +360,7 @@ const ProductReview = () => {
                     <div className="d-flex align-items-center gap-2">
                       <button 
                         type="button" 
-                        className="btn p-0 border-0 bg-transparent text-muted d-flex align-items-center gap-1 text-xs" 
+                        className={`btn p-0 border-0 bg-transparent d-flex align-items-center gap-1 text-xs ${likedReviews[i] ? 'text-primary' : 'text-muted'}`} 
                         style={{ fontSize: '0.75rem' }}
                         onClick={() => handleLike(i)}
                       >
@@ -328,7 +368,7 @@ const ProductReview = () => {
                       </button>
                       <button 
                         type="button" 
-                        className="btn p-0 border-0 bg-transparent text-muted d-flex align-items-center gap-1 text-xs" 
+                        className={`btn p-0 border-0 bg-transparent d-flex align-items-center gap-1 text-xs ${dislikedReviews[i] ? 'text-danger' : 'text-muted'}`} 
                         style={{ fontSize: '0.75rem' }}
                         onClick={() => handleDislike(i)}
                       >
@@ -450,7 +490,7 @@ const ProductReview = () => {
                   <div className="d-flex align-items-center gap-2">
                     <button 
                       type="button" 
-                      className="btn p-0 border-0 bg-transparent text-muted d-flex align-items-center gap-1 text-xs" 
+                      className={`btn p-0 border-0 bg-transparent d-flex align-items-center gap-1 text-xs ${likedReviews[i] ? 'text-primary' : 'text-muted'}`} 
                       style={{ fontSize: '0.75rem' }}
                       onClick={() => handleLike(i)}
                     >
@@ -458,7 +498,7 @@ const ProductReview = () => {
                     </button>
                     <button 
                       type="button" 
-                      className="btn p-0 border-0 bg-transparent text-muted d-flex align-items-center gap-1 text-xs" 
+                      className={`btn p-0 border-0 bg-transparent d-flex align-items-center gap-1 text-xs ${dislikedReviews[i] ? 'text-danger' : 'text-muted'}`} 
                       style={{ fontSize: '0.75rem' }}
                       onClick={() => handleDislike(i)}
                     >
