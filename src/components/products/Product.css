@@ -1013,26 +1013,44 @@ body {
 
 @media (max-width: 991px) {
   .about-product-tabs-row {
-    background-color: #f1f3f5 !important;
-    padding: 4px !important;
-    border-radius: 30px !important;
+    background-color: transparent !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
     border-bottom: none !important;
     display: flex !important;
-    justify-content: space-between !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
   }
   .about-product-tabs-row .tab-btn {
-    flex: 1 !important;
+    flex: 0 1 auto !important;
     text-align: center !important;
-    border-bottom: none !important;
-    border-radius: 25px !important;
-    padding: 8px 10px !important;
-    font-size: 0.8rem !important;
-    font-weight: 700 !important;
+    border: 1px solid #e5e5e5 !important;
+    border-bottom: 1px solid #e5e5e5 !important;
+    border-radius: 10px !important;
+    padding: 8px 18px !important;
+    font-size: 0.88rem !important;
+    font-weight: 600 !important;
+    background-color: #ffffff !important;
+    color: #212529 !important;
     transition: all 0.2s ease !important;
   }
   .about-product-tabs-row .active-product-tab {
-    background-color: #0b53a1 !important;
-    color: #ffffff !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    background-color: #f4f5ee !important;
+    color: #000000 !important;
+    border: 1px solid #8c8d87 !important;
+    border-bottom: 1px solid #8c8d87 !important;
+    box-shadow: none !important;
+  }
+  .brand-banner-alternating-row h4 {
+    font-size: 1.55rem !important;
+    font-weight: 700 !important;
+    line-height: 1.3 !important;
+    margin-bottom: 12px !important;
+    color: #1a1a1a !important;
+  }
+  .brand-banner-alternating-row p {
+    font-size: 0.95rem !important;
+    line-height: 1.6 !important;
+    color: #495057 !important;
   }
 }

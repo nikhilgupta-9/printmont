@@ -864,6 +864,7 @@ const ProductDetails = () => {
         {/* SECTION 4: About the Product (Tabs) */}
         <Row className="p-0 mx-0 my-4 w-100 bg-white rounded border p-3 shadow-sm">
           <Col xs={12} className="p-0">
+            <h4 className="fw-bold text-dark mb-3 px-1" style={{ fontSize: '1.2rem' }}>About the product</h4>
             
             {/* Tabs Navigation */}
             <div className="about-product-tabs-row d-flex border-bottom pb-2 mb-3 gap-3">
