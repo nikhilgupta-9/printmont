@@ -225,7 +225,7 @@ const ProductDetails = () => {
               
               {/* LEFT COLUMN: Image Gallery */}
               <Col xs={12} lg={6} className="p-0 d-flex flex-column border-end">
-                <div className="left-sticky-gallery-panel" style={{ padding: '15px' }}>
+                <div className="left-sticky-gallery-panel" style={{ padding: useCarousel ? '0' : '15px' }}>
                   
                   {useCarousel ? (
                     // Mobile Carousel
@@ -239,12 +239,11 @@ const ProductDetails = () => {
                       >
                         {Singleproductdata.images.map((img, idx) => (
                           <SwiperSlide key={idx}>
-                            <div className="product-image-main-mobile d-flex justify-content-center align-items-center">
+                            <div className="product-image-main-mobile">
                               <img
                                 src={img}
                                 alt={`Product ${idx}`}
-                                className="img-fluid"
-                                style={{ maxHeight: "400px", objectFit: "contain" }}
+                                className="product-image-mobile-item"
                               />
                             </div>
                           </SwiperSlide>
