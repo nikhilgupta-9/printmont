@@ -1013,11 +1013,16 @@ body {
 
 @media (max-width: 991px) {
   .about-product-section-row {
-    padding: 10px 8px !important;
+    padding: 12px 16px !important;
     margin-top: 15px !important;
     margin-bottom: 15px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
     box-shadow: none !important;
-    border-radius: 8px !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
   }
   .about-product-section-row h4 {
     font-size: 0.95rem !important;
