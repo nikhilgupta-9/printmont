@@ -11,6 +11,7 @@ const ProductReview = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isReviewsCollapsed, setIsReviewsCollapsed] = useState(false);
+  const [allReviewsModalOpen, setAllReviewsModalOpen] = useState(false);
 
   // Flattened array of all customer images
   const allImages = reviews.flatMap(r => r.images || []);
@@ -34,6 +35,24 @@ const ProductReview = () => {
 
   const handleNextImage = () => {
     setLightboxIndex(prev => (prev === allImages.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleLike = (index) => {
+    setReviews(prev => prev.map((rev, idx) => {
+      if (idx === index) {
+        return { ...rev, likes: (rev.likes || 0) + 1 };
+      }
+      return rev;
+    }));
+  };
+
+  const handleDislike = (index) => {
+    setReviews(prev => prev.map((rev, idx) => {
+      if (idx === index) {
+        return { ...rev, dislikes: (rev.dislikes || 0) + 1 };
+      }
+      return rev;
+    }));
   };
 
   return (
@@ -278,9 +297,9 @@ const ProductReview = () => {
                 >
                   <div className="d-flex align-items-center justify-content-between mb-2">
                     <div className="d-flex align-items-center gap-2">
-                      <div className="border rounded px-1.5 py-0.5 d-flex align-items-center gap-1 bg-white text-xs fw-bold" style={{ borderColor: '#dee2e6', borderRadius: '4px' }}>
+                      <div className="border rounded px-2 py-0.5 d-flex align-items-center bg-white text-xs fw-bold" style={{ borderColor: '#dee2e6', borderRadius: '4px' }}>
                         <span style={{ fontSize: '0.8rem', color: '#000' }}>{Math.round(r.overallRating)}</span>
-                        <span className="text-success" style={{ fontSize: '0.85rem' }}>★</span>
+                        <span className="text-success" style={{ fontSize: '0.85rem', marginLeft: '2px', marginRight: '2px' }}>★</span>
                       </div>
                       <span className="fw-bold text-dark text-xs text-truncate" style={{ maxWidth: '140px', fontSize: '0.85rem' }}>
                         {r.overallRating >= 4.5 ? 'Mind-blowing purch...' : r.overallRating >= 4 ? 'Very Good purchase' : 'Good product'}
@@ -299,8 +318,22 @@ const ProductReview = () => {
                       </div>
                     </div>
                     <div className="d-flex align-items-center gap-2">
-                      <span className="text-muted d-flex align-items-center gap-1 text-xs" style={{ fontSize: '0.75rem' }}><FaThumbsUp size={11} /> {r.likes || 0}</span>
-                      <span className="text-muted d-flex align-items-center gap-1 text-xs" style={{ fontSize: '0.75rem' }}><FaThumbsDown size={11} /> {r.dislikes || 0}</span>
+                      <button 
+                        type="button" 
+                        className="btn p-0 border-0 bg-transparent text-muted d-flex align-items-center gap-1 text-xs" 
+                        style={{ fontSize: '0.75rem' }}
+                        onClick={() => handleLike(i)}
+                      >
+                        <FaThumbsUp size={11} /> {r.likes || 0}
+                      </button>
+                      <button 
+                        type="button" 
+                        className="btn p-0 border-0 bg-transparent text-muted d-flex align-items-center gap-1 text-xs" 
+                        style={{ fontSize: '0.75rem' }}
+                        onClick={() => handleDislike(i)}
+                      >
+                        <FaThumbsDown size={11} /> {r.dislikes || 0}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -312,7 +345,7 @@ const ProductReview = () => {
               type="button"
               className="btn btn-white border w-100 py-2.5 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2 mb-2 bg-white"
               style={{ fontSize: '0.9rem', borderColor: '#e5e5e5', color: '#212529', borderRadius: '12px' }}
-              onClick={() => setShowAllInline(!showAllInline)}
+              onClick={() => setAllReviewsModalOpen(true)}
             >
               Show all reviews <FaChevronRight size={10} className="text-secondary" />
             </button>
@@ -368,6 +401,74 @@ const ProductReview = () => {
               </div>
             ))}
           </Modal.Footer>
+        </Modal>
+
+        {/* === All Reviews Modal === */}
+        <Modal show={allReviewsModalOpen} onHide={() => setAllReviewsModalOpen(false)} scrollable centered size="lg">
+          <Modal.Header closeButton>
+            <Modal.Title className="fw-bold text-dark" style={{ fontSize: '1.2rem' }}>All Verified Reviews ({reviews.length})</Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="bg-light p-3">
+            {reviews.map((r, i) => (
+              <div key={i} className="bg-white p-3 rounded mb-3 border shadow-sm">
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <div className="border rounded px-2 py-0.5 d-flex align-items-center bg-white text-xs fw-bold" style={{ borderColor: '#dee2e6', borderRadius: '4px' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#000' }}>{Math.round(r.overallRating)}</span>
+                    <span className="text-success" style={{ fontSize: '0.85rem', marginLeft: '2px', marginRight: '2px' }}>★</span>
+                  </div>
+                  <span className="fw-bold text-dark text-xs" style={{ fontSize: '0.85rem' }}>
+                    {r.overallRating >= 4.5 ? 'Mind-blowing purchase' : r.overallRating >= 4 ? 'Very Good purchase' : 'Good product'}
+                  </span>
+                  <span className="text-muted text-xs ms-auto" style={{ fontSize: '0.75rem' }}>1 year ago</span>
+                </div>
+                <p className="text-dark mb-2" style={{ fontSize: '0.85rem', lineHeight: '1.5' }}>
+                  {r.comment}
+                </p>
+                {r.images && r.images.length > 0 && (
+                  <div className="d-flex gap-2 my-2 overflow-auto pb-1 scrollbar-hidden">
+                    {r.images.map((img, idx) => (
+                      <img 
+                        key={idx} 
+                        src={img} 
+                        alt="customer upload" 
+                        style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px', cursor: 'pointer' }}
+                        onClick={() => {
+                          setAllReviewsModalOpen(false);
+                          openLightbox(img);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+                <div className="d-flex align-items-center justify-content-between mt-2 pt-2 border-top" style={{ borderColor: '#f1f1f1' }}>
+                  <div>
+                    <div className="fw-bold text-dark" style={{ fontSize: '0.8rem' }}>{r.user}</div>
+                    <div className="text-muted d-flex align-items-center gap-1" style={{ fontSize: '0.7rem' }}>
+                      <FaCheckCircle size={10} className="text-success" /> Verified Buyer
+                    </div>
+                  </div>
+                  <div className="d-flex align-items-center gap-2">
+                    <button 
+                      type="button" 
+                      className="btn p-0 border-0 bg-transparent text-muted d-flex align-items-center gap-1 text-xs" 
+                      style={{ fontSize: '0.75rem' }}
+                      onClick={() => handleLike(i)}
+                    >
+                      <FaThumbsUp size={11} /> {r.likes || 0}
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn p-0 border-0 bg-transparent text-muted d-flex align-items-center gap-1 text-xs" 
+                      style={{ fontSize: '0.75rem' }}
+                      onClick={() => handleDislike(i)}
+                    >
+                      <FaThumbsDown size={11} /> {r.dislikes || 0}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </Modal.Body>
         </Modal>
     </>
   );

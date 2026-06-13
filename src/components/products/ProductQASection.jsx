@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Container, Row, Col, Card, Form } from "react-bootstrap";
+import { Container, Row, Col, Card, Form, Modal } from "react-bootstrap";
 import { FaThumbsUp, FaThumbsDown, FaUser, FaSearch } from "react-icons/fa";
 import { Link } from "react-router";
 
@@ -39,6 +39,7 @@ const ProductQASection = () => {
   ]);
 
   const [search, setSearch] = useState("");
+  const [allQuestionsModalOpen, setAllQuestionsModalOpen] = useState(false);
 
   // ------------------------
   // Like handler
@@ -161,18 +162,71 @@ const ProductQASection = () => {
         </Card>
       ))}
 
-      <Link
-        to={'#'}
-        className="text-primary fw-semibold mt-2 text-decoration-none"
-        style={{ cursor: "pointer" }} 
+      <button
+        type="button"
+        className="btn p-0 text-primary fw-semibold mt-2 border-0 bg-transparent text-decoration-none"
+        style={{ cursor: "pointer" }}
+        onClick={() => setAllQuestionsModalOpen(true)}
       >
         All questions
-      </Link>
+      </button>
 
       <div className="border-top mt-4 pt-3 text-center text-muted small">
-        
         Safe and Secure Payments. Easy returns. 100% Authentic products.
       </div>
+
+      {/* === All Questions Modal === */}
+      <Modal show={allQuestionsModalOpen} onHide={() => setAllQuestionsModalOpen(false)} scrollable centered size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title className="fw-bold text-dark" style={{ fontSize: '1.2rem' }}>All Questions & Answers</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="bg-light p-3">
+          <div className="d-flex align-items-center border rounded px-3 py-2 bg-white mb-3 shadow-sm">
+            <FaSearch className="me-2 text-muted" />
+            <Form.Control
+              type="text"
+              placeholder="Search questions..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="border-0 p-0 shadow-none"
+            />
+          </div>
+          {filtered.map((item) => (
+            <div key={item.id} className="bg-white p-3 rounded mb-3 border shadow-sm">
+              <p className="fw-bold text-dark mb-1" style={{ fontSize: '0.9rem' }}>
+                Q: <span className="fw-semibold">{item.question}</span>
+              </p>
+              <p className="text-secondary mb-2" style={{ fontSize: '0.85rem' }}>
+                <strong>A:</strong> {item.answer}
+              </p>
+              <div className="d-flex align-items-center justify-content-between mt-2 pt-2 border-top" style={{ borderColor: '#f1f1f1' }}>
+                <div>
+                  <div className="text-secondary fw-semibold mb-0" style={{ fontSize: '0.75rem' }}>{item.author}</div>
+                  <div className="text-muted d-flex align-items-center gap-1" style={{ fontSize: '0.7rem' }}>
+                    <FaUser size={10} /> {item.seller}
+                  </div>
+                </div>
+                <div className="d-flex align-items-center gap-3 text-muted">
+                  <span
+                    className="d-flex align-items-center gap-1"
+                    style={{ cursor: "pointer", fontSize: '0.8rem', color: item.userReaction === "like" ? "#007bff" : "gray" }}
+                    onClick={() => handleLike(item.id)}
+                  >
+                    <FaThumbsUp size={12} /> {item.likes}
+                  </span>
+                  <span
+                    className="d-flex align-items-center gap-1"
+                    style={{ cursor: "pointer", fontSize: '0.8rem', color: item.userReaction === "dislike" ? "#dc3545" : "gray" }}
+                    onClick={() => handleDislike(item.id)}
+                  >
+                    <FaThumbsDown size={12} /> {item.dislikes}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </Modal.Body>
+      </Modal>
     </Container>
   );
 };
