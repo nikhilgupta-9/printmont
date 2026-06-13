@@ -1054,3 +1054,12 @@ body {
     color: #495057 !important;
   }
 }
+
+/* Scrollbar utility to hide it on horizontal scroll containers */
+.scrollbar-hidden {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none !important;  /* Chrome, Safari and Opera */
+}

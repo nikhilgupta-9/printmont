@@ -3,16 +3,22 @@ import { initialReviews } from '../../../data/reviewData';
 import { Col, Container, Row } from 'react-bootstrap';
 import { RatingSummary, ReviewCard } from '../review/ReviewHelper';
 import { Modal } from 'react-bootstrap';
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaChevronDown, FaChevronUp, FaCheckCircle, FaThumbsUp, FaThumbsDown } from 'react-icons/fa';
 
 const ProductReview = () => {
   const [reviews, setReviews] = useState(initialReviews);
   const [showAllInline, setShowAllInline] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [isReviewsCollapsed, setIsReviewsCollapsed] = useState(false);
 
   // Flattened array of all customer images
   const allImages = reviews.flatMap(r => r.images || []);
+
+  const totalReviews = reviews.length;
+  const averageRating = totalReviews
+    ? (reviews.reduce((acc, r) => acc + r.overallRating, 0) / totalReviews).toFixed(1)
+    : 0;
 
   const openLightbox = (imgSrc) => {
     const idx = allImages.indexOf(imgSrc);
@@ -32,140 +38,287 @@ const ProductReview = () => {
 
   return (
     <>
-      <Container className="my-2 px-0">
-        <Row className='m-0 p-0'>
-          {/* === Left Column: Rating Summary and Distribution === */}
-          <Col md={12} className="mb-2 m-0 p-0">
-            <RatingSummary reviews={reviews} />
-          </Col>
+      {/* === DESKTOP VIEW (Medium & Large screens, unchanged) === */}
+      <div className="d-none d-md-block">
+        <Container className="my-2 px-0">
+          <Row className='m-0 p-0'>
+            {/* === Left Column: Rating Summary and Distribution === */}
+            <Col md={12} className="mb-2 m-0 p-0">
+              <RatingSummary reviews={reviews} />
+            </Col>
 
-          {/* === Right Column: Review List === */}
-          <Col md={12}>
-            {/* Customer Images Section */}
-            <div className="bg-white rounded border p-3 mb-3">
-              <div className="mb-2">
-                <h5 className="mb-0 fw-semibold text-dark">
-                  Customer Images ({allImages.length})
-                </h5>
-              </div>
+            {/* === Right Column: Review List === */}
+            <Col md={12}>
+              {/* Customer Images Section */}
+              <div className="bg-white rounded border p-3 mb-3">
+                <div className="mb-2">
+                  <h5 className="mb-0 fw-semibold text-dark">
+                    Customer Images ({allImages.length})
+                  </h5>
+                </div>
 
-              <div className="d-flex flex-wrap gap-2 customer-image-preview mt-2">
-                {showAllInline ? (
-                  // Show ALL images inline
-                  <>
-                    {allImages.map((img, index) => (
-                      <div
-                        key={index}
-                        className="border rounded overflow-hidden"
-                        style={{
-                          width: '70px',
-                          height: '70px',
-                          cursor: 'pointer',
-                          flexShrink: 0
-                        }}
-                        onClick={() => openLightbox(img)}
-                      >
-                        <img
-                          src={img}
-                          alt={`Customer ${index}`}
-                          className="w-100 h-100"
-                          style={{ objectFit: 'cover' }}
-                        />
-                      </div>
-                    ))}
-                    {/* Collapsing item */}
-                    <div
-                      className="d-flex align-items-center justify-content-center border rounded text-secondary bg-light"
-                      style={{
-                        width: '70px',
-                        height: '70px',
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                        fontSize: '0.75rem',
-                        fontWeight: 'bold'
-                      }}
-                      onClick={() => setShowAllInline(false)}
-                    >
-                      Show Less
-                    </div>
-                  </>
-                ) : (
-                  // Show only 5 images with +remaining on the 5th
-                  allImages.slice(0, 5).map((img, index) => {
-                    const remaining = allImages.length - 5;
-
-                    // 5th image with overlay
-                    if (index === 4 && remaining > 0) {
-                      return (
+                <div className="d-flex flex-wrap gap-2 customer-image-preview mt-2">
+                  {showAllInline ? (
+                    // Show ALL images inline
+                    <>
+                      {allImages.map((img, index) => (
                         <div
                           key={index}
-                          className="position-relative border rounded overflow-hidden"
+                          className="border rounded overflow-hidden"
                           style={{
                             width: '70px',
                             height: '70px',
                             cursor: 'pointer',
                             flexShrink: 0
                           }}
-                          onClick={() => setShowAllInline(true)}
+                          onClick={() => openLightbox(img)}
                         >
                           <img
                             src={img}
                             alt={`Customer ${index}`}
                             className="w-100 h-100"
-                            style={{
-                              objectFit: 'cover',
-                              filter: 'brightness(50%)'
-                            }}
+                            style={{ objectFit: 'cover' }}
                           />
-                          <span
-                            className="position-absolute top-50 start-50 translate-middle text-white fw-semibold"
-                            style={{
-                              fontSize: '0.9rem',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            +{remaining}
-                          </span>
                         </div>
-                      );
-                    }
-
-                    // Normal image
-                    return (
+                      ))}
+                      {/* Collapsing item */}
                       <div
-                        key={index}
-                        className="border rounded overflow-hidden"
+                        className="d-flex align-items-center justify-content-center border rounded text-secondary bg-light"
                         style={{
                           width: '70px',
                           height: '70px',
                           cursor: 'pointer',
-                          flexShrink: 0
+                          flexShrink: 0,
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold'
                         }}
-                        onClick={() => openLightbox(img)}
+                        onClick={() => setShowAllInline(false)}
                       >
-                        <img
-                          src={img}
-                          alt={`Customer ${index}`}
-                          className="w-100 h-100"
-                          style={{ objectFit: 'cover' }}
-                        />
+                        Show Less
                       </div>
-                    );
-                  })
-                )}
+                    </>
+                  ) : (
+                    // Show only 5 images with +remaining on the 5th
+                    allImages.slice(0, 5).map((img, index) => {
+                      const remaining = allImages.length - 5;
+
+                      // 5th image with overlay
+                      if (index === 4 && remaining > 0) {
+                        return (
+                          <div
+                            key={index}
+                            className="position-relative border rounded overflow-hidden"
+                            style={{
+                              width: '70px',
+                              height: '70px',
+                              cursor: 'pointer',
+                              flexShrink: 0
+                            }}
+                            onClick={() => setShowAllInline(true)}
+                          >
+                            <img
+                              src={img}
+                              alt={`Customer ${index}`}
+                              className="w-100 h-100"
+                              style={{
+                                objectFit: 'cover',
+                                filter: 'brightness(50%)'
+                              }}
+                            />
+                            <span
+                              className="position-absolute top-50 start-50 translate-middle text-white fw-semibold"
+                              style={{
+                                fontSize: '0.9rem',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              +{remaining}
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      // Normal image
+                      return (
+                        <div
+                          key={index}
+                          className="border rounded overflow-hidden"
+                          style={{
+                            width: '70px',
+                            height: '70px',
+                            cursor: 'pointer',
+                            flexShrink: 0
+                          }}
+                          onClick={() => openLightbox(img)}
+                        >
+                          <img
+                            src={img}
+                            alt={`Customer ${index}`}
+                            className="w-100 h-100"
+                            style={{ objectFit: 'cover' }}
+                          />
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <hr className='my-2' />
+
+              <h4 className="mb-3 text-dark fw-bold" style={{ fontSize: '1.2rem' }}>Verified Buyer Reviews ({reviews.length})</h4>
+              <div className='p-0 bg-white'>
+                {reviews.map((r, i) => (
+                  <ReviewCard key={i} review={r} onImageClick={openLightbox} />
+                ))}
+              </div>
+            </Col>
+          </Row>
+        </Container>
+      </div>
+
+      {/* === MOBILE VIEW (Figma screen, layout strictly isolated) === */}
+      <div className="d-block d-md-none px-3 py-3 bg-white rounded border mb-4 shadow-sm">
+        {/* Header Title with collapse button */}
+        <div className="d-flex align-items-center justify-content-between mb-3">
+          <h4 className="fw-bold text-dark mb-0" style={{ fontSize: '1.3rem', letterSpacing: '-0.3px' }}>Ratings and reviews</h4>
+          <button 
+            type="button"
+            className="btn p-0 bg-light rounded-3 d-flex align-items-center justify-content-center border"
+            style={{ width: '32px', height: '32px' }}
+            onClick={() => setIsReviewsCollapsed(!isReviewsCollapsed)}
+          >
+            {isReviewsCollapsed ? <FaChevronDown size={12} className="text-secondary" /> : <FaChevronUp size={12} className="text-secondary" />}
+          </button>
+        </div>
+
+        {/* Collapsible Content */}
+        {!isReviewsCollapsed && (
+          <div>
+            {/* Rating Overview */}
+            <div className="mb-3">
+              <div className="d-flex align-items-center gap-2 mb-1">
+                <span className="fw-bold text-dark fs-2" style={{ lineHeight: '1.1' }}>{averageRating}</span>
+                <span className="text-success fs-3" style={{ lineHeight: '1' }}>★</span>
+                <span className="badge text-success px-2 py-1 fw-bold text-xs" style={{ backgroundColor: '#eefcf5', border: '1px solid #d1f4e0', borderRadius: '4px' }}>Good</span>
+              </div>
+              <div className="text-muted text-xs d-flex align-items-center flex-wrap gap-1" style={{ fontSize: '0.8rem' }}>
+                based on 6,388 ratings by <span className="d-inline-flex align-items-center text-secondary gap-1"><FaCheckCircle size={12} className="text-secondary" />Verified Buyers</span>
               </div>
             </div>
 
-            <hr className='my-2' />
+            {/* Customer Images Custom Grid */}
+            {allImages.length > 0 && (
+              <div className="mb-4">
+                <div className="d-flex gap-2">
+                  {/* Left big image */}
+                  <div 
+                    className="border rounded overflow-hidden position-relative" 
+                    style={{ flex: '1 1 50%', aspectRatio: '0.9', cursor: 'pointer' }}
+                    onClick={() => openLightbox(allImages[0])}
+                  >
+                    <img src={allImages[0]} alt="Customer highlight" className="w-100 h-100 object-fit-cover" style={{ objectFit: 'cover' }} />
+                  </div>
+                  {/* Right 2x2 grid */}
+                  <div style={{ flex: '1 1 50%', display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '8px' }}>
+                    {allImages.slice(1, 5).map((img, idx) => {
+                      const isLast = idx === 3;
+                      const remainingCount = allImages.length - 5;
+                      return (
+                        <div 
+                          key={idx} 
+                          className="border rounded overflow-hidden position-relative cursor-pointer"
+                          style={{ aspectRatio: '1.2' }}
+                          onClick={() => {
+                            if (isLast && remainingCount > 0) {
+                              setShowAllInline(true);
+                            } else {
+                              openLightbox(img);
+                            }
+                          }}
+                        >
+                          <img 
+                            src={img} 
+                            alt={`Customer thumbnail ${idx}`} 
+                            className="w-100 h-100 object-fit-cover" 
+                            style={{ objectFit: 'cover', filter: isLast && remainingCount > 0 ? 'brightness(50%)' : 'none' }}
+                          />
+                          {isLast && remainingCount > 0 && (
+                            <div className="position-absolute top-50 start-50 translate-middle text-white fw-bold" style={{ fontSize: '0.95rem' }}>
+                              +{remainingCount + 32}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
 
-            <h4 className="mb-3 text-dark fw-bold" style={{ fontSize: '1.2rem' }}>Verified Buyer Reviews ({reviews.length})</h4>
-            <div className='p-0 bg-white'>
+            {/* Features customers loved pills */}
+            <div className="mb-4">
+              <div className="text-secondary fw-bold mb-2" style={{ fontSize: '0.88rem' }}>Features customers loved</div>
+              <div className="d-flex gap-2 overflow-auto pb-2 scrollbar-hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <span className="badge text-dark border rounded-pill px-3 py-2 fw-semibold text-xs bg-white" style={{ border: '1px solid #dee2e6 !important', whiteSpace: 'nowrap', fontSize: '0.82rem' }}>Fabric Quality</span>
+                <span className="badge text-dark border rounded-pill px-3 py-2 fw-semibold text-xs bg-white" style={{ border: '1px solid #dee2e6 !important', whiteSpace: 'nowrap', fontSize: '0.82rem' }}>Colour</span>
+                <span className="badge text-dark border rounded-pill px-3 py-2 fw-semibold text-xs bg-white" style={{ border: '1px solid #dee2e6 !important', whiteSpace: 'nowrap', fontSize: '0.82rem' }}>Style</span>
+                <span className="badge text-dark border rounded-pill px-3 py-2 fw-semibold text-xs bg-white" style={{ border: '1px solid #dee2e6 !important', whiteSpace: 'nowrap', fontSize: '0.82rem' }}>Comfort</span>
+                <span className="badge text-dark border rounded-pill px-3 py-2 fw-semibold text-xs bg-white" style={{ border: '1px solid #dee2e6 !important', whiteSpace: 'nowrap', fontSize: '0.82rem' }}>True to Size</span>
+              </div>
+            </div>
+
+            {/* Horizontal Scrolling Review Cards */}
+            <div className="d-flex gap-3 overflow-auto pb-3 mb-3 scrollbar-hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {reviews.map((r, i) => (
-                <ReviewCard key={i} review={r} onImageClick={openLightbox} />
+                <div 
+                  key={i} 
+                  className="p-3 border rounded-3 flex-shrink-0"
+                  style={{ width: '275px', backgroundColor: '#f6f6f6', border: '1px solid #eaeaea', borderRadius: '14px' }}
+                >
+                  <div className="d-flex align-items-center justify-content-between mb-2">
+                    <div className="d-flex align-items-center gap-2">
+                      <div className="border rounded px-1.5 py-0.5 d-flex align-items-center gap-1 bg-white text-xs fw-bold" style={{ borderColor: '#dee2e6', borderRadius: '4px' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#000' }}>{Math.round(r.overallRating)}</span>
+                        <span className="text-success" style={{ fontSize: '0.85rem' }}>★</span>
+                      </div>
+                      <span className="fw-bold text-dark text-xs text-truncate" style={{ maxWidth: '140px', fontSize: '0.85rem' }}>
+                        {r.overallRating >= 4.5 ? 'Mind-blowing purch...' : r.overallRating >= 4 ? 'Very Good purchase' : 'Good product'}
+                      </span>
+                    </div>
+                    <span className="text-muted text-xs" style={{ fontSize: '0.75rem' }}>1 year ago</span>
+                  </div>
+                  <p className="text-dark mb-3 text-truncate-2" style={{ height: '38px', overflow: 'hidden', display: '-webkit-box', WebKitLineClamp: 2, WebKitBoxOrient: 'vertical', fontSize: '0.82rem', lineHeight: '1.4', color: '#495057' }}>
+                    {r.comment}
+                  </p>
+                  <div className="d-flex align-items-center justify-content-between mt-2 pt-2 border-top" style={{ borderColor: '#e9ecef !important' }}>
+                    <div>
+                      <div className="fw-bold text-dark" style={{ fontSize: '0.8rem' }}>{r.user}</div>
+                      <div className="text-muted d-flex align-items-center gap-1" style={{ fontSize: '0.7rem' }}>
+                        <FaCheckCircle size={10} className="text-secondary" /> Verified Buyer
+                      </div>
+                    </div>
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="text-muted d-flex align-items-center gap-1 text-xs" style={{ fontSize: '0.75rem' }}><FaThumbsUp size={11} /> {r.likes || 0}</span>
+                      <span className="text-muted d-flex align-items-center gap-1 text-xs" style={{ fontSize: '0.75rem' }}><FaThumbsDown size={11} /> {r.dislikes || 0}</span>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
-          </Col>
-        </Row>
+
+            {/* Show All Reviews Button */}
+            <button 
+              type="button"
+              className="btn btn-white border w-100 py-2.5 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2 mb-2 bg-white"
+              style={{ fontSize: '0.9rem', borderColor: '#e5e5e5', color: '#212529', borderRadius: '12px' }}
+              onClick={() => setShowAllInline(!showAllInline)}
+            >
+              Show all reviews <FaChevronRight size={10} className="text-secondary" />
+            </button>
+          </div>
+        )}
+      </div>
 
         {/* === Lightbox Carousel Modal === */}
         <Modal show={lightboxOpen} onHide={() => setLightboxOpen(false)} size="lg" centered contentClassName="bg-dark text-white border-0 shadow">
@@ -216,7 +369,6 @@ const ProductReview = () => {
             ))}
           </Modal.Footer>
         </Modal>
-      </Container>
     </>
   );
 };
