@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card } from 'react-bootstrap';
+import { Container, Row, Col, Card, Modal, Form } from 'react-bootstrap';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import 'swiper/css';
@@ -141,6 +141,13 @@ const ProductDetails = () => {
   const [uploadedDesign, setUploadedDesign] = useState(null);
   const [uploadedDesignName, setUploadedDesignName] = useState('');
 
+  // Customize Product Modal States
+  const [customizeModalOpen, setCustomizeModalOpen] = useState(false);
+  const [customActiveTab, setCustomActiveTab] = useState('upload'); // 'upload' | 'text'
+  const [uploadedDesigns, setUploadedDesigns] = useState(Array(11).fill(null));
+  const [customTexts, setCustomTexts] = useState(['', '', '', '']);
+  const [activeSlotIndex, setActiveSlotIndex] = useState(0);
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -153,8 +160,69 @@ const ProductDetails = () => {
     }
   };
 
+  const handleSlotFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUploadedDesigns(prev => {
+          const updated = [...prev];
+          updated[activeSlotIndex] = reader.result;
+          return updated;
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerSlotUpload = (index) => {
+    setActiveSlotIndex(index);
+    // Use setTimeout to ensure state is set before triggering click
+    setTimeout(() => {
+      const fileInput = document.getElementById('custom-slot-file-input');
+      if (fileInput) {
+        fileInput.value = '';
+        fileInput.click();
+      }
+    }, 50);
+  };
+
+  const removeSlotDesign = (index) => {
+    setUploadedDesigns(prev => {
+      const updated = [...prev];
+      updated[index] = null;
+      return updated;
+    });
+  };
+
+  const handleTextChange = (index, value) => {
+    setCustomTexts(prev => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  };
+
+  const handleCustomizeSave = () => {
+    const firstUploaded = uploadedDesigns.find(d => d !== null);
+    if (firstUploaded) {
+      setUploadedDesign(firstUploaded);
+      setUploadedDesignName('custom_design.png');
+    } else {
+      const textEntered = customTexts.some(t => t.trim() !== '');
+      if (textEntered) {
+        setUploadedDesign('/printmontsecured.png'); // fallback thumbnail to indicate customization text is saved
+        setUploadedDesignName('Custom Text Added');
+      } else {
+        setUploadedDesign(null);
+        setUploadedDesignName('');
+      }
+    }
+    setCustomizeModalOpen(false);
+  };
+
   const handleUploadClick = () => {
-    document.getElementById('design-file-upload').click();
+    setCustomizeModalOpen(true);
   };
 
   // About Product active tab
@@ -1032,6 +1100,173 @@ const ProductDetails = () => {
         </Row>
 
       </Container>
+
+      {/* === Customize Product Modal === */}
+      <Modal show={customizeModalOpen} onHide={() => setCustomizeModalOpen(false)} fullscreen="sm-down" centered scrollable size="lg">
+        {/* Deep Blue Header */}
+        <div className="d-flex align-items-center justify-content-between px-3 py-3 text-white" style={{ backgroundColor: '#00539f' }}>
+          <div className="d-flex align-items-center gap-3">
+            <button 
+              type="button" 
+              className="btn p-0 border-0 bg-transparent text-white d-flex align-items-center"
+              onClick={() => setCustomizeModalOpen(false)}
+            >
+              {/* Back Arrow */}
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+            </button>
+            <h5 className="mb-0 fw-bold">Customize Product</h5>
+          </div>
+          <button type="button" className="btn-close btn-close-white" onClick={() => setCustomizeModalOpen(false)} aria-label="Close"></button>
+        </div>
+
+        {/* Modal Body */}
+        <Modal.Body className="p-0 bg-light d-flex flex-column" style={{ minHeight: '500px' }}>
+          {/* Custom Tabs Navigation */}
+          <div className="d-flex bg-white border-bottom shadow-sm">
+            <button
+              type="button"
+              className="flex-fill py-3 border-0 bg-transparent fw-bold text-center position-relative"
+              style={{
+                color: customActiveTab === 'upload' ? '#00539f' : '#888',
+                fontSize: '0.95rem',
+                borderBottom: customActiveTab === 'upload' ? '3px solid #00539f' : 'none'
+              }}
+              onClick={() => setCustomActiveTab('upload')}
+            >
+              Upload Designs
+            </button>
+            <button
+              type="button"
+              className="flex-fill py-3 border-0 bg-transparent fw-bold text-center position-relative"
+              style={{
+                color: customActiveTab === 'text' ? '#00539f' : '#888',
+                fontSize: '0.95rem',
+                borderBottom: customActiveTab === 'text' ? '3px solid #00539f' : 'none'
+              }}
+              onClick={() => setCustomActiveTab('text')}
+            >
+              Enter Text
+            </button>
+          </div>
+
+          <div className="p-3 bg-white flex-grow-1">
+            {customActiveTab === 'upload' ? (
+              /* Upload Design Content */
+              <div>
+                {/* 11 Slots Grid */}
+                <div className="row g-3 mb-4">
+                  {uploadedDesigns.map((design, idx) => (
+                    <div key={idx} className="col-4">
+                      <div 
+                        className="custom-design-slot-box position-relative border rounded d-flex align-items-center justify-content-center cursor-pointer"
+                        style={{ 
+                          aspectRatio: '1', 
+                          backgroundColor: '#f8f9fa', 
+                          border: '1.5px dashed #ccc', 
+                          borderRadius: '8px',
+                          overflow: 'hidden'
+                        }}
+                        onClick={() => !design && triggerSlotUpload(idx)}
+                      >
+                        {design ? (
+                          <>
+                            <img src={design} alt={`Uploaded ${idx}`} className="w-100 h-100" style={{ objectFit: 'cover' }} />
+                            <button
+                              type="button"
+                              className="position-absolute top-0 right-0 btn btn-sm btn-danger d-flex align-items-center justify-content-center rounded-circle p-0"
+                              style={{ width: '20px', height: '20px', top: '4px', right: '4px', fontSize: '10px' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeSlotDesign(idx);
+                              }}
+                            >
+                              &times;
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {/* Placeholder Image Icon */}
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                              <circle cx="8.5" cy="8.5" r="1.5" />
+                              <polyline points="21 15 16 10 5 21" />
+                            </svg>
+                            {/* Plus Icon at bottom right corner */}
+                            <span 
+                              className="position-absolute d-flex align-items-center justify-content-center text-muted fw-bold bg-white rounded-circle shadow-sm"
+                              style={{ 
+                                right: '6px', 
+                                bottom: '6px', 
+                                width: '18px', 
+                                height: '18px', 
+                                fontSize: '12px',
+                                border: '1px solid #ddd' 
+                              }}
+                            >
+                              +
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* Enter Text Content */
+              <div className="d-flex flex-column gap-3 mb-4">
+                {customTexts.map((txt, idx) => (
+                  <div key={idx} className="border rounded px-2 py-1 bg-white" style={{ borderColor: '#ddd' }}>
+                    <Form.Control
+                      type="text"
+                      placeholder="Enter your text name here."
+                      value={txt}
+                      className="border-0 shadow-none px-2 py-2"
+                      style={{ fontSize: '0.9rem', color: '#495057' }}
+                      onChange={(e) => handleTextChange(idx, e.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Instructions Section */}
+            <div className="instructions-panel border-top pt-3 mt-3">
+              <h6 className="fw-bold text-dark mb-3" style={{ fontSize: '1rem' }}>Instructions</h6>
+              <ul className="text-secondary list-unstyled d-flex flex-column gap-2" style={{ fontSize: '0.85rem', paddingLeft: '0' }}>
+                <li>* File size should be 100KB - 10MB only</li>
+                <li>* Upload only JPG, JPEG, PNG.</li>
+                <li>* Please upload a good quality image.</li>
+                <li>* Please ensure you have rights to use the image.</li>
+              </ul>
+            </div>
+          </div>
+        </Modal.Body>
+
+        {/* Modal Footer with Continue Button */}
+        <Modal.Footer className="bg-white p-3 border-top w-100 justify-content-center">
+          <button
+            type="button"
+            className="btn btn-primary w-100 py-2.5 fw-bold text-white border-0"
+            style={{ backgroundColor: '#00a6f3', borderRadius: '8px', fontSize: '1rem' }}
+            onClick={handleCustomizeSave}
+          >
+            Continue
+          </button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Hidden file input for slots */}
+      <input
+        type="file"
+        id="custom-slot-file-input"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleSlotFileChange}
+      />
     </div>
   );
 };
