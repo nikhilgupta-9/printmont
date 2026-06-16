@@ -11,7 +11,8 @@ const PRODUCT_HEADER_PATHS = [
   '/contact',
   '/quick-links',
   'track-order',
-  '/my-account'
+  '/my-account',
+  '/category'
 ];
 
 const HeaderManager = () => {
@@ -32,6 +33,7 @@ const HeaderManager = () => {
     if (currentPath.startsWith('/quick-links')) return 'Quick Links';
     if (currentPath.startsWith('/track-order')) return 'Track Order';
     if (currentPath.startsWith('/my-account')) return 'My Account';
+    if (currentPath.startsWith('/category')) return 'Categories';
     return 'Shop';
   };
 

@@ -91,11 +91,9 @@ const BannerTwo = ({ apiUrl }) => {
           desktopImages.map((img, index) => (
             <div key={index} className="col-4 p-0 rounded">
               <img
-                className="rounded"
+                className="rounded carousel-img w-100"
                 src={img.src}
-                width="100%"
                 alt={img.alt || `banner-${index}`}
-                style={{ maxHeight: "290px", height: "290px", objectFit: "contain" }}
               />
             </div>
           ))

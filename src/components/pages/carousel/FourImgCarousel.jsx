@@ -112,7 +112,7 @@ const FourImgCarousel = ({ apiUrl }) => {
               alt={img.alt || `slide-${index}`}
               className="carousel-img"
               loading="lazy"
-              style={{ width: "100%", height: "auto", objectFit: "contain" }}
+              style={{ width: "100%", height: "auto", objectFit: "cover", aspectRatio: "auto" }}
             />
           </div>
         ))}

@@ -5,7 +5,7 @@ import { RatingSummary, ReviewCard } from '../review/ReviewHelper';
 import { Modal } from 'react-bootstrap';
 import { FaChevronLeft, FaChevronRight, FaChevronDown, FaChevronUp, FaCheckCircle, FaThumbsUp, FaThumbsDown } from 'react-icons/fa';
 
-const ProductReview = () => {
+const ProductReview = ({ hideRatingSummary = false }) => {
   const [reviews, setReviews] = useState(initialReviews);
   const [showAllInline, setShowAllInline] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -102,9 +102,11 @@ const ProductReview = () => {
         <Container className="my-2 px-0">
           <Row className='m-0 p-0'>
             {/* === Left Column: Rating Summary and Distribution === */}
-            <Col md={12} className="mb-2 m-0 p-0">
-              <RatingSummary reviews={reviews} />
-            </Col>
+            {!hideRatingSummary && (
+              <Col md={12} className="mb-2 m-0 p-0">
+                <RatingSummary reviews={reviews} />
+              </Col>
+            )}
 
             {/* === Right Column: Review List === */}
             <Col md={12}>
@@ -255,16 +257,18 @@ const ProductReview = () => {
         {!isReviewsCollapsed && (
           <div>
             {/* Rating Overview */}
-            <div className="mb-3">
-              <div className="d-flex align-items-center gap-2 mb-1">
-                <span className="fw-bold text-dark fs-2" style={{ lineHeight: '1.1' }}>{averageRating}</span>
-                <span className="text-success fs-3" style={{ lineHeight: '1' }}>★</span>
-                <span className="badge text-success px-2 py-1 fw-bold text-xs" style={{ backgroundColor: '#eefcf5', border: '1px solid #d1f4e0', borderRadius: '4px' }}>Good</span>
+            {!hideRatingSummary && (
+              <div className="mb-3">
+                <div className="d-flex align-items-center gap-2 mb-1">
+                  <span className="fw-bold text-dark fs-2" style={{ lineHeight: '1.1' }}>{averageRating}</span>
+                  <span className="text-success fs-3" style={{ lineHeight: '1' }}>★</span>
+                  <span className="badge text-success px-2 py-1 fw-bold text-xs" style={{ backgroundColor: '#eefcf5', border: '1px solid #d1f4e0', borderRadius: '4px' }}>Good</span>
+                </div>
+                <div className="text-muted text-xs d-flex align-items-center flex-wrap gap-1" style={{ fontSize: '0.8rem' }}>
+                  based on 6,388 ratings by <span className="d-inline-flex align-items-center text-secondary gap-1"><FaCheckCircle size={12} className="text-secondary" />Verified Buyers</span>
+                </div>
               </div>
-              <div className="text-muted text-xs d-flex align-items-center flex-wrap gap-1" style={{ fontSize: '0.8rem' }}>
-                based on 6,388 ratings by <span className="d-inline-flex align-items-center text-secondary gap-1"><FaCheckCircle size={12} className="text-secondary" />Verified Buyers</span>
-              </div>
-            </div>
+            )}
 
             {/* Customer Images Custom Grid */}
             {allImages.length > 0 && (

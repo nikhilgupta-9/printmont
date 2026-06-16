@@ -1,0 +1,47 @@
+.pg-card-wrapper {
+  padding: 10px 10px 5px 10px;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pg-card-wrapper:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+}
+
+.pg-img-container {
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+}
+
+.pg-img {
+  transition: transform 0.5s ease;
+}
+
+.pg-card-wrapper:hover .pg-img {
+  transform: scale(1.05);
+}
+
+/* Colors */
+.bg-light-blue {
+  background-color: #d4eaff;
+}
+
+.bg-light-pink {
+  background-color: #f9d8e3;
+}
+
+.bg-light-yellow {
+  background-color: #fdf2c2;
+}
+
+/* Shapes */
+/* Leaf pointing right (rounded top-right and bottom-left) */
+.shape-leaf-right {
+  border-radius: 10px 50px 10px 50px;
+}
+
+/* Leaf pointing left (rounded top-left and bottom-right) */
+.shape-leaf-left {
+  border-radius: 50px 10px 50px 10px;
+}

@@ -12,15 +12,21 @@
   box-sizing: border-box; /* ensures padding doesn't overflow */
 }
 
-/* Optional: make sure images fit nicely */
-.carousel-img {
-  width: 100%;
-  height: 289px;
-  border-radius: 10px;
-  object-fit: contain;
+/* ── Unified banner height across ALL carousel types ── */
+:root {
+  --banner-h-desktop: 290px;
+  --banner-h-tablet:  220px;
+  --banner-h-mobile:  180px;
 }
 
-/* Optional: Hover effect */
+.carousel-img {
+  width: 100%;
+  height: var(--banner-h-desktop);
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+}
+
 .carousel-img:hover {
   transform: scale(1.03);
   transition: transform 0.3s ease;
@@ -90,33 +96,29 @@
 }
 
 .carousel-img-mobile {
-  height: 150px !important; 
+  height: var(--banner-h-mobile) !important;
   width: 100% !important;
   border-radius: 10px;
-  object-fit: contain;
+  object-fit: cover;
 }
- @media (max-width: 767px){
-  .carousel-img{
-    width: 100%;
-    height: auto;
+
+/* ── Responsive height overrides ─────────────────────── */
+@media (max-width: 767px) {
+  .carousel-img {
+    height: var(--banner-h-mobile);
   }
-  .carousel-img{
-    /* height: 150px !important; */
-    width: 100% !important;
-    
-  }
-  .padmar{
+  .padmar {
     padding: 0 !important;
     margin: 0 !important;
   }
- }
- @media (min-width: 768px) and (max-width: 991.98px){
-  .carousel-img{
-    height: 155px;
+}
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .carousel-img {
+    height: var(--banner-h-tablet);
   }
- }
-@media (min-width:992px) and  (max-width: 1199px){
-  .carousel-img{
-    height: 200px;
+}
+@media (min-width: 992px) and (max-width: 1199px) {
+  .carousel-img {
+    height: var(--banner-h-desktop);
   }
 }

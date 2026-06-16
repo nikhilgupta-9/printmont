@@ -85,9 +85,8 @@ const FirstCarousel = ({ apiUrl, carouselId = 'carouselExample', basePath = '' }
                   {/* Mobile Image */}
                   <img
                     src={imgSrcs.small}
-                    className="d-block w-100"
+                    className="d-block w-100 carousel-img"
                     alt={`Slide ${index + 1}`}
-                    style={{ objectFit: 'cover', maxHeight: '500px' }}
                   />
                 </picture>
               </Link>

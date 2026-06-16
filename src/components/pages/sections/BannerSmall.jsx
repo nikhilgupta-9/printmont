@@ -1,8 +1,7 @@
-// Banner.jsx
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 
-const Banner = ({ apiUrl }) => {
+const BannerSmall = ({ apiUrl, sliceStart, sliceEnd }) => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -68,8 +67,8 @@ const Banner = ({ apiUrl }) => {
       <div className="container-fluid m-0 p-0">
         <div className="row g-1 m-0 px-1 container-fluid d-flex">
           {[1, 2].map((item) => (
-            <div className="col-md-6" style={{ maxHeight: "290px", maxWidth: '100%' }} key={item}>
-              <div className="shimmer-bg skeleton-banner-hero w-100" style={{ height: "200px" }}></div>
+            <div className="col-md-6" style={{ maxHeight: "150px", maxWidth: '100%' }} key={item}>
+              <div className="shimmer-bg skeleton-banner-hero w-100" style={{ height: "150px" }}></div>
             </div>
           ))}
         </div>
@@ -82,12 +81,13 @@ const Banner = ({ apiUrl }) => {
     <div className="container-fluid m-0 p-0">
       <div className="row g-1 m-0 px-1 container-fluid d-flex">
         {images.length > 0 ? (
-          images.map((image, index) => (
-            <div className="col-md-6" style={{ maxWidth: '100%' }} key={index}>
+          images.slice(sliceStart || 0, sliceEnd || images.length).map((image, index) => (
+            <div className="col-md-6" style={{ maxWidth: '100%', maxHeight: "180px", overflow: 'hidden' }} key={index}>
               <img
                 src={image.src}
                 alt={image.alt || `banner-${index + 1}`}
                 className="rounded carousel-img w-100"
+                style={{ height: '100%', objectFit: 'cover' }}
               />
             </div>
           ))
@@ -99,8 +99,10 @@ const Banner = ({ apiUrl }) => {
   );
 };
 
-Banner.propTypes = {
-  apiUrl: PropTypes.string.isRequired
+BannerSmall.propTypes = {
+  apiUrl: PropTypes.string.isRequired,
+  sliceStart: PropTypes.number,
+  sliceEnd: PropTypes.number
 };
 
-export default Banner;
+export default BannerSmall;

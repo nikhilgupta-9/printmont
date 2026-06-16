@@ -35,6 +35,7 @@ import NotificationPreference from "./components/notificationPre/NotificationPre
 import ManageAddress from "./components/manageAddress/ManageAddress";
 import SupportPage from "./components/supportpage/SupportPage";
 import PrintmontCoin from "./components/prinmontCoin/PrintmontCoin";
+import CategoryPage from "./components/pages/category-list/CategoryPage";
 
 function App() {
   return (
@@ -69,6 +70,8 @@ function App() {
           <Route path="/manage-address" element={<ManageAddress />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/printmont-coin" element={<PrintmontCoin />} />
+          <Route path="/category" element={<CategoryPage />} />
+          <Route path="/category/:id" element={<CategoryPage />} />
           <Route path="*" element={<PageNotFound />} />
           <Route path="/policy/*" element={<PolicyPage />} />
 
