@@ -14,7 +14,7 @@ import LoginDropdown from "./LoginDropdown";
 import MobileHeader from "./MobileHeader";
 import axios from "axios";
 import { RiDownload2Line } from "react-icons/ri";
-
+import { API_ENDPOINTS, ASSET_URL } from "../../config/apiEndpoints";
 
 const Header = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
@@ -67,50 +67,33 @@ const Header = () => {
     setRecentSearches((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Fetch Logo
-  // useEffect(() => {
-  //   const fetchLogo = async () => {
-  //     try {
-  //       const baseURL = import.meta.env.VITE_BASE_URL;
-  //       const response = await axios.get(`${baseURL}api/logo-api.php`);
-  //       if (response.data.success) {
-  //         setLogo(response.data.data[0].file_name);
-  //         console.log(response.data.data[0].file_name);
-  //       } else {
-  //         console.warn("No logo found:", response.data.message);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching logo:", error);
-  //     }
-  //   };
-  //   fetchLogo();
-  // }, []);
-  
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const response = await axios.get(API_ENDPOINTS.LOGO);
 
- useEffect(() => {
-  const fetchLogo = async () => {
-    try {
-      const baseURL = import.meta.env.VITE_BASE_URL;
-      const response = await axios.get(`${baseURL}api/logo-api.php`);
+        if (response.data.success && response.data.data.length > 0) {
+          // Find the desktop logo, otherwise fallback to the first active logo
+          let logoData = response.data.data.find(l => l.asset_type === "desktop_logo" && l.is_active === "1");
+          if (!logoData) {
+            logoData = response.data.data.find(l => l.is_active === "1") || response.data.data[0];
+          }
 
-      if (response.data.success && response.data.data.length > 0) {
-        const logoData = response.data.data[0];
+          // Ensure path formatting is safe
+          const filePath = logoData.file_path.startsWith('/') ? logoData.file_path.substring(1) : logoData.file_path;
+          const imageFullUrl = `${ASSET_URL}${filePath}${logoData.file_name}`;
 
-        const imageFullUrl = `${baseURL}${logoData.file_path}${logoData.file_name}`;
-
-        setLogo(imageFullUrl);
-
-        console.log("Logo loaded:", imageFullUrl);
-      } else {
-        console.warn("No logo found:", response.data.message);
+          setLogo(imageFullUrl);
+        } else {
+          console.warn("No logo found in response.");
+        }
+      } catch (error) {
+        console.error("Error fetching logo:", error);
       }
-    } catch (error) {
-      console.error("Error fetching logo:", error);
-    }
-  };
+    };
 
-  fetchLogo();
-}, []);
+    fetchLogo();
+  }, []);
 
   useEffect(() => {
     if (isMobile || !headerRef.current) return;

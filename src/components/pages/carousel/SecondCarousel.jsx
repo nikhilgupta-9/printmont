@@ -3,9 +3,9 @@ import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { Link } from "react-router-dom"; // ✅ Correct import
 
-const SecondCarousel = ({ apiUrl, title = "Products", badgeText = "" }) => {
+const SecondCarousel = ({ apiUrl, products: initialProducts = [], title = "Products", badgeText = "" }) => {
   const scrollRef = useRef(null);
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(initialProducts);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -14,6 +14,12 @@ const SecondCarousel = ({ apiUrl, title = "Products", badgeText = "" }) => {
 
   // 🧠 Fetch Data from API
   useEffect(() => {
+    if (!apiUrl) {
+      setProducts(initialProducts);
+      setLoading(false);
+      return;
+    }
+
     const fetchProducts = async () => {
       try {
         const res = await fetch(apiUrl);
@@ -54,7 +60,7 @@ const SecondCarousel = ({ apiUrl, title = "Products", badgeText = "" }) => {
       }
     };
     fetchProducts();
-  }, [apiUrl]);
+  }, [apiUrl, initialProducts]);
 
   // 🧩 Responsive and Scroll Logic
   const updateScreenSize = () => {

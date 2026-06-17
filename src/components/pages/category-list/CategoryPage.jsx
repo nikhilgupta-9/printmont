@@ -2,20 +2,21 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 // ── Existing user components ──────────────
-import FirstCarousel   from "../carousel/FirstCarousel";
-import SecondCarousel  from "../carousel/SecondCarousel";
-import Slider          from "../carousel/Slider";
-import FourImgCarousel from "../carousel/FourImgCarousel";
+import FirstCarousel    from "../carousel/FirstCarousel";
+import SecondCarousel   from "../carousel/SecondCarousel";
+import Slider           from "../carousel/Slider";
+import FourImgCarousel  from "../carousel/FourImgCarousel";
 import ThreeImgCarousel from "../carousel/ThreeImgCarousel";
-import TwoImgCarousel  from "../carousel/TwoImgCarousel";
-import Banner          from "../sections/Banner";
-import BannerTwo       from "../sections/BannerTwo";
-import BannerSmall     from "../sections/BannerSmall";
-import SectionTen      from "../sections/SectionTen";
-import BeforeAfterSlider from "./BeforeAfterSlider";
-import CategoryGridSection from "./CategoryGridSection";
-import PersonalizedGifts from "./PersonalizedGifts";
-import StatsBanner from "../sections/StatsBanner";
+import TwoImgCarousel   from "../carousel/TwoImgCarousel";
+import Banner           from "../sections/Banner";
+import BannerTwo        from "../sections/BannerTwo";
+import BannerSmall      from "../sections/BannerSmall";
+import SectionTen       from "../sections/SectionTen";
+import BeforeAfterSlider   from "./BeforeAfterSlider";
+import CategoryGridSection  from "./CategoryGridSection";
+import MobileBannerCarousel from "./MobileBannerCarousel";
+import PersonalizedGifts  from "./PersonalizedGifts";
+import StatsBanner        from "../sections/StatsBanner";
 import TestimonialCarousel from "../sections/TestimonialCarousel";
 
 // ── Static data ───────────────────────────────────────────────────
@@ -26,9 +27,84 @@ import {
   menOfferProducts, womenOfferProducts, footwearOfferProducts, kidsOfferProducts,
   mobileCategoryLinks, categoryReviews, heroBanners,
 } from "../../../../data/categoryPageData";
+import { categoriesData } from "../../../../data/categoriesdata";
 import { sampleItems } from "../../../../data/data";
 
 import "./CategoryPage.css";
+
+/* ─────────────────────────────────────────────────────────────────
+   SUB-COMPONENT: Mobile 3-col Category Grid  (Image 1 style)
+   Props:
+     title      – section heading e.g. "Men's Clothing"
+     items      – array of { name, img, url }
+     maxItems   – how many to show (default 9)
+───────────────────────────────────────────────────────────────── */
+const MobileCategoryGrid = ({ title, items = [], maxItems = 9 }) => {
+  const visible = items.slice(0, maxItems);
+  return (
+    <div className="mob-cat-grid-section bg-white pt-3 pb-2 px-2">
+      {title && (
+        <h2 className="mob-cat-grid-title">{title}</h2>
+      )}
+      <div className="mob-cat-grid-3col">
+        {visible.map((item, i) => (
+          <Link
+            key={i}
+            to={item.url || "#"}
+            className="mob-cat-grid-item text-decoration-none"
+          >
+            <div className="mob-cat-grid-img-wrap">
+              <img
+                src={item.img && item.img.startsWith("./") ? item.img.substring(1) : item.img}
+                alt={item.name}
+                className="mob-cat-grid-img"
+                loading="lazy"
+              />
+            </div>
+            <span className="mob-cat-grid-label">{item.name}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────────────
+   SUB-COMPONENT: Mobile Offer Zone  (Image 3 style)
+   Props:
+     badge      – top pill text  e.g. "🔥 Offer Zone Activated"
+     title      – heading        e.g. "Top Discounts on Top Styles"
+     products   – array of { image, discountedPrice, originalPrice, discountPercent, brand, id }
+───────────────────────────────────────────────────────────────── */
+const MobileOfferZone = ({ badge = "🔥 Offer Zone Activated", title = "Top Discounts on Top Styles", products = [] }) => {
+  return (
+    <div className="mob-offer-zone">
+      {/* Header */}
+      <div className="mob-offer-zone-header">
+        <span className="mob-offer-zone-badge">{badge}</span>
+        <p className="mob-offer-zone-title">{title}</p>
+      </div>
+
+      {/* Horizontal product carousel */}
+      <div className="mob-offer-zone-track">
+        {products.map((p, i) => {
+          const img = Array.isArray(p.image) ? p.image[0] : p.image;
+          return (
+            <Link key={i} to={`/product/${p.id || i}`} className="mob-offer-zone-card text-decoration-none">
+              <div className="mob-offer-zone-img-wrap">
+                <img src={img} alt={p.brand || "product"} className="mob-offer-zone-img" loading="lazy" />
+              </div>
+              <p className="mob-offer-zone-name">{p.brand || "Product name....."}</p>
+              {p.discountPercent && (
+                <p className="mob-offer-zone-disc">{p.discountPercent}% Off</p>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -149,118 +225,193 @@ const CategoryPage = () => {
       {/* ════ MOBILE LAYOUT (< lg) ════════════════════════════════ */}
       <div className="d-block d-lg-none bg-white w-100 home-mobile-content">
 
-        {/* 1. Mobile Swiper Slider */}
-        <Slider apiUrl={`${BASE_URL}api/banner_api.php`} />
+        {/* 1 - Single image carousel */}
+        <MobileBannerCarousel
+          apiUrl={`${BASE_URL}api/banner_api.php`}
+          type="single"
+        />
 
-        {/* 2. Category quick-link grid */}
-        <MobileQuickLinks links={mobileCategoryLinks} />
-
-        {/* 3. Small Banner (First 2 images) */}
-        <div className="mt-2">
-            <BannerSmall apiUrl={`${BASE_URL}api/banner_api.php`} sliceStart={0} sliceEnd={2} />
-        </div>
-
-        {/* 4. Before / After comparison slider */}
-        <div className="cp-card-section cp-compare-wrap mt-2 mb-2 px-2">
-          <BeforeAfterSlider
-            beforeSrc="/before.png"
-            afterSrc="/after.png"
-            beforeLabel="Without Printing"
-            afterLabel="With Printing"
-            height="250px"
+        {/* 2 - Double image carousel */}
+        <div className="mob-section-gap">
+          <MobileBannerCarousel
+            apiUrl={`${BASE_URL}api/banner_api.php`}
+            type="double"
           />
         </div>
 
-        {/* 5. Small Banner (Next 2 images) */}
-        <div className="mb-2">
-            <BannerSmall apiUrl={`${BASE_URL}api/banner_api.php`} sliceStart={2} sliceEnd={4} />
+        {/* 3 - Single image carousel */}
+        <div className="mob-section-gap">
+          <MobileBannerCarousel
+            apiUrl={`${BASE_URL}api/banner_api.php`}
+            type="single"
+          />
         </div>
 
-        {/* 5.5. Categories Grid Section */}
-        <div className="mb-2">
-            <CategoryGridSection />
-        </div>
-
-        {/* 4. ThreeImgCarousel banner */}
-        <ThreeImgCarousel apiUrl={`${BASE_URL}api/banner_api.php`} />
-
-        {/* 5. Top Selection */}
-        <div className="mt-2">
-            <SecondCarousel
-            apiUrl={`${BASE_URL}api/home-product-api.php?action=top_selection`}
-            title="New Arrivals"
-            badgeText="NEW ARRIVAL"
-            />
-        </div>
-
-        {/* 6. Small Banner (Third banner small height) */}
-        <div className="mt-2">
-            <BannerSmall apiUrl={`${BASE_URL}api/banner_api7.php`} />
-        </div>
-
-        {/* 7. Best Sellers */}
-        <div className="mt-2">
-            <SecondCarousel
+        {/* 4 - Best Sellers product carousel */}
+        <div className="mob-section-gap">
+          <SecondCarousel
             apiUrl={`${BASE_URL}api/home-product-api.php?action=top_deal`}
             title="Best Sellers"
             badgeText="BEST SELLER"
-            />
+          />
         </div>
 
-
-        {/* Banner between sections */}
-        <div className="mt-2">
-            <BannerTwo apiUrl={`${BASE_URL}api/banner_api7.php`} />
+        {/* 5 - Double image carousel */}
+        <div className="mob-section-gap">
+          <MobileBannerCarousel
+            apiUrl={`${BASE_URL}api/banner_api.php`}
+            type="double"
+          />
         </div>
 
-        {/* Personalized Gifts Section */}
-        <div className="mt-2">
-            <PersonalizedGifts />
+        {/* 6 - Men's Clothing 3-col grid */}
+        <div className="mob-section-gap">
+          <MobileCategoryGrid
+            title="Men's Clothing"
+            items={categoriesData.slice(0, 9)}
+            maxItems={9}
+          />
         </div>
 
-        {/* Four Image Banner */}
-        <div className="mt-2 mb-4">
-            <FourImgCarousel apiUrl={`${BASE_URL}api/banner_api.php`} />
+        {/* 7 - Single image carousel */}
+        <div className="mob-section-gap">
+          <MobileBannerCarousel
+            apiUrl={`${BASE_URL}api/banner_api.php`}
+            type="single"
+          />
         </div>
 
-        {/* Special Offers Carousel */}
-        <div className="mt-2 mb-4">
-            <SecondCarousel
-              apiUrl={`${BASE_URL}api/home-product-api.php?action=discount_for_you`}
-              title="Special Offers"
-              badgeText="SPECIAL OFFER"
-            />
+        {/* 8 - Offer Zone Men */}
+        <div className="mob-section-gap">
+          <MobileOfferZone
+            badge="Offer Zone Activated"
+            title="Top Discounts on Top Styles"
+            products={menOfferProducts}
+          />
         </div>
 
-        {/* Stats Banner */}
-        <div className="mt-2 mb-4">
-            <StatsBanner />
+        {/* 9 - Double image carousel */}
+        <div className="mob-section-gap">
+          <MobileBannerCarousel
+            apiUrl={`${BASE_URL}api/banner_api7.php`}
+            type="double"
+          />
         </div>
 
-        {/* Testimonials */}
-        <div className="mt-2 mb-4">
-            <TestimonialCarousel />
+        {/* 10 - Women's Clothing 3-col grid */}
+        <div className="mob-section-gap">
+          <MobileCategoryGrid
+            title="Women's Clothing"
+            items={categoriesData.slice(0, 9)}
+            maxItems={9}
+          />
         </div>
 
-
-        {/* Banner between sections */}
-        <div className="mt-2">
-            <Banner apiUrl={`${BASE_URL}api/banner_api6.php`} />
+        {/* 11 - Single image carousel */}
+        <div className="mob-section-gap">
+          <MobileBannerCarousel
+            apiUrl={`${BASE_URL}api/banner_api.php`}
+            type="single"
+          />
         </div>
 
-        {/* 10. Footwear */}
-        <div className="mt-2">
-            <SectionTen title="Footwear" items={sampleItems} />
+        {/* 12 - Offer Zone Women */}
+        <div className="mob-section-gap">
+          <MobileOfferZone
+            badge="Women's Offer Zone"
+            title="Exclusive Deals for Her"
+            products={womenOfferProducts}
+          />
         </div>
 
-        {/* 11. Kids */}
-        <div className="mt-2">
-            <SectionTen title="Kids" items={sampleItems} />
+        {/* 13 - Double image carousel */}
+        <div className="mob-section-gap">
+          <MobileBannerCarousel
+            apiUrl={`${BASE_URL}api/banner_api6.php`}
+            type="double"
+          />
         </div>
 
-        {/* 12. Main category watermark label */}
-        <div className="mob-cat-label text-center py-4 text-muted fw-bold opacity-25 fs-1">
-          {categoryPageData.name}
+        {/* 14 - Footwear 3-col grid */}
+        <div className="mob-section-gap">
+          <MobileCategoryGrid
+            title="Footwear"
+            items={categoriesData.slice(2, 11)}
+            maxItems={9}
+          />
+        </div>
+
+        {/* 15 - Single image carousel */}
+        <div className="mob-section-gap">
+          <MobileBannerCarousel
+            apiUrl={`${BASE_URL}api/banner_api.php`}
+            type="single"
+          />
+        </div>
+
+        {/* 16 - Offer Zone Footwear */}
+        <div className="mob-section-gap">
+          <MobileOfferZone
+            badge="Footwear Deals"
+            title="Step Up with Big Savings"
+            products={footwearOfferProducts}
+          />
+        </div>
+
+        {/* 17 - Double image carousel */}
+        <div className="mob-section-gap">
+          <MobileBannerCarousel
+            apiUrl={`${BASE_URL}api/banner_api.php`}
+            type="double"
+          />
+        </div>
+
+        {/* 18 - Kids product carousel */}
+        <div className="mob-section-gap">
+          <SecondCarousel
+            apiUrl={`${BASE_URL}api/home-product-api.php?action=top_selection`}
+            title="Kids"
+            badgeText="NEW ARRIVAL"
+          />
+        </div>
+
+        {/* 18b - Single image carousel after Kids */}
+        <div className="mob-section-gap">
+          <MobileBannerCarousel
+            apiUrl={`${BASE_URL}api/banner_api.php`}
+            type="single"
+          />
+        </div>
+
+        {/* 19 - Double image carousel */}
+        <div className="mob-section-gap">
+          <MobileBannerCarousel
+            apiUrl={`${BASE_URL}api/banner_api7.php`}
+            type="double"
+          />
+        </div>
+
+        {/* 20 - Special Offers product carousel */}
+        <div className="mob-section-gap">
+          <SecondCarousel
+            apiUrl={`${BASE_URL}api/home-product-api.php?action=discount_for_you`}
+            title="Special Offers"
+            badgeText="SPECIAL OFFER"
+          />
+        </div>
+
+        {/* 21 - About Category text section */}
+        <div className="mob-about-section">
+          <div className="mob-about-inner">
+            <span className="mob-about-tag">About this Category</span>
+            <h3 className="mob-about-title">{categoryPageData.name}</h3>
+            <p className="mob-about-desc">{categoryPageData.description}</p>
+            <div className="mob-about-tags">
+              {categoryPageData.subcategories?.map((sub, i) => (
+                <Link key={i} to="#" className="mob-about-pill">{sub}</Link>
+              ))}
+            </div>
+          </div>
         </div>
 
       </div>

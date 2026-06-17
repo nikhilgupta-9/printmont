@@ -8,12 +8,15 @@ import { LuChartNoAxesCombined } from "react-icons/lu";
 import { FaHandshake } from "react-icons/fa";
 import { CiBullhorn } from "react-icons/ci";
 import { Link } from 'react-router-dom';
+import axios from 'axios';
+import { API_ENDPOINTS, ASSET_URL } from '../../config/apiEndpoints';
 
 const MobileHeader = () => {
   const [dropdowns, setDropdowns] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [recentSearches, setRecentSearches] = useState(["T-Shirt", "Mug", "Notebook"]);
+  const [logo, setLogo] = useState(null);
 
   const searchRef = useRef();
   const headerRef = useRef();
@@ -43,6 +46,35 @@ const MobileHeader = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Fetch Logo
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const response = await axios.get(API_ENDPOINTS.LOGO);
+
+        if (response.data.success && response.data.data.length > 0) {
+          // Prioritize mobile logo, then desktop logo, then any active logo
+          let logoData = response.data.data.find(l => l.asset_type === "mobile_logo" && l.is_active === "1");
+          if (!logoData) {
+            logoData = response.data.data.find(l => l.asset_type === "desktop_logo" && l.is_active === "1");
+          }
+          if (!logoData) {
+            logoData = response.data.data.find(l => l.is_active === "1") || response.data.data[0];
+          }
+
+          const filePath = logoData.file_path.startsWith('/') ? logoData.file_path.substring(1) : logoData.file_path;
+          const imageFullUrl = `${ASSET_URL}${filePath}${logoData.file_name}`;
+
+          setLogo(imageFullUrl);
+        }
+      } catch (error) {
+        console.error("Error fetching mobile logo:", error);
+      }
+    };
+
+    fetchLogo();
+  }, []);
+
   useEffect(() => {
     if (!headerRef.current) return;
 
@@ -62,7 +94,7 @@ const MobileHeader = () => {
       resizeObserver.disconnect();
       window.removeEventListener("resize", updateHeaderHeight);
     };
-  }, []);
+  }, [logo]);
 
   const selectKeyword = (keyword) => {
     setSearchQuery(keyword);
@@ -86,7 +118,11 @@ const MobileHeader = () => {
               <GiHamburgerMenu size={24} />
             </button>
             <Link to="/">
-              <img src="./PrintLogo.png" alt="Printmont Logo" style={{ height: "30px" }} />
+              {logo ? (
+                <img src={logo} alt="Printmont Logo" style={{ height: "30px", objectFit: "contain" }} />
+              ) : (
+                <div style={{ height: "30px", width: "100px" }} className="shimmer-bg"></div>
+              )}
             </Link>
           </div>
 

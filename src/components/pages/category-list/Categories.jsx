@@ -2,9 +2,11 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { TbCategory2 } from "react-icons/tb";
 import { IoIosArrowDown, IoIosArrowForward } from "react-icons/io";
 import { Link } from "react-router-dom";
-import { categoriesData } from "../../../../data/categoriesdata";
+import axios from "axios";
+import { API_ENDPOINTS, ASSET_URL } from "../../../config/apiEndpoints";
 
 const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky = false }) => {
+  const [categoriesData, setCategoriesData] = useState([]);
   const [show, setShow] = useState(true);
   const [categoryHeight, setCategoryHeight] = useState(0);
   const [activeCategory, setActiveCategory] = useState(null);
@@ -12,6 +14,20 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
   const categoryRef = useRef(null);
   const lastScrollYRef = useRef(0);
   const frameRef = useRef(null);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get(API_ENDPOINTS.CATEGORIES);
+        if (response.data.success) {
+          setCategoriesData(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     if (!isSticky) return;
@@ -61,7 +77,14 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
     resizeObserver.observe(categoryRef.current);
 
     return () => resizeObserver.disconnect();
-  }, [isSticky, showImages, space]);
+  }, [isSticky, showImages, space, categoriesData]);
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return '/default-img.jpg';
+    if (imagePath.startsWith('http')) return imagePath;
+    const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+    return `${ASSET_URL}${cleanPath}`;
+  };
 
   return (
     <>
@@ -79,26 +102,15 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
       >
       {/* SMALL SCREENS */}
       <div className="d-flex d-lg-none overflow-x-auto gap-2 px-2 align-items-center hide-scrollbar" style={{padding:`${space}`, backgroundColor:`${bg || '#ffffff'}`}}>
-        {/* <div
-          className="d-flex flex-column align-items-center justify-content-around text-center flex-shrink-0 bg-white p-1 border-end border border-white me-1"
-          style={{
-            width: "75px",
-            height: "75px",
-            boxShadow: "2px 0 5px rgba(0,0,0,0.1)",
-          }}
-        >
-          <TbCategory2 size={24} className="mb-1 text-primary" />
-          <small className="fw-semibold text-primary">Category</small>
-        </div> */}
-
         {categoriesData.map((item, index) => (
-          <div
+          <Link
+            to={`/category/${item.slug}`}
             key={index}
-            className="d-flex flex-column align-items-center text-center flex-shrink-0 p-1 categoires-cont-width"
+            className="d-flex flex-column align-items-center text-center flex-shrink-0 p-1 categoires-cont-width text-decoration-none"
           >
             {showImages && (
             <img
-              src={item.img && item.img.startsWith('./') ? item.img.substring(1) : item.img}
+              src={getImageUrl(item.image)}
               alt={item.name}
               className="rounded mb-1 border categoires-img-width"
               style={{ objectFit: "cover" }}
@@ -107,7 +119,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
             <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
               {item.name}
             </small>
-          </div>
+          </Link>
         ))}
       </div>
 
@@ -128,24 +140,26 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
             }}
             style={{ width: showImages ? "70px" : "auto", cursor: "pointer", padding: showImages ? "0" : "0 15px" }}
           >
-            {showImages && (
-            <img
-              src={item.img && item.img.startsWith('./') ? item.img.substring(1) : item.img}
-              alt={item.name}
-              className="rounded mb-1 categoires-img-width"
-              style={{ objectFit: "cover" }}
-            />
-            )}
-            <div className="d-flex justify-content-center align-items-center text-decoration-none text-truncate over">
-              <span className="fw-semibold" style={{color:`${color}`}}>{item.name}</span>
-              <IoIosArrowDown
-                className={`ms-1 transition-arrow ${activeCategory === index ? "rotate-arrow" : ""
-                  }`} style={{color:`${color}`}}
+            <Link to={`/category/${item.slug}`} className="d-flex flex-column align-items-center text-decoration-none w-100">
+              {showImages && (
+              <img
+                src={getImageUrl(item.image)}
+                alt={item.name}
+                className="rounded mb-1 categoires-img-width"
+                style={{ objectFit: "cover" }}
               />
-            </div>
+              )}
+              <div className="d-flex justify-content-center align-items-center text-decoration-none text-truncate over">
+                <span className="fw-semibold" style={{color:`${color}`}}>{item.name}</span>
+                <IoIosArrowDown
+                  className={`ms-1 transition-arrow ${activeCategory === index ? "rotate-arrow" : ""
+                    }`} style={{color:`${color}`}}
+                />
+              </div>
+            </Link>
 
             {/* DROPDOWN */}
-            {activeCategory === index && item.subCategories && (
+            {activeCategory === index && item.children && item.children.length > 0 && (
               <div
                 className={`position-absolute bg-transparent rounded d-flex dropdown-panel ${activeCategory === index ? "active" : ""
                   }`}
@@ -165,24 +179,22 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                   className="rounded-start categories-shadow bg-white"
                   style={{ width: "50%", overflowY: "auto" }}
                 >
-                  {item.subCategories.map((sub, i) => (
+                  {item.children.map((sub, i) => (
                     <div
                       key={i}
                       className="px-3 py-2 d-flex justify-content-between align-items-center"
                       style={{
                         cursor: "pointer",
-                        backgroundColor: activeSub === i ? "rgb(240, 245, 255)" : "transparent", // 🔴 background
+                        backgroundColor: activeSub === i ? "rgb(240, 245, 255)" : "transparent",
                         transition: "background-color 0.3s ease",
-                        fontWeight: activeSub === i ? "600" : "400", // ✅ bold text when active
+                        fontWeight: activeSub === i ? "600" : "400",
                       }}
                       onMouseEnter={() => setActiveSub(i)}
                     >
-                      <span className="small text-dark">{sub.name}</span>
+                      <Link to={`/category/${sub.slug}`} className="text-decoration-none small text-dark d-block w-100 text-start">{sub.name}</Link>
                       <IoIosArrowForward />
                     </div>
                   ))}
-
-
                 </div>
 
                 {/* RIGHT PANEL */}
@@ -195,16 +207,16 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                     zIndex: 5,
                   }}
                 >
-                  {item.subCategories[activeSub] && (
+                  {item.children[activeSub] && (
                     <>
                       <div className="px-3 py-2 small text-black fw-semibold">
-                        More in {item.subCategories[activeSub].name}
+                        More in {item.children[activeSub].name}
                       </div>
-                      {item.subCategories[activeSub].more?.map((m, idx) => (
+                      {item.children[activeSub].children?.map((m, idx) => (
                         <Link
                           key={idx}
-                          to={m.url}
-                          className="d-block px-3 py-2 text-decoration-none hover-bg-light w-100 d-flex justify-content-start align-items-start"
+                          to={`/category/${m.slug}`}
+                          className="d-block px-3 py-2 text-decoration-none hover-bg-light w-100 d-flex justify-content-start align-items-start text-dark"
                         >
                           {m.name}
                         </Link>

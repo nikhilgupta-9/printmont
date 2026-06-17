@@ -9,7 +9,8 @@ import DropdownButton from 'react-bootstrap/DropdownButton';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Categories from '../pages/category-list/Categories';
 import { useCheckout } from '../../context/CheckoutContext';
-
+import axios from 'axios';
+import { API_ENDPOINTS, ASSET_URL } from '../../config/apiEndpoints';
 
 const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
     const navigate = useNavigate();
@@ -22,7 +23,30 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
     // State to toggle between the default header and the active search bar
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [logo, setLogo] = useState(null);
     const headerRef = React.useRef(null);
+
+    React.useEffect(() => {
+        const fetchLogo = async () => {
+            try {
+                const response = await axios.get(API_ENDPOINTS.LOGO);
+                if (response.data.success && response.data.data.length > 0) {
+                    let logoData = response.data.data.find(l => l.asset_type === "mobile_logo" && l.is_active === "1");
+                    if (!logoData) {
+                        logoData = response.data.data.find(l => l.asset_type === "desktop_logo" && l.is_active === "1");
+                    }
+                    if (!logoData) {
+                        logoData = response.data.data.find(l => l.is_active === "1") || response.data.data[0];
+                    }
+                    const filePath = logoData.file_path.startsWith('/') ? logoData.file_path.substring(1) : logoData.file_path;
+                    setLogo(`${ASSET_URL}${filePath}${logoData.file_name}`);
+                }
+            } catch (error) {
+                console.error("Error fetching logo:", error);
+            }
+        };
+        fetchLogo();
+    }, []);
 
     React.useEffect(() => {
         if (!headerRef.current) return;
@@ -143,7 +167,11 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
                             )}
                             {/* Logo/Icon */}
                             <Link to="/" className="d-flex align-items-center">
-                                <img src="/PrintwhiteLogo.png" alt="Logo" style={{ height: "24px", marginRight: '5px' }} />
+                                {logo ? (
+                                    <img src={logo} alt="Logo" style={{ height: "24px", marginRight: '5px', objectFit: "contain" }} />
+                                ) : (
+                                    <div style={{ height: "24px", width: "80px", marginRight: '5px' }} className="shimmer-bg"></div>
+                                )}
                             </Link>
 
                             {/* Page Title - Hidden on Product Details mobile page */}
@@ -237,8 +265,8 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
                     </div>
                 </div>
             </div>
-            {/* Hide categories section on product detail page only on mobile screen (< 992px) */}
-            <div className={isProductPage ? "d-none d-lg-block" : ""}>
+            {/* Hide categories section on mobile screen (< 992px) */}
+            <div className="d-none d-lg-block">
                 <Categories showImages={false} space="5px 0" bg="rgb(11, 83, 161)" color="white" isSticky={true} />
             </div>
             <div style={{ height: "var(--site-header-height, 65px)" }} className="d-none d-lg-block"></div>
