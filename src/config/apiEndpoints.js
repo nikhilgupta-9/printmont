@@ -1,5 +1,5 @@
-export const BASE_URL = import.meta.env.VITE_API_URL || 'https://mediumvioletred-pelican-783174.hostingersite.com/api';
-export const ASSET_URL = BASE_URL.replace(/\/api\/?$/, '/');
+export const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+export const ASSET_URL = import.meta.env.VITE_ASSET_URL || 'https://mediumvioletred-pelican-783174.hostingersite.com/';
 
 export const API_ENDPOINTS = {
   // Authentication
