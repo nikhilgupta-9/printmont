@@ -9,6 +9,7 @@ import DropdownButton from 'react-bootstrap/DropdownButton';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Categories from '../pages/category-list/Categories';
 import { useCheckout } from '../../context/CheckoutContext';
+import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { API_ENDPOINTS, ASSET_URL } from '../../config/apiEndpoints';
 
@@ -16,6 +17,8 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const checkoutContext = useCheckout();
+    const { user, logout, getUsernamePath } = useAuth();
+    const usernamePath = getUsernamePath();
     const cartItems = checkoutContext ? checkoutContext.cartItems : [];
     
     const isProductPage = location.pathname.startsWith('/product');
@@ -23,8 +26,12 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
     // State to toggle between the default header and the active search bar
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
     const [logo, setLogo] = useState(null);
     const headerRef = React.useRef(null);
+    const searchRef = React.useRef(null);
 
     React.useEffect(() => {
         const fetchLogo = async () => {
@@ -48,6 +55,43 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
         };
         fetchLogo();
     }, []);
+
+    // Close search dropdown if clicked outside
+    React.useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (searchRef.current && !searchRef.current.contains(e.target)) {
+                setShowSearchDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Search API Effect
+    React.useEffect(() => {
+        if (!searchTerm.trim()) {
+            setSearchResults([]);
+            return;
+        }
+        const timer = setTimeout(async () => {
+            setIsSearching(true);
+            try {
+                const response = await fetch(`${API_ENDPOINTS.SEARCH}?q=${encodeURIComponent(searchTerm)}`);
+                const data = await response.json();
+                if (data.success && data.data) {
+                    setSearchResults(data.data);
+                } else {
+                    setSearchResults([]);
+                }
+            } catch (error) {
+                console.error("Search API Error:", error);
+                setSearchResults([]);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
     React.useEffect(() => {
         if (!headerRef.current) return;
@@ -81,36 +125,57 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
         }
     };
 
-    // --- Mock Suggestion Box Component ---
+    // --- Suggestion Box Component (API Driven) ---
     const SearchSuggestions = () => {
-        const suggestions = ["T-Shirts for Men", "Blue T-Shirts", "Custom T-Shirts", "Men's V-Neck"];
-
-        // Filter suggestions based on current search term
-        const filteredSuggestions = searchTerm
-            ? suggestions.filter(s => s.toLowerCase().includes(searchTerm.toLowerCase()))
-            : suggestions;
+        if (!searchTerm.trim()) return null;
 
         return (
-            <div className="position-absolute w-100 bg-white shadow-sm pt-2" style={{ top: '60px', zIndex: '10' }}>
-                <ul className="list-group list-group-flush">
-                    {filteredSuggestions.length > 0 ? (
-                        filteredSuggestions.map((suggestion, index) => (
-                            <li
-                                key={index}
-                                className="list-group-item list-group-item-action d-flex align-items-center"
+            <div className="position-absolute bg-white rounded shadow w-100 mt-1" style={{ top: '100%', left: 0, zIndex: '1050', maxHeight: '400px', overflowY: 'auto' }}>
+                {isSearching ? (
+                    <div className="p-3 text-center text-muted small">Searching...</div>
+                ) : searchResults.length > 0 ? (
+                    searchResults.map((item, idx) => {
+                        let imagePath = "/placeholder.jpg";
+                        if (item.images && item.images.length > 0) {
+                            const img = item.images[0].image_path || item.images[0].file_path;
+                            if (img) imagePath = `${ASSET_URL}${img.startsWith('/') ? img.substring(1) : img}`;
+                        } else if (item.image) {
+                            imagePath = `${ASSET_URL}${item.image.startsWith('/') ? item.image.substring(1) : item.image}`;
+                        } else if (item.thumbnail) {
+                            imagePath = `${ASSET_URL}${item.thumbnail.startsWith('/') ? item.thumbnail.substring(1) : item.thumbnail}`;
+                        }
+
+                        return (
+                            <Link
+                                to={`/product/${item.slug || item.id}`}
+                                key={idx}
+                                className="d-flex align-items-center px-3 py-2 text-decoration-none border-bottom"
+                                style={{ cursor: "pointer", transition: "background 0.2s" }}
                                 onClick={() => {
-                                    setSearchTerm(suggestion);
+                                    setShowSearchDropdown(false);
+                                    setIsSearchActive(false);
+                                    setSearchTerm(item.name);
                                 }}
-                                style={{ cursor: 'pointer' }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                             >
-                                <IoSearchSharp size={16} className="text-muted me-2" />
-                                {suggestion}
-                            </li>
-                        ))
-                    ) : (
-                        <li className="list-group-item text-muted">No results found for "{searchTerm}"</li>
-                    )}
-                </ul>
+                                <div className="flex-shrink-0" style={{ width: "35px", height: "35px" }}>
+                                    <img src={imagePath} alt={item.name} className="w-100 h-100 object-fit-contain" />
+                                </div>
+                                <div className="ms-3 flex-grow-1 text-truncate">
+                                    <div className="text-dark text-truncate" style={{ fontSize: "14px", fontWeight: "400" }}>{item.name}</div>
+                                    {item.category_name && (
+                                        <div className="text-primary" style={{ fontSize: "12px", marginTop: "1px" }}>
+                                            in {item.category_name}
+                                        </div>
+                                    )}
+                                </div>
+                            </Link>
+                        );
+                    })
+                ) : (
+                    <div className="p-3 text-center text-muted small">No results found for "{searchTerm}"</div>
+                )}
             </div>
         );
     };
@@ -143,7 +208,7 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
 
                 </div>
                 {/* Search Suggestions Box */}
-                {searchTerm && <SearchSuggestions />}
+                {showSearchDropdown && searchTerm && <div className="position-relative w-100" ref={searchRef}><SearchSuggestions /></div>}
             </div>
         );
     }
@@ -186,11 +251,19 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
                             <Link to={'/'}>
                                 <img src="/PrintLogo.png" alt="" height={45}/>
                             </Link>
-                            <div className='border w-50 rounded light-bg-theme d-flex align-items-center gap-3 px-2'>
+                            <div className='border w-50 rounded light-bg-theme d-flex align-items-center gap-3 px-2 position-relative' ref={searchRef}>
                                 <button className='border-0'>
                                     <IoSearchSharp size={22} className='' />
                                 </button>
-                                <input type="text" placeholder='Search for products, Brands and more' className='light-bg-theme border-0  w-100 rounded p-1' />
+                                <input 
+                                    type="text" 
+                                    placeholder='Search for products, Brands and more' 
+                                    className='light-bg-theme border-0  w-100 rounded p-1' 
+                                    value={searchTerm}
+                                    onFocus={() => setShowSearchDropdown(true)}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                                {showSearchDropdown && <SearchSuggestions />}
                             </div>
                         </div>
                     </div>
@@ -253,14 +326,25 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
                         </div>
                         <div className='d-none d-lg-flex align-items-center '>
                             <DropdownButton id="dropdown-button-dark-example2"  title={<>
-                                {<FaRegCircleUser size={20}/>} Buyer Name
+                                <FaRegCircleUser size={20} className="me-1"/> 
+                                {user ? (user.first_name || user.firstName || user.name || (user.email ? user.email.split('@')[0] : 'User')) : 'Buyer Name'}
                                 </>} className="mt-2 custom-dropdown" data-bs-theme>
                                 
-                                <Dropdown.Item href="#/action-1 text-danger red" active>Action</Dropdown.Item>
-                                <Dropdown.Item href="#/action-2">Another action</Dropdown.Item>
-                                <Dropdown.Item href="#/action-3">Something else</Dropdown.Item>
-                                <Dropdown.Divider />
-                                <Dropdown.Item href="#/action-4">Separated link</Dropdown.Item>
+                                {user ? (
+                                    <>
+                                        <Dropdown.Item as={Link} to={`/${usernamePath}/profile`}>My Profile</Dropdown.Item>
+                                        <Dropdown.Item as={Link} to="/orders">Orders</Dropdown.Item>
+                                        <Dropdown.Item as={Link} to="/track-order">Track your Orders</Dropdown.Item>
+                                        <Dropdown.Item as={Link} to="/printmont-coin">Printmont Coins</Dropdown.Item>
+                                        <Dropdown.Divider />
+                                        <Dropdown.Item as="button" onClick={logout} className="text-danger">Log Out</Dropdown.Item>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Dropdown.Item as={Link} to="/login">Login</Dropdown.Item>
+                                        <Dropdown.Item as={Link} to="/login">Signup</Dropdown.Item>
+                                    </>
+                                )}
                             </DropdownButton>
                         </div>
                     </div>

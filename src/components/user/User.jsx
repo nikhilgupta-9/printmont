@@ -1,5 +1,4 @@
-import React from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { IoIosArrowForward } from 'react-icons/io';
 import {
   FaUser,
   FaHeart,
@@ -11,9 +10,25 @@ import {
   FaMapMarkerAlt,
   FaQuestionCircle
 } from "react-icons/fa";
-import { IoIosArrowForward } from 'react-icons/io';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate, NavLink, Outlet } from 'react-router-dom';
+import React, { useEffect } from 'react';
 
 const User = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+
+  const handleLogout = (e) => {
+    e.preventDefault();
+    logout();
+  };
+
   return (
     <div className="container bg-transparent p-0">
       <div className="row p-0 m-0">
@@ -31,7 +46,9 @@ const User = () => {
             />
             <div className="d-flex gap-1 flex-column">
               <p className="mb-0 text-muted small">Hello,</p>
-              <h6 className="mb-0 fw-bold">Jhon Doe</h6>
+              <h6 className="mb-0 fw-bold">
+                {user ? (user.firstName || user.first_name ? `${user.firstName || user.first_name} ${user.lastName || user.last_name || ''}`.trim() : user.name || (user.email ? user.email.split('@')[0] : 'User')) : 'Guest'}
+              </h6>
             </div>
           
           </div>
@@ -126,19 +143,16 @@ const User = () => {
           </NavLink>
 
           {/* Logout */}
-          <NavLink
-            to="/"
-            className={({ isActive }) =>
-              `d-flex justify-content-between align-items-center w-100 px-3 py-2 product ${
-                isActive ? 'bg-light text-primary' : ''
-              }`
-            }
+          <a
+            href="#"
+            onClick={handleLogout}
+            className="d-flex justify-content-between align-items-center w-100 px-3 py-2 product text-decoration-none text-dark"
           >
             <span>
-              <FaPowerOff className="me-2 text-primary" /> Logout
+              <FaPowerOff className="me-2 text-danger" /> Logout
             </span>
             <IoIosArrowForward />
-          </NavLink>
+          </a>
           </div>
 
           {/* Frequently Visited */}

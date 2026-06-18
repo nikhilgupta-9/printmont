@@ -1,8 +1,10 @@
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import './App.css';
 
+import { AuthProvider } from "./context/AuthContext";
 import { CheckoutProvider } from "./context/CheckoutContext";
 import HeaderManager from "./components/header/HeaderManager";
 import Home from './components/pages/Home';
@@ -40,7 +42,9 @@ import CategoryPage from "./components/pages/category-list/CategoryPage";
 function App() {
   return (
     <Router>
-      <CheckoutProvider>
+      <AuthProvider>
+        <CheckoutProvider>
+          <Toaster position="top-center" reverseOrder={false} />
         {/* 👇 Use the HeaderManager here instead of Header */}
         <HeaderManager />
 
@@ -72,7 +76,6 @@ function App() {
           <Route path="/printmont-coin" element={<PrintmontCoin />} />
           <Route path="/category" element={<CategoryPage />} />
           <Route path="/category/:id" element={<CategoryPage />} />
-          <Route path="*" element={<PageNotFound />} />
           <Route path="/policy/*" element={<PolicyPage />} />
 
           <Route path="/user" element={<User />}>
@@ -83,11 +86,13 @@ function App() {
             <Route path="manage-address" element={<ManageAddress  />} />
           </Route>
 
+          <Route path="*" element={<PageNotFound />} />
         </Routes>
 
         {/* Footer */}
         <Footer />
-      </CheckoutProvider>
+        </CheckoutProvider>
+      </AuthProvider>
     </Router>
   );
 }

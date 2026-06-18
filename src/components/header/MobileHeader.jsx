@@ -18,15 +18,14 @@ const MobileHeader = () => {
   const [recentSearches, setRecentSearches] = useState(["T-Shirt", "Mug", "Notebook"]);
   const [logo, setLogo] = useState(null);
 
+  // Search API States
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+
   const searchRef = useRef();
   const headerRef = useRef();
 
-  const productSuggestions = [
-    { name: "Custom Hoodie", icon: <LuChartNoAxesCombined size={16} /> },
-    { name: "Sticker Pack", icon: <FaHandshake size={16} /> },
-  ];
 
-  const reservedKeywords = ["Best Seller", "Limited Edition", "Discount"];
 
   const toggleDropdown = (key) => {
     setDropdowns((prev) => ({
@@ -45,6 +44,32 @@ const MobileHeader = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Search API Effect
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const response = await fetch(`${API_ENDPOINTS.SEARCH}?q=${encodeURIComponent(searchQuery)}`);
+        const data = await response.json();
+        if (data.success && data.data) {
+          setSearchResults(data.data);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (error) {
+        console.error("Search API Error:", error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch Logo
   useEffect(() => {
@@ -162,49 +187,87 @@ const MobileHeader = () => {
           {/* Search Suggestions Dropdown */}
           {showSearchDropdown && (
             <div
-              className="position-absolute bg-white border rounded shadow px-2 w-100 mt-2 z-10"
+              className="position-absolute bg-white border rounded shadow w-100 mt-2 z-10"
               style={{ maxHeight:'400px', overflowY:'auto', top:'45px', left:0 }}
             >
-              {/* Recent Searches */}
-              {recentSearches.length > 0 && (
-                <div className="mb-2">
-                  <div className="fw-bold text-muted fs-6 mb-1">Recent Searches</div>
-                  {recentSearches.map((item, idx) => (
-                    <div key={idx} className="d-flex align-items-center justify-content-between px-2 py-1 hover-bg-light">
-                      <div className="d-flex align-items-center gap-2 w-100 p-2" style={{ cursor: "pointer" }} onClick={() => selectKeyword(item)}>
-                        <AiOutlineClockCircle className="text-secondary" />
-                        <span className="w-100">{item}</span>
+              {searchQuery.trim().length > 0 ? (
+                isSearching ? (
+                  <div className="p-3 text-center text-muted small">Searching...</div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map((item, idx) => {
+                    // Extract image
+                    let imagePath = "/placeholder.jpg";
+                    if (item.images && item.images.length > 0) {
+                      const img = item.images[0].image_path || item.images[0].file_path;
+                      if (img) {
+                        imagePath = `${ASSET_URL}${img.startsWith('/') ? img.substring(1) : img}`;
+                      }
+                    } else if (item.image) {
+                       imagePath = `${ASSET_URL}${item.image.startsWith('/') ? item.image.substring(1) : item.image}`;
+                    } else if (item.thumbnail) {
+                       imagePath = `${ASSET_URL}${item.thumbnail.startsWith('/') ? item.thumbnail.substring(1) : item.thumbnail}`;
+                    }
+
+                    return (
+                      <Link
+                        to={`/product/${item.slug || item.id}`}
+                        key={idx}
+                        className="d-flex align-items-center px-3 py-2 text-decoration-none border-bottom"
+                        style={{ cursor: "pointer", transition: "background 0.2s" }}
+                        onClick={() => {
+                          setShowSearchDropdown(false);
+                          selectKeyword(item.name);
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                      >
+                        <div className="flex-shrink-0" style={{ width: "35px", height: "35px" }}>
+                          <img src={imagePath} alt={item.name} className="w-100 h-100 object-fit-contain" />
+                        </div>
+                        <div className="ms-3 flex-grow-1 text-truncate">
+                          <div className="text-dark text-truncate" style={{ fontSize: "14px", fontWeight: "400" }}>{item.name}</div>
+                          {item.category_name && (
+                            <div className="text-primary" style={{ fontSize: "12px", marginTop: "1px" }}>
+                              in {item.category_name}
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })
+                ) : (
+                  <div className="p-3 text-center text-muted small">No results found for "{searchQuery}"</div>
+                )
+              ) : (
+                /* Recent Searches when empty */
+                recentSearches.length > 0 && (
+                  <div className="py-2">
+                    {recentSearches.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="d-flex align-items-center justify-content-between px-3 py-2"
+                        style={{ cursor: "pointer" }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                      >
+                        <div
+                          className="d-flex align-items-center gap-2 w-100"
+                          onClick={() => selectKeyword(item)}
+                        >
+                          <AiOutlineClockCircle className="text-secondary" />
+                          <span className="text-dark" style={{ fontSize: "14px" }}>{item}</span>
+                        </div>
+                        <AiOutlineClose
+                          className="text-secondary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeRecent(idx);
+                          }}
+                        />
                       </div>
-                      <AiOutlineClose className="text-secondary" style={{ cursor: "pointer" }} onClick={() => removeRecent(idx)} />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Product Suggestions */}
-              {productSuggestions.length > 0 && (
-                <div className="mb-2">
-                  <div className="fw-bold text-muted fs-6 mb-1">Products</div>
-                  {productSuggestions.map((item, idx) => (
-                    <div key={idx} className="d-flex align-items-center px-2 py-1 hover-bg-light" style={{ cursor: "pointer" }} onClick={() => selectKeyword(item.name)}>
-                      <span className="me-2"><IoSearchSharp /></span>
-                      <span>{item.name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Reserved Keywords */}
-              {reservedKeywords.length > 0 && (
-                <div>
-                  <div className="fw-bold text-muted fs-6 mb-1">Trending Keywords</div>
-                  {reservedKeywords.map((item, idx) => (
-                    <div key={idx} className="d-flex align-items-center px-2 py-1 hover-bg-light" style={{ cursor: "pointer" }} onClick={() => selectKeyword(item)}>
-                      <CiBullhorn className="me-2 text-warning" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )
               )}
             </div>
           )}

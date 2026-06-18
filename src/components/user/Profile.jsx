@@ -1,14 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const Profile = () => {
-  // Initialize profile state
+  const { user, setUser } = useAuth();
+
+  // Helper to normalize gender case
+  const formatGender = (g) => {
+    if (!g) return "Male";
+    return g.charAt(0).toUpperCase() + g.slice(1).toLowerCase();
+  };
+
+  // Initialize profile state with context or defaults
   const [profile, setProfile] = useState({
-    firstName: "John",
-    lastName: "Doe",
-    gender: "Male",
-    email: "john.doe@example.com",
-    mobile: "123-456-7890",
+    firstName: user?.firstName || user?.first_name || "",
+    lastName: user?.lastName || user?.last_name || "",
+    gender: formatGender(user?.gender),
+    email: user?.email || "",
+    mobile: user?.mobile || user?.phone || "",
   });
+
+  // Update profile state if user context loads later
+  useEffect(() => {
+    if (user) {
+      const updatedProfile = {
+        firstName: user.firstName || user.first_name || "",
+        lastName: user.lastName || user.last_name || "",
+        gender: formatGender(user.gender),
+        email: user.email || "",
+        mobile: user.mobile || user.phone || "",
+      };
+      setProfile(updatedProfile);
+      setTempProfile(updatedProfile);
+    }
+  }, [user]);
 
   // Track if edit mode is on for names
   const [isEditing, setIsEditing] = useState(false);
@@ -36,6 +61,14 @@ const Profile = () => {
     e.preventDefault();
     setProfile(tempProfile);
     setIsEditing(false);
+    
+    // Update global context and local storage
+    if (setUser) {
+      const updatedUser = { ...user, ...tempProfile };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      toast.success("Profile updated successfully!");
+    }
   };
 
   // When Cancel clicked (optional)
