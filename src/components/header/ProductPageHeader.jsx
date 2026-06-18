@@ -29,14 +29,15 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
     React.useEffect(() => {
         const fetchLogo = async () => {
             try {
-                const response = await axios.get(API_ENDPOINTS.LOGO);
-                if (response.data.success && response.data.data.length > 0) {
-                    let logoData = response.data.data.find(l => l.asset_type === "mobile_logo" && l.is_active === "1");
+                const response = await fetch(API_ENDPOINTS.LOGO);
+                const data = await response.json();
+                if (data.success && data.data.length > 0) {
+                    let logoData = data.data.find(l => l.asset_type === "mobile_logo" && l.is_active === "1");
                     if (!logoData) {
-                        logoData = response.data.data.find(l => l.asset_type === "desktop_logo" && l.is_active === "1");
+                        logoData = data.data.find(l => l.asset_type === "desktop_logo" && l.is_active === "1");
                     }
                     if (!logoData) {
-                        logoData = response.data.data.find(l => l.is_active === "1") || response.data.data[0];
+                        logoData = data.data.find(l => l.is_active === "1") || data.data[0];
                     }
                     const filePath = logoData.file_path.startsWith('/') ? logoData.file_path.substring(1) : logoData.file_path;
                     setLogo(`${ASSET_URL}${filePath}${logoData.file_name}`);

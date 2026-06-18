@@ -2,7 +2,6 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { TbCategory2 } from "react-icons/tb";
 import { IoIosArrowDown, IoIosArrowForward } from "react-icons/io";
 import { Link } from "react-router-dom";
-import axios from "axios";
 import { API_ENDPOINTS, ASSET_URL } from "../../../config/apiEndpoints";
 
 const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky = false }) => {
@@ -18,9 +17,10 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get(API_ENDPOINTS.CATEGORIES);
-        if (response.data.success) {
-          setCategoriesData(response.data.data);
+        const response = await fetch(API_ENDPOINTS.CATEGORIES);
+        const data = await response.json();
+        if (data.success) {
+          setCategoriesData(data.data);
         }
       } catch (error) {
         console.error("Error fetching categories:", error);

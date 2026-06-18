@@ -70,13 +70,14 @@ const Header = () => {
   useEffect(() => {
     const fetchLogo = async () => {
       try {
-        const response = await axios.get(API_ENDPOINTS.LOGO);
+        const response = await fetch(API_ENDPOINTS.LOGO);
+        const data = await response.json();
 
-        if (response.data.success && response.data.data.length > 0) {
+        if (data.success && data.data.length > 0) {
           // Find the desktop logo, otherwise fallback to the first active logo
-          let logoData = response.data.data.find(l => l.asset_type === "desktop_logo" && l.is_active === "1");
+          let logoData = data.data.find(l => l.asset_type === "desktop_logo" && l.is_active === "1");
           if (!logoData) {
-            logoData = response.data.data.find(l => l.is_active === "1") || response.data.data[0];
+            logoData = data.data.find(l => l.is_active === "1") || data.data[0];
           }
 
           // Ensure path formatting is safe
