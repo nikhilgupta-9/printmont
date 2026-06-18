@@ -18,7 +18,7 @@ export const CheckoutProvider = ({ children }) => {
   const [couponApplied, setCouponApplied] = useState(false);
   
   // Static backend config (change to your actual dev server if needed)
-  const API_URL = 'http://localhost/printmont/printmont-backend/api'; 
+  const API_URL = import.meta.env.VITE_API_URL || 'https://mediumvioletred-pelican-783174.hostingersite.com/api';
   const PRINTMONT_COINS_BALANCE = 36;
   const COUPON_DISCOUNT = 450;
   const CASH_COINS_DISCOUNT = 20;
