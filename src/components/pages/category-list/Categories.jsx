@@ -86,6 +86,15 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
     return `${ASSET_URL}${cleanPath}`;
   };
 
+  const getArray = (data) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (typeof data === 'object') return Object.values(data);
+    return [];
+  };
+
+  const safeCategories = getArray(categoriesData);
+
   return (
     <>
       <div
@@ -102,7 +111,9 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
       >
       {/* SMALL SCREENS */}
       <div className="d-flex d-lg-none overflow-x-auto gap-2 px-2 align-items-center hide-scrollbar" style={{padding:`${space}`, backgroundColor:`${bg || '#ffffff'}`}}>
-        {categoriesData.slice(0, 12).map((item, index) => (
+        {safeCategories.slice(0, 12).map((item, index) => {
+          const itemChildren = getArray(item.children);
+          return (
           <Link
             to={`/category/${item.slug}`}
             key={index}
@@ -120,13 +131,15 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
               {item.name}
             </small>
           </Link>
-        ))}
+        )})}
       </div>
 
       {/* LARGE SCREENS */}
       <div className="d-none d-lg-flex justify-content-center w-100 position-relative text-nowrap small border-2 border border-white" style={{padding:`${space}`, backgroundColor:`${bg}`}} >
         <div className="d-flex justify-content-between w-100 mx-auto px-lg-4 position-relative" style={{ maxWidth: showImages ? '1440px' : '100%' }}>
-          {categoriesData.slice(0, 12).map((item, index) => (
+          {safeCategories.slice(0, 12).map((item, index) => {
+            const itemChildren = getArray(item.children);
+            return (
           <div
             key={index}
             className="d-flex flex-column align-items-center text-center mb-0 over"
@@ -159,7 +172,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
             </Link>
 
             {/* MEGA MENU DROPDOWN */}
-            {activeCategory === index && item.children && item.children.length > 0 && (
+            {activeCategory === index && itemChildren && itemChildren.length > 0 && (
               <div
                 className="position-absolute bg-white rounded shadow-lg d-flex text-start py-4 px-4 dropdown-panel active mx-auto"
                 style={{
@@ -175,12 +188,14 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                 }}
               >
                 <div className="d-flex flex-wrap flex-grow-1" style={{ gap: "20px" }}>
-                  {item.children.map((sub, i) => (
+                  {itemChildren.map((sub, i) => {
+                    const subChildren = getArray(sub.children);
+                    return (
                     <div key={i} className="d-flex flex-column mb-3" style={{ flex: "1 1 180px", maxWidth: "250px" }}>
                       <Link to={`/category/${sub.slug}`} className="fw-bold text-dark text-decoration-none mb-2 pb-1 border-bottom fs-6 text-wrap">
                         {sub.name}
                       </Link>
-                      {sub.children && sub.children.length > 0 && sub.children.map((m, idx) => (
+                      {subChildren && subChildren.length > 0 && subChildren.map((m, idx) => (
                         <Link
                           key={idx}
                           to={`/category/${m.slug}`}
@@ -193,7 +208,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                         </Link>
                       ))}
                     </div>
-                  ))}
+                  )})}
                 </div>
 
                 {/* Promotional Image Section */}
@@ -216,7 +231,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
               </div>
             )}
           </div>
-        ))}
+        )})}
         </div>
       </div>
       
