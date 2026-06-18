@@ -102,7 +102,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
       >
       {/* SMALL SCREENS */}
       <div className="d-flex d-lg-none overflow-x-auto gap-2 px-2 align-items-center hide-scrollbar" style={{padding:`${space}`, backgroundColor:`${bg || '#ffffff'}`}}>
-        {categoriesData.map((item, index) => (
+        {categoriesData.slice(0, 12).map((item, index) => (
           <Link
             to={`/category/${item.slug}`}
             key={index}
@@ -113,7 +113,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
               src={getImageUrl(item.image)}
               alt={item.name}
               className="rounded mb-1 border categoires-img-width"
-              style={{ objectFit: "cover" }}
+              style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
             />
             )}
             <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
@@ -125,11 +125,11 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
 
       {/* LARGE SCREENS */}
       <div className="d-none d-lg-flex justify-content-center w-100 position-relative text-nowrap small border-2 border border-white" style={{padding:`${space}`, backgroundColor:`${bg}`}} >
-        <div className="d-flex justify-content-evenly w-100 mx-auto" style={{ maxWidth: showImages ? '1440px' : '100%' }}>
-          {categoriesData.map((item, index) => (
+        <div className="d-flex justify-content-between w-100 mx-auto px-lg-4 position-relative" style={{ maxWidth: showImages ? '1440px' : '100%' }}>
+          {categoriesData.slice(0, 12).map((item, index) => (
           <div
             key={index}
-            className="d-flex flex-column align-items-center text-center mb-0 position-relative over"
+            className="d-flex flex-column align-items-center text-center mb-0 over"
             onMouseEnter={() => {
               setActiveCategory(index);
               setActiveSub(0);
@@ -146,7 +146,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                 src={getImageUrl(item.image)}
                 alt={item.name}
                 className="rounded mb-1 categoires-img-width"
-                style={{ objectFit: "cover" }}
+                style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
               />
               )}
               <div className="d-flex justify-content-center align-items-center text-decoration-none text-truncate over">
@@ -158,70 +158,59 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
               </div>
             </Link>
 
-            {/* DROPDOWN */}
+            {/* MEGA MENU DROPDOWN */}
             {activeCategory === index && item.children && item.children.length > 0 && (
               <div
-                className={`position-absolute bg-transparent rounded d-flex dropdown-panel ${activeCategory === index ? "active" : ""
-                  }`}
+                className="position-absolute bg-white rounded shadow-lg d-flex text-start py-4 px-4 dropdown-panel active mx-auto"
                 style={{
                   top: "100%",
-                  width: "450px",
-                  zIndex: 10,
-                  ...(index === 0
-                    ? { left: "-55px" }
-                    : index === categoriesData.length - 1
-                      ? { right: "-65px" }
-                      : { left: "50px", transform: "translateX(-50%)" }),
+                  left: "0",
+                  right: "0",
+                  width: "95%",
+                  zIndex: 1000,
+                  cursor: "default",
+                  maxHeight: "70vh",
+                  overflowY: "auto",
+                  borderTop: "2px solid #f0f0f0",
                 }}
               >
-                {/* LEFT PANEL */}
-                <div
-                  className="rounded-start categories-shadow bg-white"
-                  style={{ width: "50%", overflowY: "auto" }}
-                >
+                <div className="d-flex flex-wrap flex-grow-1" style={{ gap: "20px" }}>
                   {item.children.map((sub, i) => (
-                    <div
-                      key={i}
-                      className="px-3 py-2 d-flex justify-content-between align-items-center"
-                      style={{
-                        cursor: "pointer",
-                        backgroundColor: activeSub === i ? "rgb(240, 245, 255)" : "transparent",
-                        transition: "background-color 0.3s ease",
-                        fontWeight: activeSub === i ? "600" : "400",
-                      }}
-                      onMouseEnter={() => setActiveSub(i)}
-                    >
-                      <Link to={`/category/${sub.slug}`} className="text-decoration-none small text-dark d-block w-100 text-start">{sub.name}</Link>
-                      <IoIosArrowForward />
-                    </div>
-                  ))}
-                </div>
-
-                {/* RIGHT PANEL */}
-                <div
-                  className="flex-column d-flex align-items-start justify-content-start border rounded categories-shadow bg-white"
-                  style={{
-                    width: "50%",
-                    overflowY: "auto",
-                    marginLeft: "-10px",
-                    zIndex: 5,
-                  }}
-                >
-                  {item.children[activeSub] && (
-                    <>
-                      <div className="px-3 py-2 small text-black fw-semibold">
-                        More in {item.children[activeSub].name}
-                      </div>
-                      {item.children[activeSub].children?.map((m, idx) => (
+                    <div key={i} className="d-flex flex-column mb-3" style={{ flex: "1 1 180px", maxWidth: "250px" }}>
+                      <Link to={`/category/${sub.slug}`} className="fw-bold text-dark text-decoration-none mb-2 pb-1 border-bottom fs-6 text-wrap">
+                        {sub.name}
+                      </Link>
+                      {sub.children && sub.children.length > 0 && sub.children.map((m, idx) => (
                         <Link
                           key={idx}
                           to={`/category/${m.slug}`}
-                          className="d-block px-3 py-2 text-decoration-none hover-bg-light w-100 d-flex justify-content-start align-items-start text-dark"
+                          className="text-secondary text-decoration-none py-1 text-wrap"
+                          style={{ fontSize: "14px", display: "block" }}
+                          onMouseOver={(e) => e.target.style.color = "#007bff"}
+                          onMouseOut={(e) => e.target.style.color = "#6c757d"}
                         >
                           {m.name}
                         </Link>
                       ))}
-                    </>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Promotional Image Section */}
+                <div className="d-flex flex-column gap-3 ms-4 ps-4 border-start" style={{ minWidth: "250px", maxWidth: "280px" }}>
+                  <img 
+                    src={getImageUrl(item.image)} 
+                    alt="Promo" 
+                    className="w-100 rounded shadow-sm" 
+                    style={{ objectFit: "cover", height: index % 2 === 0 ? "100%" : "180px", minHeight: "180px" }} 
+                  />
+                  {index % 2 !== 0 && (
+                    <img 
+                      src={getImageUrl(item.image)} 
+                      alt="Promo 2" 
+                      className="w-100 rounded shadow-sm" 
+                      style={{ objectFit: "cover", height: "180px" }} 
+                    />
                   )}
                 </div>
               </div>
