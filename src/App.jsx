@@ -14,6 +14,7 @@ import Wishlist from "./components/orders/Wishlist";
 import Orders from "./components/orders/Orders";
 import User from "./components/user/User";
 import Login from "./components/user/Login";
+import ForgotPassword from "./components/user/ForgotPassword";
 import GiftCard from "./components/orders/GiftCard";
 import ProductDetails from "./components/products/ProductDetails";
 import AllProducts from "./components/products/AllProducts";
@@ -38,6 +39,8 @@ import ManageAddress from "./components/manageAddress/ManageAddress";
 import SupportPage from "./components/supportpage/SupportPage";
 import PrintmontCoin from "./components/prinmontCoin/PrintmontCoin";
 import CategoryPage from "./components/pages/category-list/CategoryPage";
+import BusinessSolutions from "./components/businessSolutions/BusinessSolutions";
+import BecomeASeller from "./components/becomeSeller/BecomeASeller";
 
 function App() {
   return (
@@ -55,8 +58,9 @@ function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/allproducts" element={<AllProducts />} />
-          <Route path="/product" element={<ProductDetails />} />
+          <Route path="/:productSlug" element={<ProductDetails />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/help-center" element={<HelpCenter />} />
@@ -74,6 +78,8 @@ function App() {
           <Route path="/manage-address" element={<ManageAddress />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/printmont-coin" element={<PrintmontCoin />} />
+          <Route path="/business-solutions" element={<BusinessSolutions />} />
+          <Route path="/become-a-seller" element={<BecomeASeller />} />
           <Route path="/category" element={<CategoryPage />} />
           <Route path="/category/:id" element={<CategoryPage />} />
           <Route path="/policy/*" element={<PolicyPage />} />

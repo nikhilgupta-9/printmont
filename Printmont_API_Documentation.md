@@ -15,18 +15,18 @@
 
 # Authentication
 
-- POST `/user-api.php?action=register`
-- POST `/user-api.php?action=login`
+- POST `/user-api.php?action=register` ✅
+- POST `/user-api.php?action=login` ✅
 - GET `/user-api.php?action=profile`
 - POST `/user-api.php?action=update_profile`
 - PUT `/router.php?action=change_password`
 
 # User Addresses
 
-- GET `/user-api.php?action=get_addresses`
-- POST `/user-api.php?action=add_address`
-- POST `/user-api.php?action=update_address`
-- POST `/user-api.php?action=delete_address`
+- GET `/user-api.php?action=get_addresses` ✅
+- POST `/user-api.php?action=add_address` ✅
+- POST `/user-api.php?action=update_address` ✅
+- POST `/user-api.php?action=delete_address` ✅
 - POST `/user-api.php?action=set_default_address`
 
 # Orders
@@ -34,18 +34,18 @@
 - GET `/user-api.php?action=get_orders`
 - GET `/user-api.php?action=get_order&id={id}`
 - POST `/user-api.php?action=create_order`
-- GET `/router.php?action=get_customer_orders&user_id={id}`
+- GET `/router.php?action=get_customer_orders&user_id={id}` ✅
 - PUT `/router.php?action=update_order_status&id={id}`
 - PUT `/router.php?action=update_payment_status&id={id}`
 - GET `/router.php?action=get_dashboard_stats`
 
 # Products
 
-- GET `/product-api.php`
-- GET `/product-api.php?id={id}`
+- GET `/product-api.php` ✅
+- GET `/product-api.php?id={id}` ✅
 - GET `/product-api.php?status=deactive`
 - GET `/related_products.php?id={id}`
-- GET `/search-api.php`
+- GET `/search-api.php` ✅
 
 # Home Product Sections
 
@@ -59,7 +59,7 @@
 
 # Categories
 
-- GET `/category-api.php`
+- GET `/category-api.php` ✅
 
 # Cart
 
@@ -102,7 +102,7 @@
 - GET `/faq-api.php`
 - GET `/help-center-api.php`
 - GET `/policies-api.php`
-- GET `/logo-api.php`
+- GET `/logo-api.php` ✅
 
 ## Environment Variables
 

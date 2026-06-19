@@ -316,7 +316,8 @@ const MobileHeader = () => {
               <li className="list-group-item d-flex align-items-center gap-2"><FaBoxOpen /> <Link to="/orders" className="text-decoration-none text-dark">My Orders</Link></li>
               <li className="list-group-item d-flex align-items-center gap-2"><FaPaperPlane /> <Link to="/track-order" className="text-decoration-none text-dark">Track Order</Link></li>
               <li className="list-group-item d-flex align-items-center gap-2"><FaWallet /> <Link to="/wallet" className="text-decoration-none text-dark">My Wallet</Link></li>
-              <li className="list-group-item d-flex align-items-center gap-2"><FaStore /> <Link to="/sell" className="text-decoration-none text-dark">Sell On Printmont</Link></li>
+              <li className="list-group-item d-flex align-items-center gap-2"><LuChartNoAxesCombined /> <Link to="/business-solutions" className="text-decoration-none text-dark">Business Solutions</Link></li>
+              <li className="list-group-item d-flex align-items-center gap-2"><FaStore /> <Link to="/become-a-seller" className="text-decoration-none text-dark">Sell On Printmont</Link></li>
             </ul>
           </div>
         </div>

@@ -1,39 +1,91 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoSearch } from "react-icons/io5";
-import { Completeorders } from '../../../data/data';
-
+import { Spinner, Alert } from 'react-bootstrap';
+import { useAuth } from '../../context/AuthContext';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 const filterOptions = {
   status: ['On the way', 'Delivered', 'Cancelled', 'Returned'],
   time: ['Last 30 days', '2024', '2023', '2022', '2021', 'Older']
 };
 
-const OrderCard = ({ order }) => (
-  <div className="card mb-3 p-2">
-    <div className="row g-2 align-items-center">
-      <div className="col-auto">
-        <img src={order.image} alt={order.title} style={{ width: '70px', height: '70px', objectFit: 'contain' }} />
-      </div>
-      <div className="col">
-        <div className="fw-semibold text-truncate" style={{ maxWidth: '250px' }}>{order.title}</div>
-        <small className="text-muted">Color: {order.color} &nbsp;&nbsp; Size: {order.size}</small>
-      </div>
-      <div className="col-auto fw-semibold">₹{order.price}</div>
-      <div className="col-auto text-success">
-        <span className="me-1" style={{ fontSize: '1.2em' }}>●</span>
-        <span className="fw-bold">Delivered on {order.deliveryDate}</span>
-        <div>Your item has been delivered</div>
-        <a href="#" className="text-primary" style={{ fontWeight: '600', fontSize: '0.9rem' }}>
-          <span style={{ marginRight: '5px' }}>★</span> Rate & Review Product
-        </a>
+const OrderCard = ({ order }) => {
+  const title = order.title || order.product_name || `Order #${order.id || order.order_id}`;
+  const image = order.image || order.product_image || 'https://placehold.co/70x70?text=Order';
+  const price = order.price || order.total_amount || order.total || '0';
+  const status = order.status || order.order_status || 'Processing';
+
+  return (
+    <div className="card mb-3 p-2">
+      <div className="row g-2 align-items-center">
+        <div className="col-auto">
+          <img src={image} alt={title} style={{ width: '70px', height: '70px', objectFit: 'contain' }} />
+        </div>
+        <div className="col">
+          <div className="fw-semibold text-truncate" style={{ maxWidth: '250px' }}>{title}</div>
+          {(order.color || order.size) && (
+              <small className="text-muted">
+                  {order.color && `Color: ${order.color}`} 
+                  {order.color && order.size && <>&nbsp;&nbsp;</>}
+                  {order.size && `Size: ${order.size}`}
+              </small>
+          )}
+          <div className="text-muted" style={{ fontSize: '0.8rem' }}>Order ID: #{order.id || order.order_id}</div>
+        </div>
+        <div className="col-auto fw-semibold">₹{price}</div>
+        <div className="col-auto">
+          <span className="me-1" style={{ fontSize: '1.2em', color: status.toLowerCase() === 'delivered' ? 'green' : (status.toLowerCase() === 'cancelled' ? 'red' : 'orange') }}>●</span>
+          <span className="fw-bold" style={{ color: status.toLowerCase() === 'delivered' ? 'green' : (status.toLowerCase() === 'cancelled' ? 'red' : 'orange') }}>
+            {status} {order.deliveryDate ? `on ${order.deliveryDate}` : ''}
+          </span>
+          <div className="mt-1">
+            <a href="#" className="text-primary" style={{ fontWeight: '600', fontSize: '0.85rem' }}>
+              <span style={{ marginRight: '5px' }}>★</span> Rate & Review Product
+            </a>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Orders = () => {
+  const { user, token } = useAuth();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState({ status: [], time: [] });
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        const res = await fetch(API_ENDPOINTS.GET_CUSTOMER_ORDERS(user.id), {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.success || data.status === 'success') {
+          setOrders(data.data || data.orders || []);
+        } else {
+          setError(data.message || "Failed to load orders.");
+        }
+      } catch (err) {
+        console.error(err);
+        setError("An error occurred while fetching orders.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [user]);
 
   const handleFilterToggle = (type, value) => {
     setSelectedFilters((prev) => {
@@ -51,9 +103,10 @@ const Orders = () => {
     setSelectedFilters({ status: [], time: [] });
   };
 
-  const filteredOrders = Completeorders.filter(order =>
-    order.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOrders = orders.filter(order => {
+    const searchString = (order.title || order.product_name || `Order #${order.id || order.order_id}` || '').toLowerCase();
+    return searchString.includes(searchTerm.toLowerCase());
+  });
 
   return (
     <div className="container-fluid pt-3 custom-bg">
@@ -133,12 +186,22 @@ const Orders = () => {
             </div>
           </form>
 
-          {filteredOrders.length ? (
-            filteredOrders.map(order => (
-              <OrderCard key={order.id} order={order} />
+          {loading ? (
+            <div className="text-center p-5">
+              <Spinner animation="border" variant="primary" />
+            </div>
+          ) : error ? (
+            <Alert variant="danger">{error}</Alert>
+          ) : !user?.id ? (
+            <Alert variant="warning">Please log in to view your orders.</Alert>
+          ) : filteredOrders.length ? (
+            filteredOrders.map((order, idx) => (
+              <OrderCard key={order.id || idx} order={order} />
             ))
           ) : (
-            <p>No orders found.</p>
+            <div className="text-center p-5 text-muted">
+                <p>No orders found.</p>
+            </div>
           )}
         </main>
       </div>

@@ -69,12 +69,7 @@ const SectionOne = ({ apiUrl }) => {
               <img
                 src={src}
                 alt={`Banner ${index + 1}`}
-                className="img-fluid rounded shadow-sm w-100"
-                style={{
-                  height: 'auto',
-                  objectFit: 'contain',
-                  maxHeight: '350px',
-                }}
+                className="img-fluid rounded shadow-sm w-100 carousel-img"
               />
             </div>
           ))

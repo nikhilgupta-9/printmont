@@ -89,7 +89,7 @@ const FourImgCarousel = ({ apiUrl }) => {
 
   if (loading) {
     return (
-      <div className="container-fluid mx-0 mt-2 p-0 px-1">
+      <div className="container-fluid mx-0 p-0 px-1">
         <div className="row g-2 m-0">
           {[1, 2, 3, 4].map((item) => (
             <div key={item} className="col-6 col-md-3 px-1">
@@ -103,7 +103,7 @@ const FourImgCarousel = ({ apiUrl }) => {
   if (error) return <div className="text-center text-danger p-5">Error: {error}</div>;
 
   return (
-    <div className="container-fluid mx-0 mt-2 p-0 px-1">
+    <div className="container-fluid mx-0 p-0 px-1">
       <Slider {...settings} className="px-0 mx-0">
         {images.map((img, index) => (
           <div key={index} className="slide-item mx-0 px-1">
@@ -112,7 +112,6 @@ const FourImgCarousel = ({ apiUrl }) => {
               alt={img.alt || `slide-${index}`}
               className="carousel-img"
               loading="lazy"
-              style={{ width: "100%", height: "auto", objectFit: "cover", aspectRatio: "auto" }}
             />
           </div>
         ))}

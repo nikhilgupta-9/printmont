@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from "react";
-import { Accordion, Button, Offcanvas, Pagination } from "react-bootstrap";
+import React, { useState, useMemo, useEffect } from "react";
+import { Accordion, Button, Offcanvas, Pagination, Spinner, Alert } from "react-bootstrap";
 import { GoSortDesc } from "react-icons/go";
 import { FaFilter } from "react-icons/fa6";
 import ProductCard from "./ProductCard";
-import FilterSidebar from "./FilterSidebar"; // ✅ Import your FilterSidebar
-import { productsData } from "../../../data/reviewData"; // assuming you have this
+import FilterSidebar from "./FilterSidebar";
+import { API_ENDPOINTS } from "../../config/apiEndpoints";
 import "./Product.css";
 
 // --- PAGINATION CONSTANTS ---
@@ -12,12 +12,66 @@ const PRODUCTS_PER_PAGE = 40; // The required limit
 // --- END PAGINATION CONSTANTS ---
 
 const AllProducts = () => {
+  const [productsData, setProductsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [priceRange, setPriceRange] = useState({ min: "", max: "" });
   const [showFilters, setShowFilters] = useState(false);
   const [currentSort, setCurrentSort] = useState("Popularity");
   const [showSort, setShowSort] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(API_ENDPOINTS.PRODUCTS);
+        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+        const data = await res.json();
+        
+        const rawProducts = data && data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+        
+        const formattedProducts = rawProducts.map(p => {
+          let images = ['https://placehold.co/400x550/cccccc/000?text=No+Image'];
+          if (Array.isArray(p.images) && p.images.length > 0) {
+            images = p.images.map(img => img.image_url);
+          } else if (p.img) {
+            images = [p.img];
+          } else if (p.image_url) {
+            images = [p.image_url];
+          }
+          
+          const price = parseFloat(p.price) || 0;
+          const discountedPrice = parseFloat(p.discount_price) || price;
+          const originalPrice = price;
+          const discountPercent = price > 0 && discountedPrice < price 
+            ? Math.round(((price - discountedPrice) / price) * 100) 
+            : 0;
+
+          return {
+            id: p.id || Math.random().toString(),
+            title: p.name || p.title || 'Unknown Product',
+            brand: p.brand || 'Generic',
+            image: images,
+            discountedPrice: discountedPrice,
+            originalPrice: originalPrice,
+            discountPercent: discountPercent,
+            sizes: p.sizes ? (typeof p.sizes === 'string' ? p.sizes.split(',') : p.sizes) : ['S', 'M', 'L'],
+            sponsored: false,
+            assured: p.our_bestseller || false
+          };
+        });
+
+        setProductsData(formattedProducts);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const handleCloseSort = () => setShowSort(false);
   const handleShowSort = () => setShowSort(true);
@@ -204,15 +258,28 @@ const AllProducts = () => {
 
           {/* Product Cards */}
           <div className="row g-2">
-            {paginatedProducts.map((product) => (
-              <div className="col-6 col-md-4 col-lg-3" key={product.id}>
-                <ProductCard product={product} />
+            {loading ? (
+              <div className="col-12 text-center p-5">
+                <Spinner animation="border" variant="primary" />
+                <p className="mt-3">Loading products...</p>
               </div>
-            ))}
+            ) : error ? (
+              <div className="col-12 p-5">
+                <Alert variant="danger">Failed to load products: {error}</Alert>
+              </div>
+            ) : paginatedProducts.length === 0 ? (
+              <div className="col-12 text-center p-5 text-muted">No products found.</div>
+            ) : (
+              paginatedProducts.map((product) => (
+                <div className="col-6 col-md-4 col-lg-3" key={product.id}>
+                  <ProductCard product={product} />
+                </div>
+              ))
+            )}
           </div>
 
           {/* Pagination */}
-          {renderPagination()}
+          {!loading && !error && renderPagination()}
         </div>
       </div>
 

@@ -54,7 +54,7 @@ const Footer = () => {
                     <li><Link to="/sitemap" className="text-light text-decoration-none">Sitemap</Link></li>
                     <li><Link to="/faq" className="text-light text-decoration-none">FAQ</Link></li>
                     <li><Link to="/product" className="text-light text-decoration-none text-warning fw-semibold">Product Details (Temp)</Link></li>
-                    <li><Link to="/category" className="text-light text-decoration-none text-warning fw-semibold">Category Page (Temp)</Link></li>
+                    <li><Link to="/business-solutions" className="text-light text-decoration-none">Business Solutions</Link></li>
                   </ul>
 
                 </div>
@@ -127,11 +127,11 @@ const Footer = () => {
           <div className="row text-center text-md-start align-items-center pb-3">
             <div className="col-12 col-md-6 d-flex flex-wrap justify-content-around justify-content-md-start gap-5 small">
               <span>
-                <img src="/become-seller.png" alt="" width={"20px"} height={"20px"} /> <Link to={'#'} className="link-text-white">Become a Seller</Link>
+                <img src="/become-seller.png" alt="" width={"20px"} height={"20px"} /> <Link to={'/become-a-seller'} className="link-text-white">Become a Seller</Link>
               </span>
               <span>
                 <img src="/advertising.png" alt="" width={"20px"} height={"20px"}/>
-                <Link to={'#'} className="link-text-white"> Advertising</Link> 
+                <Link to={'/business-solutions'} className="link-text-white"> Business Solutions</Link> 
               </span>
               <span>
                 <img src="/printmont-coin.png" alt="" width={"20px"} height={"20px"} />

@@ -119,7 +119,7 @@ const BannerTwo = ({ apiUrl }) => {
                 >
                   <img
                     src={img.src}
-                    className="d-block w-100"
+                    className="d-block w-100 carousel-img"
                     alt={img.alt || `mobile-banner-${index}`}
                   />
                 </div>

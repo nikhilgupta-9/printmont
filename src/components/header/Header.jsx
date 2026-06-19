@@ -335,11 +335,11 @@ const Header = () => {
                         <PiHeadsetBold size={21} className="me-1 rounded-circle bg-theme pa"/> Support
                       </Link>
 
-                      <Link to="/seller" className="dropdown-item d-flex align-items-center gap-2">
-                        <LuChartNoAxesCombined size={21} className="me-1 rounded-circle bg-theme pa" /> Advertise
+                      <Link to="/business-solutions" className="dropdown-item d-flex align-items-center gap-2">
+                        <LuChartNoAxesCombined size={21} className="me-1 rounded-circle bg-theme pa" /> Business Solutions
                       </Link>
 
-                      <Link to="/seller" className="dropdown-item d-flex align-items-center gap-2">
+                      <Link to="/become-a-seller" className="dropdown-item d-flex align-items-center gap-2">
                         <FaHandshake size={21} className="me-1 rounded-circle bg-theme pa" /> Become a Seller
                       </Link>
 

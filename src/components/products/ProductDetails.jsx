@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Modal, Form } from 'react-bootstrap';
+import { Container, Row, Col, Card, Modal, Form, Spinner, Alert } from 'react-bootstrap';
+import { useParams } from 'react-router-dom';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
+import PageNotFound from '../pageNotFound/PageNotFound';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import 'swiper/css';
@@ -95,12 +98,84 @@ const ScallopedPercentIcon = ({ color }) => (
 );
 
 const ProductDetails = () => {
+  const { productSlug } = useParams();
+  const idMatch = productSlug ? productSlug.match(/-p(\d+)$/) : null;
+  const productId = idMatch ? idMatch[1] : null;
+
+  const [productData, setProductData] = useState(Singleproductdata);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [activeImage, setActiveImage] = useState(Singleproductdata.images[0]);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [useCarousel, setUseCarousel] = useState(window.innerWidth < 992);
   const [startIndex, setStartIndex] = useState(0);
   const maxThumbnails = 4;
-  const visibleImages = Singleproductdata.images.slice(startIndex, startIndex + maxThumbnails);
+  
+  useEffect(() => {
+    if (!productId) {
+      // Do not set error here anymore since we will catch it in render
+      setLoading(false);
+      return;
+    }
+
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(API_ENDPOINTS.PRODUCT_BY_ID(productId));
+        if (!res.ok) throw new Error("Failed to load product");
+        const data = await res.json();
+        
+        let p = data;
+        if (data && data.success && data.data) p = data.data;
+        else if (Array.isArray(data) && data.length > 0) p = data[0];
+
+        let images = ['https://placehold.co/400x550/cccccc/000?text=No+Image'];
+        if (Array.isArray(p.images) && p.images.length > 0) {
+          images = p.images.map(img => img.image_url || img);
+        } else if (p.img) {
+          images = [p.img];
+        } else if (p.image_url) {
+          images = [p.image_url];
+        }
+
+        const price = parseFloat(p.price) || 1200;
+        const discountPrice = parseFloat(p.discount_price) || 499;
+        const discountPercent = price > 0 && discountPrice < price 
+            ? Math.round(((price - discountPrice) / price) * 100) 
+            : 0;
+
+        const formatted = {
+          ...Singleproductdata,
+          id: p.id,
+          title: p.name || p.title || 'Unknown Product',
+          images: images,
+          originalPrice: price,
+          perPiecePrice: discountPrice,
+          discount: `${discountPercent}% off`,
+          description: p.description || Singleproductdata.description,
+        };
+
+        setProductData(formatted);
+        setActiveImage(images[0]);
+        
+        // Basic SEO Update
+        document.title = `${formatted.title} - Printmont`;
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) {
+            metaDesc.setAttribute("content", `Buy ${formatted.title} at Printmont.`);
+        }
+
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [productId]);
+
+  const visibleImages = productData.images.slice(startIndex, startIndex + maxThumbnails);
 
   const handlePrevThumb = () => {
     if (startIndex > 0) {
@@ -109,7 +184,7 @@ const ProductDetails = () => {
   };
 
   const handleNextThumb = () => {
-    if (startIndex + maxThumbnails < Singleproductdata.images.length) {
+    if (startIndex + maxThumbnails < productData.images.length) {
       setStartIndex(startIndex + 1);
     }
   };
@@ -238,8 +313,8 @@ const ProductDetails = () => {
   }, []);
 
   const totalQty = Object.values(sizeSplit).reduce((a, b) => a + b, 0);
-  const perPiecePrice = 499;
-  const originalPerPiecePrice = 1200;
+  const perPiecePrice = productData.perPiecePrice || 499;
+  const originalPerPiecePrice = productData.originalPrice || 1200;
   const totalPrice = totalQty * perPiecePrice - (couponApplied ? 50 : 0);
 
   const handleSizeChange = (size, val) => {
@@ -284,6 +359,27 @@ const ProductDetails = () => {
     nextArrow: <NextArrow />,
   };
 
+  if (loading) {
+    return (
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+        <Spinner animation="border" variant="primary" />
+      </Container>
+    );
+  }
+
+  // If there is no valid product ID in the URL, show the global 404 page
+  if (!productId) {
+    return <PageNotFound />;
+  }
+
+  if (error) {
+    return (
+      <Container className="py-5">
+        <Alert variant="danger">{error}</Alert>
+      </Container>
+    );
+  }
+
   return (
     <div className='product-details-page-wrapper px-2 px-xl-5 py-4'>
       <Container fluid className="app-main-container px-0 px-xl-4">
@@ -305,7 +401,7 @@ const ProductDetails = () => {
                         className="mySwiper"
                         slidesPerView={1}
                       >
-                        {Singleproductdata.images.map((img, idx) => (
+                        {productData.images.map((img, idx) => (
                           <SwiperSlide key={idx}>
                             <div className="product-image-main-mobile">
                               <img
@@ -360,7 +456,7 @@ const ProductDetails = () => {
                         <button
                           className="custom-vertical-arrow bottom-arrow"
                           onClick={handleNextThumb}
-                          disabled={startIndex + maxThumbnails >= Singleproductdata.images.length}
+                          disabled={startIndex + maxThumbnails >= productData.images.length}
                         >
                           <FaChevronDown size="12" />
                         </button>
@@ -410,18 +506,18 @@ const ProductDetails = () => {
               <Col lg={6} className="py-3 px-3 product-details-info-section">
                 
                 {/* Countdown Timer */}
-                <CountdownTimer targetDate={Singleproductdata.offerEnds} />
+                <CountdownTimer targetDate={productData.offerEnds} />
 
                 {/* Product Title */}
-                <h1 className="product-title-text text-dark fw-bold mb-2">{Singleproductdata.title}</h1>
+                <h1 className="product-title-text text-dark fw-bold mb-2">{productData.title}</h1>
                 
                 {/* Reviews Badges Row */}
                 <div className="d-flex align-items-center gap-3 mb-3">
                   <div className="rating-pill d-flex align-items-center gap-1 bg-success text-white px-2 py-1 rounded fw-semibold text-sm">
-                    {Singleproductdata.rating.toFixed(1)} <FaStar size="12" />
+                    {productData.rating.toFixed(1)} <FaStar size="12" />
                   </div>
                   <span className="reviews-summary-text text-secondary text-sm">
-                    {Singleproductdata.reviewCount} Reviews
+                    {productData.reviewCount} Reviews
                   </span>
                   <div className="pm-secured-badge d-flex align-items-center">
                     <img src="/printmontsecured.png" alt="PM Secured" style={{ height: "22px", objectFit: "contain" }} />
@@ -433,16 +529,16 @@ const ProductDetails = () => {
                   <div className="d-flex align-items-baseline gap-2">
                     <span className="price-current fw-bold text-dark fs-2">₹{perPiecePrice}</span>
                     <span className="price-original text-decoration-line-through text-muted fs-6">₹{originalPerPiecePrice}</span>
-                    <span className="price-discount text-success fw-bold text-sm">({Singleproductdata.discount} off)</span>
+                    <span className="price-discount text-success fw-bold text-sm">({productData.discount})</span>
                   </div>
                   <div className="min-order-text text-danger fw-semibold text-sm mt-1">
-                    Minimum order {Singleproductdata.minimumOrder}.
+                    Minimum order {productData.minimumOrder}.
                   </div>
                 </div>
 
                 {/* Coupon Cards grid */}
                 <div className="coupon-cards-grid d-flex gap-3 mb-4 flex-wrap">
-                  {Singleproductdata.offers.map((offer, index) => {
+                  {productData.offers.map((offer, index) => {
                     const badgeColor = index === 0 ? "#0288d1" : "#00a65a";
                     return (
                       <div key={index} className="coupon-offer-card border rounded p-3 d-flex align-items-center gap-3">

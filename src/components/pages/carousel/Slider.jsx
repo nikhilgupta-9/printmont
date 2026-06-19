@@ -56,7 +56,7 @@ const Slider = ({ apiUrl = '/data/slides.json' }) => {
 
   if (loading) {
     return (
-      <div className="my-1 d-block d-lg-none px-2">
+      <div className="d-block d-lg-none px-2">
         <div className="shimmer-bg skeleton-slider-mobile w-100"></div>
       </div>
     );
@@ -67,7 +67,7 @@ const Slider = ({ apiUrl = '/data/slides.json' }) => {
     <Swiper
       pagination={{ clickable: true }}
       modules={[Pagination]}
-      className="mySwiper my-1 d-block d-lg-none"
+      className="mySwiper d-block d-lg-none"
     >
       {slides.map((slide, index) => (
         <SwiperSlide key={index}>
@@ -75,7 +75,7 @@ const Slider = ({ apiUrl = '/data/slides.json' }) => {
             src={slide.url}
             alt={`slide-${index + 1}`}
             width="100%"
-            className="object-cover-fit"
+            className="carousel-img object-cover-fit"
           />
         </SwiperSlide>
       ))}

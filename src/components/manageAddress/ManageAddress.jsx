@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Form, Button, Card, Dropdown, Modal } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Container, Row, Col, Form, Button, Card, Dropdown, Modal, Spinner } from 'react-bootstrap';
 import { BiPlusCircle } from 'react-icons/bi';
 import { BsGeoAltFill, BsThreeDotsVertical } from 'react-icons/bs';
-// import { GeoAltFill, ThreeDotsVertical, PlusCircle } from 'react-bootstrap-icons';
+import { useAuth } from '../../context/AuthContext';
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
 
 // --- INITIAL DATA & STRUCTURE ---
 const initialAddresses = [
@@ -197,9 +198,33 @@ const AddressForm = ({ formData, handleInputChange, handleRadioChange, handleSav
 
 // --- 3. Main Manage Address Component ---
 const ManageAddress = () => {
-    const [addresses, setAddresses] = useState(initialAddresses);
+    const { user, token } = useAuth();
+    const [addresses, setAddresses] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [formData, setFormData] = useState(emptyAddress);
+
+    const fetchAddresses = async () => {
+        if (!user?.id) return;
+        try {
+            setLoading(true);
+            const res = await fetch(`${API_ENDPOINTS.GET_ADDRESSES}&user_id=${user.id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success || data.status === 'success') {
+                setAddresses(data.data || data.addresses || []);
+            }
+        } catch (err) {
+            console.error("Failed to load addresses", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchAddresses();
+    }, [user]);
 
     // --- FORM HANDLING ---
     const handleInputChange = (e) => {
@@ -216,19 +241,39 @@ const ManageAddress = () => {
         setShowForm(false);
     };
 
-    const handleSave = (e) => {
+    const handleSave = async (e) => {
         e.preventDefault();
         
-        if (formData.id) {
-            // EDIT/UPDATE logic
-            setAddresses(prev => prev.map(addr => addr.id === formData.id ? formData : addr));
-        } else {
-            // NEW ADDRESS logic
-            const newAddress = { ...formData, id: Date.now() }; // Simple unique ID
-            setAddresses(prev => [...prev, newAddress]);
+        if (!user?.id) {
+            alert("You must be logged in to save an address.");
+            return;
         }
 
-        handleCancel(); // Reset form and hide it
+        const payload = { ...formData, user_id: user.id };
+        const isEdit = !!formData.id;
+        const endpoint = isEdit ? API_ENDPOINTS.UPDATE_ADDRESS : API_ENDPOINTS.ADD_ADDRESS;
+
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if (data.success || data.status === 'success') {
+                fetchAddresses(); // Refresh list from server
+                handleCancel();
+            } else {
+                alert(data.message || "Failed to save address");
+            }
+        } catch (err) {
+            console.error("Error saving address", err);
+            alert("An error occurred while saving the address.");
+        }
     };
 
     // --- CRUD OPERATIONS ---
@@ -237,9 +282,26 @@ const ManageAddress = () => {
         setShowForm(true);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (window.confirm("Are you sure you want to delete this address?")) {
-            setAddresses(prev => prev.filter(addr => addr.id !== id));
+            try {
+                const res = await fetch(API_ENDPOINTS.DELETE_ADDRESS, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ id, user_id: user?.id })
+                });
+                const data = await res.json();
+                if (data.success || data.status === 'success') {
+                    fetchAddresses();
+                } else {
+                    alert(data.message || "Failed to delete address.");
+                }
+            } catch (err) {
+                console.error("Error deleting address", err);
+            }
         }
     };
 
@@ -276,14 +338,22 @@ const ManageAddress = () => {
 
             {/* --- SAVED ADDRESSES LIST SECTION --- */}
             <div>
-                {addresses.map((address) => (
-                    <SavedAddressCard
-                        key={address.id}
-                        data={address}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                    />
-                ))}
+                {loading ? (
+                    <div className="text-center p-5">
+                        <Spinner animation="border" variant="primary" />
+                    </div>
+                ) : addresses.length === 0 ? (
+                    <p className="text-muted text-center mt-4">No saved addresses found.</p>
+                ) : (
+                    addresses.map((address) => (
+                        <SavedAddressCard
+                            key={address.id}
+                            data={address}
+                            onEdit={handleEdit}
+                            onDelete={handleDelete}
+                        />
+                    ))
+                )}
             </div>
         </Container>
     );

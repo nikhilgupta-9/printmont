@@ -198,13 +198,16 @@ const Login = () => {
                 />
                 <label htmlFor="password">Enter Password</label>
               </div>
-              {identifierType === 'email' && (
-                <div className="text-end mb-4">
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                <Link to="/forgot-password" className="text-primary text-decoration-none small fw-medium">
+                  Forgot Password?
+                </Link>
+                {identifierType === 'email' && (
                   <button type="button" className="btn btn-link text-decoration-none p-0 small fw-medium" onClick={() => { setLoginMethod('otp'); setError(null); }}>
                     Login with OTP instead
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </>
           ) : (
             <>

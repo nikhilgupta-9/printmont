@@ -14,9 +14,10 @@
 
 /* ── Unified banner height across ALL carousel types ── */
 :root {
-  --banner-h-desktop: 290px;
-  --banner-h-tablet:  220px;
-  --banner-h-mobile:  180px;
+  --banner-h-xl: 280px;
+  --banner-h-desktop: 240px;
+  --banner-h-tablet:  180px;
+  --banner-h-mobile:  150px;
 }
 
 .carousel-img {
@@ -103,9 +104,9 @@
 }
 
 /* ── Responsive height overrides ─────────────────────── */
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
   .carousel-img {
-    height: var(--banner-h-mobile);
+    height: var(--banner-h-mobile) !important;
   }
   .padmar {
     padding: 0 !important;
@@ -114,11 +115,16 @@
 }
 @media (min-width: 768px) and (max-width: 991.98px) {
   .carousel-img {
-    height: var(--banner-h-tablet);
+    height: var(--banner-h-tablet) !important;
   }
 }
-@media (min-width: 992px) and (max-width: 1199px) {
+@media (min-width: 992px) and (max-width: 1199.98px) {
   .carousel-img {
-    height: var(--banner-h-desktop);
+    height: var(--banner-h-desktop) !important;
+  }
+}
+@media (min-width: 1200px) {
+  .carousel-img {
+    height: var(--banner-h-xl) !important;
   }
 }

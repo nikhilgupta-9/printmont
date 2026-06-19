@@ -28,10 +28,8 @@ const baseURL = import.meta.env.VITE_BASE_URL;
 
   return (    
     <>
-    <div className='bg-white w-100 home-mobile-content'>
-      <div>
-      </div>
-        <div className='top-5'> <Categories isSticky={true}/></div>
+    <div className='bg-white w-100 home-mobile-content d-flex flex-column gap-1 py-1'>
+        <div className='top-5'> <Categories isSticky={false}/></div>
 
         <div>
           {/* <FirstCarousel images={fristcrouselImg} carouselId="mainCarousel" /> */}
@@ -40,10 +38,9 @@ const baseURL = import.meta.env.VITE_BASE_URL;
 
         <Slider apiUrl={`${baseURL}api/banner_api.php`} />
 
-
         <div>
             <SectionOne apiUrl={`${baseURL}api/banner_api.php`}/>
-            </div>
+        </div>
 
         <div className='bg-white'>
             <SingleProduct products={girloutfit} title="Recently Viewed" />
@@ -57,14 +54,13 @@ const baseURL = import.meta.env.VITE_BASE_URL;
             <SectionFour   columns={[ {
                   title: 'Tableware & Dinnerware',
                   items: tablewareItems,
-
                 },
             ]}
             backgroundImageUrl="./bg/super.png"
             />
         </div>
 
-        <div className='mt-2'>
+        <div>
             <SingleProduct products={specialoffer} title='Only for 1 Hour' backgroundImageUrl="./bg/flashsale.png"/>
         </div>
 
@@ -94,36 +90,34 @@ const baseURL = import.meta.env.VITE_BASE_URL;
             backgroundImageUrl="./bg/bg-4.png" />
         </div>
 
-        <div className='mt-2'>
+        <div>
         {/* <SecondCarousel products={bestsellerProduct} title="Top Selection" /> */}
         <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Top Selection" badgeText="Customizable" />
       </div>
 
       <div><Banner images={bannerImages} /></div>
 
-      <div className='mt-2'>
+      <div>
         {/* <SecondCarousel products={bestsellerProducts} title="Discount For You" /> */}
         <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Discount For You" badgeText="Customizable" />
       </div>
 
       <div><Banner images={bannerImages} /></div>
 
-      <div className='mt-2'>
+      <div>
         {/* <SecondCarousel products={dealsandcategories} title="Top Deals on categories" /> */}
         <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Top Deals on categories" badgeText="Customizable" />
       </div>
 
       <div><Banner images={bannerImages} /></div>
 
-      <div className=' mt-lg-3 pt-lg-2 pt-1 defc'>
+      <div className='defc'>
         <SingleProduct products={girloutfit} title="Women's" />
       </div>
 
       <div><SectionOne banners={bannerSet1}/></div>
 
-
       <div>
-        {/* <BannerTwo desktopImages={bannerTwoDesktop} mobileImages={bannerTwoMobile} /> */}        
             <BannerTwo apiUrl={`${baseURL}api/banner_api.php`} />
       </div>
       
@@ -136,7 +130,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
             />
         </div>
 
-      <div className='mt-2'>
+      <div>
         <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Top Deals on categories" badgeText="Customizable" />        
       </div>
         <div>
@@ -150,8 +144,6 @@ const baseURL = import.meta.env.VITE_BASE_URL;
             backgroundImageUrl="./bg/bg-4.png"
             />
       </div>
-
-
 
         <div><ProductList products={productList}/></div>
 
@@ -176,7 +168,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
         <SectionGrid/>
       </div>
 
-      <div className='mt-2'>
+      <div>
             <SectionFour   columns={[ {
                   title: 'Men\'s Fashion',
                   items: mensFashionItems,
@@ -187,7 +179,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
             />
         </div>
         <div><Banner images={bannerImages} /></div>
-        <div className='mt-1'>
+        <div>
           <SectionGrid data={gridsectionfirst} />
         </div>
 
@@ -195,11 +187,11 @@ const baseURL = import.meta.env.VITE_BASE_URL;
           <Bannerthree/>
         </div>
 
-        <div className='mt-1'>
+        <div>
           <SectionGrid data={gridsectionsecond} />
         </div>
 
-        <div className='mt-2'>
+        <div>
             <SectionFour   columns={[ {
                   title: 'New Fashion',
                   items: mensFashionItems,
@@ -232,7 +224,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
           <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Home Usage" badgeText="Customizable" />
         </div>
 
-        <div className='mt-2'>
+        <div>
             <SectionFour   columns={[ {
                   title: 'Best for Health',
                   items: mensFashionItems,
@@ -249,17 +241,14 @@ const baseURL = import.meta.env.VITE_BASE_URL;
             <SingleProduct products={girloutfit} title="Recently Viewed" />
         </div>
 
-
-
-
-        <div className=''><Bannerthree/></div>
+        <div><Bannerthree/></div>
         
         <div>
             <Banner images={bannerImages} />
             <SectionTen  title="Women's" items={sampleItems}/>
         </div>
 
-        <div className='mt-2'>
+        <div>
           <BrandDirectory/>
         </div>
     </div>

@@ -8,13 +8,6 @@ import Categories from "../pages/category-list/Categories";
 const ContactUs = () => {
     return (
         <>
-        <div className="py-3 mt-0">
-            <div className="bg-white d-none d-lg-flex py-0">
-                    <Categories space={"15px 0px"} showImages={false} bg="rgb(11, 83, 161)" color="white" />
-                    <div className="py-2 py-lg-3 py-xl-3 py-xxl-4"></div>
-                  </div>
-
-        </div>
         <Container className="contact-container">
             <Row className="g-3 flex-column-reverse flex-lg-row bg-white">
                 {/* Left Section */}

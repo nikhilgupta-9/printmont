@@ -110,28 +110,51 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
         } : {}}
       >
       {/* SMALL SCREENS */}
-      <div className="d-flex d-lg-none overflow-x-auto gap-2 px-2 align-items-center hide-scrollbar" style={{padding:`${space}`, backgroundColor:`${bg || '#ffffff'}`}}>
-        {safeCategories.slice(0, 12).map((item, index) => {
-          const itemChildren = getArray(item.children);
-          return (
-          <Link
-            to={`/category/${item.slug}`}
-            key={index}
-            className="d-flex flex-column align-items-center text-center flex-shrink-0 p-1 categoires-cont-width text-decoration-none"
-          >
-            {showImages && (
-            <img
-              src={getImageUrl(item.image)}
-              alt={item.name}
-              className="rounded mb-1 border categoires-img-width"
-              style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
-            />
-            )}
-            <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
-              {item.name}
-            </small>
-          </Link>
-        )})}
+      <div className="d-flex flex-column d-lg-none px-2 pt-1 pb-0" style={{padding:`${space}`, backgroundColor:`${bg || '#ffffff'}`}}>
+        <div className="d-flex overflow-x-auto hide-scrollbar gap-2">
+          {safeCategories.slice(0, 6).map((item, index) => (
+            <Link
+              to={`/category/${item.slug}`}
+              key={index}
+              className="d-flex flex-column align-items-center text-center flex-shrink-0 p-1 categoires-cont-width text-decoration-none"
+            >
+              {showImages && (
+              <img
+                src={getImageUrl(item.image)}
+                alt={item.name}
+                className="rounded mb-1 border categoires-img-width"
+                style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
+              />
+              )}
+              <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
+                {item.name}
+              </small>
+            </Link>
+          ))}
+        </div>
+        {safeCategories.length > 6 && (
+          <div className="d-flex overflow-x-auto hide-scrollbar gap-2 mt-1">
+            {safeCategories.slice(6, 12).map((item, index) => (
+              <Link
+                to={`/category/${item.slug}`}
+                key={index + 6}
+                className="d-flex flex-column align-items-center text-center flex-shrink-0 p-1 categoires-cont-width text-decoration-none"
+              >
+                {showImages && (
+                <img
+                  src={getImageUrl(item.image)}
+                  alt={item.name}
+                  className="rounded mb-1 border categoires-img-width"
+                  style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
+                />
+                )}
+                <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
+                  {item.name}
+                </small>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* LARGE SCREENS */}
@@ -142,7 +165,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
             return (
           <div
             key={index}
-            className="d-flex flex-column align-items-center text-center mb-0 over"
+            className={`d-flex flex-column align-items-center text-center mb-0 over ${showImages ? "position-relative" : ""}`}
             onMouseEnter={() => {
               setActiveCategory(index);
               setActiveSub(0);
@@ -173,6 +196,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
 
             {/* MEGA MENU DROPDOWN */}
             {activeCategory === index && itemChildren && itemChildren.length > 0 && (
+              !showImages ? (
               <div
                 className="position-absolute bg-white rounded shadow-lg d-flex text-start py-4 px-4 dropdown-panel active mx-auto"
                 style={{
@@ -211,24 +235,55 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                   )})}
                 </div>
 
-                {/* Promotional Image Section */}
-                <div className="d-flex flex-column gap-3 ms-4 ps-4 border-start" style={{ minWidth: "250px", maxWidth: "280px" }}>
-                  <img 
-                    src={getImageUrl(item.image)} 
-                    alt="Promo" 
-                    className="w-100 rounded shadow-sm" 
-                    style={{ objectFit: "cover", height: index % 2 === 0 ? "100%" : "180px", minHeight: "180px" }} 
-                  />
-                  {index % 2 !== 0 && (
-                    <img 
-                      src={getImageUrl(item.image)} 
-                      alt="Promo 2" 
-                      className="w-100 rounded shadow-sm" 
-                      style={{ objectFit: "cover", height: "180px" }} 
-                    />
-                  )}
-                </div>
+                {/* Promotional Image Section - Only show if showImages is true but wait, this is !showImages branch. So we hide it to be safe, or just leave it out. Since the user wants the layout but without images. */}
               </div>
+              ) : (
+                <div
+                  className="position-absolute bg-white rounded shadow-lg d-flex text-start dropdown-panel active"
+                  style={{ top: "100%", left: index > 5 ? "auto" : "0", right: index > 5 ? "0" : "auto", zIndex: 1000, minWidth: "480px", height: "400px", borderTop: "2px solid #f0f0f0", cursor: "default" }}
+                >
+                  {/* LEFT COLUMN: Subcategories */}
+                  <div className="d-flex flex-column py-2 hide-scrollbar" style={{ width: "220px", backgroundColor: "#f4f7fb", overflowY: "auto" }}>
+                    {itemChildren.map((sub, i) => (
+                      <div key={i} 
+                          className="px-3 py-2 d-flex justify-content-between align-items-center flex-shrink-0"
+                          style={{ cursor: "pointer", backgroundColor: activeSub === i ? "#fff" : "transparent" }}
+                          onMouseEnter={() => setActiveSub(i)}>
+                        <span className="text-dark fw-medium" style={{ fontSize: "14px" }}>{sub.name}</span>
+                        {getArray(sub.children).length > 0 && <IoIosArrowForward className="text-muted" size={14} />}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* RIGHT COLUMN: Sub-subcategories */}
+                  <div className="d-flex flex-column py-3 px-4 flex-grow-1 bg-white hide-scrollbar" style={{ overflowY: "auto" }}>
+                    {itemChildren[activeSub] && (
+                      <>
+                        <div className="fw-bold text-dark mb-3 flex-shrink-0" style={{ fontSize: "15px" }}>
+                          More in {itemChildren[activeSub].name}
+                        </div>
+                        <div className="d-flex flex-column gap-2">
+                          <Link to={`/category/${itemChildren[activeSub].slug}`} className="text-secondary text-decoration-none py-1 flex-shrink-0" style={{ fontSize: "14px", display: "block" }} onMouseOver={(e) => e.target.style.color = "#007bff"} onMouseOut={(e) => e.target.style.color = "#6c757d"}>
+                            All
+                          </Link>
+                          {getArray(itemChildren[activeSub].children).map((m, idx) => (
+                            <Link
+                              key={idx}
+                              to={`/category/${m.slug}`}
+                              className="text-secondary text-decoration-none py-1 text-wrap flex-shrink-0"
+                              style={{ fontSize: "14px", display: "block" }}
+                              onMouseOver={(e) => e.target.style.color = "#007bff"}
+                              onMouseOut={(e) => e.target.style.color = "#6c757d"}
+                            >
+                              {m.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )
             )}
           </div>
         )})}

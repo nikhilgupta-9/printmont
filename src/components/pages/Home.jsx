@@ -33,7 +33,7 @@ console.log(baseURL)
         <Categories space={"5px 0px"} bg='white' isSticky={true}/>
 
         <div className='home-desktop-content mx-auto home-desktop-wrapper'>
-          <div className='relative w-100'>
+          <div className='relative w-100 d-flex flex-column gap-1 py-1'>
             <div>
               {/* <FirstCarousel images={`${baseURL}api/banner-api.php`} carouselId="mainCarousel" /> */}
               <FirstCarousel apiUrl={`${baseURL}api/banner_api.php`} basePath={`${baseURL}uploads/banners/`}/>
@@ -57,7 +57,7 @@ console.log(baseURL)
             <FourImgCarousel apiUrl={`${baseURL}api/banner_api.php`} />
           </div>
 
-          <div className=''>
+          <div>
             {/* <SecondCarousel products={bestsellerProducts} title="Our Bestellers" badgeText="Customizable" /> */}
             <SecondCarousel apiUrl={`${baseURL}api/bestseller-products.php`} title="Our Bestellers" badgeText="Customizable" />
           </div>
@@ -68,16 +68,16 @@ console.log(baseURL)
           </div>
           <GiftFinder />
 
-          <div className='mt-lg-2 pt-lg-4 pt-1'>
+          <div>
             {/* <SecondCarousel products={bestsellerProduct} title="Top Selection" badgeText="Customizable" /> */}
             <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Top Selection" badgeText="Customizable" />
           </div>
 
-          <div className='my-2 mx-0 px-0'>
+          <div>
             <Banner apiUrl={`${baseURL}api/banner_api6.php`} />
           </div>
 
-          <div className='  pt-lg-2 pt-1'>
+          <div>
             <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Discount For You" badgeText="Customizable" />
           </div>
 
@@ -85,23 +85,23 @@ console.log(baseURL)
             <BannerTwo apiUrl={`${baseURL}api/banner_api7.php`} />
           </div>
 
-          <div className='my-1'>
+          <div>
             <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`} title="Top Rated" badgeText="Customizable" />
           </div>
 
-          <div className='my-1'>
+          <div>
             <BannerTwo apiUrl={`${baseURL}api/banner_api8.php`} />
           </div>
 
-          <div className='my-1'>
+          <div>
             <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Top Deals and Categories" badgeText="Customizable" />
           </div>
 
-          <div className='my-1'>
+          <div>
             <BannerTwo apiUrl={`${baseURL}api/banner_api9.php`} />
           </div>
 
-          <div className='my-1'>
+          <div>
             <Singleproduct products={girloutfit} title="Women's Outfits" />
           </div>
 
@@ -112,7 +112,7 @@ console.log(baseURL)
             />
           </div>
 
-          <div className='mt-1 mx-0'>
+          <div>
             {/* <Banner apiUrl={`${baseURL}api/banner_api10.php`} /> */}
           </div>
           <div className='custom-bg'>
@@ -127,24 +127,24 @@ console.log(baseURL)
 
           </div>
 
-          <div className='mt-3 mx-0 px-0'>
+          <div>
             <Banner apiUrl={`${baseURL}api/banner_api11.php`} />
           </div>
 
           <div>
             <SectionEight columns={columns} />
           </div>
-          <div className='mt-3 mx-0 px-0'>
+          <div>
             <BannerTwo apiUrl={`${baseURL}api/banner_api14.php`} />
           </div>
 
           <div>
             <SectionGrid data={gridsectionfirst} />
           </div>
-          <div className='mt-3 mx-0 px-0'>
+          <div>
             <Banner apiUrl={`${baseURL}api/banner_api13.php`} />
           </div>
-          <div className='my-0 my-lg-4'>
+          <div>
             <SectionGrid data={gridsectionsecond} />
           </div>
           <SectionTwo images={sectiontwoimg} />
@@ -157,12 +157,12 @@ console.log(baseURL)
             <SectionTen  title="Women's" items={sampleItems} imageColumn={imageColumn}/>
           </div>
 
-          <div className='mt-1'>
+          <div>
             <Singleproduct products={girloutfit} title="Recently Viewed" />
           </div>
 
 
-          <div className='mt-0 mt-lg-4'>
+          <div>
             <BrandDirectory />
           </div>
 

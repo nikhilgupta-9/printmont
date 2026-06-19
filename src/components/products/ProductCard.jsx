@@ -12,6 +12,10 @@ const SIZES = {
     8: '8', 9: '9', 10: '10', 11: '11', 'XS': 'XS'
 };
 
+const generateSlug = (name) => {
+    return name ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : 'product';
+};
+
 const ProductCard = ({ product }) => {
     const [isWished, setIsWished] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -109,9 +113,12 @@ const ProductCard = ({ product }) => {
     };
     // ----------------------------
 
+    const productSlug = generateSlug(product.title);
+    const productUrl = `/${productSlug}-p${product.id || '1'}`;
+
     return (
         <>
-            <Link to={'/product'}  // dynamic product link
+            <Link to={productUrl}  // dynamic product link
                  className="text-decoration-none text-dark"
                  style={{ flexGrow: 1 }}>
                 <div
