@@ -28,7 +28,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
 
   return (    
     <>
-    <div className='bg-white w-100 home-mobile-content d-flex flex-column gap-1 py-1'>
+    <div className='bg-white w-100 home-mobile-content home-layout-gap'>
         <div className='top-5'> <Categories isSticky={false}/></div>
 
         <div>
@@ -43,12 +43,12 @@ const baseURL = import.meta.env.VITE_BASE_URL;
         </div>
 
         <div className='bg-white'>
-            <SingleProduct products={girloutfit} title="Recently Viewed" />
+            <SingleProduct apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`} title="Recently Viewed" />
         </div>
 
         <div><SectionTwo images={sectiontwoimg} apiurl={`${baseURL}api/banner_api.php`}/></div>
 
-        <div><ProductGrid title="End of Season Sale" products={gridproducts} /></div>
+        <div><ProductGrid title="End of Season Sale" apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} /></div>
 
         <div>
             <SectionFour   columns={[ {
@@ -112,7 +112,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
       <div><Banner images={bannerImages} /></div>
 
       <div className='defc'>
-        <SingleProduct products={girloutfit} title="Women's" />
+        <SingleProduct apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Women's" />
       </div>
 
       <div><SectionOne banners={bannerSet1}/></div>
@@ -134,18 +134,18 @@ const baseURL = import.meta.env.VITE_BASE_URL;
         <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Top Deals on categories" badgeText="Customizable" />        
       </div>
         <div>
-          <ProductList products={productList}/>
+          <ProductList apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`}/>
         </div>
       <div>
          <SectionFour columns={[ {
-                     title: 'Home Decor Items',
-                     items: homeDecorItems,
-                   },]}
+                      title: 'Home Decor Items',
+                      items: homeDecorItems,
+                    },]}
             backgroundImageUrl="./bg/bg-4.png"
             />
       </div>
 
-        <div><ProductList products={productList}/></div>
+        <div><ProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`}/></div>
 
         <div><Banner images={bannerImages} /></div>
 
@@ -158,11 +158,11 @@ const baseURL = import.meta.env.VITE_BASE_URL;
             />
         </div>
 
-        <div><ProductList products={productList}/></div>
+        <div><ProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`}/></div>
 
-        <div><ProductGrid title="Great Choices" products={gridproducts} bgImage={'/bg/grid-product-bg.png'} /></div>
+        <div><ProductGrid title="Great Choices" apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} bgImage={'/bg/grid-product-bg.png'} /></div>
 
-        <div><ProductList products={productList}/></div>
+        <div><ProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`}/></div>
 
       <div>
         <SectionGrid/>
@@ -172,7 +172,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
             <SectionFour   columns={[ {
                   title: 'Men\'s Fashion',
                   items: mensFashionItems,
-
+ 
                 },
             ]}
             backgroundImageUrl="./bg/bg-3.png"
@@ -195,14 +195,14 @@ const baseURL = import.meta.env.VITE_BASE_URL;
             <SectionFour   columns={[ {
                   title: 'New Fashion',
                   items: mensFashionItems,
-
+ 
                 },
             ]}
             backgroundImageUrl="./bg/bg-3.png"
             />
         </div>
 
-        <div><ProductList products={productList}/></div>
+        <div><ProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`}/></div>
 
         <div>
           {/* <SecondCarousel products={bestHealth} title="Best of Health & Wellness" /> */}
@@ -217,7 +217,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
 
         <div><Banner images={bannerImages} /></div>
 
-        <div><ProductList products={productList}/></div>
+        <div><ProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`}/></div>
 
         <div>
           {/* <SecondCarousel products={bestHealth} title="Home Usage" /> */}
@@ -228,24 +228,26 @@ const baseURL = import.meta.env.VITE_BASE_URL;
             <SectionFour   columns={[ {
                   title: 'Best for Health',
                   items: mensFashionItems,
-
+ 
                 },
             ]}
             backgroundImageUrl="./bg/bg-3.png"
             />
         </div>
 
-        <div><ProductList products={productList}/></div>
+        <div><ProductList apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`}/></div>
         
         <div className='bg-white'>
-            <SingleProduct products={girloutfit} title="Recently Viewed" />
+            <SingleProduct apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Recently Viewed" />
         </div>
 
         <div><Bannerthree/></div>
         
         <div>
             <Banner images={bannerImages} />
-            <SectionTen  title="Women's" items={sampleItems}/>
+        </div>
+        <div>
+            <SectionTen  title="Women's" apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`}/>
         </div>
 
         <div>

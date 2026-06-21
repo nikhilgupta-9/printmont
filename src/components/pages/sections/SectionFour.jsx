@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { FaChevronRight } from 'react-icons/fa';
 import { MdKeyboardArrowRight } from 'react-icons/md';
-import { Link } from 'react-router';
+import { Link } from 'react-router-dom';
+import { getProductUrl } from '../../../utils/seo';
 
 const SectionFour = ({ apiUrl, imageColumn, backgroundImageUrl }) => {
   const [columns, setColumns] = useState([]);
@@ -40,7 +41,7 @@ const SectionFour = ({ apiUrl, imageColumn, backgroundImageUrl }) => {
       <div className="row g-sm-0 g-1 m-0 p-0">
         {items?.map((item, idx) => (
           <div className="col-6 mb-0 mb-lg-0 g-1" key={idx}>
-            <Link to={'/'} className="border bg-white rounded-3 p-2 p-lg-1 text-center cus-bg h-100 d-flex justify-content-between align-items-center flex-column text-decoration-none product">
+            <Link to={getProductUrl(item)} className="border bg-white rounded-3 p-2 p-lg-1 text-center cus-bg h-100 d-flex justify-content-between align-items-center flex-column text-decoration-none product">
               <div className="three-coontainer-img image-zoom-wrapper">
                 <img
                   src={item.image}

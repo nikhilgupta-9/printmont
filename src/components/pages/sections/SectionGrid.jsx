@@ -1,5 +1,8 @@
 import React from "react";
 import { IoIosArrowDroprightCircle } from "react-icons/io";
+import { Link } from "react-router-dom";
+import { getProductUrl } from "../../../utils/seo";
+
 const SectionGrid = ({ data = [] }) => {
   return (
     <div className="container-fluid custom-bg m-0 p-0">
@@ -19,7 +22,7 @@ const SectionGrid = ({ data = [] }) => {
               {/* Content */}
               <div className="border-top border-bottom d-flex justify-content-around align-items-center mt-1 mb-1 custom-space">
                 {/* Main Item */}
-                <div className="d-flex flex-column justify-content-center align-items-center">
+                <Link to={getProductUrl(cat.mainItem)} className="d-flex flex-column justify-content-center align-items-center text-decoration-none text-dark">
                   <div className="square-container rounded-3">
                     <img src={cat.mainItem.img} alt={cat.mainItem.name} className="zoom-hover "/>
                   </div>
@@ -27,23 +30,24 @@ const SectionGrid = ({ data = [] }) => {
                     {cat.mainItem.name}
                   </p>
                   <p className="m-0 p-0 fs-8 offer">{cat.mainItem.offer}</p>
-                </div>
+                </Link>
 
                 <div className="vr mx-3 bd"></div>
 
                 {/* Side Items */}
                 <div className="d-flex flex-column justify-content-center align-items-center gap-3 mt-2">
                   {cat.sideItems.map((item, i) => (
-                    <div
+                    <Link
                       key={i}
-                      className="d-flex flex-column justify-content-center align-items-center"
+                      to={getProductUrl(item)}
+                      className="d-flex flex-column justify-content-center align-items-center text-decoration-none text-dark"
                     >
                       <div className="square-container rounded-3">
                         <img src={item.img} alt={item.name} className="zoom-hover"/>
                       </div>
                       <p className="m-0 p-0 fw- pri">{item.name}</p>
                       <span className="m-0 p-0 fs-8 offer">{item.offer}</span>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>

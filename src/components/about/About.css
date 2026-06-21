@@ -1,62 +1,241 @@
+/* --- ABOUT US PREMIUM STYLING SYSTEM --- */
+
 .about-page {
-  background-color: #fff;
-  color: #222;
+  background-color: #f8fafc;
+  color: #334155;
+  font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
 }
 
-.logo-circle {
-  width: 120px;
-  height: 120px;
+/* Unique Gradient Text */
+.text-gradient {
+  background: linear-gradient(135deg, rgb(11, 83, 161) 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Hero Header with Premium Soft Gradient */
+.about-hero {
+  background: linear-gradient(135deg, rgba(11, 83, 161, 0.02) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border-bottom: 1px solid rgba(11, 83, 161, 0.05);
+  position: relative;
+}
+
+.bg-primary-soft {
+  background-color: rgba(11, 83, 161, 0.08) !important;
+  color: rgb(11, 83, 161) !important;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+}
+
+.fw-extrabold {
+  font-weight: 800 !important;
+}
+
+.section-heading {
+  position: relative;
+  padding-bottom: 6px;
+}
+
+.section-heading::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 40px;
+  height: 3px;
+  background: linear-gradient(90deg, rgb(11, 83, 161), #3b82f6);
+  border-radius: 2px;
+}
+
+.fs-5-custom {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: #1e293b;
+}
+
+/* Quote Highlight */
+.quote-highlight {
+  background-color: rgba(11, 83, 161, 0.01) !important;
+  border-left: 3px solid rgb(11, 83, 161) !important;
+}
+
+.italic-style {
+  font-style: italic;
+  color: #475569;
+}
+
+/* Decorative Dot Grid */
+.deco-dot-grid {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background-image: radial-gradient(#cbd5e1 2px, transparent 2px);
+  background-size: 8px 8px;
+  top: -10px;
+  right: -5px;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* Image Wrapper and Zoom Animations */
+.about-image-wrapper {
+  overflow: hidden;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: #ffffff;
+  position: relative;
+  z-index: 1;
+}
+
+.about-image-wrapper img {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 8px;
+}
+
+.about-image-wrapper:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(11, 83, 161, 0.06) !important;
+}
+
+.about-image-wrapper:hover img {
+  transform: scale(1.03);
+}
+
+
+
+/* --- Stats New Minimal Design --- */
+.stat-card-new {
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.stat-card-new:hover {
+  transform: translateY(-3px);
+  border-color: rgba(11, 83, 161, 0.2);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.03);
+}
+
+.stat-icon-wrap-new {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
-  font-size: 2rem;
+  transition: all 0.3s ease;
 }
 
-.lead {
-  font-size: 1.05rem;
-  line-height: 1.7;
+.stat-card-new:hover .stat-icon-wrap-new {
+  background-color: rgb(11, 83, 161) !important;
+  color: #ffffff !important;
 }
 
-img {
-  object-fit: contain;
+
+
+/* Custom Lists */
+.custom-list li {
+  line-height: 1.4;
 }
-.about-page .row {
+
+.custom-list span {
+  font-size: 0.88rem;
+  color: #475569;
+}
+
+/* Core Values / Printmont Pillars */
+.value-card {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #e2e8f0 !important;
+  background-color: #ffffff;
+}
+
+.value-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(11, 83, 161, 0.05) !important;
+  border-color: rgba(11, 83, 161, 0.15) !important;
+}
+
+.value-icon {
+  width: 48px;
+  height: 48px;
   display: flex;
-  justify-content: center !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: rgb(11, 83, 161);
+  background-color: rgba(11, 83, 161, 0.04);
+  transition: all 0.3s ease;
 }
 
-@media (max-width: 767px){
-    .mainimg{
-        width: 350px;
-    }
+.value-card:hover .value-icon {
+  background-color: rgb(11, 83, 161);
+  color: #ffffff;
 }
-@media (min-width: 768px) and (max-width:990px){
-    .mainimg{
-        width: 290px;
-    }
+
+/* Background Abstract Shapes */
+.hero-shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  z-index: 1;
 }
-@media (min-width: 991px) and (max-width:1200px){
-    .mainimg{
-        width: 390px;
-    }
-    .our{
-        width: 400px;
-    }
+
+.hero-shape-1 {
+  width: 180px;
+  height: 180px;
+  background-color: rgba(11, 83, 161, 0.05);
+  top: -30px;
+  left: -30px;
 }
-@media (min-width: 1201px) and (max-width:1400px){
-    .mainimg{
-        width: 450px;
-    }
-    .our{
-        width: 450px;
-    }
+
+.hero-shape-2 {
+  width: 220px;
+  height: 220px;
+  background-color: rgba(59, 130, 246, 0.04);
+  bottom: -60px;
+  right: -30px;
 }
-@media (min-width: 1401px){
-    .mainimg{
-        width: 500px;
-    }
-    .our{
-        width: 450px;
-    }
+
+.hero-shape-3 {
+  width: 100px;
+  height: 100px;
+  background-color: rgba(11, 83, 161, 0.02);
+  top: 35%;
+  left: 45%;
+}
+
+.z-index-2 {
+  z-index: 2;
+}
+
+/* Responsive Breakpoints & Fine-tuning */
+@media (max-width: 991px) {
+  .about-hero {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+  .display-5 {
+    font-size: 2.2rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .display-5 {
+    font-size: 1.8rem;
+  }
+  .stat-card-new {
+    padding: 0.5rem 0.25rem;
+  }
+  .stat-icon-wrap-new {
+    width: 36px;
+    height: 36px;
+  }
+  .stat-icon-wrap-new svg {
+    width: 16px;
+    height: 16px;
+  }
+  .stat-card-new h4 {
+    font-size: 1.15rem;
+  }
 }

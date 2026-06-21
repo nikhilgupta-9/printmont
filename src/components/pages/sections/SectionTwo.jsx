@@ -58,7 +58,7 @@ const SectionTwo = ({ apiurl }) => {
 
   if (loading) {
     return (
-      <div className="container-fluid mt-2 p-0">
+      <div className="container-fluid p-0">
         <div className="shimmer-bg skeleton-banner-hero w-100" style={{ maxHeight: "290px" }}></div>
       </div>
     );
@@ -67,7 +67,7 @@ const SectionTwo = ({ apiurl }) => {
 
   return (
     <div
-      className="container-fluid d-flex flex-column align-items-center justify-content-center gap-3 bg-gray mt-2 rounded-md p-0"
+      className="container-fluid d-flex flex-column align-items-center justify-content-center gap-3 bg-gray rounded-md p-0"
       style={{ maxHeight: "350px" }}
     >
       {images.length > 0 ? (

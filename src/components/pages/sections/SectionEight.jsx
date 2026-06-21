@@ -1,7 +1,8 @@
 import React from 'react';
 import { FaChevronRight } from 'react-icons/fa';
 import { MdArrowForwardIos, MdKeyboardArrowRight } from 'react-icons/md'; // ⬅️ Imported these from SectionFour
-import { Link } from 'react-router';
+import { Link } from 'react-router-dom';
+import { getProductUrl } from '../../../utils/seo';
 
 
 const renderCardGrid = (title, items) => (
@@ -19,7 +20,7 @@ const renderCardGrid = (title, items) => (
       {items.map((item, idx) => (
         <div className="col-6 mb-0 mb-lg-0 g-1" key={idx}>
 
-            <Link to={'/'} className="border bg-white rounded-3 p-2 p-lg-1 text-center cus-bg h-100 d-flex justify-content-between align-items-center flex-column text-decoration-none product">
+            <Link to={getProductUrl(item)} className="border bg-white rounded-3 p-2 p-lg-1 text-center cus-bg h-100 d-flex justify-content-between align-items-center flex-column text-decoration-none product">
 
               <div className='three-coontainer-img  image-zoom-wrapper'>
                 <img

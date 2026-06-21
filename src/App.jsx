@@ -42,9 +42,23 @@ import CategoryPage from "./components/pages/category-list/CategoryPage";
 import BusinessSolutions from "./components/businessSolutions/BusinessSolutions";
 import BecomeASeller from "./components/becomeSeller/BecomeASeller";
 
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
+
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <AuthProvider>
         <CheckoutProvider>
           <Toaster position="top-center" reverseOrder={false} />

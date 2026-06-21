@@ -57,7 +57,7 @@ const FirstCarousel = ({ apiUrl, carouselId = 'carouselExample', basePath = '' }
 
   if (loading) {
     return (
-      <div className="container-fluid m-0 p-0 p-md-2">
+      <div className="container-fluid m-0 p-0">
         <div className="shimmer-bg skeleton-banner-hero w-100"></div>
       </div>
     );
@@ -67,7 +67,7 @@ const FirstCarousel = ({ apiUrl, carouselId = 'carouselExample', basePath = '' }
   return (
     <div
       id={carouselId}
-      className="carousel slide container-fluid m-0 p-0 p-md-2"
+      className="carousel slide container-fluid m-0 p-0"
       data-bs-ride="carousel"
       data-bs-interval="3000"
     >

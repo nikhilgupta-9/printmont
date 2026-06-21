@@ -856,3 +856,15 @@
     margin: 5px auto;
     border-radius: 4px;
   }
+
+  /* Layout Spacing System for Home Pages */
+  .home-layout-gap {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+  }
+
+
+

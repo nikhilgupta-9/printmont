@@ -97,10 +97,10 @@
 
 # CMS & Content
 
-- GET `/about-api.php`
-- GET `/contact-api.php`
-- GET `/faq-api.php`
-- GET `/help-center-api.php`
+- GET `/about-api.php` ✅
+- GET `/contact-api.php` ✅
+- GET `/faq-api.php` ✅
+- GET `/help-center-api.php` ✅
 - GET `/policies-api.php`
 - GET `/logo-api.php` ✅
 

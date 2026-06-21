@@ -33,7 +33,7 @@ console.log(baseURL)
         <Categories space={"5px 0px"} bg='white' isSticky={true}/>
 
         <div className='home-desktop-content mx-auto home-desktop-wrapper'>
-          <div className='relative w-100 d-flex flex-column gap-1 py-1'>
+          <div className='relative w-100 home-layout-gap'>
             <div>
               {/* <FirstCarousel images={`${baseURL}api/banner-api.php`} carouselId="mainCarousel" /> */}
               <FirstCarousel apiUrl={`${baseURL}api/banner_api.php`} basePath={`${baseURL}uploads/banners/`}/>
@@ -102,7 +102,7 @@ console.log(baseURL)
           </div>
 
           <div>
-            <Singleproduct products={girloutfit} title="Women's Outfits" />
+            <Singleproduct apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Women's Outfits" />
           </div>
 
           <div>
@@ -149,16 +149,16 @@ console.log(baseURL)
           </div>
           <SectionTwo images={sectiontwoimg} />
           <div>
-            <SectionTen  title="Men's" items={sampleItems} imageColumn={imageColumn}/>
+            <SectionTen  title="Men's" apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`} imageColumn={imageColumn}/>
           </div>
           <SectionTwo images={sectiontwoimg} />
 
           <div>
-            <SectionTen  title="Women's" items={sampleItems} imageColumn={imageColumn}/>
+            <SectionTen  title="Women's" apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} imageColumn={imageColumn}/>
           </div>
 
           <div>
-            <Singleproduct products={girloutfit} title="Recently Viewed" />
+            <Singleproduct apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Recently Viewed" />
           </div>
 
 

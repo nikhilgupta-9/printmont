@@ -1,48 +1,45 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Accordion, ListGroup, Button, Collapse } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
-import './help.css'
+import './help.css';
 import { MdKeyboardArrowDown } from "react-icons/md";
-import Categories from "../pages/category-list/Categories";
+import { API_ENDPOINTS } from "../../config/apiEndpoints";
 
 const HelpCenter = () => {
-
-  const categories = [
-    "My Account",
-    "Delivery information",
-    "Order modification/cancellation",
-    "Designing My product",
-    "Products",
-    "Payments and Refunds",
-  ];
-
-  const faqs = [
-    "Do you deliver only within India or overseas?",
-    "Can I choose the delivery time?",
-    "Can I get my order delivered at midnight?",
-    "What are the different modes of delivery?",
-    "What are the delivery charges?",
-    "I don’t want to disclose my personal information to the recipient. Is this possible?",
-    "How do I track my order?",
-    "What do the different order statuses mean?",
-    "My order is partially delivered.",
-    "Date of delivery has lapsed, when will I get my order or refund?",
-  ];
-
-  const [activeCategory, setActiveCategory] = useState("Delivery information");
+  const [categories, setCategories] = useState([]);
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    const fetchHelpCenterData = async () => {
+      try {
+        const response = await fetch(API_ENDPOINTS.HELP_CENTER);
+        if (!response.ok) throw new Error("Network response was not ok");
+        const json = await response.json();
+        if (json && json.success && json.data && Array.isArray(json.data.categories)) {
+          // Filter categories that have active FAQs to only show populated categories
+          const activeCategories = json.data.categories.filter(
+            (cat) => cat.is_active && Array.isArray(cat.faqs) && cat.faqs.length > 0
+          );
+          setCategories(activeCategories);
+          if (activeCategories.length > 0) {
+            setActiveCategory(activeCategories[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching help center API content:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHelpCenterData();
+  }, []);
+
   return (
-    <>
-    <div className="bg-white d-none d-lg-flex py-3 my-1 mb-3">
-        {/* <div className="">
-        </div> */}
-        <Categories space={"15px 0px"} showImages={false} bg="rgb(11, 83, 161)" color="white" />
-      </div>
     <div className="container-fluid py-2 py-lg-4 bg-white mt-0 px-0 mx-0">
       {/* --- CONTACT INFORMATION --- */}
       <div className="bg-white shadow-sm p-0 mx-0 mb-3 row px-0 ">
-
         <div className="col-12 col-lg-4 px-0 px-lg-2">
           <div className="d-flex flex-row flex-lg-column justify-content-start help-bd align-items-center py-3 px-2 px-lg-4 gap-2">
             <div className="me-lg-3 fs-3 bg-secondary-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
@@ -96,82 +93,87 @@ const HelpCenter = () => {
       <div className="container py-4">
         <h4 className="fw-semibold mb-4">Frequently Asked Questions</h4>
 
-        <div className="row px-0 mx-0">
-          {/* Sidebar */}
-          <div className="col-lg-3 mb-3 mb-lg-0">
-            {/* Mobile toggle button */}
-            <div className="d-lg-none mb-2">
-              <Button
-                variant="light"
-                className="w-100 border d-flex justify-content-between align-items-center border border-2"
-                onClick={() => setOpen(!open)}
-                aria-controls="faq-collapse"
-                aria-expanded={open}
-              >
-                <span>{activeCategory}</span>
-                <span className={`fs-5 ${open ? "rotate-up" : "rotate-down"}`}><MdKeyboardArrowDown />
-                </span>
-              </Button>
+        {loading ? (
+          <p className="text-muted text-center py-4">Loading help categories...</p>
+        ) : categories.length === 0 ? (
+          <p className="text-muted text-center py-4">No categories available at the moment.</p>
+        ) : (
+          <div className="row px-0 mx-0">
+            {/* Sidebar */}
+            <div className="col-lg-3 mb-3 mb-lg-0">
+              {/* Mobile toggle button */}
+              <div className="d-lg-none mb-2">
+                <Button
+                  variant="light"
+                  className="w-100 border d-flex justify-content-between align-items-center border-2"
+                  onClick={() => setOpen(!open)}
+                  aria-controls="faq-collapse"
+                  aria-expanded={open}
+                >
+                  <span>{activeCategory?.name || "Select Category"}</span>
+                  <span className={`fs-5 ${open ? "rotate-up" : "rotate-down"}`}><MdKeyboardArrowDown /></span>
+                </Button>
 
-              <Collapse in={open} >
-                <div id="faq-collapse">
-                  <ListGroup className="mt-2 shadow-sm">
-                    {categories.map((cat) => (
-                      <ListGroup.Item
-                        key={cat}
-                        action
-                        onClick={() => {
-                          setActiveCategory(cat);
-                          setOpen(false);
-                        }}
-                        active={activeCategory === cat}
-                        className="faq-category-item"
-                      >
-                        {cat}
-                      </ListGroup.Item>
-                    ))}
-                  </ListGroup>
-                </div>
-              </Collapse>
+                <Collapse in={open}>
+                  <div id="faq-collapse">
+                    <ListGroup className="mt-2 shadow-sm">
+                      {categories.map((cat) => (
+                        <ListGroup.Item
+                          key={cat.id}
+                          action
+                          onClick={() => {
+                            setActiveCategory(cat);
+                            setOpen(false);
+                          }}
+                          active={activeCategory?.id === cat.id}
+                          className="faq-category-item"
+                        >
+                          {cat.name}
+                        </ListGroup.Item>
+                      ))}
+                    </ListGroup>
+                  </div>
+                </Collapse>
+              </div>
+
+              {/* Desktop Sidebar */}
+              <div className="d-none d-lg-block">
+                <ListGroup>
+                  {categories.map((cat) => (
+                    <ListGroup.Item
+                      key={cat.id}
+                      action
+                      onClick={() => setActiveCategory(cat)}
+                      active={activeCategory?.id === cat.id}
+                      className="faq-category-item"
+                    >
+                      {cat.name}
+                    </ListGroup.Item>
+                  ))}
+                </ListGroup>
+              </div>
             </div>
 
-            {/* Desktop Sidebar */}
-            <div className="d-none d-lg-block">
-              <ListGroup>
-                {categories.map((cat) => (
-                  <ListGroup.Item
-                    key={cat}
-                    action
-                    onClick={() => setActiveCategory(cat)}
-                    active={activeCategory === cat}
-                    className="faq-category-item"
-                  >
-                    {cat}
-                  </ListGroup.Item>
-                ))}
-              </ListGroup>
+            {/* FAQ content */}
+            <div className="col-lg-9">
+              <h5 className="fw-semibold mb-3">{activeCategory?.name}</h5>
+              {activeCategory?.faqs && activeCategory.faqs.length > 0 ? (
+                <Accordion alwaysOpen>
+                  {activeCategory.faqs.map((faq, index) => (
+                    <Accordion.Item className="border-2" eventKey={index.toString()} key={faq.id}>
+                      <Accordion.Header>{faq.question}</Accordion.Header>
+                      <Accordion.Body>{faq.answer}</Accordion.Body>
+                    </Accordion.Item>
+                  ))}
+                </Accordion>
+              ) : (
+                <p className="text-muted">No questions found in this category.</p>
+              )}
             </div>
           </div>
-
-          {/* FAQ content */}
-          <div className="col-lg-9">
-            <h5 className="fw-semibold mb-3">{activeCategory}</h5>
-            <Accordion alwaysOpen>
-              {faqs.map((question, index) => (
-                <Accordion.Item className="border-2" eventKey={index.toString()} key={index}>
-                  <Accordion.Header className="">{question}</Accordion.Header>
-                  <Accordion.Body>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                    Integer posuere erat a ante.
-                  </Accordion.Body>
-                </Accordion.Item>
-              ))}
-            </Accordion>
-          </div>
-        </div>
+        )}
       </div>
     </div>
-    </>
   );
 };
 

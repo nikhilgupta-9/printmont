@@ -5,7 +5,7 @@ import { sampleProducts, topImages } from '../../../../data/data';
 
 const SectionNine = () => {
     return (
-        <div className="container mx-0 px-0 py-5 my-2 section-nine-bg">
+        <div className="container mx-0 px-0 py-3 section-nine-bg">
             {/* Top 3 images */}
             <div className="row mb-3 mx-0 px-1">
                 {topImages.map((image) => (

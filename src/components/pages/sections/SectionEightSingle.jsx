@@ -3,7 +3,7 @@ import { FaChevronRight } from 'react-icons/fa';
 
 const SectionEightSingle = ({ title, items }) => {
   return (
-    <div className="container-fluid px-md-3 py-3 custom-bg">
+    <div className="container-fluid px-md-3 py-0 custom-bg">
       <div className="row justify-content-center">
         <div className="col-12 col-md-10 col-lg-6">
           <div className="border bg-white rounded-3 p-3 h-100">

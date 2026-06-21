@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { Link } from "react-router-dom"; // ✅ Correct import
+import { getProductUrl } from "../../../utils/seo";
 
 const SecondCarousel = ({ apiUrl, products: initialProducts = [], title = "Products", badgeText = "" }) => {
   const scrollRef = useRef(null);
@@ -35,14 +36,31 @@ const SecondCarousel = ({ apiUrl, products: initialProducts = [], title = "Produ
           if (Array.isArray(p.images) && p.images.length > 0) {
             const primary = p.images.find(img => img.is_primary) || p.images[0];
             primaryImg = primary.image_url;
+          } else if (p.primary_image) {
+            primaryImg = p.primary_image;
+          } else if (p.thumbnail) {
+            primaryImg = p.thumbnail;
           }
           
-          const hasDiscount = p.discount_price !== null && p.discount_price !== undefined && p.discount_price > 0;
-          const currentPrice = hasDiscount ? p.discount_price : p.price;
-          const originalPrice = hasDiscount ? p.price : null;
-          const discountText = hasDiscount ? `${Math.round(((p.price - p.discount_price) / p.price) * 100)}% Off` : '';
+          const price = parseFloat(p.price) || 0;
+          const discPrice = parseFloat(p.discount_price) || 0;
+          
+          let currentPrice = price;
+          let originalPrice = null;
+          let discountText = '';
+          
+          if (discPrice > 0) {
+            const maxVal = Math.max(price, discPrice);
+            const minVal = Math.min(price, discPrice);
+            if (maxVal > minVal) {
+              originalPrice = maxVal;
+              currentPrice = minVal;
+              discountText = `${Math.round(((maxVal - minVal) / maxVal) * 100)}% Off`;
+            }
+          }
 
           return {
+            id: p.id,
             title: p.name || '',
             img: primaryImg,
             price: currentPrice,
@@ -202,7 +220,7 @@ const SecondCarousel = ({ apiUrl, products: initialProducts = [], title = "Produ
         {products.map((product, index) => (
           <Link
             key={index}
-            to="#"
+            to={getProductUrl(product)}
             className="scroll-card border d-flex flex-column p-1 h-100 m-0 text-decoration-none text-dark"
             style={getResponsiveCardStyle(screenSize)}
           >
