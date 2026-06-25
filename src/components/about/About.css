@@ -5,10 +5,10 @@
   color: #333333;
 }
 
-/* 🌸 Hero Banner styling */
+/* 🌸 Hero Banner styling - set to full screen height */
 .fnp-hero-banner-new {
   position: relative;
-  height: 480px;
+  height: 100vh; /* Full height of the screen */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -30,64 +30,79 @@
 }
 
 .fnp-hero-subtitle {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   letter-spacing: 0.15em;
 }
 
 .fnp-hero-main-title {
-  font-size: 3.5rem;
+  font-size: 3rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .fnp-hero-main-title .highlight-text {
-  font-size: 4rem;
+  font-size: 3.8rem;
   font-weight: 800;
   color: #ffffff;
 }
 
 /* 📜 Headers & Descriptions */
-.fnp-olive-heading {
-  color: #7d7f3e !important; /* Brand Olive Green */
+.fnp-theme-heading {
+  color: rgb(11, 83, 161) !important; /* Printmont Theme Blue */
   font-weight: 700;
-  font-size: 2rem;
+  font-size: 1.65rem;
   letter-spacing: -0.01em;
 }
 
 .fnp-started-desc {
-  font-size: 1.05rem;
-  line-height: 1.8;
+  font-size: 0.95rem;
+  line-height: 1.7;
   color: #4b5563 !important;
 }
 
-/* 📦 Beige Card and Badges */
+/* 📦 Beige Card changed to Soft Theme Ice-Blue */
 .fnp-beige-section {
   background-color: #fbfaf8;
 }
 
 .fnp-beige-card {
-  background-color: #eae3d2 !important; /* Perfect FNP Beige */
+  background-color: #f0f7ff !important; /* Soft Ice Blue */
+  border: 1px solid rgba(11, 83, 161, 0.08);
+  max-width: 1000px; /* Constrain card width for better alignment */
+  margin: 0 auto;
 }
 
+/* Flush Image styling: image fills left side completely */
 .fnp-beige-img-wrap {
   position: relative;
   overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 320px; /* Good default height on mobile */
 }
 
-/* delivery worldwide badge */
+.fnp-beige-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Delivery Worldwide Badge changed to Theme Blue */
 .fnp-delivery-badge {
   position: absolute;
   bottom: 15px;
   left: 15px;
-  width: 100px;
-  height: 100px;
-  background-color: #7d7f3e;
+  width: 85px;
+  height: 85px;
+  background-color: rgb(11, 83, 161); /* Printmont Theme Blue */
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border: 1px dashed rgba(255, 255, 255, 0.4);
+  z-index: 5;
 }
 
 .fnp-badge-inner {
@@ -98,17 +113,22 @@
   color: #ffffff;
 }
 
+.fnp-badge-inner svg {
+  width: 18px;
+  height: 18px;
+}
+
 .fnp-badge-txt {
-  font-size: 7px;
+  font-size: 6px;
   font-weight: 800;
   letter-spacing: 0.05em;
   line-height: 1.1;
-  max-width: 70px;
+  max-width: 55px;
 }
 
 /* ⭐ Surprise Cards */
 .fnp-surprise-card {
-  padding: 20px;
+  padding: 15px;
   transition: transform 0.3s ease;
 }
 
@@ -117,8 +137,8 @@
 }
 
 .fnp-surprise-icon-wrap {
-  width: 90px;
-  height: 90px;
+  width: 80px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -126,10 +146,38 @@
 
 .fnp-surprise-title {
   color: #333333;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
-/* 📅 Timeline style */
+/* 🏆 Accolades & Laurel Wreaths Styling */
+.fnp-accolades-section {
+  background-color: #ffffff;
+}
+
+.fnp-laurel-wrapper {
+  max-width: 320px;
+  transition: transform 0.3s ease;
+}
+
+.fnp-laurel-wrapper:hover {
+  transform: scale(1.03);
+}
+
+.fnp-laurel-left, .fnp-laurel-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fnp-laurel-text {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #2c3e50 !important;
+  font-weight: 600;
+}
+
+/* 📅 Timeline style - updated to use Theme Blue and Slick Slider */
 .fnp-dark-timeline-section {
   position: relative;
   background-size: cover;
@@ -143,7 +191,7 @@
 }
 
 .fnp-timeline-heading {
-  font-size: 2.2rem;
+  font-size: 2rem;
   letter-spacing: -0.02em;
 }
 
@@ -154,8 +202,8 @@
 .fnp-timeline-horizontal-line {
   position: absolute;
   top: 10px;
-  left: 8%;
-  right: 8%;
+  left: 20px;
+  right: 20px;
   height: 1px;
   border-top: 1px dashed rgba(255, 255, 255, 0.35);
   z-index: 1;
@@ -165,7 +213,7 @@
   width: 20px;
   height: 20px;
   background-color: #ffffff;
-  border: 4px solid #7d7f3e;
+  border: 4px solid rgb(11, 83, 161); /* Printmont Theme Blue */
   border-radius: 50%;
   position: relative;
   z-index: 2;
@@ -174,17 +222,17 @@
 }
 
 .fnp-timeline-node-circle:hover {
-  background-color: #7d7f3e;
+  background-color: rgb(11, 83, 161);
   border-color: #ffffff;
   transform: scale(1.2);
 }
 
 .fnp-timeline-year {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
 }
 
 .fnp-timeline-node-text {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   line-height: 1.5;
 }
 
@@ -215,13 +263,101 @@
   z-index: 2;
 }
 
-/* 📊 Green Stats Counter Bar */
+/* Slick Custom Arrows - Timeline */
+.fnp-dark-timeline-section .slick-prev,
+.fnp-dark-timeline-section .slick-next {
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-radius: 50%;
+  z-index: 10;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.fnp-dark-timeline-section .slick-prev:hover,
+.fnp-dark-timeline-section .slick-next:hover {
+  background: rgb(11, 83, 161) !important;
+}
+
+.fnp-dark-timeline-section .slick-prev {
+  left: -20px;
+}
+
+.fnp-dark-timeline-section .slick-next {
+  right: -20px;
+}
+
+/* Slick Custom Arrows - Meet the Team */
+.fnp-team-slider-container .slick-prev,
+.fnp-team-slider-container .slick-next {
+  width: 40px;
+  height: 40px;
+  background: rgba(11, 83, 161, 0.08) !important;
+  border-radius: 50%;
+  z-index: 10;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.fnp-team-slider-container .slick-prev:hover,
+.fnp-team-slider-container .slick-next:hover {
+  background: rgb(11, 83, 161) !important;
+}
+
+.fnp-team-slider-container .slick-prev {
+  left: -15px;
+}
+
+.fnp-team-slider-container .slick-next {
+  right: -15px;
+}
+
+/* Unicode Arrow Icons */
+.fnp-team-slider-container .slick-prev::before,
+.fnp-team-slider-container .slick-next::before,
+.fnp-dark-timeline-section .slick-prev::before,
+.fnp-dark-timeline-section .slick-next::before {
+  color: #ffffff !important;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  font-size: 20px;
+  line-height: 1;
+  opacity: 0.95;
+}
+
+.fnp-team-slider-container .slick-prev::before,
+.fnp-dark-timeline-section .slick-prev::before {
+  content: "‹" !important;
+}
+
+.fnp-team-slider-container .slick-next::before,
+.fnp-dark-timeline-section .slick-next::before {
+  content: "›" !important;
+}
+
+/* Dot styles for team slider */
+.fnp-team-slider-container .slick-dots li button:before {
+  color: rgb(11, 83, 161) !important;
+  font-size: 8px;
+}
+
+.fnp-team-slider-container .slick-dots li.slick-active button:before {
+  color: rgb(11, 83, 161) !important;
+  opacity: 1;
+}
+
+/* 📊 Stats Counter Bar updated to Theme Blue */
 .fnp-green-stats-bar {
-  background-color: #636737 !important; /* FNP Brand Olive Dark */
+  background-color: rgb(11, 83, 161) !important; /* Printmont Theme Blue */
 }
 
 .fnp-stats-col {
-  padding: 10px 0;
+  padding: 20px 0;
 }
 
 .fnp-stats-num-white {
@@ -231,7 +367,7 @@
 }
 
 .fnp-stats-label-gold {
-  color: #dfdbca !important;
+  color: #e2ecf7 !important; /* Soft ice-blue gold fallback */
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -247,34 +383,27 @@
 
 @media (max-width: 767px) {
   .fnp-hero-banner-new {
-    height: 300px;
+    height: 100vh; /* Keep screen size height even on mobile as requested */
   }
   .fnp-hero-main-title {
     font-size: 2.2rem;
   }
   .fnp-hero-main-title .highlight-text {
-    font-size: 2.5rem;
+    font-size: 2.8rem;
   }
-  .fnp-olive-heading {
-    font-size: 1.6rem;
+  .fnp-theme-heading {
+    font-size: 1.4rem;
     text-align: center;
   }
   .fnp-started-desc {
     text-align: center;
-    font-size: 0.95rem;
-  }
-  .fnp-beige-card {
-    text-align: center;
-  }
-  .fnp-delivery-badge {
-    left: 50%;
-    transform: translateX(-50%);
+    font-size: 0.9rem;
   }
   .fnp-timeline-node-circle {
     margin-bottom: 8px;
   }
   .fnp-timeline-year {
-    font-size: 1.25rem;
+    font-size: 1.15rem;
   }
   .fnp-timeline-node-text {
     max-width: 260px;
