@@ -1,14 +1,16 @@
 <?php
-require_once 'config/database.php';
+require_once(__DIR__ . '/../config/database.php');
 
-class LogoController {
+class LogoController
+{
     private $conn;
     private $table_name = "website_assets";
     private $upload_dir = "uploads/logos/";
 
-    public function __construct($db) {
+    public function __construct($db)
+    {
         $this->conn = $db;
-        
+
         // Create upload directory if it doesn't exist
         if (!file_exists($this->upload_dir)) {
             mkdir($this->upload_dir, 0777, true);
@@ -16,14 +18,16 @@ class LogoController {
     }
 
     // Get all logos
-    public function getAllLogos() {
+    public function getAllLogos()
+    {
         $query = "SELECT * FROM " . $this->table_name . " ORDER BY asset_type, upload_timestamp DESC";
         $result = $this->conn->query($query);
         return $result;
     }
 
-    // Get logo by ID
-    public function getLogoById($id) {
+    // Get logo by ID 
+    public function getLogoById($id)
+    {
         $query = "SELECT * FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param("i", $id);
@@ -33,7 +37,8 @@ class LogoController {
     }
 
     // Get logos by type
-    public function getLogosByType($asset_type) {
+    public function getLogosByType($asset_type)
+    {
         $query = "SELECT * FROM " . $this->table_name . " WHERE asset_type = ? ORDER BY version DESC";
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param("s", $asset_type);
@@ -43,7 +48,8 @@ class LogoController {
     }
 
     // Get active logo by type
-    public function getActiveLogoByType($asset_type) {
+    public function getActiveLogoByType($asset_type)
+    {
         $query = "SELECT * FROM " . $this->table_name . " WHERE asset_type = ? AND is_active = 1 ORDER BY version DESC LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param("s", $asset_type);
@@ -53,7 +59,8 @@ class LogoController {
     }
 
     // Create new logo
-    public function createLogo($data, $file) {
+    public function createLogo($data, $file)
+    {
         // Validate file upload
         if ($file && $file['error'] == 0) {
             $uploadResult = $this->handleFileUpload($file);
@@ -91,9 +98,10 @@ class LogoController {
         $uploaded_by = $data['uploaded_by'] ?? 1; // Default to admin user
 
         // Bind parameters
-        $stmt->bind_param("sssssisisissis", 
-            $asset_type, 
-            $asset_name, 
+        $stmt->bind_param(
+            "sssssisisissis",
+            $asset_type,
+            $asset_name,
             $uploadResult['file_name'],
             $uploadResult['file_path'],
             $uploadResult['file_extension'],
@@ -115,7 +123,8 @@ class LogoController {
     }
 
     // Update logo
-    public function updateLogo($id, $data, $file = null) {
+    public function updateLogo($id, $data, $file = null)
+    {
         // Get current logo data
         $current_logo = $this->getLogoById($id);
         if ($current_logo->num_rows == 0) {
@@ -161,11 +170,12 @@ class LogoController {
 
         // Bind parameters based on whether file is uploaded
         if ($uploadResult) {
-            $stmt->bind_param("ssssisssisi", 
-                $asset_name, 
-                $description, 
-                $alt_text, 
-                $target_url, 
+            $stmt->bind_param(
+                "ssssisssisi",
+                $asset_name,
+                $description,
+                $alt_text,
+                $target_url,
                 $is_active,
                 $uploadResult['file_name'],
                 $uploadResult['file_path'],
@@ -176,11 +186,12 @@ class LogoController {
                 $id
             );
         } else {
-            $stmt->bind_param("ssssii", 
-                $asset_name, 
-                $description, 
-                $alt_text, 
-                $target_url, 
+            $stmt->bind_param(
+                "ssssii",
+                $asset_name,
+                $description,
+                $alt_text,
+                $target_url,
                 $is_active,
                 $id
             );
@@ -193,7 +204,8 @@ class LogoController {
     }
 
     // Delete logo
-    public function deleteLogo($id) {
+    public function deleteLogo($id)
+    {
         // Get logo data to delete file
         $logo = $this->getLogoById($id);
         if ($logo->num_rows == 0) {
@@ -215,7 +227,8 @@ class LogoController {
     }
 
     // Helper methods
-    private function handleFileUpload($file) {
+    private function handleFileUpload($file)
+    {
         $allowed_types = array('jpg', 'jpeg', 'png', 'gif', 'svg', 'ico', 'webp');
         $max_file_size = 5 * 1024 * 1024; // 5MB
 
@@ -265,13 +278,15 @@ class LogoController {
         return array("success" => false, "message" => "Failed to upload file");
     }
 
-    private function deleteFile($file_path) {
+    private function deleteFile($file_path)
+    {
         if (file_exists($file_path)) {
             unlink($file_path);
         }
     }
 
-    private function getNextVersion($asset_type) {
+    private function getNextVersion($asset_type)
+    {
         $query = "SELECT MAX(version) as max_version FROM " . $this->table_name . " WHERE asset_type = ?";
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param("s", $asset_type);
@@ -281,12 +296,13 @@ class LogoController {
         return ($row['max_version'] ?? 0) + 1;
     }
 
-    private function deactivateOtherVersions($asset_type, $exclude_id = null) {
+    private function deactivateOtherVersions($asset_type, $exclude_id = null)
+    {
         $query = "UPDATE " . $this->table_name . " SET is_active = 0 WHERE asset_type = ?";
         if ($exclude_id) {
             $query .= " AND id != ?";
         }
-        
+
         $stmt = $this->conn->prepare($query);
         if ($exclude_id) {
             $stmt->bind_param("si", $asset_type, $exclude_id);
@@ -295,5 +311,44 @@ class LogoController {
         }
         $stmt->execute();
     }
+
+    public function getFavicon()
+    {
+        $query = "SELECT * FROM " . $this->table_name . " 
+              WHERE `asset_type` = ? 
+              AND `is_active` = ? 
+              LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+
+        $assets_type = 'favicon';
+        $is_active = 1;
+
+        $stmt->bind_param("ss", $assets_type, $is_active);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+        return $result->fetch_assoc();
+    }
+
+    public function getWebsiteLogo()
+    {
+        $query = "SELECT * FROM " . $this->table_name . " 
+              WHERE `asset_type` = ? 
+              AND `is_active` = ? 
+              LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+
+        $assets_type = 'desktop_logo';
+        $is_active = 1;
+
+        $stmt->bind_param("ss", $assets_type, $is_active);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+        return $result->fetch_assoc();
+    }
+
 }
 ?>

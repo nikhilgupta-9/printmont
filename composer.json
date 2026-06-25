@@ -3,7 +3,8 @@
     "description": "this is development mode",
     "require": {
         "firebase/php-jwt": "^6.0",
-        "phpmailer/phpmailer": "^7.0"
+        "phpmailer/phpmailer": "^7.0",
+        "tecnickcom/tcpdf": "^6.11"
     },
     "license": "MIT",
     "autoload": {

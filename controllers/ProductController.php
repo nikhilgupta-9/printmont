@@ -1,154 +1,1106 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../middleware/JWTHandler.php';
-require_once __DIR__ . '/../models/Product.php';
+require_once(__DIR__ . '/../config/database.php');
+require_once(__DIR__ . '/../models/ProductModel.php');
+require_once(__DIR__ . '/../models/CategoryModel.php');
 
-class ProductController {
-    private $db;
-    private $product;
-    private $jwt;
+class ProductController
+{
+    private $productModel;
+    private $categoryModel;
 
-    public function __construct() {
-        $database = new Database();
-        $this->db = $database->getConnection();
-        $this->product = new Product($this->db);
-        $this->jwt = new JWTHandler();
+    public function __construct($db)
+    {
+        $this->productModel = new ProductModel();
+        $this->categoryModel = new Category($db);
     }
 
-    private function authenticate() {
-        $token = $this->jwt->getTokenFromHeader();
-        if (!$token) {
-            http_response_code(401);
-            echo json_encode(array("error" => "No token provided"));
-            return false;
+    // API Methods - Fetch Only
+    public function getAllProductsApi()
+    {
+        $products = $this->productModel->getAllProducts();
+
+        // Format products for API response
+        $formattedProducts = [];
+        foreach ($products as $product) {
+            $formattedProducts[] = $this->formatProductForApi($product);
         }
 
-        $decoded = $this->jwt->validateToken($token);
-        if (!$decoded) {
-            http_response_code(401);
-            echo json_encode(array("error" => "Invalid token"));
-            return false;
+        return $formattedProducts;
+    }
+
+    public function getProductByIdApi($id)
+    {
+        $product = $this->productModel->getProductById($id);
+        if ($product) {
+            return $this->formatProductForApi($product);
+        }
+        return null;
+    }
+
+    private function formatProductForApi($product)
+    {
+        // Get base URL for absolute image paths
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+        $host = $_SERVER['HTTP_HOST'];
+        $basePath = dirname(dirname($_SERVER['SCRIPT_NAME']));
+        $baseUrl = $protocol . "://" . $host . $basePath . "/";
+
+        // Format images with full URLs
+        // getProductById() uses 'main_images' key; other methods use 'images' key
+        $imageSource = [];
+        if (!empty($product['main_images'])) {
+            $imageSource = $product['main_images'];
+        } elseif (!empty($product['images']) && is_array($product['images'])) {
+            $imageSource = $product['images'];
         }
 
-        return $decoded;
+        $formattedImages = [];
+        $primaryImageUrl = null;
+
+        foreach ($imageSource as $image) {
+            $imagePath = $image['image_url'] ?? '';
+            if (empty($imagePath)) continue;
+            $absoluteUrl = (strpos($imagePath, 'http') === 0)
+                ? $imagePath
+                : $baseUrl . ltrim($imagePath, '/');
+            $isPrimary = !empty($image['is_primary']);
+            if ($isPrimary && $primaryImageUrl === null) {
+                $primaryImageUrl = $absoluteUrl;
+            }
+            $formattedImages[] = [
+                'id'            => (int) ($image['id'] ?? 0),
+                'image_url'     => $absoluteUrl,
+                'is_primary'    => (bool) $isPrimary,
+                'display_order' => (int) ($image['display_order'] ?? 0),
+            ];
+        }
+
+        // Fallback 1: thumbnail_image column on products table
+        if (empty($formattedImages) && !empty($product['thumbnail_image'])) {
+            $tp = $product['thumbnail_image'];
+            $au = (strpos($tp, 'http') === 0) ? $tp : $baseUrl . ltrim($tp, '/');
+            $primaryImageUrl = $au;
+            $formattedImages[] = ['id' => 0, 'image_url' => $au, 'is_primary' => true, 'display_order' => 0];
+        }
+
+        // Fallback 2: generic image column
+        if (empty($formattedImages) && !empty($product['image'])) {
+            $tp = $product['image'];
+            $au = (strpos($tp, 'http') === 0) ? $tp : $baseUrl . ltrim($tp, '/');
+            $primaryImageUrl = $au;
+            $formattedImages[] = ['id' => 0, 'image_url' => $au, 'is_primary' => true, 'display_order' => 0];
+        }
+
+        // Use first image as primary if none marked
+        if ($primaryImageUrl === null && !empty($formattedImages)) {
+            $primaryImageUrl = $formattedImages[0]['image_url'];
+        }
+
+        return [
+            'id' => (int) $product['id'],
+            'name' => $product['name'],
+            'description' => $product['description'],
+            'category_id' => (int) $product['category_id'],
+            'category_name' => $product['category_name'] ?? null,
+            'brand' => $product['brand'],
+            'price' => (float) $product['price'],
+            'discount_price' => $product['discount_price'] ? (float) $product['discount_price'] : null,
+            'stock_quantity' => (int) $product['stock_quantity'],
+            'sku' => $product['sku'],
+            'status' => $product['status'],
+            'featured' => (bool) $product['featured'],
+            'images'          => $formattedImages,
+            'primary_image'   => $primaryImageUrl,
+            'thumbnail'       => $primaryImageUrl,
+            'created_at' => $product['created_at'],
+            'updated_at' => $product['updated_at']
+        ];
     }
 
-    public function getAllProducts() {
-        header('Content-Type: application/json');
-        
-        $user = $this->authenticate();
-        if (!$user) return;
 
-        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
-        $search = isset($_GET['search']) ? $_GET['search'] : '';
-        $category = isset($_GET['category']) ? $_GET['category'] : '';
-
-        $result = $this->product->getAllProducts($page, $limit, $search, $category);
-        
-        echo json_encode($result);
+    public function getCategories()
+    {
+        return $this->categoryModel->getAllCategoriesFlat();
     }
 
-    public function getProduct($id) {
-        header('Content-Type: application/json');
-        
-        $user = $this->authenticate();
-        if (!$user) return;
+    public function addProduct($data, $files)
+    {
+        try {
+            // Validate required fields
+            $required = ['product_name', 'product_slug', 'sku_code', 'regular_price', 'product_quantity', 'category_id'];
+            foreach ($required as $field) {
+                if (empty($data[$field])) {
+                    throw new Exception("Field $field is required");
+                }
+            }
 
-        $this->product->id = $id;
-        if ($this->product->getProductById()) {
-            echo json_encode(array(
-                "product" => array(
-                    "id" => $this->product->id,
-                    "name" => $this->product->name,
-                    "description" => $this->product->description,
-                    "category_id" => $this->product->category_id,
-                    "brand" => $this->product->brand,
-                    "price" => $this->product->price,
-                    "discount_price" => $this->product->discount_price,
-                    "stock_quantity" => $this->product->stock_quantity,
-                    "sku" => $this->product->sku,
-                    "status" => $this->product->status,
-                    "featured" => $this->product->featured,
-                    "created_at" => $this->product->created_at
-                )
-            ));
-        } else {
-            http_response_code(404);
-            echo json_encode(array("error" => "Product not found"));
+            // Handle image uploads
+            $thumbnailImage = '';
+            $mainImages = [];
+            $galleryImages = [];
+
+            // Upload thumbnail image
+            if (!empty($files['thumbnail_image']['name'])) {
+                $thumbnailImage = $this->uploadImage($files['thumbnail_image'], 'thumbnail');
+            }
+
+            // Upload main images
+            if (!empty($files['main_images']['name'][0])) {
+                $mainImages = $this->uploadMultipleImages($files['main_images'], 'main');
+            }
+
+            // Upload gallery images
+            if (!empty($files['gallery_images']['name'][0])) {
+                $galleryImages = $this->uploadMultipleImages($files['gallery_images'], 'gallery');
+            }
+
+            // Prepare product data
+            $productData = [
+                'name' => trim($data['product_name']),
+                'product_slug' => trim($data['product_slug']),
+                'description' => trim($data['description'] ?? ''),
+                'long_description' => trim($data['long_description'] ?? ''),
+                'instructions' => trim($data['instructions'] ?? ''),
+                'delivery_info' => trim($data['delivery_info'] ?? ''),
+                'alt_tag' => trim($data['alt_tag'] ?? ''),
+                'thumbnail_image' => $thumbnailImage,
+                'gallery_images' => json_encode($galleryImages), // Store gallery images as JSON array
+
+                // Categories
+                'category_id' => $data['category_id'] ?? null,
+                'sub_category_id' => $data['sub_category_id'] ?? null,
+                'sub_sub_category_id' => $data['sub_sub_category_id'] ?? null,
+                'homepage_category_id' => $data['homepage_category_id'] ?? null,
+                'homepage_carousel_id' => $data['homepage_carousel_id'] ?? null,
+
+                // Filters
+                'brand' => trim($data['brand'] ?? ''),
+                'color' => trim($data['color'] ?? ''),
+                'type' => trim($data['type'] ?? ''),
+                'material' => trim($data['material'] ?? ''),
+                'occasion' => trim($data['occasion'] ?? ''),
+                'discount_type' => trim($data['discount_type'] ?? ''),
+                'shape' => trim($data['shape'] ?? ''),
+                'gender' => trim($data['gender'] ?? ''),
+                'gift_type' => trim($data['gift_type'] ?? ''),
+                'ideal_for' => trim($data['ideal_for'] ?? ''),
+                'customization_tech' => trim($data['customization_tech'] ?? ''),
+                'customization_location' => trim($data['customization_location'] ?? ''),
+                'capacity' => trim($data['capacity'] ?? ''),
+                'ink_color' => trim($data['ink_color'] ?? ''),
+                'features' => trim($data['features'] ?? ''),
+
+                // Pricing & Inventory
+                'price' => floatval($data['regular_price']),
+                'discount_price' => !empty($data['offer_price']) ? floatval($data['offer_price']) : null,
+                'sort_order' => intval($data['sort_order'] ?? 0),
+                'stock_quantity' => intval($data['product_quantity']),
+                'out_of_stock_status' => $data['out_of_stock_status'] ?? 'in_stock',
+                'minimum_quantity' => intval($data['minimum_quantity'] ?? 1),
+                'bulk_price_variance' => trim($data['bulk_price_variance'] ?? ''),
+                'sku' => trim($data['sku_code']),
+                'status' => $data['status'] ?? 'active',
+                'featured' => isset($data['featured']) ? 1 : 0,
+
+                // Additional flags
+                'top_selection' => isset($data['top_selection']) ? 1 : 0,
+                'our_bestseller' => isset($data['our_bestseller']) ? 1 : 0,
+                'top_rated' => isset($data['top_rated']) ? 1 : 0,
+                'top_deal_by_categories' => isset($data['top_deal_by_categories']) ? 1 : 0,
+                'view_count' => 0,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            // Create product using ProductModel
+            require_once(__DIR__ . '/../models/ProductModel.php');
+            // $productModel = new ProductModel($this->conn);
+            $productId = $this->productModel->createProduct($productData, $mainImages);
+
+            return ['success' => true, 'product_id' => $productId, 'message' => 'Product added successfully!'];
+
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 
-    public function createProduct() {
-        header('Content-Type: application/json');
-        
-        $user = $this->authenticate();
-        if (!$user) return;
+    private function uploadImage($file, $type = 'product')
+    {
+        $uploadDir = 'uploads/products/' . $type . '/';
 
-        $data = json_decode(file_get_contents("php://input"));
+        // Create directory if it doesn't exist
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
 
-        // Validate required fields
-        $required = ['name', 'category_id', 'price', 'sku'];
-        foreach ($required as $field) {
-            if (!isset($data->$field) || empty($data->$field)) {
-                http_response_code(400);
-                echo json_encode(array("error" => "Field '$field' is required"));
-                return;
+        if ($file['error'] === UPLOAD_ERR_OK) {
+            // Validate file type
+            $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            $fileType = mime_content_type($file['tmp_name']);
+
+            if (!in_array($fileType, $allowedTypes)) {
+                throw new Exception("Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.");
+            }
+
+            // Validate file size (5MB max)
+            if ($file['size'] > 5 * 1024 * 1024) {
+                throw new Exception("File size too large. Maximum size is 5MB.");
+            }
+
+            // Generate unique filename
+            $fileExt = pathinfo($file['name'], PATHINFO_EXTENSION);
+            $fileName = uniqid('product_' . $type . '_') . '.' . $fileExt;
+            $filePath = $uploadDir . $fileName;
+
+            if (move_uploaded_file($file['tmp_name'], $filePath)) {
+                return $filePath;
+            } else {
+                throw new Exception("Failed to upload image: " . $file['name']);
+            }
+        } elseif ($file['error'] !== UPLOAD_ERR_NO_FILE) {
+            throw new Exception("Upload error: " . $this->getUploadError($file['error']));
+        }
+
+        return '';
+    }
+
+    private function uploadMultipleImages($files, $type = 'product')
+    {
+        $uploadedImages = [];
+
+        foreach ($files['tmp_name'] as $key => $tmp_name) {
+            if ($files['error'][$key] === UPLOAD_ERR_OK) {
+                $file = [
+                    'name' => $files['name'][$key],
+                    'type' => $files['type'][$key],
+                    'tmp_name' => $tmp_name,
+                    'error' => $files['error'][$key],
+                    'size' => $files['size'][$key]
+                ];
+
+                try {
+                    $imagePath = $this->uploadImage($file, $type);
+                    if ($imagePath) {
+                        $uploadedImages[] = $imagePath;
+                    }
+                } catch (Exception $e) {
+                    // Log error but continue with other images
+                    error_log("Failed to upload image {$files['name'][$key]}: " . $e->getMessage());
+                }
             }
         }
 
-        $this->product->name = $data->name;
-        $this->product->description = $data->description ?? '';
-        $this->product->category_id = $data->category_id;
-        $this->product->brand = $data->brand ?? '';
-        $this->product->price = $data->price;
-        $this->product->discount_price = $data->discount_price ?? null;
-        $this->product->stock_quantity = $data->stock_quantity ?? 0;
-        $this->product->sku = $data->sku;
-        $this->product->status = $data->status ?? 'active';
-        $this->product->featured = $data->featured ?? false;
+        return $uploadedImages;
+    }
 
-        if ($this->product->create()) {
-            http_response_code(201);
-            echo json_encode(array("message" => "Product created successfully", "id" => $this->product->id));
-        } else {
-            http_response_code(500);
-            echo json_encode(array("error" => "Unable to create product"));
+    private function getUploadError($errorCode)
+    {
+        $upload_errors = [
+            UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
+            UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.',
+            UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded.',
+            UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.'
+        ];
+
+        return $upload_errors[$errorCode] ?? 'Unknown upload error.';
+    }
+
+    public function getProductById($id)
+    {
+        // $productModel = new ProductModel($this->$db);
+        return $this->productModel->getProductById($id);
+    }
+
+    public function getAllProducts()
+    {
+        return $this->productModel->getAllProducts();
+    }
+
+    public function updateProduct($id, $data, $files)
+    {
+        try {
+            // Get existing product
+            $existingProduct = $this->getProductById($id);
+            if (!$existingProduct) {
+                throw new Exception("Product not found");
+            }
+
+            // Handle image uploads
+            $thumbnailImage = $existingProduct['thumbnail_image'] ?? '';
+            $mainImages = [];
+            $galleryImages = json_decode($existingProduct['gallery_images'] ?? '[]', true) ?: [];
+
+            // Upload new thumbnail if provided
+            if (!empty($files['thumbnail_image']['name'])) {
+                // Delete old thumbnail if exists
+                if ($thumbnailImage && file_exists($thumbnailImage)) {
+                    unlink($thumbnailImage);
+                }
+                $thumbnailImage = $this->uploadImage($files['thumbnail_image'], 'thumbnail');
+            }
+
+            // Handle existing main images from form
+            $existingMainImages = isset($data['existing_main_images']) ? (array) $data['existing_main_images'] : [];
+
+            // Upload new main images if provided
+            $newMainImages = [];
+            if (!empty($files['main_images']['name'][0])) {
+                $newMainImages = $this->uploadMultipleImages($files['main_images'], 'main');
+            }
+
+            // Prepare main images array for database
+            // Add existing main images first
+            foreach ($existingMainImages as $index => $imageUrl) {
+                if (!empty($imageUrl)) {
+                    $mainImages[] = [
+                        'image_url' => $imageUrl,
+                        'is_primary' => ($index === 0), // First existing image is primary
+                        'display_order' => $index
+                    ];
+                }
+            }
+
+            // Add new main images
+            foreach ($newMainImages as $index => $imagePath) {
+                $mainImages[] = [
+                    'image_url' => $imagePath,
+                    'is_primary' => (empty($existingMainImages) && $index === 0), // First new image is primary if no existing images
+                    'display_order' => count($existingMainImages) + $index
+                ];
+            }
+
+            // Handle gallery images
+            $existingGalleryImages = isset($data['existing_gallery_images']) ? (array) $data['existing_gallery_images'] : [];
+
+            // Upload new gallery images if provided
+            if (!empty($files['gallery_images']['name'][0])) {
+                $newGalleryImages = $this->uploadMultipleImages($files['gallery_images'], 'gallery');
+                $galleryImages = array_merge($existingGalleryImages, $newGalleryImages);
+            } else {
+                $galleryImages = $existingGalleryImages;
+            }
+
+            // Remove empty values from gallery images
+            $galleryImages = array_filter($galleryImages);
+
+            // Handle additional categories
+            $additionalCategoryIds = isset($data['additional_category_ids']) ? json_encode($data['additional_category_ids']) : ($existingProduct['additional_category_ids'] ?? null);
+            $additionalSubCategoryIds = isset($data['additional_sub_category_ids']) ? json_encode($data['additional_sub_category_ids']) : ($existingProduct['additional_sub_category_ids'] ?? null);
+            $additionalSubSubCategoryIds = isset($data['additional_sub_sub_category_ids']) ? json_encode($data['additional_sub_sub_category_ids']) : ($existingProduct['additional_sub_sub_category_ids'] ?? null);
+
+            // Handle customization fields
+            $customizationFields = [];
+            if (isset($data['customization_labels']) && is_array($data['customization_labels'])) {
+                foreach ($data['customization_labels'] as $index => $label) {
+                    if (!empty($label)) {
+                        $customizationFields[] = [
+                            'label' => $label,
+                            'type' => $data['customization_types'][$index] ?? 'text',
+                            'required' => isset($data['customization_required'][$index]) ? (int) $data['customization_required'][$index] : 0,
+                            'price' => floatval($data['customization_prices'][$index] ?? 0),
+                            'max_images' => intval($data['customization_max_images'][$index] ?? 1)
+                        ];
+                    }
+                }
+            }
+
+            // Handle size attributes
+            $sizeAttributes = [];
+            if (isset($data['sizes']) && is_array($data['sizes'])) {
+                foreach ($data['sizes'] as $index => $size) {
+                    if (!empty($size)) {
+                        $sizeAttributes[] = [
+                            'size' => $size,
+                            'price' => floatval($data['size_prices'][$index] ?? 0),
+                            'stock' => intval($data['size_stocks'][$index] ?? 0),
+                            'sku' => $data['size_skus'][$index] ?? '',
+                            // Handle size image if uploaded
+                        ];
+                    }
+                }
+            }
+
+            // Handle color attributes
+            $colorAttributes = [];
+            if (isset($data['colors']) && is_array($data['colors'])) {
+                foreach ($data['colors'] as $index => $color) {
+                    if (!empty($color)) {
+                        $colorAttributes[] = [
+                            'name' => $color,
+                            'code' => $data['color_codes'][$index] ?? '#000000',
+                            'price' => floatval($data['color_prices'][$index] ?? 0),
+                            'stock' => intval($data['color_stocks'][$index] ?? 0),
+                            // Handle color image if uploaded
+                        ];
+                    }
+                }
+            }
+
+            // Handle material attributes
+            $materialAttributes = [];
+            if (isset($data['materials']) && is_array($data['materials'])) {
+                foreach ($data['materials'] as $index => $material) {
+                    if (!empty($material)) {
+                        $materialAttributes[] = [
+                            'material' => $material,
+                            'price' => floatval($data['material_prices'][$index] ?? 0),
+                            'sku' => $data['material_skus'][$index] ?? ''
+                        ];
+                    }
+                }
+            }
+
+            // Handle lamination attributes
+            $laminationAttributes = [];
+            if (isset($data['laminations']) && is_array($data['laminations'])) {
+                foreach ($data['laminations'] as $index => $lamination) {
+                    if (!empty($lamination)) {
+                        $laminationAttributes[] = [
+                            'lamination' => $lamination,
+                            'price' => floatval($data['lamination_prices'][$index] ?? 0),
+                            'sku' => $data['lamination_skus'][$index] ?? ''
+                        ];
+                    }
+                }
+            }
+
+            // Handle orientation attributes
+            $orientationAttributes = [];
+            if (isset($data['orientations']) && is_array($data['orientations'])) {
+                foreach ($data['orientations'] as $index => $orientation) {
+                    if (!empty($orientation)) {
+                        $orientationAttributes[] = [
+                            'orientation' => $orientation,
+                            'price' => floatval($data['orientation_prices'][$index] ?? 0),
+                            'sku' => $data['orientation_skus'][$index] ?? ''
+                        ];
+                    }
+                }
+            }
+
+            // Handle quantity price breaks
+            $quantityPriceBreaks = [];
+            if (isset($data['quantity_breaks']) && is_array($data['quantity_breaks'])) {
+                foreach ($data['quantity_breaks'] as $index => $minQty) {
+                    if (!empty($minQty)) {
+                        $quantityPriceBreaks[] = [
+                            'min_qty' => intval($minQty),
+                            'price' => floatval($data['quantity_break_prices'][$index] ?? 0),
+                            'discount' => floatval($data['quantity_break_discounts'][$index] ?? 0),
+                            'sku' => $data['quantity_break_skus'][$index] ?? ''
+                        ];
+                    }
+                }
+            }
+
+            // Handle addon products
+            $addonProductIds = isset($data['addon_product_ids']) ? json_encode($data['addon_product_ids']) : ($existingProduct['addon_product_ids'] ?? null);
+
+            // Prepare update data with ALL database fields
+            $updateData = [
+                // Basic Information
+                'name' => trim($data['product_name'] ?? $existingProduct['name']),
+                'product_slug' => trim($data['product_slug'] ?? $existingProduct['product_slug']),
+                'description' => trim($data['description'] ?? $existingProduct['description'] ?? ''),
+                'long_description' => trim($data['long_description'] ?? $existingProduct['long_description'] ?? ''),
+                'instructions' => trim($data['instructions'] ?? $existingProduct['instructions'] ?? ''),
+                'delivery_info' => trim($data['delivery_info'] ?? $existingProduct['delivery_info'] ?? ''),
+                'alt_tag' => trim($data['alt_tag'] ?? $existingProduct['alt_tag'] ?? ''),
+
+                // SEO
+                'meta_title' => trim($data['meta_title'] ?? $existingProduct['meta_title'] ?? ''),
+                'meta_keywords' => trim($data['meta_keywords'] ?? $existingProduct['meta_keywords'] ?? ''),
+                'meta_description' => trim($data['meta_description'] ?? $existingProduct['meta_description'] ?? ''),
+
+                // Images
+                'thumbnail_image' => $thumbnailImage,
+                'gallery_images' => !empty($galleryImages) ? json_encode(array_values($galleryImages)) : null,
+
+                // Categories
+                'category_id' => !empty($data['category_id']) ? $data['category_id'] : ($existingProduct['category_id'] ?? null),
+                'sub_category_id' => !empty($data['sub_category_id']) ? $data['sub_category_id'] : ($existingProduct['sub_category_id'] ?? null),
+                'sub_sub_category_id' => !empty($data['sub_sub_category_id']) ? $data['sub_sub_category_id'] : ($existingProduct['sub_sub_category_id'] ?? null),
+                'homepage_category_id' => !empty($data['homepage_category_id']) ? $data['homepage_category_id'] : ($existingProduct['homepage_category_id'] ?? null),
+                'homepage_carousel_id' => $existingProduct['homepage_carousel_id'] ?? null, // Add if you have this field in form
+                'additional_category_ids' => $additionalCategoryIds,
+                'additional_sub_category_ids' => $additionalSubCategoryIds,
+                'additional_sub_sub_category_ids' => $additionalSubSubCategoryIds,
+
+                // Filters & Attributes
+                'brand' => trim($data['brand'] ?? $existingProduct['brand'] ?? ''),
+                'color' => trim($data['color'] ?? $existingProduct['color'] ?? ''),
+                'type' => trim($data['type'] ?? $existingProduct['type'] ?? ''),
+                'material' => trim($data['material'] ?? $existingProduct['material'] ?? ''),
+                'occasion' => trim($data['occasion'] ?? $existingProduct['occasion'] ?? ''),
+                'discount_type' => trim($data['discount_type'] ?? $existingProduct['discount_type'] ?? ''),
+                'shape' => trim($data['shape'] ?? $existingProduct['shape'] ?? ''),
+                'gender' => trim($data['gender'] ?? $existingProduct['gender'] ?? ''),
+                'gift_type' => trim($data['gift_type'] ?? $existingProduct['gift_type'] ?? ''),
+                'ideal_for' => trim($data['ideal_for'] ?? $existingProduct['ideal_for'] ?? ''),
+                'customization_tech' => trim($data['customization_tech'] ?? $existingProduct['customization_tech'] ?? ''),
+                'customization_location' => trim($data['customization_location'] ?? $existingProduct['customization_location'] ?? ''),
+                'capacity' => trim($data['capacity'] ?? $existingProduct['capacity'] ?? ''),
+                'ink_color' => trim($data['ink_color'] ?? $existingProduct['ink_color'] ?? ''),
+                'features' => trim($data['features'] ?? $existingProduct['features'] ?? ''),
+
+                // Pricing & Inventory
+                'price' => floatval($data['regular_price'] ?? $existingProduct['price']),
+                'regular_price' => floatval($data['regular_price'] ?? $existingProduct['regular_price'] ?? $existingProduct['price']),
+                'offer_price' => !empty($data['offer_price']) ? floatval($data['offer_price']) : ($existingProduct['offer_price'] ?? null),
+                'discount_price' => !empty($data['offer_price']) ? floatval($data['offer_price']) : ($existingProduct['discount_price'] ?? null),
+                'sort_order' => intval($data['sort_order'] ?? $existingProduct['sort_order'] ?? 0),
+                'stock_quantity' => intval($data['product_quantity'] ?? $existingProduct['stock_quantity']),
+                'product_quantity' => intval($data['product_quantity'] ?? $existingProduct['product_quantity'] ?? $existingProduct['stock_quantity']),
+                'out_of_stock_status' => $data['out_of_stock_status'] ?? $existingProduct['out_of_stock_status'] ?? 'in_stock',
+                'minimum_quantity' => intval($data['minimum_quantity'] ?? $existingProduct['minimum_quantity'] ?? 1),
+                'bulk_price_variance' => trim($data['bulk_price_variance'] ?? $existingProduct['bulk_price_variance'] ?? ''),
+                'sku' => trim($data['sku_code'] ?? $existingProduct['sku']),
+
+                // Status & Display
+                'status' => $data['status'] ?? $existingProduct['status'] ?? 'active',
+                'show_quantity' => isset($data['show_quantity']) ? 1 : ($existingProduct['show_quantity'] ?? 1),
+                'show_bulk_form' => isset($data['show_bulk_form']) ? 1 : ($existingProduct['show_bulk_form'] ?? 0),
+                'show_help_button' => isset($data['show_help_button']) ? 1 : ($existingProduct['show_help_button'] ?? 0),
+                'help_button_text' => trim($data['help_button_text'] ?? $existingProduct['help_button_text'] ?? 'Need Help?'),
+                'help_button_link' => trim($data['help_button_link'] ?? $existingProduct['help_button_link'] ?? '/contact-us'),
+
+                // Customization
+                'show_customization_label' => isset($data['show_customization_label']) ? 1 : ($existingProduct['show_customization_label'] ?? 0),
+                'customization_label' => trim($data['customization_label'] ?? $existingProduct['customization_label'] ?? ''),
+                'customization_fields' => !empty($customizationFields) ? json_encode($customizationFields) : ($existingProduct['customization_fields'] ?? null),
+
+                // Addons
+                'addon_product_ids' => $addonProductIds,
+
+                // Attribute flags
+                'show_sizes' => isset($data['show_sizes']) ? 1 : ($existingProduct['show_sizes'] ?? 1),
+                'show_colors' => isset($data['show_colors']) ? 1 : ($existingProduct['show_colors'] ?? 1),
+
+                // Attribute values (JSON)
+                'size_attributes' => !empty($sizeAttributes) ? json_encode($sizeAttributes) : ($existingProduct['size_attributes'] ?? null),
+                'color_attributes' => !empty($colorAttributes) ? json_encode($colorAttributes) : ($existingProduct['color_attributes'] ?? null),
+                'material_attributes' => !empty($materialAttributes) ? json_encode($materialAttributes) : ($existingProduct['material_attributes'] ?? null),
+                'lamination_attributes' => !empty($laminationAttributes) ? json_encode($laminationAttributes) : ($existingProduct['lamination_attributes'] ?? null),
+                'orientation_attributes' => !empty($orientationAttributes) ? json_encode($orientationAttributes) : ($existingProduct['orientation_attributes'] ?? null),
+                'quantity_price_breaks' => !empty($quantityPriceBreaks) ? json_encode($quantityPriceBreaks) : ($existingProduct['quantity_price_breaks'] ?? null),
+
+                // Shipping
+                'shipping_method_status' => isset($data['shipping_method_status']) ? 1 : ($existingProduct['shipping_method_status'] ?? 1),
+                'local_shipping_charge' => floatval($data['local_shipping_charge'] ?? $existingProduct['local_shipping_charge'] ?? 0),
+                'local_shipping_message' => trim($data['local_shipping_message'] ?? $existingProduct['local_shipping_message'] ?? ''),
+                'regional_shipping_charge' => floatval($data['regional_shipping_charge'] ?? $existingProduct['regional_shipping_charge'] ?? 0),
+                'regional_shipping_message' => trim($data['regional_shipping_message'] ?? $existingProduct['regional_shipping_message'] ?? ''),
+                'national_shipping_charge' => floatval($data['national_shipping_charge'] ?? $existingProduct['national_shipping_charge'] ?? 0),
+                'national_shipping_message' => trim($data['national_shipping_message'] ?? $existingProduct['national_shipping_message'] ?? ''),
+
+                // Cancellation
+                'cancel_available' => isset($data['cancel_available']) ? 1 : ($existingProduct['cancel_available'] ?? 1),
+                'cancel_time' => intval($data['cancel_time'] ?? $existingProduct['cancel_time'] ?? 24),
+                'cancel_type' => $data['cancel_type'] ?? $existingProduct['cancel_type'] ?? 'hours',
+
+                // COD
+                'cod_available' => isset($data['cod_available']) ? 1 : ($existingProduct['cod_available'] ?? 1),
+
+                // Badges/Flags
+                'featured' => isset($data['featured']) ? 1 : ($existingProduct['featured'] ?? 0),
+                'top_selection' => isset($data['top_selection']) ? 1 : ($existingProduct['top_selection'] ?? 0),
+                'our_bestseller' => isset($data['our_bestseller']) ? 1 : ($existingProduct['our_bestseller'] ?? 0),
+                'top_rated' => isset($data['top_rated']) ? 1 : ($existingProduct['top_rated'] ?? 0),
+                'top_deal_by_categories' => isset($data['top_deal_by_categories']) ? 1 : ($existingProduct['top_deal_by_categories'] ?? 0),
+
+                // Timestamps
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            // Remove null values that shouldn't be updated
+            $updateData = array_filter($updateData, function ($value) {
+                return $value !== null;
+            });
+
+            // Update product
+            $success = $this->productModel->updateProduct($id, $updateData, $mainImages);
+
+            if ($success) {
+                return ['success' => true, 'message' => 'Product updated successfully!'];
+            } else {
+                throw new Exception("Failed to update product");
+            }
+
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 
-    public function updateProduct($id) {
-        header('Content-Type: application/json');
-        
-        $user = $this->authenticate();
-        if (!$user) return;
 
-        $data = json_decode(file_get_contents("php://input"));
+    private function handleUpdateProduct($id)
+    {
+        try {
+            $required = ['name', 'category_id', 'price', 'stock_quantity', 'sku'];
+            foreach ($required as $field) {
+                if (empty($_POST[$field])) {
+                    throw new Exception("Field $field is required");
+                }
+            }
 
-        $this->product->id = $id;
-        if (!$this->product->getProductById()) {
-            http_response_code(404);
-            echo json_encode(array("error" => "Product not found"));
-            return;
+            $productData = [
+                'name' => trim($_POST['name']),
+                'description' => trim($_POST['description'] ?? ''),
+                'category_id' => $_POST['category_id'],
+                'brand' => trim($_POST['brand'] ?? ''),
+                'price' => floatval($_POST['price']),
+                'discount_price' => !empty($_POST['discount_price']) ? floatval($_POST['discount_price']) : null,
+                'stock_quantity' => intval($_POST['stock_quantity']),
+                'sku' => trim($_POST['sku']),
+                'status' => $_POST['status'] ?? 'active',
+                'featured' => isset($_POST['featured']) ? 1 : 0
+            ];
+
+            $images = [];
+            if (!empty($_FILES['images']['name'][0])) {
+                $images = $this->handleImageUpload($_FILES['images']);
+            }
+
+            $success = $this->productModel->updateProduct($id, $productData, $images);
+
+            if ($success) {
+                return ['success' => true];
+            } else {
+                throw new Exception("Failed to update product");
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    // private function handleImageUpload($files) {
+    //     $uploadedImages = [];
+    //     $uploadDir = 'uploads/products/';
+
+    //     if (!is_dir($uploadDir)) {
+    //         mkdir($uploadDir, 0755, true);
+    //     }
+
+    //     foreach ($files['tmp_name'] as $key => $tmp_name) {
+    //         if ($files['error'][$key] === UPLOAD_ERR_OK) {
+    //             $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    //             $fileType = mime_content_type($tmp_name);
+
+    //             if (!in_array($fileType, $allowedTypes)) {
+    //                 throw new Exception("Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.");
+    //             }
+
+    //             $fileName = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9-_\.]/', '', $files['name'][$key]);
+    //             $filePath = $uploadDir . $fileName;
+
+    //             if (move_uploaded_file($tmp_name, $filePath)) {
+    //                 $uploadedImages[] = [
+    //                     'image_url' => $filePath,
+    //                     'is_primary' => ($key === 0),
+    //                     'display_order' => $key
+    //                 ];
+    //             } else {
+    //                 throw new Exception("Failed to upload image: " . $files['name'][$key]);
+    //             }
+    //         }
+    //     }
+
+    //     return $uploadedImages;
+    // }
+
+
+
+    public function deleteProduct($id)
+    {
+        return $this->productModel->deleteProduct($id);
+    }
+
+    public function getDeactiveProducts()
+    {
+        $products = $this->productModel->getDeactiveProducts();
+
+        // Format products for API response
+        $formattedProducts = [];
+        foreach ($products as $product) {
+            $formattedProducts[] = $this->formatProductForApi($product);
         }
 
-        // Update fields
-        if (isset($data->name)) $this->product->name = $data->name;
-        if (isset($data->description)) $this->product->description = $data->description;
-        if (isset($data->category_id)) $this->product->category_id = $data->category_id;
-        if (isset($data->brand)) $this->product->brand = $data->brand;
-        if (isset($data->price)) $this->product->price = $data->price;
-        if (isset($data->discount_price)) $this->product->discount_price = $data->discount_price;
-        if (isset($data->stock_quantity)) $this->product->stock_quantity = $data->stock_quantity;
-        if (isset($data->status)) $this->product->status = $data->status;
-        if (isset($data->featured)) $this->product->featured = $data->featured;
+        return $formattedProducts;
+    }
 
-        if ($this->product->update()) {
-            echo json_encode(array("message" => "Product updated successfully"));
-        } else {
-            http_response_code(500);
-            echo json_encode(array("error" => "Unable to update product"));
+    // Add to ProductController class
+    public function toggleBestseller($productId)
+    {
+        try {
+            $result = $this->productModel->toggleBestseller($productId);
+
+            if ($result) {
+                // Get updated product to return current status
+                $product = $this->productModel->getProductById($productId);
+                return [
+                    'success' => true,
+                    'message' => 'Bestseller status updated successfully',
+                    'is_bestseller' => $product['our_bestseller']
+                ];
+            } else {
+                throw new Exception("Failed to update bestseller status");
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function setBestsellerStatus($productId, $status)
+    {
+        try {
+            $result = $this->productModel->setBestsellerStatus($productId, $status);
+
+            if ($result) {
+                return [
+                    'success' => true,
+                    'message' => 'Bestseller status updated successfully',
+                    'is_bestseller' => $status
+                ];
+            } else {
+                throw new Exception("Failed to update bestseller status");
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function getBestsellerProducts()
+    {
+        $products = $this->productModel->getBestsellerProducts();
+
+        // Format products for API response
+        $formattedProducts = [];
+        foreach ($products as $product) {
+            $formattedProducts[] = $this->formatProductForApi($product);
+        }
+
+        return $formattedProducts;
+    }
+
+    // Add to ProductController class
+    public function getProductsWithPagination($search = '', $category_id = '', $status = '', $offset = 0, $limit = 10)
+    {
+        return $this->productModel->getProductsWithPagination($search, $category_id, $status, $offset, $limit);
+    }
+
+    // public function getCategories() {
+    //     return $this->categoryModel->getAllCategoriesFlat();
+    // }
+
+    // Add these methods to your ProductController class
+
+    // Bestseller API methods
+    public function getBestsellerProductsApi()
+    {
+        $products = $this->productModel->getBestsellerProducts();
+        $formattedProducts = [];
+        foreach ($products as $product) {
+            $formattedProducts[] = $this->formatProductForApi($product);
+        }
+        return $formattedProducts;
+    }
+
+    // Top Selection methods
+    public function getTopSelectionProducts()
+    {
+        return $this->productModel->getTopSelectionProducts();
+    }
+
+    public function getTopSelectionProductsApi()
+    {
+        $products = $this->productModel->getTopSelectionProducts();
+        $formattedProducts = [];
+        foreach ($products as $product) {
+            $formattedProducts[] = $this->formatProductForApi($product);
+        }
+        return $formattedProducts;
+    }
+
+    public function toggleTopSelection($productId)
+    {
+        try {
+            $result = $this->productModel->toggleTopSelection($productId);
+
+            if ($result) {
+                $product = $this->productModel->getProductById($productId);
+                return [
+                    'success' => true,
+                    'message' => 'Top Selection status updated successfully',
+                    'is_top_selection' => $product['top_selection'] ?? 0
+                ];
+            } else {
+                throw new Exception("Failed to update top selection status");
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function setTopSelectionStatus($productId, $status)
+    {
+        try {
+            $result = $this->productModel->setTopSelectionStatus($productId, $status);
+
+            if ($result) {
+                return [
+                    'success' => true,
+                    'message' => 'Top Selection status updated successfully',
+                    'is_top_selection' => $status
+                ];
+            } else {
+                throw new Exception("Failed to update top selection status");
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    // Top Rated methods
+    public function getTopRatedProducts()
+    {
+        return $this->productModel->getTopRatedProducts();
+    }
+
+    public function getTopRatedProductsApi()
+    {
+        $products = $this->productModel->getTopRatedProducts();
+        $formattedProducts = [];
+        foreach ($products as $product) {
+            $formattedProducts[] = $this->formatProductForApi($product);
+        }
+        return $formattedProducts;
+    }
+
+    public function toggleTopRated($productId)
+    {
+        try {
+            $result = $this->productModel->toggleTopRated($productId);
+
+            if ($result) {
+                $product = $this->productModel->getProductById($productId);
+                return [
+                    'success' => true,
+                    'message' => 'Top Rated status updated successfully',
+                    'is_top_rated' => $product['top_rated'] ?? 0
+                ];
+            } else {
+                throw new Exception("Failed to update top rated status");
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function setTopRatedStatus($productId, $status)
+    {
+        try {
+            $result = $this->productModel->setTopRatedStatus($productId, $status);
+
+            if ($result) {
+                return [
+                    'success' => true,
+                    'message' => 'Top Rated status updated successfully',
+                    'is_top_rated' => $status
+                ];
+            } else {
+                throw new Exception("Failed to update top rated status");
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    // Add to ProductController class
+    public function getProductsWithFilters($params = [])
+    {
+        $search = $params['search'] ?? '';
+        $category_id = $params['category_id'] ?? '';
+        $status = $params['status'] ?? '';
+        $featured = $params['featured'] ?? '';
+        $bestseller = $params['bestseller'] ?? '';
+        $page = $params['page'] ?? 1;
+        $limit = $params['limit'] ?? 10;
+        $offset = ($page - 1) * $limit;
+
+        return $this->productModel->getProductsWithFilters(
+            $search,
+            $category_id,
+            $status,
+            $featured,
+            $bestseller,
+            $offset,
+            $limit
+        );
+    }
+
+    public function getTotalProductsCount($search = '', $category_id = '', $status = '', $featured = '', $bestseller = '')
+    {
+        return $this->productModel->getTotalProductsCount($search, $category_id, $status, $featured, $bestseller);
+    }
+
+    public function getAllCategoriesForFilter()
+    {
+        return $this->categoryModel->getAllCategoriesFlat();
+    }
+
+
+    // Add to ProductController class
+
+    // Existing methods you already have
+    // public function getTopSelectionProductsApi() {
+    //     $products = $this->productModel->getTopSelectionProducts();
+    //     return ['success' => true, 'data' => $products];
+    // }
+
+    // public function getTopRatedProductsApi() {
+    //     $products = $this->productModel->getTopRatedProducts();
+    //     return ['success' => true, 'data' => $products];
+    // }
+
+    // public function getTopDealByCategoriesProductsApi()
+    // {
+    //     $products = $this->productModel->getTopDealByCategoriesProducts();
+    //     return ['success' => true, 'data' => $products];
+    // }
+
+    // NEW METHODS TO ADD:
+    public function getDiscountProductsApi()
+    {
+        try {
+            $products = $this->productModel->getDiscountProducts();
+            return ['success' => true, 'data' => $products];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    // Recently Viewed API  
+    public function getRecentlyViewedApi()
+    {
+        try {
+            $products = $this->productModel->getRecentlyViewedProducts();
+            return ['success' => true, 'data' => $products];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    // Categories API
+    public function getAllCategoriesApi()
+    {
+        try {
+            $categories = $this->categoryModel->getAllWithHierarchy();
+            return ['success' => true, 'data' => $categories];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    // Products by Category Slug API
+    public function getProductsByCategoryApi($categorySlug)
+    {
+        try {
+            $products = $this->productModel->getProductsByCategorySlug($categorySlug);
+            return ['success' => true, 'data' => $products];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    // Fix method name - you had typo in method name
+    public function getTopDealByCategoriesProductsApi()
+    {
+        try {
+            $products = $this->productModel->getTopDealByCategoriesProducts();
+            return ['success' => true, 'data' => $products];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+
+   
+
+    public function searchProducts($params)
+    {
+        try {
+            $database = new Database();
+            $db = $database->getConnection();
+
+            $query = "
+                SELECT 
+                    p.*,
+                    c.name as category_name,
+                    GROUP_CONCAT(pi.image_url) as image_urls,
+                    GROUP_CONCAT(pi.is_primary) as primary_flags
+                FROM products p
+                LEFT JOIN categories c ON p.category_id = c.id
+                LEFT JOIN product_images pi ON p.id = pi.product_id
+                WHERE p.status = 'active'
+            ";
+
+            $conditions = [];
+            $bindings = [];
+
+            if (!empty($params['query'])) {
+                $conditions[] = "(p.name LIKE :query OR p.description LIKE :query OR c.name LIKE :query)";
+                $bindings[':query'] = "%{$params['query']}%";
+            }
+
+            if (!empty($params['category'])) {
+                $conditions[] = "c.name = :category";
+                $bindings[':category'] = $params['category'];
+            }
+
+            if (!empty($params['min_price'])) {
+                $conditions[] = "p.price >= :min_price";
+                $bindings[':min_price'] = $params['min_price'];
+            }
+
+            if (!empty($params['max_price'])) {
+                $conditions[] = "p.price <= :max_price";
+                $bindings[':max_price'] = $params['max_price'];
+            }
+
+            if (!empty($conditions)) {
+                $query .= " AND " . implode(" AND ", $conditions);
+            }
+
+            $query .= " GROUP BY p.id ORDER BY p.created_at DESC";
+
+            if (!empty($params['limit'])) {
+                $query .= " LIMIT :limit";
+                $bindings[':limit'] = (int) $params['limit'];
+            }
+
+            $stmt = $db->prepare($query);
+
+            foreach ($bindings as $key => $value) {
+                if ($key === ':limit') {
+                    $stmt->bindValue($key, $value, PDO::PARAM_INT);
+                } else {
+                    $stmt->bindValue($key, $value);
+                }
+            }
+
+            $stmt->execute();
+
+            $products = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $products[] = $this->formatProductForApi($row);
+            }
+
+            return $products;
+
+        } catch (Exception $e) {
+            throw new Exception("Search failed: " . $e->getMessage());
         }
     }
 }
-?>

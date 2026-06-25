@@ -1,14 +1,9 @@
 <?php
-require_once 'config/database.php';
-require_once 'controllers/AuthController.php';
+session_start();
+require_once '../../config/database.php';             // your DB connection file
+require_once '../../controllers/AuthController.php';
 
-$database = new Database();
-$db = $database->getConnection();
-$authController = new AuthController($db);
+// Pass DB connection to controller
+$authController = new AuthController($conn);
 
-$result = $authController->logout();
-
-// Redirect to login page
-header("Location: login.php");
-exit();
-?>
+$authController->logout(true);

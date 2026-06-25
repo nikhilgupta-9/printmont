@@ -1,73 +1,34 @@
 <?php
-require_once 'config/constants.php';
-require_once 'controllers/AuthController.php';
-require_once 'controllers/ProductController.php';
+session_start();
+require_once(__DIR__ . '/config/database.php');
+require_once(__DIR__ . '/controllers/CategoryController.php');
+require_once(__DIR__ . '/controllers/ProductController.php');
 
-header('Content-Type: application/json');
+// Create database connection
+$database = new Database();
+$db = $database->getConnection();
 
-$request_method = $_SERVER['REQUEST_METHOD'];
-$request_uri = $_SERVER['REQUEST_URI'];
+// Pass the database connection to the controller
+$productController = new ProductController($db);
+$category = new CategoryController($db);
+$categories = $category->getMainCategories();
 
-// Simple routing
-$path = parse_url($request_uri, PHP_URL_PATH);
-$path = str_replace('/flipkart-admin-php', '', $path); // Adjust based on your folder
+$error_message = '';
+$success_message = '';
 
-switch ($path) {
-    case '/api/auth/login':
-        if ($request_method == 'POST') {
-            $auth = new AuthController();
-            $auth->login();
-        } else {
-            http_response_code(405);
-            echo json_encode(array("error" => "Method not allowed"));
-        }
-        break;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $result = $productController->addProduct($_POST, $_FILES);
 
-    case '/api/auth/me':
-        if ($request_method == 'GET') {
-            $auth = new AuthController();
-            $auth->getCurrentUser();
-        } else {
-            http_response_code(405);
-            echo json_encode(array("error" => "Method not allowed"));
-        }
-        break;
-
-    case '/api/products':
-        $product = new ProductController();
-        if ($request_method == 'GET') {
-            $product->getAllProducts();
-        } elseif ($request_method == 'POST') {
-            $product->createProduct();
-        } else {
-            http_response_code(405);
-            echo json_encode(array("error" => "Method not allowed"));
-        }
-        break;
-
-    case (preg_match('#^/api/products/(\d+)$#', $path, $matches) ? true : false):
-        $product_id = $matches[1];
-        $product = new ProductController();
-        if ($request_method == 'GET') {
-            $product->getProduct($product_id);
-        } elseif ($request_method == 'PUT') {
-            $product->updateProduct($product_id);
-        } else {
-            http_response_code(405);
-            echo json_encode(array("error" => "Method not allowed"));
-        }
-        break;
-
-    case '/api/health':
-        echo json_encode(array("message" => "Flipkart Admin PHP API is running!"));
-        break;
-
-    default:
-        http_response_code(404);
-        echo json_encode(array("error" => "Endpoint not found"));
-        break;
+    if ($result['success']) {
+        $_SESSION['success_message'] = "Product added successfully!";
+        header('Location: view-products.php');
+        exit;
+    } else {
+        $error_message = $result['error'];
+    }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -77,821 +38,993 @@ switch ($path) {
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Responsive Admin &amp; Dashboard Template based on Bootstrap 5">
     <meta name="author" content="Nikhil">
-
     <link rel="preconnect" href="https://fonts.gstatic.com/">
     <link rel="shortcut icon" href="img/icons/icon-48x48.png" />
-    <title>AdminKit Demo - Bootstrap 5 Admin Template</title>
-
+    <title>Add Product | Printmont</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&amp;display=swap" rel="stylesheet">
-
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
+    <!-- Include CKEditor or other WYSIWYG editor -->
+    <script src="https://cdn.ckeditor.com/4.16.2/standard/ckeditor.js"></script>
     <script src="js/settings.js"></script>
     <style>
         body {
             opacity: 0;
         }
-    </style>
-    <!-- END SETTINGS -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-120946860-10"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
 
-        gtag('config', 'UA-120946860-10', { 'anonymize_ip': true });
-    </script>
+        .nav-tabs .nav-link.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+
+        .nav-tabs .nav-link.completed {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .tab-content {
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-top: none;
+        }
+
+        .tab-pane {
+            min-height: 400px;
+        }
+
+        .progress {
+            height: 10px;
+            margin-bottom: 20px;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            padding: 10px;
+        }
+
+        .step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: -50%;
+            width: 100%;
+            height: 2px;
+            background-color: #dee2e6;
+            z-index: 1;
+        }
+
+        .step.active:not(:last-child)::after {
+            background-color: #0d6efd;
+        }
+
+        .step.completed:not(:last-child)::after {
+            background-color: #28a745;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #dee2e6;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+        }
+
+        .step.active .step-number {
+            background-color: #0d6efd;
+            color: white;
+        }
+
+        .step.completed .step-number {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .step-title {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .tab-preview {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .tab-preview.active {
+            display: block;
+        }
+
+        .required-field::after {
+            content: " *";
+            color: red;
+        }
+
+        .image-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .image-preview {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 5px;
+            border: 2px solid #dee2e6;
+        }
+
+        .gallery-preview {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+
+        .file-info {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .remove-image {
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 12px;
+        }
+    </style>
 </head>
 
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
     <div class="wrapper">
-        <?php
-        include_once "includes/side-navbar.php";
-        ?>
-
+        <?php include_once "includes/side-navbar.php"; ?>
         <div class="main">
-            <?php
-            include_once "includes/top-navbar.php";
-            ?>
-
+            <?php include_once "includes/top-navbar.php"; ?>
             <main class="content">
                 <div class="container-fluid p-0">
-
                     <div class="row mb-2 mb-xl-3">
                         <div class="col-auto d-none d-sm-block">
-                            <h3><strong>Analytics</strong> Dashboard</h3>
+                            <h3><strong>Add</strong> Product</h3>
                         </div>
-
                         <div class="col-auto ms-auto text-end mt-n1">
-                            <a href="#" class="btn btn-light bg-white me-2">Invite a Friend</a>
-                            <a href="#" class="btn btn-primary">New Project</a>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-xl-6 col-xxl-5 d-flex">
-                            <div class="w-100">
-                                <div class="row">
-                                    <div class="col-sm-6">
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <div class="row">
-                                                    <div class="col mt-0">
-                                                        <h5 class="card-title">Sales</h5>
-                                                    </div>
-
-                                                    <div class="col-auto">
-                                                        <div class="stat text-primary">
-                                                            <i class="align-middle" data-feather="truck"></i>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <h1 class="mt-1 mb-3">2.382</h1>
-                                                <div class="mb-0">
-                                                    <span class="badge badge-primary-light">-3.65%</span>
-                                                    <span class="text-muted">Since last week</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <div class="row">
-                                                    <div class="col mt-0">
-                                                        <h5 class="card-title">Visitors</h5>
-                                                    </div>
-
-                                                    <div class="col-auto">
-                                                        <div class="stat text-primary">
-                                                            <i class="align-middle" data-feather="users"></i>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <h1 class="mt-1 mb-3">14.212</h1>
-                                                <div class="mb-0">
-                                                    <span class="badge badge-success-light">5.25%</span>
-                                                    <span class="text-muted">Since last week</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-6">
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <div class="row">
-                                                    <div class="col mt-0">
-                                                        <h5 class="card-title">Earnings</h5>
-                                                    </div>
-
-                                                    <div class="col-auto">
-                                                        <div class="stat text-primary">
-                                                            <i class="align-middle" data-feather="dollar-sign"></i>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <h1 class="mt-1 mb-3">$21.300</h1>
-                                                <div class="mb-0">
-                                                    <span class="badge badge-success-light">6.65%</span>
-                                                    <span class="text-muted">Since last week</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <div class="row">
-                                                    <div class="col mt-0">
-                                                        <h5 class="card-title">Orders</h5>
-                                                    </div>
-
-                                                    <div class="col-auto">
-                                                        <div class="stat text-primary">
-                                                            <i class="align-middle" data-feather="shopping-cart"></i>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <h1 class="mt-1 mb-3">64</h1>
-                                                <div class="mb-0">
-                                                    <span class="badge badge-danger-light">-2.25%</span>
-                                                    <span class="text-muted">Since last week</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-xl-6 col-xxl-7">
-                            <div class="card flex-fill w-100">
-                                <div class="card-header">
-                                    <div class="float-end">
-                                        <form class="row g-2">
-                                            <div class="col-auto">
-                                                <select class="form-select form-select-sm bg-light border-0">
-                                                    <option>Jan</option>
-                                                    <option value="1">Feb</option>
-                                                    <option value="2">Mar</option>
-                                                    <option value="3">Apr</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-auto">
-                                                <input type="text"
-                                                    class="form-control form-control-sm bg-light rounded-2 border-0"
-                                                    style="width: 100px;" placeholder="Search..">
-                                            </div>
-                                        </form>
-                                    </div>
-                                    <h5 class="card-title mb-0">Recent Movement</h5>
-                                </div>
-                                <div class="card-body pt-2 pb-3">
-                                    <div class="chart chart-sm">
-                                        <canvas id="chartjs-dashboard-line"></canvas>
-                                    </div>
-                                </div>
-                            </div>
+                            <a href="view-products.php" class="btn btn-light bg-success me-2">View Products</a>
                         </div>
                     </div>
 
                     <div class="row">
-                        <div class="col-12 col-md-6 col-xxl-3 d-flex order-1 order-xxl-3">
-                            <div class="card flex-fill w-100">
+                        <div class="col-md-12">
+                            <div class="card">
                                 <div class="card-header">
-                                    <div class="card-actions float-end">
-                                        <div class="dropdown position-relative">
-                                            <a href="#" data-bs-toggle="dropdown" data-bs-display="static">
-                                                <i class="align-middle" data-feather="more-horizontal"></i>
-                                            </a>
+                                    <h5 class="card-title">Add New Product</h5>
+                                    <h6 class="card-subtitle text-muted">Step-by-step product creation</h6>
+                                </div>
+                                <div class="card-body">
+                                    <?php if ($error_message): ?>
+                                        <div class="alert alert-danger alert-dismissible" role="alert">
+                                            <div class="alert-message"><?php echo htmlspecialchars($error_message); ?></div>
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                        </div>
+                                    <?php endif; ?>
 
-                                            <div class="dropdown-menu dropdown-menu-end">
-                                                <a class="dropdown-item" href="#">Action</a>
-                                                <a class="dropdown-item" href="#">Another action</a>
-                                                <a class="dropdown-item" href="#">Something else here</a>
+                                    <!-- Step Indicator -->
+                                    <div class="step-indicator">
+                                        <div class="step active" data-step="1">
+                                            <div class="step-number">1</div>
+                                            <div class="step-title">General Info</div>
+                                        </div>
+                                        <div class="step" data-step="2">
+                                            <div class="step-number">2</div>
+                                            <div class="step-title">Filters</div>
+                                        </div>
+                                        <div class="step" data-step="3">
+                                            <div class="step-number">3</div>
+                                            <div class="step-title">Categories</div>
+                                        </div>
+                                        <div class="step" data-step="4">
+                                            <div class="step-number">4</div>
+                                            <div class="step-title">Images</div>
+                                        </div>
+                                        <div class="step" data-step="5">
+                                            <div class="step-number">5</div>
+                                            <div class="step-title">Review</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Progress Bar -->
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" style="width: 20%"
+                                            aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+
+                                    <form method="POST" id="productForm" enctype="multipart/form-data">
+                                        <!-- Tab Navigation (Hidden - controlled by JavaScript) -->
+                                        <ul class="nav nav-tabs d-none" id="productTabs" role="tablist">
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link active" id="general-tab" data-bs-toggle="tab"
+                                                    data-bs-target="#general" type="button" role="tab">General</button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link" id="filters-tab" data-bs-toggle="tab"
+                                                    data-bs-target="#filters" type="button" role="tab">Filters</button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link" id="links-tab" data-bs-toggle="tab"
+                                                    data-bs-target="#links" type="button" role="tab">Categories</button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link" id="images-tab" data-bs-toggle="tab"
+                                                    data-bs-target="#images" type="button" role="tab">Images</button>
+                                            </li>
+                                        </ul>
+
+                                        <div class="tab-content" id="productTabsContent">
+
+                                            <!-- Step 1: General Tab -->
+                                            <div class="tab-pane fade show active" id="general" role="tabpanel"
+                                                data-step="1">
+                                                <h4 class="mb-4">Step 1: General Information</h4>
+
+                                                <div class="row">
+                                                    <div class="mb-3 col-md-6">
+                                                        <label class="form-label required-field"
+                                                            for="product_name">Product Name</label>
+                                                        <input type="text" class="form-control" id="product_name"
+                                                            name="product_name" required
+                                                            placeholder="Enter product name">
+                                                    </div>
+                                                    <div class="mb-3 col-md-6">
+                                                        <label class="form-label required-field"
+                                                            for="product_slug">Product Slug</label>
+                                                        <input type="text" class="form-control" id="product_slug"
+                                                            name="product_slug" required
+                                                            placeholder="product-slug-name">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label required-field" for="sku_code">SKU
+                                                            Code</label>
+                                                        <input type="text" class="form-control" id="sku_code"
+                                                            name="sku_code" required placeholder="SKU-001">
+                                                    </div>
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label required-field"
+                                                            for="product_quantity">Product Quantity</label>
+                                                        <input type="number" class="form-control" id="product_quantity"
+                                                            name="product_quantity" required value="0">
+                                                    </div>
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="minimum_quantity">Minimum Product
+                                                            Quantity</label>
+                                                        <input type="number" class="form-control" id="minimum_quantity"
+                                                            name="minimum_quantity" value="1" min="1">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="mb-3 col-md-6">
+                                                        <label class="form-label required-field"
+                                                            for="regular_price">Product Regular Price (MRP)</label>
+                                                        <input type="number" step="0.01" class="form-control"
+                                                            id="regular_price" name="regular_price" required
+                                                            placeholder="0.00">
+                                                    </div>
+                                                    <div class="mb-3 col-md-6">
+                                                        <label class="form-label" for="offer_price">Product Offer
+                                                            Price</label>
+                                                        <input type="number" step="0.01" class="form-control"
+                                                            id="offer_price" name="offer_price" placeholder="0.00">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="mb-3 col-md-6">
+                                                        <label class="form-label" for="sort_order">Sort Order</label>
+                                                        <input type="number" class="form-control" id="sort_order"
+                                                            name="sort_order" value="0">
+                                                    </div>
+                                                    <div class="mb-3 col-md-6">
+                                                        <label class="form-label" for="out_of_stock_status">Product Out
+                                                            of Stock Status</label>
+                                                        <select class="form-control" id="out_of_stock_status"
+                                                            name="out_of_stock_status">
+                                                            <option value="in_stock">In Stock</option>
+                                                            <option value="out_of_stock">Out of Stock</option>
+                                                            <option value="pre_order">Pre Order</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="bulk_price_variance">Bulk Order Price
+                                                        Variance</label>
+                                                    <textarea class="form-control" id="bulk_price_variance"
+                                                        name="bulk_price_variance" rows="3"
+                                                        placeholder="Enter bulk pricing details, e.g., 10-50 pieces: ₹X, 51-100 pieces: ₹Y"></textarea>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label required-field" for="description">Short
+                                                        Description</label>
+                                                    <textarea class="form-control" id="description" name="description"
+                                                        rows="3" required></textarea>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="long_description">Product Long
+                                                        Description</label>
+                                                    <textarea class="form-control" id="long_description"
+                                                        name="long_description" rows="5"></textarea>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="instructions">Long
+                                                        Instructions</label>
+                                                    <textarea class="form-control" id="instructions" name="instructions"
+                                                        rows="5"></textarea>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="delivery_info">Delivery
+                                                        Information</label>
+                                                    <textarea class="form-control" id="delivery_info"
+                                                        name="delivery_info" rows="5"></textarea>
+                                                </div>
+
+                                                <script>
+                                                    CKEDITOR.replace('description');
+                                                    CKEDITOR.replace('long_description');
+                                                    CKEDITOR.replace('instructions');
+                                                    CKEDITOR.replace('delivery_info');
+                                                </script>
+                                            </div>
+
+                                            <!-- Step 2: Filters Tab -->
+                                            <div class="tab-pane fade" id="filters" role="tabpanel" data-step="2">
+                                                <h4 class="mb-4">Step 2: Product Filters & Attributes</h4>
+
+                                                <div class="row">
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="color">Color</label>
+                                                        <select class="form-control" id="color" name="color">
+                                                            <option value="">Select Color</option>
+                                                            <option value="red">Red</option>
+                                                            <option value="blue">Blue</option>
+                                                            <option value="green">Green</option>
+                                                            <option value="black">Black</option>
+                                                            <option value="white">White</option>
+                                                            <option value="yellow">Yellow</option>
+                                                            <option value="multi">Multi-color</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="type">Type</label>
+                                                        <input type="text" class="form-control" id="type" name="type"
+                                                            placeholder="e.g., T-shirt, Mug, Notebook">
+                                                    </div>
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="material">Material</label>
+                                                        <input type="text" class="form-control" id="material"
+                                                            name="material" placeholder="e.g., Cotton, Ceramic, Paper">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="occasion">Occasion</label>
+                                                        <input type="text" class="form-control" id="occasion"
+                                                            name="occasion"
+                                                            placeholder="e.g., Birthday, Anniversary, Wedding">
+                                                    </div>
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="discount_type">Discount
+                                                            Type</label>
+                                                        <select class="form-control" id="discount_type"
+                                                            name="discount_type">
+                                                            <option value="">Select Discount</option>
+                                                            <option value="percentage">Percentage</option>
+                                                            <option value="fixed">Fixed Amount</option>
+                                                            <option value="buy_one_get_one">Buy One Get One</option>
+                                                            <option value="seasonal">Seasonal Offer</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="brand">Brand</label>
+                                                        <input type="text" class="form-control" id="brand" name="brand"
+                                                            placeholder="Enter brand name">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="shape">Shape</label>
+                                                        <input type="text" class="form-control" id="shape" name="shape"
+                                                            placeholder="e.g., Round, Square, Rectangle">
+                                                    </div>
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="gender">Gender</label>
+                                                        <select class="form-control" id="gender" name="gender">
+                                                            <option value="">Select Gender</option>
+                                                            <option value="male">Male</option>
+                                                            <option value="female">Female</option>
+                                                            <option value="unisex">Unisex</option>
+                                                            <option value="kids">Kids</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="gift_type">Gift Type</label>
+                                                        <input type="text" class="form-control" id="gift_type"
+                                                            name="gift_type" placeholder="e.g., Personalized, Packaged">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="ideal_for">Ideal For</label>
+                                                        <input type="text" class="form-control" id="ideal_for"
+                                                            name="ideal_for" placeholder="e.g., Men, Women, Students">
+                                                    </div>
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="customization_tech">Customization
+                                                            Technology</label>
+                                                        <input type="text" class="form-control" id="customization_tech"
+                                                            name="customization_tech"
+                                                            placeholder="e.g., Screen Printing, Embroidery, Digital Print">
+                                                    </div>
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label"
+                                                            for="customization_location">Customization Location</label>
+                                                        <input type="text" class="form-control"
+                                                            id="customization_location" name="customization_location"
+                                                            placeholder="e.g., Front, Back, Sleeve">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="capacity">Capacity</label>
+                                                        <input type="text" class="form-control" id="capacity"
+                                                            name="capacity"
+                                                            placeholder="e.g., 500ml, A4 Size, 100 pages">
+                                                    </div>
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="ink_color">Ink Color</label>
+                                                        <input type="text" class="form-control" id="ink_color"
+                                                            name="ink_color" placeholder="e.g., Black, CMYK, Gold">
+                                                    </div>
+                                                    <div class="mb-3 col-md-4">
+                                                        <label class="form-label" for="features">Features</label>
+                                                        <textarea class="form-control" id="features" name="features"
+                                                            rows="2"
+                                                            placeholder="e.g., Waterproof, Eco-friendly, Washable"></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Step 3: Categories Tab -->
+                                            <div class="tab-pane fade" id="links" role="tabpanel" data-step="3">
+                                                <h4 class="mb-4">Step 3: Category Selection</h4>
+
+                                                <div class="row">
+                                                    <div class="mb-3 col-md-6">
+                                                        <label class="form-label required-field" for="category_id">Main
+                                                            Category</label>
+                                                        <select class="form-control" id="category_id" name="category_id"
+                                                            required onchange="loadSubCategories(this.value)">
+                                                            <option value="">Select Main Category</option>
+                                                            <?php foreach ($categories as $cat): ?>
+                                                                <option value="<?php echo $cat['id']; ?>">
+                                                                    <?php echo htmlspecialchars($cat['name']); ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3 col-md-6">
+                                                        <label class="form-label" for="sub_category_id">Sub
+                                                            Category</label>
+                                                        <select class="form-control" id="sub_category_id"
+                                                            name="sub_category_id"
+                                                            onchange="loadSubSubCategories(this.value)">
+                                                            <option value="">Select Main Category First</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="mb-3 col-md-6">
+                                                        <label class="form-label" for="sub_sub_category_id">Sub Sub
+                                                            Category</label>
+                                                        <select class="form-control" id="sub_sub_category_id"
+                                                            name="sub_sub_category_id">
+                                                            <option value="">Select Sub Category First</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3 col-md-6">
+                                                        <div class="form-check mt-4 pt-2">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                id="featured" name="featured" value="1">
+                                                            <label class="form-check-label" for="featured">
+                                                                Featured Product
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check mt-2">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                id="top_selection" name="top_selection" value="1">
+                                                            <label class="form-check-label" for="top_selection">
+                                                                Top Selection
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label required-field" for="status">Status</label>
+                                                    <select class="form-control" id="status" name="status" required>
+                                                        <option value="active" selected>Active</option>
+                                                        <option value="inactive">Inactive</option>
+                                                        <option value="draft">Draft</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <!-- Step 4: Images Tab -->
+                                            <div class="tab-pane fade" id="images" role="tabpanel" data-step="4">
+                                                <h4 class="mb-4">Step 4: Product Images</h4>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label required-field" for="alt_tag">ALT
+                                                        Tag</label>
+                                                    <input type="text" class="form-control" id="alt_tag" name="alt_tag"
+                                                        required placeholder="Alternative text for images">
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label required-field"
+                                                        for="thumbnail_image">Thumbnail Image</label>
+                                                    <input type="file" class="form-control" id="thumbnail_image"
+                                                        name="thumbnail_image" accept="image/*" required
+                                                        onchange="previewImage(this, 'thumbnailPreview')">
+                                                    <small class="text-muted">Recommended size: 300x300 pixels</small>
+                                                    <div id="thumbnailPreview" class="image-preview-container"></div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label required-field" for="main_images">Main
+                                                        Product Images</label>
+                                                    <input type="file" class="form-control" id="main_images"
+                                                        name="main_images[]" multiple accept="image/*" required
+                                                        onchange="previewMultipleImages(this, 'mainImagesPreview')">
+                                                    <small class="text-muted">You can select multiple images (JPEG, PNG,
+                                                        WebP). First image will be primary.</small>
+                                                    <div id="mainImagesPreview" class="image-preview-container"></div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Additional Gallery Images
+                                                        (Optional)</label>
+                                                    <div class="input-group mb-2">
+                                                        <input type="file" class="form-control" id="gallery_images"
+                                                            name="gallery_images[]" multiple accept="image/*"
+                                                            onchange="previewMultipleImages(this, 'galleryPreview')">
+                                                        <button class="btn btn-outline-secondary" type="button"
+                                                            onclick="document.getElementById('gallery_images').value = ''; document.getElementById('galleryPreview').innerHTML = '';">
+                                                            Clear
+                                                        </button>
+                                                    </div>
+                                                    <small class="text-muted">Optional additional images for product
+                                                        gallery</small>
+                                                    <div id="galleryPreview" class="image-preview-container"></div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Step 5: Review Tab -->
+                                            <div class="tab-pane fade" id="review" role="tabpanel" data-step="5">
+                                                <h4 class="mb-4">Step 5: Review & Submit</h4>
+
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="card mb-3">
+                                                            <div class="card-header bg-primary text-white">
+                                                                <h6 class="mb-0">Product Details</h6>
+                                                            </div>
+                                                            <div class="card-body">
+                                                                <table class="table table-sm">
+                                                                    <tr>
+                                                                        <td><strong>Product Name:</strong></td>
+                                                                        <td id="review-name"></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td><strong>SKU Code:</strong></td>
+                                                                        <td id="review-sku"></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td><strong>Regular Price:</strong></td>
+                                                                        <td id="review-price"></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td><strong>Offer Price:</strong></td>
+                                                                        <td id="review-offer-price"></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td><strong>Quantity:</strong></td>
+                                                                        <td id="review-quantity"></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td><strong>Status:</strong></td>
+                                                                        <td id="review-status"></td>
+                                                                    </tr>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="card mb-3">
+                                                            <div class="card-header bg-success text-white">
+                                                                <h6 class="mb-0">Category Details</h6>
+                                                            </div>
+                                                            <div class="card-body">
+                                                                <table class="table table-sm">
+                                                                    <tr>
+                                                                        <td><strong>Main Category:</strong></td>
+                                                                        <td id="review-category"></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td><strong>Sub Category:</strong></td>
+                                                                        <td id="review-sub-category"></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td><strong>Sub Sub Category:</strong></td>
+                                                                        <td id="review-sub-sub-category"></td>
+                                                                    </tr>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="card mb-3">
+                                                    <div class="card-header bg-info text-white">
+                                                        <h6 class="mb-0">Selected Images</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div id="review-images" class="image-preview-container"></div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="alert alert-info p-2">
+                                                    <h6><i class="fas fa-info-circle"></i> Please Review Before
+                                                        Submitting</h6>
+                                                    <p class="mb-0">Check all information carefully. Once submitted, you
+                                                        can edit the product from the products list.</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <h5 class="card-title mb-0">Browser Usage</h5>
-                                </div>
-                                <div class="card-body d-flex">
-                                    <div class="align-self-center w-100">
-                                        <div class="py-3">
-                                            <div class="chart chart-xs">
-                                                <canvas id="chartjs-dashboard-pie"></canvas>
+
+                                        <!-- Navigation Buttons -->
+                                        <div class="btn-navigation">
+                                            <button type="button" class="btn btn-secondary" id="prevBtn"
+                                                onclick="prevStep()" style="display: none;">
+                                                <i class="fas fa-arrow-left"></i> Previous
+                                            </button>
+                                            <div>
+                                                <button type="button" class="btn btn-outline-secondary"
+                                                    id="saveDraftBtn" style="display: none;">
+                                                    Save as Draft
+                                                </button>
+                                                <button type="button" class="btn btn-primary" id="nextBtn"
+                                                    onclick="nextStep()">
+                                                    Next <i class="fas fa-arrow-right"></i>
+                                                </button>
+                                                <button type="submit" class="btn btn-success" id="submitBtn"
+                                                    style="display: none;">
+                                                    <i class="fas fa-check"></i> Submit Product
+                                                </button>
                                             </div>
                                         </div>
-
-                                        <table class="table mb-0">
-                                            <tbody>
-                                                <tr>
-                                                    <td><i class="fas fa-circle text-primary fa-fw"></i> Chrome <span
-                                                            class="badge badge-success-light">+12%</span></td>
-                                                    <td class="text-end">4306</td>
-                                                </tr>
-                                                <tr>
-                                                    <td><i class="fas fa-circle text-warning fa-fw"></i> Firefox <span
-                                                            class="badge badge-danger-light">-3%</span></td>
-                                                    <td class="text-end">3801</td>
-                                                </tr>
-                                                <tr>
-                                                    <td><i class="fas fa-circle text-danger fa-fw"></i> Edge</td>
-                                                    <td class="text-end">1689</td>
-                                                </tr>
-                                                <tr>
-                                                    <td><i class="fas fa-circle text-dark fa-fw"></i> Other</td>
-                                                    <td class="text-end">3251</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-12 col-xxl-6 d-flex order-3 order-xxl-2">
-                            <div class="card flex-fill w-100">
-                                <div class="card-header">
-                                    <div class="card-actions float-end">
-                                        <div class="dropdown position-relative">
-                                            <a href="#" data-bs-toggle="dropdown" data-bs-display="static">
-                                                <i class="align-middle" data-feather="more-horizontal"></i>
-                                            </a>
-
-                                            <div class="dropdown-menu dropdown-menu-end">
-                                                <a class="dropdown-item" href="#">Action</a>
-                                                <a class="dropdown-item" href="#">Another action</a>
-                                                <a class="dropdown-item" href="#">Something else here</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <h5 class="card-title mb-0">Real-Time</h5>
-                                </div>
-                                <div class="card-body px-4">
-                                    <div id="world_map" style="height:350px;"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6 col-xxl-3 d-flex order-2 order-xxl-1">
-                            <div class="card flex-fill">
-                                <div class="card-header">
-                                    <div class="card-actions float-end">
-                                        <div class="dropdown position-relative">
-                                            <a href="#" data-bs-toggle="dropdown" data-bs-display="static">
-                                                <i class="align-middle" data-feather="more-horizontal"></i>
-                                            </a>
-
-                                            <div class="dropdown-menu dropdown-menu-end">
-                                                <a class="dropdown-item" href="#">Action</a>
-                                                <a class="dropdown-item" href="#">Another action</a>
-                                                <a class="dropdown-item" href="#">Something else here</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <h5 class="card-title mb-0">Calendar</h5>
-                                </div>
-                                <div class="card-body d-flex">
-                                    <div class="align-self-center w-100">
-                                        <div class="chart">
-                                            <div id="datetimepicker-dashboard"></div>
-                                        </div>
-                                    </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <div class="row">
-                        <div class="col-12 col-lg-8 col-xxl-9 d-flex">
-                            <div class="card flex-fill">
-                                <div class="card-header">
-                                    <div class="card-actions float-end">
-                                        <div class="dropdown position-relative">
-                                            <a href="#" data-bs-toggle="dropdown" data-bs-display="static">
-                                                <i class="align-middle" data-feather="more-horizontal"></i>
-                                            </a>
-
-                                            <div class="dropdown-menu dropdown-menu-end">
-                                                <a class="dropdown-item" href="#">Action</a>
-                                                <a class="dropdown-item" href="#">Another action</a>
-                                                <a class="dropdown-item" href="#">Something else here</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <h5 class="card-title mb-0">Latest Projects</h5>
-                                </div>
-                                <table class="table table-borderless my-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th class="d-none d-xxl-table-cell">Company</th>
-                                            <th class="d-none d-xl-table-cell">Author</th>
-                                            <th>Status</th>
-                                            <th class="d-none d-xl-table-cell">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex">
-                                                    <div class="flex-shrink-0">
-                                                        <div class="bg-light rounded-2">
-                                                            <img class="p-2" src="img/icons/brand-1.svg">
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex-grow-1 ms-3">
-                                                        <strong>Project Apollo</strong>
-                                                        <div class="text-muted">
-                                                            Web, UI/UX Design
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xxl-table-cell">
-                                                <strong>Lechters</strong>
-                                                <div class="text-muted">
-                                                    Real Estate
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xl-table-cell">
-                                                <strong>Vanessa Tucker</strong>
-                                                <div class="text-muted">
-                                                    HTML, JS, React
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex flex-column w-100">
-                                                    <span class="me-2 mb-1 text-muted">65%</span>
-                                                    <div class="progress progress-sm bg-success-light w-100">
-                                                        <div class="progress-bar bg-success" role="progressbar"
-                                                            style="width: 65%;"></div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xl-table-cell">
-                                                <a href="#" class="btn btn-light">View</a>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex">
-                                                    <div class="flex-shrink-0">
-                                                        <div class="bg-light rounded-2">
-                                                            <img class="p-2" src="img/icons/brand-2.svg">
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex-grow-1 ms-3">
-                                                        <strong>Project Bongo</strong>
-                                                        <div class="text-muted">
-                                                            Web
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xxl-table-cell">
-                                                <strong>Cellophane Transportation</strong>
-                                                <div class="text-muted">
-                                                    Transportation
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xl-table-cell">
-                                                <strong>William Harris</strong>
-                                                <div class="text-muted">
-                                                    HTML, JS, Vue
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex flex-column w-100">
-                                                    <span class="me-2 mb-1 text-muted">33%</span>
-                                                    <div class="progress progress-sm bg-danger-light w-100">
-                                                        <div class="progress-bar bg-danger" role="progressbar"
-                                                            style="width: 33%;"></div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xl-table-cell">
-                                                <a href="#" class="btn btn-light">View</a>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex">
-                                                    <div class="flex-shrink-0">
-                                                        <div class="bg-light rounded-2">
-                                                            <img class="p-2" src="img/icons/brand-3.svg">
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex-grow-1 ms-3">
-                                                        <strong>Project Canary</strong>
-                                                        <div class="text-muted">
-                                                            Web, UI/UX Design
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xxl-table-cell">
-                                                <strong>Clemens</strong>
-                                                <div class="text-muted">
-                                                    Insurance
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xl-table-cell">
-                                                <strong>Sharon Lessman</strong>
-                                                <div class="text-muted">
-                                                    HTML, JS, Laravel
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex flex-column w-100">
-                                                    <span class="me-2 mb-1 text-muted">50%</span>
-                                                    <div class="progress progress-sm bg-warning-light w-100">
-                                                        <div class="progress-bar bg-warning" role="progressbar"
-                                                            style="width: 50%;"></div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xl-table-cell">
-                                                <a href="#" class="btn btn-light">View</a>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex">
-                                                    <div class="flex-shrink-0">
-                                                        <div class="bg-light rounded-2">
-                                                            <img class="p-2" src="img/icons/brand-4.svg">
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex-grow-1 ms-3">
-                                                        <strong>Project Edison</strong>
-                                                        <div class="text-muted">
-                                                            UI/UX Design
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xxl-table-cell">
-                                                <strong>Affinity Investment Group</strong>
-                                                <div class="text-muted">
-                                                    Finance
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xl-table-cell">
-                                                <strong>Vanessa Tucker</strong>
-                                                <div class="text-muted">
-                                                    HTML, JS, React
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex flex-column w-100">
-                                                    <span class="me-2 mb-1 text-muted">80%</span>
-                                                    <div class="progress progress-sm bg-success-light w-100">
-                                                        <div class="progress-bar bg-success" role="progressbar"
-                                                            style="width: 80%;"></div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xl-table-cell">
-                                                <a href="#" class="btn btn-light">View</a>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex">
-                                                    <div class="flex-shrink-0">
-                                                        <div class="bg-light rounded-2">
-                                                            <img class="p-2" src="img/icons/brand-5.svg">
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex-grow-1 ms-3">
-                                                        <strong>Project Indigo</strong>
-                                                        <div class="text-muted">
-                                                            Web, UI/UX Design
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xxl-table-cell">
-                                                <strong>Konsili</strong>
-                                                <div class="text-muted">
-                                                    Retail
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xl-table-cell">
-                                                <strong>Christina Mason</strong>
-                                                <div class="text-muted">
-                                                    HTML, JS, Vue
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex flex-column w-100">
-                                                    <span class="me-2 mb-1 text-muted">78%</span>
-                                                    <div class="progress progress-sm bg-primary-light w-100">
-                                                        <div class="progress-bar bg-primary" role="progressbar"
-                                                            style="width: 78%;"></div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="d-none d-xl-table-cell">
-                                                <a href="#" class="btn btn-light">View</a>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-4 col-xxl-3 d-flex">
-                            <div class="card flex-fill w-100">
-                                <div class="card-header">
-                                    <div class="card-actions float-end">
-                                        <div class="dropdown position-relative">
-                                            <a href="#" data-bs-toggle="dropdown" data-bs-display="static">
-                                                <i class="align-middle" data-feather="more-horizontal"></i>
-                                            </a>
-
-                                            <div class="dropdown-menu dropdown-menu-end">
-                                                <a class="dropdown-item" href="#">Action</a>
-                                                <a class="dropdown-item" href="#">Another action</a>
-                                                <a class="dropdown-item" href="#">Something else here</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <h5 class="card-title mb-0">Monthly Sales</h5>
-                                </div>
-                                <div class="card-body d-flex w-100">
-                                    <div class="align-self-center chart chart-lg">
-                                        <canvas id="chartjs-dashboard-bar"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </main>
-
-            <?php
-            include_once "inclues/footer.php";
-            ?>
+            <?php include_once "includes/footer.php"; ?>
         </div>
     </div>
 
     <script src="js/app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script>
+        // Step management
+        let currentStep = 1;
+        const totalSteps = 5;
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            var ctx = document.getElementById("chartjs-dashboard-line").getContext("2d");
-            var gradientLight = ctx.createLinearGradient(0, 0, 0, 225);
-            gradientLight.addColorStop(0, "rgba(215, 227, 244, 1)");
-            gradientLight.addColorStop(1, "rgba(215, 227, 244, 0)");
-            var gradientDark = ctx.createLinearGradient(0, 0, 0, 225);
-            gradientDark.addColorStop(0, "rgba(51, 66, 84, 1)");
-            gradientDark.addColorStop(1, "rgba(51, 66, 84, 0)");
-            // Line chart
-            new Chart(document.getElementById("chartjs-dashboard-line"), {
-                type: "line",
-                data: {
-                    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-                    datasets: [{
-                        label: "Sales ($)",
-                        fill: true,
-                        backgroundColor: window.theme.id === "light" ? gradientLight : gradientDark,
-                        borderColor: window.theme.primary,
-                        data: [
-                            2115,
-                            1562,
-                            1584,
-                            1892,
-                            1587,
-                            1923,
-                            2566,
-                            2448,
-                            2805,
-                            3438,
-                            2917,
-                            3327
-                        ]
-                    }]
-                },
-                options: {
-                    maintainAspectRatio: false,
-                    legend: {
-                        display: false
-                    },
-                    tooltips: {
-                        intersect: false
-                    },
-                    hover: {
-                        intersect: true
-                    },
-                    plugins: {
-                        filler: {
-                            propagate: false
-                        }
-                    },
-                    scales: {
-                        xAxes: [{
-                            reverse: true,
-                            gridLines: {
-                                color: "rgba(0,0,0,0.0)"
-                            }
-                        }],
-                        yAxes: [{
-                            ticks: {
-                                stepSize: 1000
-                            },
-                            display: true,
-                            borderDash: [3, 3],
-                            gridLines: {
-                                color: "rgba(0,0,0,0.0)",
-                                fontColor: "#fff"
-                            }
-                        }]
-                    }
+        function updateStepIndicator() {
+            // Update step indicators
+            document.querySelectorAll('.step').forEach(step => {
+                const stepNum = parseInt(step.dataset.step);
+                step.classList.remove('active', 'completed');
+                if (stepNum === currentStep) {
+                    step.classList.add('active');
+                } else if (stepNum < currentStep) {
+                    step.classList.add('completed');
                 }
             });
-        });
-    </script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // Pie chart
-            new Chart(document.getElementById("chartjs-dashboard-pie"), {
-                type: "pie",
-                data: {
-                    labels: ["Chrome", "Firefox", "IE", "Other"],
-                    datasets: [{
-                        data: [4306, 3801, 1689, 3251],
-                        backgroundColor: [
-                            window.theme.primary,
-                            window.theme.warning,
-                            window.theme.danger,
-                            "#E8EAED"
-                        ],
-                        borderWidth: 5,
-                        borderColor: window.theme.white
-                    }]
-                },
-                options: {
-                    responsive: !window.MSInputMethodContext,
-                    maintainAspectRatio: false,
-                    legend: {
-                        display: false
-                    },
-                    cutoutPercentage: 70
+
+            // Update progress bar
+            const progressPercent = ((currentStep - 1) / (totalSteps - 1)) * 100;
+            document.querySelector('.progress-bar').style.width = `${progressPercent}%`;
+
+            // Show/hide navigation buttons
+            document.getElementById('prevBtn').style.display = currentStep > 1 ? 'inline-block' : 'none';
+            document.getElementById('nextBtn').style.display = currentStep < totalSteps ? 'inline-block' : 'none';
+            document.getElementById('submitBtn').style.display = currentStep === totalSteps ? 'inline-block' : 'none';
+            document.getElementById('saveDraftBtn').style.display = currentStep > 1 ? 'inline-block' : 'none';
+
+            // Switch tabs
+            const tabs = document.querySelectorAll('.tab-pane');
+            tabs.forEach(tab => {
+                tab.classList.remove('show', 'active');
+                if (parseInt(tab.dataset.step) === currentStep) {
+                    tab.classList.add('show', 'active');
                 }
             });
-        });
-    </script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // Bar chart
-            new Chart(document.getElementById("chartjs-dashboard-bar"), {
-                type: "bar",
-                data: {
-                    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-                    datasets: [{
-                        label: "This year",
-                        backgroundColor: window.theme.primary,
-                        borderColor: window.theme.primary,
-                        hoverBackgroundColor: window.theme.primary,
-                        hoverBorderColor: window.theme.primary,
-                        data: [54, 67, 41, 55, 62, 45, 55, 73, 60, 76, 48, 79],
-                        barPercentage: .75,
-                        categoryPercentage: .5
-                    }]
-                },
-                options: {
-                    maintainAspectRatio: false,
-                    legend: {
-                        display: false
-                    },
-                    scales: {
-                        yAxes: [{
-                            gridLines: {
-                                display: false
-                            },
-                            stacked: false,
-                            ticks: {
-                                stepSize: 20
-                            }
-                        }],
-                        xAxes: [{
-                            stacked: false,
-                            gridLines: {
-                                color: "transparent"
-                            }
-                        }]
-                    }
-                }
-            });
-        });
-    </script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            var markers = [{
-                coords: [31.230391, 121.473701],
-                name: "Shanghai"
-            },
-            {
-                coords: [28.704060, 77.102493],
-                name: "Delhi"
-            },
-            {
-                coords: [6.524379, 3.379206],
-                name: "Lagos"
-            },
-            {
-                coords: [35.689487, 139.691711],
-                name: "Tokyo"
-            },
-            {
-                coords: [23.129110, 113.264381],
-                name: "Guangzhou"
-            },
-            {
-                coords: [40.7127837, -74.0059413],
-                name: "New York"
-            },
-            {
-                coords: [34.052235, -118.243683],
-                name: "Los Angeles"
-            },
-            {
-                coords: [41.878113, -87.629799],
-                name: "Chicago"
-            },
-            {
-                coords: [51.507351, -0.127758],
-                name: "London"
-            },
-            {
-                coords: [40.416775, -3.703790],
-                name: "Madrid "
+
+            // Update review data on step 5
+            if (currentStep === 5) {
+                updateReviewData();
             }
-            ];
-            var map = new jsVectorMap({
-                map: "world",
-                selector: "#world_map",
-                zoomButtons: true,
-                markers: markers,
-                markerStyle: {
-                    initial: {
-                        r: 9,
-                        stroke: window.theme.white,
-                        strokeWidth: 7,
-                        stokeOpacity: .4,
-                        fill: window.theme.primary
-                    },
-                    hover: {
-                        fill: window.theme.primary,
-                        stroke: window.theme.primary
-                    }
-                },
-                regionStyle: {
-                    initial: {
-                        fill: window.theme["gray-200"]
-                    }
-                },
-                zoomOnScroll: false
-            });
-            window.addEventListener("resize", () => {
-                map.updateSize();
-            });
-            setTimeout(function () {
-                map.updateSize();
-            }, 250);
-        });
-    </script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            var date = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
-            var defaultDate = date.getUTCFullYear() + "-" + (date.getUTCMonth() + 1) + "-" + date.getUTCDate();
-            document.getElementById("datetimepicker-dashboard").flatpickr({
-                inline: true,
-                prevArrow: "<span class=\"fas fa-chevron-left\" title=\"Previous month\"></span>",
-                nextArrow: "<span class=\"fas fa-chevron-right\" title=\"Next month\"></span>",
-                defaultDate: defaultDate
-            });
-        });
-    </script>
+        }
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function (event) {
-            setTimeout(function () {
-                if (localStorage.getItem('popState') !== 'shown') {
-                    window.notyf.open({
-                        type: "success",
-                        message: "Get access to all 500+ components and 45+ pages with AdminKit PRO. <u><a class=\"text-white\" href=\"https://adminkit.io/pricing\" target=\"_blank\">More info</a></u> 🚀",
-                        duration: 10000,
-                        ripple: true,
-                        dismissible: false,
-                        position: {
-                            x: "left",
-                            y: "bottom"
-                        }
+        function nextStep() {
+            if (validateCurrentStep()) {
+                if (currentStep < totalSteps) {
+                    currentStep++;
+                    updateStepIndicator();
+                }
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepIndicator();
+            }
+        }
+
+        function validateCurrentStep() {
+            const currentTab = document.querySelector(`.tab-pane[data-step="${currentStep}"]`);
+            const requiredFields = currentTab.querySelectorAll('[required]');
+
+            for (let field of requiredFields) {
+                if (!field.value.trim()) {
+                    field.focus();
+                    alert(`Please fill in the required field: ${field.labels[0]?.textContent || field.placeholder}`);
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // Auto-generate slug from product name
+        document.getElementById('product_name').addEventListener('input', function () {
+            const slugField = document.getElementById('product_slug');
+            if (!slugField.value) {
+                const slug = this.value
+                    .toLowerCase()
+                    .replace(/[^\w\s-]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/--+/g, '-')
+                    .trim();
+                slugField.value = slug;
+            }
+        });
+
+        // Image preview functions
+        function previewImage(input, previewContainerId) {
+            const previewContainer = document.getElementById(previewContainerId);
+            previewContainer.innerHTML = '';
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'image-preview';
+                    previewContainer.appendChild(img);
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function previewMultipleImages(input, previewContainerId) {
+            const previewContainer = document.getElementById(previewContainerId);
+            previewContainer.innerHTML = '';
+
+            if (input.files) {
+                for (let i = 0; i < input.files.length; i++) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = previewContainerId === 'galleryPreview' ? 'gallery-preview' : 'image-preview';
+                        previewContainer.appendChild(img);
+                    }
+                    reader.readAsDataURL(input.files[i]);
+                }
+            }
+        }
+
+        // Category loading functions
+        function loadSubCategories(mainCategoryId) {
+            if (!mainCategoryId) {
+                document.getElementById('sub_category_id').innerHTML = '<option value="">Select Main Category First</option>';
+                document.getElementById('sub_sub_category_id').innerHTML = '<option value="">Select Sub Category First</option>';
+                return;
+            }
+
+            fetch(`ajax/get-sub-categories.php?parent_id=${mainCategoryId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('sub_category_id');
+                    select.innerHTML = '<option value="">Select Sub Category</option>';
+
+                    data.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = category.name;
+                        select.appendChild(option);
                     });
 
-                    localStorage.setItem('popState', 'shown');
+                    document.getElementById('sub_sub_category_id').innerHTML = '<option value="">Select Sub Category First</option>';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        function loadSubSubCategories(subCategoryId) {
+            if (!subCategoryId) {
+                document.getElementById('sub_sub_category_id').innerHTML = '<option value="">Select Sub Category First</option>';
+                return;
+            }
+
+            fetch(`ajax/get-sub-sub-categories.php?parent_id=${subCategoryId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('sub_sub_category_id');
+                    select.innerHTML = '<option value="">Select Sub Sub Category</option>';
+
+                    data.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = category.name;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // Update review data
+        function updateReviewData() {
+            // Product details
+            document.getElementById('review-name').textContent = document.getElementById('product_name').value || 'Not set';
+            document.getElementById('review-sku').textContent = document.getElementById('sku_code').value || 'Not set';
+            document.getElementById('review-price').textContent = '₹' + (document.getElementById('regular_price').value || '0.00');
+            document.getElementById('review-offer-price').textContent = document.getElementById('offer_price').value ? '₹' + document.getElementById('offer_price').value : 'Not set';
+            document.getElementById('review-quantity').textContent = document.getElementById('product_quantity').value || '0';
+            document.getElementById('review-status').textContent = document.getElementById('status').options[document.getElementById('status').selectedIndex].text;
+
+            // Category details
+            const mainCatSelect = document.getElementById('category_id');
+            const subCatSelect = document.getElementById('sub_category_id');
+            const subSubCatSelect = document.getElementById('sub_sub_category_id');
+
+            document.getElementById('review-category').textContent = mainCatSelect.options[mainCatSelect.selectedIndex]?.text || 'Not set';
+            document.getElementById('review-sub-category').textContent = subCatSelect.options[subCatSelect.selectedIndex]?.text || 'Not set';
+            document.getElementById('review-sub-sub-category').textContent = subSubCatSelect.options[subSubCatSelect.selectedIndex]?.text || 'Not set';
+
+            // Update images preview
+            updateReviewImages();
+        }
+
+        function updateReviewImages() {
+            const reviewContainer = document.getElementById('review-images');
+            reviewContainer.innerHTML = '';
+
+            // Thumbnail
+            const thumbnailInput = document.getElementById('thumbnail_image');
+            if (thumbnailInput.files && thumbnailInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'gallery-preview';
+                    img.title = 'Thumbnail';
+                    reviewContainer.appendChild(img);
                 }
-            }, 15000);
+                reader.readAsDataURL(thumbnailInput.files[0]);
+            }
+
+            // Main images
+            const mainImagesInput = document.getElementById('main_images');
+            if (mainImagesInput.files) {
+                for (let i = 0; i < mainImagesInput.files.length; i++) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'gallery-preview';
+                        img.title = `Main Image ${i + 1}`;
+                        reviewContainer.appendChild(img);
+                    }
+                    reader.readAsDataURL(mainImagesInput.files[i]);
+                }
+            }
+
+            // Gallery images
+            const galleryInput = document.getElementById('gallery_images');
+            if (galleryInput.files) {
+                for (let i = 0; i < galleryInput.files.length; i++) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'gallery-preview';
+                        img.title = `Gallery Image ${i + 1}`;
+                        reviewContainer.appendChild(img);
+                    }
+                    reader.readAsDataURL(galleryInput.files[i]);
+                }
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function () {
+            updateStepIndicator();
+
+            // Save as draft functionality
+            document.getElementById('saveDraftBtn').addEventListener('click', function () {
+                document.getElementById('status').value = 'draft';
+                if (validateCurrentStep()) {
+                    document.getElementById('productForm').submit();
+                }
+            });
         });
     </script>
 </body>
-
-
-<!-- Mirrored from demo.adminkit.io/ by HTTrack Website Copier/3.x [XR&CO'2014], Thu, 16 Oct 2025 09:50:42 GMT -->
 
 </html>
