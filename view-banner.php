@@ -17,7 +17,6 @@ $totalBanners = $bannerController->getBannersCount($search);
 $totalPages = ceil($totalBanners / $perPage);
 
 $stats = $bannerController->getBannerStats();
-$positions = $bannerController->getAvailablePositions();
 
 // Check for messages
 $success_message = $_SESSION['success_message'] ?? '';
@@ -239,8 +238,11 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                             </td>
                                                             <td>
                                                                 <span class="badge bg-light text-dark">
-                                                                    <?php echo htmlspecialchars($positions[$banner['position']] ?? $banner['position']); ?>
+                                                                    <?php echo htmlspecialchars($banner['section_label'] ?? $banner['section_key'] ?? '-'); ?>
                                                                 </span>
+                                                                <?php if (!empty($banner['section_page'])): ?>
+                                                                    <br><small class="text-muted"><?php echo strtoupper(htmlspecialchars($banner['section_page'])); ?></small>
+                                                                <?php endif; ?>
                                                             </td>
                                                             <td>
                                                                 <?php if (!empty($banner['target_url'])): ?>
