@@ -1,404 +1,480 @@
 <?php
 session_start();
-require_once 'config/constants.php';
-require_once 'controllers/CategoryController.php';
+require_once(__DIR__ . '/config/database.php');
+require_once(__DIR__ . '/controllers/CategoryController.php');
 
-$categoryController = new CategoryController();
+$controller = new CategoryController();
+$error   = '';
+$success = '';
 
-// Handle form submission
-if ($_POST) {
-    try {
-        $image_path = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = trim($_POST['name'] ?? '');
+    $slug = trim($_POST['slug'] ?? '');
+    if ($slug === '') {
+        $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $name));
+        $slug = trim($slug, '-');
+    }
 
-        // Handle image upload
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $upload_dir = 'uploads/category/';
+    function uploadCatImage($fileKey, $subdir = 'general') {
+        if (empty($_FILES[$fileKey]['name'])) return '';
+        $file    = $_FILES[$fileKey];
+        $allowed = ['jpg','jpeg','png','gif','webp'];
+        $ext     = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowed) || $file['size'] > 5 * 1024 * 1024) return '';
+        $dir = __DIR__ . "/uploads/category/{$subdir}/";
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        $filename = uniqid() . '_' . time() . '.' . $ext;
+        return move_uploaded_file($file['tmp_name'], $dir . $filename) ? "uploads/category/{$subdir}/{$filename}" : '';
+    }
 
-            if (!file_exists($upload_dir)) {
-                mkdir($upload_dir, 0777, true);
-            }
+    $data = [
+        'name'                 => $name,
+        'slug'                 => $slug,
+        'description'          => trim($_POST['description'] ?? ''),
+        'parent_id'            => 0,
+        'level'                => 1,
+        'status'               => $_POST['status'] ?? 'active',
+        'is_featured'          => (int)($_POST['is_featured'] ?? 0),
+        'icon'                 => trim($_POST['icon'] ?? ''),
+        'display_order'        => (int)($_POST['display_order'] ?? 0),
+        // Desktop menu
+        'desktop_menu_status'  => $_POST['desktop_menu_status'] ?? 'show',
+        'desktop_menu_order'   => (int)($_POST['desktop_menu_order'] ?? 0),
+        'desktop_menu_view'    => $_POST['desktop_menu_view'] ?? 'no',
+        'desktop_menu_design'  => $_POST['desktop_menu_design'] ?? '',
+        // Desktop home
+        'desktop_home_show'    => $_POST['desktop_home_show'] ?? 'no',
+        'desktop_home_design'  => $_POST['desktop_home_design'] ?? '',
+        'desktop_home_order'   => (int)($_POST['desktop_home_order'] ?? 0),
+        'desktop_bg_color'     => $_POST['desktop_bg_color'] ?? '',
+        'desktop_bg_image'     => uploadCatImage('desktop_bg_image', 'bg'),
+        'desktop_image'        => uploadCatImage('desktop_image', 'desktop'),
+        // Mobile menu
+        'mobile_topbar_status' => $_POST['mobile_topbar_status'] ?? 'show',
+        'mobile_topbar_order'  => (int)($_POST['mobile_topbar_order'] ?? 0),
+        'mobile_menu_view'     => $_POST['mobile_menu_view'] ?? 'no',
+        'mobile_menu_design'   => $_POST['mobile_menu_design'] ?? '',
+        'mobile_sidebar_order' => (int)($_POST['mobile_sidebar_order'] ?? 0),
+        // Mobile home
+        'mobile_home_show'     => $_POST['mobile_home_show'] ?? 'no',
+        'mobile_home_design'   => $_POST['mobile_home_design'] ?? '',
+        'mobile_home_format'   => $_POST['mobile_home_format'] ?? '4',
+        'mobile_home_order'    => (int)($_POST['mobile_home_order'] ?? 0),
+        'mobile_bg_color'      => $_POST['mobile_bg_color'] ?? '',
+        'mobile_bg_image'      => uploadCatImage('mobile_bg_image', 'mobile-bg'),
+        'mobile_image'         => uploadCatImage('mobile_image', 'mobile'),
+        // SEO
+        'meta_title'           => trim($_POST['meta_title'] ?? ''),
+        'meta_keywords'        => trim($_POST['meta_keywords'] ?? ''),
+        'meta_description'     => trim($_POST['meta_description'] ?? ''),
+    ];
 
-            $file_name = $_FILES['image']['name'];
-            $file_tmp = $_FILES['image']['tmp_name'];
-            $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-
-            $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-
-            if (in_array($file_ext, $allowed_ext)) {
-                $file_size = $_FILES['image']['size'];
-                if ($file_size <= 5 * 1024 * 1024) {
-                    $new_file_name = uniqid('category_', true) . '.' . $file_ext;
-                    $destination = $upload_dir . $new_file_name;
-
-                    if (move_uploaded_file($file_tmp, $destination)) {
-                        $image_path = $destination;
-                    } else {
-                        throw new Exception("Failed to upload image.");
-                    }
-                } else {
-                    throw new Exception("Image size too large. Maximum size is 5MB.");
-                }
-            } else {
-                throw new Exception("Invalid file type. Only JPG, JPEG, PNG, GIF, and WebP are allowed.");
-            }
-        }
-
-        $data = [
-            'name' => trim($_POST['name']),
-            'slug' => trim($_POST['slug']),
-            'description' => trim($_POST['description']),
-            'parent_id' => 0, // Main category always has parent_id = 0
-            'image' => $image_path,
-            'icon' => trim($_POST['icon']),
-            'status' => $_POST['status'],
-            'display_order' => isset($_POST['display_order']) ? (int) $_POST['display_order'] : 0,
-            'is_featured' => isset($_POST['is_featured']) ? 1 : 0,
-            'level' => 1 // Main category
-        ];
-
-        if ($categoryController->createCategory($data)) {
-            $_SESSION['success_message'] = "Main Category created successfully!";
-            header("Location: add-main-category.php");
-            exit();
+    if (empty($data['name'])) {
+        $error = 'Category name is required.';
+    } else {
+        $result = $controller->createCategory($data);
+        if ($result) {
+            $_SESSION['success_message'] = 'Main category created successfully!';
+            header('Location: view-categories.php');
+            exit;
         } else {
-            $_SESSION['error_message'] = "Failed to create category.";
+            $error = 'Failed to create category. Please try again.';
         }
-    } catch (Exception $e) {
-        $_SESSION['error_message'] = $e->getMessage();
     }
 }
-?>
 
+$success = $_SESSION['success_message'] ?? '';
+unset($_SESSION['success_message']);
+?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="shortcut icon" href="img/icons/icon-48x48.png" />
     <title>Add Main Category | Printmont</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
     <script src="js/settings.js"></script>
     <style>
-        .form-label {
-            font-weight: 500;
-        }
-
-        .required:after {
-            content: " *";
-            color: red;
-        }
-
-        .image-preview {
-            max-width: 200px;
-            max-height: 200px;
-            margin-top: 10px;
-            border-radius: 4px;
-            display: none;
-        }
-
-        .upload-area {
-            border: 2px dashed #dee2e6;
-            border-radius: 4px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .upload-area:hover {
-            border-color: #007bff;
-            background-color: #f8f9fa;
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
+        body { opacity: 0; }
+        .required-field::after { content: " *"; color: #dc3545; }
+        .section-card { border-left: 4px solid #0d6efd; }
+        .section-card.mobile { border-left-color: #198754; }
+        .section-card.seo { border-left-color: #ffc107; }
+        .design-option { border: 2px solid #dee2e6; border-radius: 8px; padding: 10px; text-align: center; transition: all .2s; cursor: pointer; }
+        .design-option:hover { border-color: #0d6efd; }
+        input[type=radio]:checked + .design-option { border-color: #0d6efd; background: #e8f4fd; }
+        .image-preview { max-height: 120px; border-radius: 6px; margin-top: 8px; display: none; }
+        .conditional-block { display: none; }
     </style>
 </head>
-
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
-    <div class="wrapper">
-        <?php include_once "includes/side-navbar.php"; ?>
-        <div class="main">
-            <?php include_once "includes/top-navbar.php"; ?>
+<div class="wrapper">
+    <?php include_once "includes/side-navbar.php"; ?>
+    <div class="main">
+        <?php include_once "includes/top-navbar.php"; ?>
+        <main class="content">
+            <div class="container-fluid p-0">
 
-            <main class="content">
-                <div class="container-fluid p-0">
-                    <div class="row mb-2 mb-xl-3">
-                        <div class="col-auto d-none d-sm-block">
-                            <h3><strong>Add Main</strong> Category</h3>
-                        </div>
-                        <div class="col-auto ms-auto text-end mt-n1">
-                            <a href="view-categories.php?level=1" class="btn btn-secondary">View Main Categories</a>
-                        </div>
+                <div class="row mb-3">
+                    <div class="col-auto d-none d-sm-block">
+                        <h3><strong>Add</strong> Main Category</h3>
                     </div>
-
-                    <div class="card mb-3">
-                        <div class="card-body p-2">
-                            <ul class="nav nav-tabs" id="categoryTab" role="tablist">
-                                <li class="nav-item" role="presentation">
-                                    <a class="nav-link active" href="add-main-category.php">
-                                        <i class="fas fa-layer-group me-1"></i> Main Category
-                                    </a>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <a class="nav-link" href="add-sub-category.php">
-                                        <i class="fas fa-sitemap me-1"></i> Sub Category
-                                    </a>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <a class="nav-link" href="add-sub-sub-category.php">
-                                        <i class="fas fa-project-diagram me-1"></i> Sub Sub Category
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-
-
-                    <!-- Messages -->
-                    <?php if (isset($_SESSION['success_message'])): ?>
-                        <div class="alert alert-success alert-dismissible" role="alert">
-                            <div class="alert-message"><?php echo htmlspecialchars($_SESSION['success_message']); ?></div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                        <?php unset($_SESSION['success_message']); ?>
-                    <?php endif; ?>
-
-                    <?php if (isset($_SESSION['error_message'])): ?>
-                        <div class="alert alert-danger alert-dismissible" role="alert">
-                            <div class="alert-message"><?php echo htmlspecialchars($_SESSION['error_message']); ?></div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                        <?php unset($_SESSION['error_message']); ?>
-                    <?php endif; ?>
-
-                    <div class="row">
-                        <div class="col-12 col-md-8">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="card-title mb-0">Main Category Information</h5>
-                                    <h6 class="card-subtitle text-white">Add new main category (Level 1)</h6>
-                                </div>
-                                <div class="card-body">
-                                    <form method="POST" id="categoryForm" enctype="multipart/form-data">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="name" class="form-label required">Category Name</label>
-                                                    <input type="text" class="form-control" id="name" name="name"
-                                                        required maxlength="255">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="slug" class="form-label required">Slug</label>
-                                                    <input type="text" class="form-control" id="slug" name="slug"
-                                                        required maxlength="255">
-                                                    <small class="form-text text-muted">URL-friendly version</small>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label for="description" class="form-label">Description</label>
-                                            <textarea class="form-control" id="description" name="description" rows="3"
-                                                maxlength="500"></textarea>
-                                        </div>
-
-                                        <!-- Image Upload -->
-                                        <div class="mb-3">
-                                            <label class="form-label">Category Image</label>
-                                            <div class="upload-area" id="uploadArea">
-                                                <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
-                                                <p class="mb-1">Click to upload or drag and drop</p>
-                                                <p class="small text-muted mb-0">PNG, JPG, GIF, WebP (Max. 5MB)</p>
-                                                <input type="file" id="image" name="image"
-                                                    accept=".jpg,.jpeg,.png,.gif,.webp" style="display: none;">
-                                            </div>
-                                            <div class="file-info" id="fileInfo"></div>
-                                            <img id="imagePreview" class="image-preview" alt="Image preview">
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="display_order" class="form-label">Display Order</label>
-                                                    <input type="number" class="form-control" id="display_order"
-                                                        name="display_order" value="0" min="0">
-                                                    <small class="form-text text-muted">Lower numbers display
-                                                        first</small>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="status" class="form-label required">Status</label>
-                                                    <select class="form-control" id="status" name="status" required>
-                                                        <option value="active" selected>Active</option>
-                                                        <option value="inactive">Inactive</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="icon" class="form-label">Icon Class</label>
-                                                    <input type="text" class="form-control" id="icon" name="icon"
-                                                        placeholder="fas fa-folder" maxlength="100">
-                                                    <small class="form-text text-muted">Font Awesome icon</small>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="is_featured"
-                                                    name="is_featured" value="1">
-                                                <label class="form-check-label" for="is_featured">Featured
-                                                    Category</label>
-                                            </div>
-                                        </div>
-
-                                        <div class="d-flex gap-2">
-                                            <button type="submit" class="btn btn-primary">Create Main Category</button>
-                                            <a href="view-categories.php" class="btn btn-secondary">Cancel</a>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-md-4">
-                            <div class="card shadow-sm border-0">
-                                <div class="card-header bg-info text-dark">
-                                    <h5 class="card-title mb-0">Quick Tips</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="alert alert-info p-2">
-                                        <h6 class="fw-bold mb-2">
-                                            <i class="bi bi-diagram-3"></i> Main Category
-                                        </h6>
-                                        <ul class="mb-0 ps-3">
-                                            <li>This is a <strong>Level 1</strong> category</li>
-                                            <li>Will appear in main navigation</li>
-                                            <li>Can have multiple sub-categories</li>
-                                            <li>Parent ID will be set to <strong>0</strong></li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="alert alert-warning p-2">
-                                        <h6 class="fw-bold mb-2">
-                                            <i class="bi bi-link-45deg"></i> Slug Guidelines
-                                        </h6>
-                                        <p class="mb-0">Use lowercase with hyphens:<br>
-                                            Example: <code>men-clothing</code></p>
-                                    </div>
-
-                                    <div class="text-center mt-3">
-                                        <div class="btn-group" role="group">
-                                            <a href="add-main-category.php" class="btn btn-primary btn-sm">Add Main
-                                                Category</a>
-                                            <a href="add-sub-category.php" class="btn btn-success btn-sm">Add Sub
-                                                Category</a>
-                                            <a href="add-sub-sub-category.php" class="btn btn-warning btn-sm">Add Sub
-                                                Sub</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-auto ms-auto text-end mt-n1">
+                        <a href="view-categories.php" class="btn btn-success">View All Categories</a>
                     </div>
                 </div>
-            </main>
-            <?php include_once "includes/footer.php"; ?>
-        </div>
+
+                <?php if ($error): ?>
+                    <div class="alert alert-danger alert-dismissible"><button class="btn-close" data-bs-dismiss="alert"></button><?php echo htmlspecialchars($error); ?></div>
+                <?php endif; ?>
+                <?php if ($success): ?>
+                    <div class="alert alert-success alert-dismissible"><button class="btn-close" data-bs-dismiss="alert"></button><?php echo htmlspecialchars($success); ?></div>
+                <?php endif; ?>
+
+                <form method="POST" enctype="multipart/form-data">
+
+                    <!-- BASIC INFO -->
+                    <div class="card mb-4">
+                        <div class="card-header"><h5 class="mb-0">Basic Information</h5></div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label required-field">Category Name</label>
+                                    <input type="text" class="form-control" name="name" id="catName" required
+                                           placeholder="e.g. Electronics" value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>">
+                                </div>
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label required-field">Slug</label>
+                                    <input type="text" class="form-control" name="slug" id="catSlug"
+                                           placeholder="auto-generated" value="<?php echo htmlspecialchars($_POST['slug'] ?? ''); ?>">
+                                    <small class="text-muted">Lowercase letters and hyphens only. Auto-fills from name.</small>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Status</label>
+                                    <select name="status" class="form-control">
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Featured</label>
+                                    <select name="is_featured" class="form-control">
+                                        <option value="0">No</option>
+                                        <option value="1">Yes</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Display Order</label>
+                                    <input type="number" class="form-control" name="display_order" value="0" min="0">
+                                </div>
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Icon Class <small class="text-muted">(optional)</small></label>
+                                    <input type="text" class="form-control" name="icon" placeholder="fas fa-tag">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="description" rows="2" placeholder="Short description"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DESKTOP TOP MENU -->
+                    <div class="card mb-4 section-card">
+                        <div class="card-header bg-primary bg-opacity-10">
+                            <h5 class="mb-0 text-primary"><i class="fas fa-desktop me-2"></i>Desktop – Top Menu Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Top Menu Status</label>
+                                    <select name="desktop_menu_status" class="form-control">
+                                        <option value="show">Show</option>
+                                        <option value="hide">Hide</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Top Menu Sort Order</label>
+                                    <input type="number" class="form-control" name="desktop_menu_order" value="0" min="0">
+                                </div>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Show Category View Design?</label>
+                                    <select name="desktop_menu_view" class="form-control" id="desktopMenuView">
+                                        <option value="no">No</option>
+                                        <option value="yes">Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="conditional-block" id="desktopMenuDesignBlock">
+                                <label class="form-label">Select Desktop Menu Design</label>
+                                <div class="row g-3">
+                                    <?php foreach (['design_dm1'=>'Menu Design 1','design_dm2'=>'Menu Design 2','design_dm3'=>'Menu Design 3','design_dm4'=>'Menu Design 4'] as $val => $lbl): ?>
+                                    <div class="col-6 col-md-3">
+                                        <input type="radio" name="desktop_menu_design" value="<?php echo $val; ?>" id="dmd_<?php echo $val; ?>" class="d-none">
+                                        <label for="dmd_<?php echo $val; ?>" class="design-option d-block">
+                                            <div class="bg-light rounded mb-2" style="height:60px;display:flex;align-items:center;justify-content:center;font-size:24px">🖥️</div>
+                                            <small><?php echo $lbl; ?></small>
+                                        </label>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DESKTOP HOME PAGE -->
+                    <div class="card mb-4 section-card">
+                        <div class="card-header bg-primary bg-opacity-10">
+                            <h5 class="mb-0 text-primary"><i class="fas fa-home me-2"></i>Desktop – Home Page Display</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Show on Desktop Home Page?</label>
+                                    <select name="desktop_home_show" class="form-control" id="desktopHomeShow">
+                                        <option value="no">No</option>
+                                        <option value="yes">Yes</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Home Page Sort Order</label>
+                                    <input type="number" class="form-control" name="desktop_home_order" value="0" min="0">
+                                </div>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Background Color</label>
+                                    <div class="input-group">
+                                        <input type="color" class="form-control form-control-color" name="desktop_bg_color" value="#ffffff" style="width:50px" id="desktopBgColorPicker">
+                                        <input type="text" class="form-control" id="desktopBgColorText" placeholder="#ffffff" maxlength="7">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="conditional-block" id="desktopHomeBlock">
+                                <label class="form-label">Select Home Page Design (Desktop)</label>
+                                <div class="row g-3 mb-3">
+                                    <?php foreach (['design1'=>['📱','Design 1'],'design2'=>['🖼️','Design 2'],'design3'=>['🗂️','Design 3'],'design4'=>['🎨','Design 4']] as $val => [$icon, $lbl]): ?>
+                                    <div class="col-6 col-md-3">
+                                        <input type="radio" name="desktop_home_design" value="<?php echo $val; ?>" id="dhd_<?php echo $val; ?>" class="d-none">
+                                        <label for="dhd_<?php echo $val; ?>" class="design-option d-block">
+                                            <div class="bg-light rounded mb-2" style="height:60px;display:flex;align-items:center;justify-content:center;font-size:24px"><?php echo $icon; ?></div>
+                                            <small><?php echo $lbl; ?></small>
+                                        </label>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Desktop Category Image</label>
+                                        <input type="file" class="form-control" name="desktop_image" accept="image/*" onchange="previewImg(this,'previewDesktopImg')">
+                                        <img id="previewDesktopImg" class="image-preview">
+                                        <small class="text-muted">Max 5 MB · JPG/PNG/WebP</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Desktop Background Image <small class="text-muted">(optional)</small></label>
+                                        <input type="file" class="form-control" name="desktop_bg_image" accept="image/*" onchange="previewImg(this,'previewDesktopBg')">
+                                        <img id="previewDesktopBg" class="image-preview">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MOBILE TOP BAR -->
+                    <div class="card mb-4 section-card mobile">
+                        <div class="card-header bg-success bg-opacity-10">
+                            <h5 class="mb-0 text-success"><i class="fas fa-mobile-alt me-2"></i>Mobile – Top Bar Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Mobile Top Bar Status</label>
+                                    <select name="mobile_topbar_status" class="form-control">
+                                        <option value="show">Show</option>
+                                        <option value="hide">Hide</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Top Bar Sort Order</label>
+                                    <input type="number" class="form-control" name="mobile_topbar_order" value="0" min="0">
+                                </div>
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Sidebar Sort Order</label>
+                                    <input type="number" class="form-control" name="mobile_sidebar_order" value="0" min="0">
+                                </div>
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Show Menu View Design?</label>
+                                    <select name="mobile_menu_view" class="form-control" id="mobileMenuView">
+                                        <option value="no">No</option>
+                                        <option value="yes">Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="conditional-block" id="mobileMenuDesignBlock">
+                                <label class="form-label">Select Mobile Menu Design</label>
+                                <div class="row g-3">
+                                    <?php foreach (['mobile_design1'=>'Mobile Design 1','mobile_design2'=>'Mobile Design 2'] as $val => $lbl): ?>
+                                    <div class="col-6 col-md-3">
+                                        <input type="radio" name="mobile_menu_design" value="<?php echo $val; ?>" id="mmd_<?php echo $val; ?>" class="d-none">
+                                        <label for="mmd_<?php echo $val; ?>" class="design-option d-block">
+                                            <div class="bg-light rounded mb-2" style="height:60px;display:flex;align-items:center;justify-content:center;font-size:24px">📱</div>
+                                            <small><?php echo $lbl; ?></small>
+                                        </label>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MOBILE HOME PAGE -->
+                    <div class="card mb-4 section-card mobile">
+                        <div class="card-header bg-success bg-opacity-10">
+                            <h5 class="mb-0 text-success"><i class="fas fa-home me-2"></i>Mobile – Home Page Display</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Show on Mobile Home Page?</label>
+                                    <select name="mobile_home_show" class="form-control" id="mobileHomeShow">
+                                        <option value="no">No</option>
+                                        <option value="yes">Yes</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Mobile Home Sort Order</label>
+                                    <input type="number" class="form-control" name="mobile_home_order" value="0" min="0">
+                                </div>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Background Color</label>
+                                    <div class="input-group">
+                                        <input type="color" class="form-control form-control-color" name="mobile_bg_color" value="#ffffff" style="width:50px" id="mobileBgColorPicker">
+                                        <input type="text" class="form-control" id="mobileBgColorText" placeholder="#ffffff" maxlength="7">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="conditional-block" id="mobileHomeBlock">
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label">Mobile Home Design</label>
+                                        <div class="row g-2">
+                                            <?php foreach (['design1'=>['📱','Design 1'],'design2'=>['🖼️','Design 2'],'design3'=>['🗂️','Design 3'],'design4'=>['🎨','Design 4']] as $val => [$icon, $lbl]): ?>
+                                            <div class="col-3">
+                                                <input type="radio" name="mobile_home_design" value="<?php echo $val; ?>" id="mhd_<?php echo $val; ?>" class="d-none">
+                                                <label for="mhd_<?php echo $val; ?>" class="design-option d-block">
+                                                    <div class="bg-light rounded mb-1" style="height:50px;display:flex;align-items:center;justify-content:center;font-size:20px"><?php echo $icon; ?></div>
+                                                    <small><?php echo $lbl; ?></small>
+                                                </label>
+                                            </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Product Box Format</label>
+                                        <select name="mobile_home_format" class="form-control">
+                                            <option value="4">4 Image Product Box</option>
+                                            <option value="6">6 Image Product Box</option>
+                                            <option value="8">8 Image Product Box</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Mobile Category Image</label>
+                                        <input type="file" class="form-control" name="mobile_image" accept="image/*" onchange="previewImg(this,'previewMobileImg')">
+                                        <img id="previewMobileImg" class="image-preview">
+                                        <small class="text-muted">Max 5 MB · JPG/PNG/WebP</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Mobile Background Image <small class="text-muted">(optional)</small></label>
+                                        <input type="file" class="form-control" name="mobile_bg_image" accept="image/*" onchange="previewImg(this,'previewMobileBg')">
+                                        <img id="previewMobileBg" class="image-preview">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SEO -->
+                    <div class="card mb-4 section-card seo">
+                        <div class="card-header bg-warning bg-opacity-10">
+                            <h5 class="mb-0"><i class="fas fa-search me-2"></i>SEO Meta</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Meta Title</label>
+                                <input type="text" class="form-control" name="meta_title" maxlength="255"
+                                       placeholder="SEO title (leave blank to use category name)">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Meta Keywords</label>
+                                <input type="text" class="form-control" name="meta_keywords"
+                                       placeholder="keyword1, keyword2, keyword3">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Meta Description</label>
+                                <textarea class="form-control" name="meta_description" rows="3" maxlength="160"
+                                          placeholder="Brief description for search engines (max 160 chars)"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <button type="submit" class="btn btn-primary btn-lg">Create Main Category</button>
+                        <a href="view-categories.php" class="btn btn-secondary ms-2">Cancel</a>
+                    </div>
+
+                </form>
+            </div>
+        </main>
+        <?php include_once "includes/footer.php"; ?>
     </div>
+</div>
+<script src="js/app.js"></script>
+<script>
+// Slug auto-generate
+const catName = document.getElementById('catName');
+const catSlug = document.getElementById('catSlug');
+catName.addEventListener('input', function () {
+    if (!catSlug._manual) catSlug.value = this.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+});
+catSlug.addEventListener('input', function () { this._manual = !!this.value; });
 
-    <script src="js/app.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
-    <script>
-        // Auto-generate slug
-        document.getElementById('name').addEventListener('input', function () {
-            const name = this.value;
-            const slug = name.toLowerCase()
-                .trim()
-                .replace(/[^a-z0-9 -]/g, '')
-                .replace(/\s+/g, '-')
-                .replace(/-+/g, '-');
-            document.getElementById('slug').value = slug;
-        });
+// Conditional show/hide blocks
+function bindToggle(selectId, blockId, triggerVal = 'yes') {
+    const sel = document.getElementById(selectId);
+    const blk = document.getElementById(blockId);
+    if (!sel || !blk) return;
+    const update = () => blk.style.display = (sel.value === triggerVal) ? 'block' : 'none';
+    sel.addEventListener('change', update);
+    update();
+}
+bindToggle('desktopMenuView',  'desktopMenuDesignBlock');
+bindToggle('desktopHomeShow',  'desktopHomeBlock');
+bindToggle('mobileMenuView',   'mobileMenuDesignBlock');
+bindToggle('mobileHomeShow',   'mobileHomeBlock');
 
-        // Image upload functionality
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('image');
-        const fileInfo = document.getElementById('fileInfo');
-        const imagePreview = document.getElementById('imagePreview');
+// Color picker sync
+function syncColor(pickerId, textId) {
+    const picker = document.getElementById(pickerId);
+    const text   = document.getElementById(textId);
+    if (!picker || !text) return;
+    picker.addEventListener('input', () => text.value = picker.value);
+    text.addEventListener('input', () => { if (/^#[0-9a-f]{6}$/i.test(text.value)) picker.value = text.value; });
+}
+syncColor('desktopBgColorPicker', 'desktopBgColorText');
+syncColor('mobileBgColorPicker',  'mobileBgColorText');
 
-        uploadArea.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', function (e) {
-            handleFileSelection(this.files[0]);
-        });
-
-        function handleFileSelection(file) {
-            if (file) {
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-                if (!allowedTypes.includes(file.type)) {
-                    alert('Please select a valid image file (JPG, PNG, GIF, or WebP).');
-                    return;
-                }
-
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('File size must be less than 5MB.');
-                    return;
-                }
-
-                fileInfo.innerHTML = `
-                    <strong>Selected file:</strong> ${file.name} 
-                    <span class="text-danger ms-2" onclick="removeImage()" style="cursor:pointer">
-                        <i class="fas fa-times"></i> Remove
-                    </span>
-                `;
-
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    imagePreview.src = e.target.result;
-                    imagePreview.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function removeImage() {
-            fileInput.value = '';
-            fileInfo.innerHTML = '';
-            imagePreview.style.display = 'none';
-        }
-
-        // Form validation
-        document.getElementById('categoryForm').addEventListener('submit', function (e) {
-            const name = document.getElementById('name').value.trim();
-            const slug = document.getElementById('slug').value.trim();
-
-            if (!name) {
-                e.preventDefault();
-                alert('Please enter a category name');
-                document.getElementById('name').focus();
-                return;
-            }
-
-            if (!/^[a-z0-9-]+$/.test(slug)) {
-                e.preventDefault();
-                alert('Slug can only contain lowercase letters, numbers, and hyphens');
-                document.getElementById('slug').focus();
-                return;
-            }
-        });
-    </script>
+// Image preview
+function previewImg(input, previewId) {
+    const el = document.getElementById(previewId);
+    if (!input.files || !input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => { el.src = e.target.result; el.style.display = 'block'; };
+    reader.readAsDataURL(input.files[0]);
+}
+</script>
 </body>
-
 </html>

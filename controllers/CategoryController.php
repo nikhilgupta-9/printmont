@@ -141,18 +141,10 @@ class CategoryController
         return $categories;
     }
 
-    // Get category by ID
-    // public function getCategoryById($id)
-    // {
-    //     $id = (int) $id;
-    //     $sql = "SELECT * FROM categories WHERE id = $id AND status = 'active'";
-    //     $result = $this->conn->query($sql);
-
-    //     if ($result && $result->num_rows > 0) {
-    //         return $result->fetch_assoc();
-    //     }
-    //     return null;
-    // }
+    public function getCategoryById($id)
+    {
+        return $this->category->getById((int)$id);
+    }
 
     // Get category name by ID
     public function getCategoryName($id)
@@ -179,22 +171,27 @@ class CategoryController
     // Create Category
     public function createCategory($data)
     {
-        $name = $this->db->real_escape_string($data['name']);
-        $slug = $this->db->real_escape_string($data['slug']);
-        $description = $this->db->real_escape_string($data['description']);
-        $parent_id = (int) $data['parent_id'];
-        $image = $this->db->real_escape_string($data['image']);
-        $icon = $this->db->real_escape_string($data['icon']);
-        $status = $this->db->real_escape_string($data['status']);
-        $display_order = (int) $data['display_order'];
-        $is_featured = (int) $data['is_featured'];
-        $level = (int) $data['level'];
+        $e = fn($v) => $this->db->real_escape_string($v ?? '');
 
-        $sql = "INSERT INTO categories 
-                (name, slug, description, parent_id, image, icon, status, display_order, is_featured, level, created_at) 
-                VALUES 
-                ('$name', '$slug', '$description', $parent_id, '$image', '$icon', '$status', $display_order, $is_featured, $level, NOW())";
+        $cols = ['name','slug','description','parent_id','image','icon','status','display_order','is_featured','level',
+                 'desktop_menu_status','desktop_menu_order','desktop_menu_view','desktop_menu_design','desktop_menu_tag',
+                 'desktop_home_show','desktop_home_design','desktop_home_order','desktop_bg_color','desktop_bg_image','desktop_image',
+                 'mobile_topbar_status','mobile_topbar_order','mobile_menu_view','mobile_menu_design','mobile_sidebar_order',
+                 'mobile_home_show','mobile_home_design','mobile_home_format','mobile_home_order','mobile_bg_color','mobile_bg_image','mobile_image',
+                 'meta_title','meta_keywords','meta_description'];
 
+        $intCols = ['parent_id','display_order','is_featured','level',
+                    'desktop_menu_order','desktop_home_order','mobile_topbar_order','mobile_sidebar_order','mobile_home_order'];
+
+        $setParts = [];
+        $vals     = [];
+        foreach ($cols as $col) {
+            if (!array_key_exists($col, $data)) continue;
+            $setParts[] = $col;
+            $vals[]     = in_array($col, $intCols) ? (int)$data[$col] : "'" . $e($data[$col]) . "'";
+        }
+
+        $sql = "INSERT INTO categories (" . implode(',', $setParts) . ", created_at) VALUES (" . implode(',', $vals) . ", NOW())";
         return $this->db->query($sql);
     }
 
