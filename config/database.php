@@ -4,11 +4,11 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 // Define BASE_URL outside the class
-// define("BASE_URL", "https://printmont.com/");
+// define("BASE_URL", "https://mediumvioletred-pelican-783174.hostingersite.com/");
 define("BASE_URL", "http://localhost/printmont-admin/");
 
 class Database {
-    private $host = "127.0.0.1";
+    private $host = "217.21.91.234";
     private $db_name = "printmont_bk_db";
     private $username = "root";
     private $password = "";

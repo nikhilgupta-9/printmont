@@ -4,259 +4,120 @@ require_once(__DIR__ . '/../config/database.php');
 class ProductModel
 {
     private $db;
-    private $table = "products";
+
+    // All valid columns that can be written to the products table
+    private $allowedColumns = [
+        'name', 'product_slug', 'description', 'long_description', 'instructions',
+        'delivery_info', 'alt_tag', 'thumbnail_image', 'gallery_images',
+        'category_id', 'sub_category_id', 'sub_sub_category_id',
+        'homepage_category_id', 'homepage_carousel_id',
+        'additional_category_ids', 'additional_sub_category_ids', 'additional_sub_sub_category_ids',
+        'brand', 'color', 'type', 'material', 'occasion', 'discount_type',
+        'shape', 'gender', 'gift_type', 'ideal_for', 'customization_tech',
+        'customization_location', 'capacity', 'ink_color', 'features',
+        'price', 'regular_price', 'offer_price', 'discount_price', 'sort_order',
+        'stock_quantity', 'product_quantity', 'out_of_stock_status', 'minimum_quantity',
+        'bulk_price_variance', 'sku', 'status', 'featured',
+        'top_selection', 'our_bestseller', 'top_rated', 'top_deal_by_categories', 'view_count',
+        // SEO
+        'meta_title', 'meta_keywords', 'meta_description',
+        // Visibility / Status toggles
+        'show_quantity', 'show_bulk_form', 'show_help_button', 'help_button_text', 'help_button_link',
+        // Customization
+        'show_customization_label', 'customization_label', 'customization_fields',
+        // Addons
+        'addon_product_ids',
+        // Attributes
+        'show_sizes', 'show_colors',
+        'size_attributes', 'color_attributes', 'material_attributes',
+        'lamination_attributes', 'orientation_attributes', 'quantity_price_breaks',
+        // Shipping
+        'shipping_method_status',
+        'local_shipping_charge', 'local_shipping_message',
+        'regional_shipping_charge', 'regional_shipping_message',
+        'national_shipping_charge', 'national_shipping_message',
+        // Cancel
+        'cancel_available', 'cancel_time', 'cancel_type',
+        // COD
+        'cod_available',
+        // Timestamps
+        'created_at', 'updated_at',
+    ];
 
     public function __construct()
     {
         $this->db = new Database();
     }
 
-    // Basic CRUD Operations
-    // public function getAllProducts()
-    // {
-    //     $query = "SELECT p.*, c.name as category_name 
-    //               FROM products p 
-    //               LEFT JOIN categories c ON p.category_id = c.id 
-    //               ORDER BY p.created_at DESC";
-    //     $products = $this->db->fetchAll($query);
-
-    //     // Get images for each product
-    //     foreach ($products as &$product) {
-    //         $product['images'] = $this->getProductImages($product['id']);
-    //     }
-
-    //     return $products;
-    // }
-
-    // public function getProductById($id)
-    // {
-    //     $query = "SELECT p.*, c.name as category_name 
-    //               FROM products p 
-    //               LEFT JOIN categories c ON p.category_id = c.id 
-    //               WHERE p.id = ?";
-    //     $product = $this->db->fetch($query, [$id]);
-
-    //     if ($product) {
-    //         $product['images'] = $this->getProductImages($id);
-    //     }
-
-    //     return $product;
-    // }
-
     public function createProduct($data, $mainImages = [])
     {
         $this->db->beginTransaction();
-
         try {
-            // Insert into products table
-            $query = "INSERT INTO products (
-                name, product_slug, description, long_description, instructions, 
-                delivery_info, alt_tag, thumbnail_image, gallery_images,
-                category_id, sub_category_id, sub_sub_category_id, 
-                homepage_category_id, homepage_carousel_id,
-                brand, color, type, material, occasion, discount_type,
-                shape, gender, gift_type, ideal_for, customization_tech,
-                customization_location, capacity, ink_color, features,
-                price, discount_price, sort_order, stock_quantity,
-                out_of_stock_status, minimum_quantity, bulk_price_variance,
-                sku, status, featured, top_selection, our_bestseller,
-                top_rated, top_deal_by_categories, view_count,
-                created_at, updated_at
-            ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-                ?, ?, ?, ?, ?, 
-                ?, ?, ?, ?, ?, ?, 
-                ?, ?, ?, ?, ?, 
-                ?, ?, ?, ?, ?, 
-                ?, ?, ?, ?, ?, 
-                ?, ?, ?, ?, ?, 
-                ?, ?, ?, ?, ?, 
-                ?
-            )";
+            $cols   = [];
+            $vals   = [];
+            foreach ($data as $col => $val) {
+                if (in_array($col, $this->allowedColumns)) {
+                    $cols[] = "`$col`";
+                    $vals[] = $val;
+                }
+            }
 
-            $params = [
-                $data['name'],
-                $data['product_slug'],
-                $data['description'],
-                $data['long_description'],
-                $data['instructions'],
-                $data['delivery_info'],
-                $data['alt_tag'],
-                $data['thumbnail_image'],
-                $data['gallery_images'],
+            if (empty($cols)) {
+                throw new Exception("No valid fields provided for product creation");
+            }
 
-                // Categories
-                $data['category_id'],
-                $data['sub_category_id'],
-                $data['sub_sub_category_id'],
-                $data['homepage_category_id'],
-                $data['homepage_carousel_id'],
+            $placeholders = implode(', ', array_fill(0, count($cols), '?'));
+            $query = "INSERT INTO products (" . implode(', ', $cols) . ") VALUES ($placeholders)";
+            $productId = $this->db->insert($query, $vals);
 
-                // Filters
-                $data['brand'],
-                $data['color'],
-                $data['type'],
-                $data['material'],
-                $data['occasion'],
-                $data['discount_type'],
-                $data['shape'],
-                $data['gender'],
-                $data['gift_type'],
-                $data['ideal_for'],
-                $data['customization_tech'],
-                $data['customization_location'],
-                $data['capacity'],
-                $data['ink_color'],
-                $data['features'],
-
-                // Pricing & Inventory
-                $data['price'],
-                $data['discount_price'],
-                $data['sort_order'],
-                $data['stock_quantity'],
-                $data['out_of_stock_status'],
-                $data['minimum_quantity'],
-                $data['bulk_price_variance'],
-                $data['sku'],
-                $data['status'],
-                $data['featured'],
-
-                // Additional flags
-                $data['top_selection'],
-                $data['our_bestseller'],
-                $data['top_rated'],
-                $data['top_deal_by_categories'],
-                $data['view_count'],
-
-                // Timestamps
-                $data['created_at'],
-                $data['updated_at']
-            ];
-
-            $productId = $this->db->insert($query, $params);
-
-            // Insert main images into product_images table
             if (!empty($mainImages)) {
                 $this->addProductImages($productId, $mainImages);
             }
 
             $this->db->commit();
             return $productId;
-
         } catch (Exception $e) {
             $this->db->rollback();
             throw $e;
         }
     }
 
-    // private function addProductImages($productId, $images)
-    // {
-    //     foreach ($images as $index => $imagePath) {
-    //         $query = "INSERT INTO product_images (product_id, image_url, is_primary, display_order, created_at) 
-    //                   VALUES (?, ?, ?, ?, NOW())";
-
-    //         $params = [
-    //             $productId,
-    //             $imagePath,
-    //             ($index === 0) ? 1 : 0, // First image is primary
-    //             $index
-    //         ];
-
-    //         $this->db->execute($query, $params);
-    //     }
-    // }
-
     public function updateProduct($id, $data, $mainImages = [])
     {
         $this->db->beginTransaction();
-
         try {
-            // Build update query with all fields
-            $query = "UPDATE products SET 
-            name = ?, product_slug = ?, description = ?, long_description = ?, 
-            instructions = ?, delivery_info = ?, alt_tag = ?, thumbnail_image = ?, 
-            gallery_images = ?, category_id = ?, sub_category_id = ?, 
-            sub_sub_category_id = ?, brand = ?, color = ?, type = ?, 
-            material = ?, occasion = ?, discount_type = ?, shape = ?, 
-            gender = ?, gift_type = ?, ideal_for = ?, customization_tech = ?, 
-            customization_location = ?, capacity = ?, ink_color = ?, 
-            features = ?, price = ?, discount_price = ?, sort_order = ?, 
-            stock_quantity = ?, out_of_stock_status = ?, minimum_quantity = ?, 
-            bulk_price_variance = ?, sku = ?, status = ?, featured = ?, 
-            top_selection = ?, our_bestseller = ?, top_rated = ?, 
-            top_deal_by_categories = ?, updated_at = ? 
-            WHERE id = ?";
+            $setParts = [];
+            $params   = [];
+            foreach ($data as $col => $val) {
+                if (in_array($col, $this->allowedColumns)) {
+                    $setParts[] = "`$col` = ?";
+                    $params[]   = $val;
+                }
+            }
 
-            $params = [
-                $data['name'],
-                $data['product_slug'],
-                $data['description'],
-                $data['long_description'],
-                $data['instructions'],
-                $data['delivery_info'],
-                $data['alt_tag'],
-                $data['thumbnail_image'],
-                $data['gallery_images'],
-                $data['category_id'],
-                $data['sub_category_id'] ?? null,
-                $data['sub_sub_category_id'] ?? null,
-                $data['brand'],
-                $data['color'],
-                $data['type'],
-                $data['material'],
-                $data['occasion'],
-                $data['discount_type'],
-                $data['shape'],
-                $data['gender'],
-                $data['gift_type'],
-                $data['ideal_for'],
-                $data['customization_tech'],
-                $data['customization_location'],
-                $data['capacity'],
-                $data['ink_color'],
-                $data['features'],
-                $data['price'],
-                $data['discount_price'],
-                $data['sort_order'],
-                $data['stock_quantity'],
-                $data['out_of_stock_status'],
-                $data['minimum_quantity'],
-                $data['bulk_price_variance'],
-                $data['sku'],
-                $data['status'],
-                $data['featured'],
-                $data['top_selection'],
-                $data['our_bestseller'],
-                $data['top_rated'],
-                $data['top_deal_by_categories'],
-                $data['updated_at'],
-                $id
-            ];
+            if (empty($setParts)) {
+                throw new Exception("No valid fields to update");
+            }
 
-            $success = $this->db->execute($query, $params);
+            $params[] = $id;
+            $query = "UPDATE products SET " . implode(', ', $setParts) . " WHERE id = ?";
+            $this->db->execute($query, $params);
 
-            // Update main images if provided
             if (!empty($mainImages)) {
-                // Delete old main images
                 $this->db->execute("DELETE FROM product_images WHERE product_id = ?", [$id]);
-
-                // Add new main images
                 foreach ($mainImages as $index => $image) {
-                    $imageQuery = "INSERT INTO product_images (product_id, image_url, is_primary, display_order, created_at) 
-                               VALUES (?, ?, ?, ?, NOW())";
-
-                    $this->db->execute($imageQuery, [
+                    $imgQ = "INSERT INTO product_images (product_id, image_url, is_primary, display_order, created_at) VALUES (?, ?, ?, ?, NOW())";
+                    $this->db->execute($imgQ, [
                         $id,
                         $image['image_url'],
                         $image['is_primary'] ? 1 : 0,
-                        $image['display_order'] ?? $index
+                        $image['display_order'] ?? $index,
                     ]);
                 }
             }
 
             $this->db->commit();
-            return $success;
-
+            return true;
         } catch (Exception $e) {
             $this->db->rollback();
             throw $e;
@@ -269,11 +130,9 @@ class ProductModel
                   FROM products p
                   LEFT JOIN categories c1 ON p.category_id = c1.id
                   WHERE p.id = ?";
-
         $product = $this->db->fetch($query, [$id]);
 
         if ($product) {
-            // Get product images
             $imagesQuery = "SELECT * FROM product_images WHERE product_id = ? ORDER BY display_order";
             $product['main_images'] = $this->db->fetchAll($imagesQuery, [$id]);
         }
@@ -283,335 +142,69 @@ class ProductModel
 
     public function getAllProducts($filters = [])
     {
-        $where = [];
+        $where  = [];
         $params = [];
 
         if (!empty($filters['category_id'])) {
-            $where[] = "p.category_id = ?";
+            $where[]  = "p.category_id = ?";
             $params[] = $filters['category_id'];
         }
-
         if (!empty($filters['status'])) {
-            $where[] = "p.status = ?";
+            $where[]  = "p.status = ?";
             $params[] = $filters['status'];
         }
-
-        if (!empty($filters['featured'])) {
-            $where[] = "p.featured = 1";
-        }
-
         if (!empty($filters['search'])) {
             $where[] = "(p.name LIKE ? OR p.sku LIKE ? OR p.description LIKE ?)";
-            $searchTerm = "%{$filters['search']}%";
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
+            $s = "%{$filters['search']}%";
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
         }
 
         $whereClause = !empty($where) ? "WHERE " . implode(" AND ", $where) : "";
-
-        $query = "SELECT p.*, 
-                  c1.name as main_category_name,
-                  
-                  
+        $query = "SELECT p.*, c1.name as main_category_name
                   FROM products p
                   LEFT JOIN categories c1 ON p.category_id = c1.id
-                  -- removed invalid join
-                  -- removed invalid join
                   $whereClause
                   ORDER BY p.sort_order, p.created_at DESC";
 
         return $this->db->fetchAll($query, $params);
     }
 
-    // public function deleteProduct($id)
-    // {
-    //     // Delete product images first
-    //     $this->db->execute("DELETE FROM product_images WHERE product_id = ?", [$id]);
-
-    //     // Delete product
-    //     $query = "DELETE FROM products WHERE id = ?";
-    //     return $this->db->execute($query, [$id]);
-    // }
-
-    public function updateProductStatus($id, $status)
-    {
-        $query = "UPDATE products SET status = ?, updated_at = NOW() WHERE id = ?";
-        return $this->db->execute($query, [$status, $id]);
-    }
-
-    public function updateProductFeatured($id, $featured)
-    {
-        $query = "UPDATE products SET featured = ?, updated_at = NOW() WHERE id = ?";
-        return $this->db->execute($query, [$featured, $id]);
-    }
-
-    public function getProductCounts()
-    {
-        $total = $this->db->fetch("SELECT COUNT(*) as count FROM products");
-        $active = $this->db->fetch("SELECT COUNT(*) as count FROM products WHERE status = 'active'");
-        $featured = $this->db->fetch("SELECT COUNT(*) as count FROM products WHERE featured = 1");
-        $outOfStock = $this->db->fetch("SELECT COUNT(*) as count FROM products WHERE out_of_stock_status = 'out_of_stock'");
-
-        return [
-            'total' => $total['count'] ?? 0,
-            'active' => $active['count'] ?? 0,
-            'featured' => $featured['count'] ?? 0,
-            'out_of_stock' => $outOfStock['count'] ?? 0
-        ];
-    }
-
-    public function deleteProduct($id)
-    {
-        $this->db->beginTransaction();
-
-        try {
-            // Delete product images first
-            $this->db->execute("DELETE FROM product_images WHERE product_id = ?", [$id]);
-
-            // Delete product
-            $result = $this->db->execute("DELETE FROM products WHERE id = ?", [$id]);
-
-            $this->db->commit();
-            return $result;
-
-        } catch (Exception $e) {
-            $this->db->rollback();
-            return false;
-        }
-    }
-
-    // Image Management
-    private function getProductImages($productId)
-    {
-        $query = "SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, display_order ASC";
-        return $this->db->fetchAll($query, [$productId]);
-    }
-
-    private function addProductImages($productId, $images)
-    {
-        foreach ($images as $image) {
-            $query = "INSERT INTO product_images (product_id, image_url, is_primary, display_order) 
-                      VALUES (?, ?, ?, ?)";
-
-            $this->db->execute($query, [
-                $productId,
-                $image['image_url'],
-                $image['is_primary'] ? 1 : 0,
-                $image['display_order']
-            ]);
-        }
-    }
-
-    // Status-based Product Retrieval 
-    public function getDeactiveProducts()
-    {
-        $query = "SELECT p.*, c.name as category_name 
-                  FROM products p 
-                  LEFT JOIN categories c ON p.category_id = c.id 
-                  WHERE p.status = 'inactive'
-                  ORDER BY p.created_at DESC";
-        $products = $this->db->fetchAll($query);
-
-        foreach ($products as &$product) {
-            $product['images'] = $this->getProductImages($product['id']);
-        }
-
-        return $products;
-    }
-
-    public function getActiveProducts()
-    {
-        $query = "SELECT p.*, c.name as category_name 
-                  FROM products p 
-                  LEFT JOIN categories c ON p.category_id = c.id 
-                  WHERE p.status = 'active'
-                  ORDER BY p.created_at DESC";
-        $products = $this->db->fetchAll($query);
-
-        foreach ($products as &$product) {
-            $product['images'] = $this->getProductImages($product['id']);
-        }
-
-        return $products;
-    }
-
-    public function getFeaturedProducts()
-    {
-        $query = "SELECT p.*, c.name as category_name 
-                  FROM products p 
-                  LEFT JOIN categories c ON p.category_id = c.id 
-                  WHERE p.featured = 1 AND p.status = 'active'
-                  ORDER BY p.created_at DESC";
-        $products = $this->db->fetchAll($query);
-
-        foreach ($products as &$product) {
-            $product['images'] = $this->getProductImages($product['id']);
-        }
-
-        return $products;
-    }
-
-    // Bestseller Methods
-    public function toggleBestseller($productId)
-    {
-        $query = "UPDATE products SET our_bestseller = NOT our_bestseller, updated_at = NOW() WHERE id = ?";
-        return $this->db->execute($query, [$productId]);
-    }
-
-    public function setBestsellerStatus($productId, $status)
-    {
-        $query = "UPDATE products SET our_bestseller = ?, updated_at = NOW() WHERE id = ?";
-        return $this->db->execute($query, [$status, $productId]);
-    }
-
-    public function getBestsellerProducts()
-    {
-        $query = "SELECT p.*, c.name as category_name 
-                 FROM products p 
-                 LEFT JOIN categories c ON p.category_id = c.id 
-                 WHERE p.our_bestseller = 1 AND p.status = 'active'
-                 ORDER BY p.created_at DESC";
-
-        $products = $this->db->fetchAll($query);
-
-        foreach ($products as &$product) {
-            $product['images'] = $this->getProductImages($product['id']);
-        }
-
-        return $products;
-    }
-
-    // Top Selection Methods
-    public function toggleTopSelection($productId)
-    {
-        $query = "UPDATE products SET top_selection = NOT top_selection, updated_at = NOW() WHERE id = ?";
-        return $this->db->execute($query, [$productId]);
-    }
-
-    public function setTopSelectionStatus($productId, $status)
-    {
-        $query = "UPDATE products SET top_selection = ?, updated_at = NOW() WHERE id = ?";
-        return $this->db->execute($query, [$status, $productId]);
-    }
-
-    public function getTopSelectionProducts()
-    {
-        $query = "SELECT p.*, c.name as category_name 
-                 FROM products p 
-                 LEFT JOIN categories c ON p.category_id = c.id 
-                 WHERE p.top_selection = 1 AND p.status = 'active'
-                 ORDER BY p.created_at DESC";
-
-        $products = $this->db->fetchAll($query);
-
-        foreach ($products as &$product) {
-            $product['images'] = $this->getProductImages($product['id']);
-        }
-
-        return $products;
-    }
-
-    // Top Rated Methods
-    public function toggleTopRated($productId)
-    {
-        $query = "UPDATE products SET top_rated = NOT top_rated, updated_at = NOW() WHERE id = ?";
-        return $this->db->execute($query, [$productId]);
-    }
-
-    public function setTopRatedStatus($productId, $status)
-    {
-        $query = "UPDATE products SET top_rated = ?, updated_at = NOW() WHERE id = ?";
-        return $this->db->execute($query, [$status, $productId]);
-    }
-
-    public function getTopRatedProducts()
-    {
-        $query = "SELECT p.*, c.name as category_name 
-                 FROM products p 
-                 LEFT JOIN categories c ON p.category_id = c.id 
-                 WHERE p.top_rated = 1 AND p.status = 'active'
-                 ORDER BY p.created_at DESC";
-
-        $products = $this->db->fetchAll($query);
-
-        foreach ($products as &$product) {
-            $product['images'] = $this->getProductImages($product['id']);
-        }
-
-        return $products;
-    }
-
-    // Top Deal by Categories Methods
-    public function toggleTopDealByCategories($productId)
-    {
-        $query = "UPDATE products SET top_deal_by_categories = NOT top_deal_by_categories, updated_at = NOW() WHERE id = ?";
-        return $this->db->execute($query, [$productId]);
-    }
-
-    public function setTopDealByCategoriesStatus($productId, $status)
-    {
-        $query = "UPDATE products SET top_deal_by_categories = ?, updated_at = NOW() WHERE id = ?";
-        return $this->db->execute($query, [$status, $productId]);
-    }
-
-    public function getTopDealByCategoriesProducts()
-    {
-        $query = "SELECT p.*, c.name as category_name 
-                 FROM products p 
-                 LEFT JOIN categories c ON p.category_id = c.id 
-                 WHERE p.top_deal_by_categories = 1 AND p.status = 'active'
-                 ORDER BY p.created_at DESC";
-
-        $products = $this->db->fetchAll($query);
-
-        foreach ($products as &$product) {
-            $product['images'] = $this->getProductImages($product['id']);
-        }
-
-        return $products;
-    }
-
-    // Search and Filter Methods
     public function getProductsWithFilters($search = '', $category_id = '', $status = '', $featured = '', $bestseller = '', $offset = 0, $limit = 10)
     {
-        $sql = "SELECT p.*, c.name as category_name,
-                       (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC, display_order ASC LIMIT 1) as primary_image
-                FROM products p 
-                LEFT JOIN categories c ON p.category_id = c.id 
-                WHERE 1=1";
-
+        $sql    = "SELECT p.*, c.name as category_name,
+                   (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC, display_order ASC LIMIT 1) as primary_image
+                   FROM products p
+                   LEFT JOIN categories c ON p.category_id = c.id
+                   WHERE 1=1";
         $params = [];
 
         if (!empty($search)) {
             $sql .= " AND (p.name LIKE ? OR p.sku LIKE ? OR p.brand LIKE ?)";
-            $searchTerm = "%$search%";
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
+            $s = "%$search%";
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
         }
-
         if (!empty($category_id)) {
             $sql .= " AND p.category_id = ?";
             $params[] = $category_id;
         }
-
         if (!empty($status)) {
             $sql .= " AND p.status = ?";
             $params[] = $status;
         }
-
         if ($featured !== '') {
             $sql .= " AND p.featured = ?";
             $params[] = $featured;
         }
-
         if ($bestseller !== '') {
             $sql .= " AND p.our_bestseller = ?";
             $params[] = $bestseller;
         }
 
-        $sql .= " ORDER BY p.created_at DESC LIMIT ? OFFSET ?";
+        $sql     .= " ORDER BY p.created_at DESC LIMIT ? OFFSET ?";
         $params[] = $limit;
         $params[] = $offset;
 
@@ -620,32 +213,28 @@ class ProductModel
 
     public function getTotalProductsCount($search = '', $category_id = '', $status = '', $featured = '', $bestseller = '')
     {
-        $sql = "SELECT COUNT(*) as total FROM products p WHERE 1=1";
+        $sql    = "SELECT COUNT(*) as total FROM products p WHERE 1=1";
         $params = [];
 
         if (!empty($search)) {
             $sql .= " AND (p.name LIKE ? OR p.sku LIKE ? OR p.brand LIKE ?)";
-            $searchTerm = "%$search%";
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
+            $s = "%$search%";
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
         }
-
         if (!empty($category_id)) {
             $sql .= " AND p.category_id = ?";
             $params[] = $category_id;
         }
-
         if (!empty($status)) {
             $sql .= " AND p.status = ?";
             $params[] = $status;
         }
-
         if ($featured !== '') {
             $sql .= " AND p.featured = ?";
             $params[] = $featured;
         }
-
         if ($bestseller !== '') {
             $sql .= " AND p.our_bestseller = ?";
             $params[] = $bestseller;
@@ -655,229 +244,295 @@ class ProductModel
         return $result['total'] ?? 0;
     }
 
-    // Utility Methods
-    public function getProductCountByStatus($status = '')
+    public function deleteProduct($id)
     {
-        $query = "SELECT COUNT(*) as count FROM products";
-        $params = [];
-
-        if (!empty($status)) {
-            $query .= " WHERE status = ?";
-            $params[] = $status;
+        $this->db->beginTransaction();
+        try {
+            $this->db->execute("DELETE FROM product_images WHERE product_id = ?", [$id]);
+            $result = $this->db->execute("DELETE FROM products WHERE id = ?", [$id]);
+            $this->db->commit();
+            return $result;
+        } catch (Exception) {
+            $this->db->rollback();
+            return false;
         }
-
-        $result = $this->db->fetch($query, $params);
-        return $result['count'] ?? 0;
     }
 
-    public function getLowStockProducts($threshold = 10)
+    public function updateProductStatus($id, $status)
     {
-        $query = "SELECT p.*, c.name as category_name 
-                  FROM products p 
-                  LEFT JOIN categories c ON p.category_id = c.id 
-                  WHERE p.stock_quantity <= ? AND p.status = 'active'
-                  ORDER BY p.stock_quantity ASC";
+        return $this->db->execute("UPDATE products SET status = ?, updated_at = NOW() WHERE id = ?", [$status, $id]);
+    }
 
-        $products = $this->db->fetchAll($query, [$threshold]);
+    public function updateProductFeatured($id, $featured)
+    {
+        return $this->db->execute("UPDATE products SET featured = ?, updated_at = NOW() WHERE id = ?", [$featured, $id]);
+    }
 
+    public function searchProductsByName($term, $excludeId = null, $limit = 10)
+    {
+        $params = ["%$term%", "%$term%"];
+        $sql    = "SELECT id, name, sku, price, discount_price, thumbnail_image FROM products WHERE (name LIKE ? OR sku LIKE ?) AND status = 'active'";
+        if ($excludeId) {
+            $sql    .= " AND id != ?";
+            $params[] = $excludeId;
+        }
+        $sql     .= " ORDER BY name ASC LIMIT ?";
+        $params[] = $limit;
+        return $this->db->fetchAll($sql, $params);
+    }
+
+    public function getProductsByIds($ids)
+    {
+        if (empty($ids)) return [];
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "SELECT id, name, sku, price, discount_price, thumbnail_image FROM products WHERE id IN ($placeholders) AND status = 'active'";
+        return $this->db->fetchAll($sql, $ids);
+    }
+
+    public function getProductCounts()
+    {
+        $total      = $this->db->fetch("SELECT COUNT(*) as count FROM products");
+        $active     = $this->db->fetch("SELECT COUNT(*) as count FROM products WHERE status = 'active'");
+        $featured   = $this->db->fetch("SELECT COUNT(*) as count FROM products WHERE featured = 1");
+        $outOfStock = $this->db->fetch("SELECT COUNT(*) as count FROM products WHERE out_of_stock_status = 'out_of_stock'");
+        return [
+            'total'        => $total['count'] ?? 0,
+            'active'       => $active['count'] ?? 0,
+            'featured'     => $featured['count'] ?? 0,
+            'out_of_stock' => $outOfStock['count'] ?? 0,
+        ];
+    }
+
+    public function toggleBestseller($productId)
+    {
+        return $this->db->execute("UPDATE products SET our_bestseller = NOT our_bestseller, updated_at = NOW() WHERE id = ?", [$productId]);
+    }
+
+    public function setBestsellerStatus($productId, $status)
+    {
+        return $this->db->execute("UPDATE products SET our_bestseller = ?, updated_at = NOW() WHERE id = ?", [$status, $productId]);
+    }
+
+    public function getBestsellerProducts()
+    {
+        $products = $this->db->fetchAll("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.our_bestseller = 1 AND p.status = 'active' ORDER BY p.created_at DESC");
         foreach ($products as &$product) {
             $product['images'] = $this->getProductImages($product['id']);
         }
-
         return $products;
     }
 
-    public function updateStockQuantity($productId, $newQuantity)
+    public function toggleTopSelection($productId)
     {
-        $query = "UPDATE products SET stock_quantity = ?, updated_at = NOW() WHERE id = ?";
-        return $this->db->execute($query, [$newQuantity, $productId]);
+        return $this->db->execute("UPDATE products SET top_selection = NOT top_selection, updated_at = NOW() WHERE id = ?", [$productId]);
+    }
+
+    public function setTopSelectionStatus($productId, $status)
+    {
+        return $this->db->execute("UPDATE products SET top_selection = ?, updated_at = NOW() WHERE id = ?", [$status, $productId]);
+    }
+
+    public function getTopSelectionProducts()
+    {
+        $products = $this->db->fetchAll("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.top_selection = 1 AND p.status = 'active' ORDER BY p.created_at DESC");
+        foreach ($products as &$product) {
+            $product['images'] = $this->getProductImages($product['id']);
+        }
+        return $products;
+    }
+
+    public function toggleTopRated($productId)
+    {
+        return $this->db->execute("UPDATE products SET top_rated = NOT top_rated, updated_at = NOW() WHERE id = ?", [$productId]);
+    }
+
+    public function setTopRatedStatus($productId, $status)
+    {
+        return $this->db->execute("UPDATE products SET top_rated = ?, updated_at = NOW() WHERE id = ?", [$status, $productId]);
+    }
+
+    public function getTopRatedProducts()
+    {
+        $products = $this->db->fetchAll("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.top_rated = 1 AND p.status = 'active' ORDER BY p.created_at DESC");
+        foreach ($products as &$product) {
+            $product['images'] = $this->getProductImages($product['id']);
+        }
+        return $products;
+    }
+
+    public function toggleTopDealByCategories($productId)
+    {
+        return $this->db->execute("UPDATE products SET top_deal_by_categories = NOT top_deal_by_categories, updated_at = NOW() WHERE id = ?", [$productId]);
+    }
+
+    public function setTopDealByCategoriesStatus($productId, $status)
+    {
+        return $this->db->execute("UPDATE products SET top_deal_by_categories = ?, updated_at = NOW() WHERE id = ?", [$status, $productId]);
+    }
+
+    public function getTopDealByCategoriesProducts()
+    {
+        $products = $this->db->fetchAll("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.top_deal_by_categories = 1 AND p.status = 'active' ORDER BY p.created_at DESC");
+        foreach ($products as &$product) {
+            $product['images'] = $this->getProductImages($product['id']);
+        }
+        return $products;
+    }
+
+    public function getDeactiveProducts()
+    {
+        $products = $this->db->fetchAll("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 'inactive' ORDER BY p.created_at DESC");
+        foreach ($products as &$product) {
+            $product['images'] = $this->getProductImages($product['id']);
+        }
+        return $products;
+    }
+
+    public function getActiveProducts()
+    {
+        $products = $this->db->fetchAll("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 'active' ORDER BY p.created_at DESC");
+        foreach ($products as &$product) {
+            $product['images'] = $this->getProductImages($product['id']);
+        }
+        return $products;
+    }
+
+    public function getDiscountProducts($limit = 20)
+    {
+        $products = $this->db->fetchAll("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.discount_price > 0 AND p.status = 'active' ORDER BY (p.price - p.discount_price) DESC LIMIT ?", [$limit]);
+        foreach ($products as &$product) {
+            $product['images'] = $this->getProductImages($product['id']);
+        }
+        return $products;
     }
 
     public function getProductsByCategory($categoryId)
     {
-        $query = "SELECT p.*, c.name as category_name 
-                  FROM products p 
-                  LEFT JOIN categories c ON p.category_id = c.id 
-                  WHERE p.category_id = ? AND p.status = 'active'
-                  ORDER BY p.created_at DESC";
-
-        $products = $this->db->fetchAll($query, [$categoryId]);
-
+        $products = $this->db->fetchAll("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.category_id = ? AND p.status = 'active' ORDER BY p.created_at DESC", [$categoryId]);
         foreach ($products as &$product) {
             $product['images'] = $this->getProductImages($product['id']);
         }
-
-        return $products;
-    }
-
-    public function searchProducts($searchTerm, $limit = 20)
-    {
-        $query = "SELECT p.*, c.name as category_name 
-                  FROM products p 
-                  LEFT JOIN categories c ON p.category_id = c.id 
-                  WHERE (p.name LIKE ? OR p.sku LIKE ? OR p.brand LIKE ? OR p.description LIKE ?) 
-                  AND p.status = 'active'
-                  ORDER BY p.created_at DESC 
-                  LIMIT ?";
-
-        $search_term = "%$searchTerm%";
-        $products = $this->db->fetchAll($query, [$search_term, $search_term, $search_term, $search_term, $limit]);
-
-        foreach ($products as &$product) {
-            $product['images'] = $this->getProductImages($product['id']);
-        }
-
-        return $products;
-    }
-
-    // Get all status options
-    public function getStatusOptions()
-    {
-        return [
-            'active' => 'Active',
-            'inactive' => 'Inactive',
-            'draft' => 'Draft'
-        ];
-    }
-
-    public function getProductsWithPagination($search = '', $category_id = '', $status = '', $offset = 0, $limit = 10)
-    {
-        // Build base query
-        $query = "SELECT p.*, c.name as category_name 
-                  FROM products p 
-                  LEFT JOIN categories c ON p.category_id = c.id 
-                  WHERE 1=1";
-
-        $count_query = "SELECT COUNT(*) as total 
-                        FROM products p 
-                        LEFT JOIN categories c ON p.category_id = c.id 
-                        WHERE 1=1";
-
-        $params = [];
-        $count_params = [];
-
-        // Add search condition
-        if (!empty($search)) {
-            $query .= " AND (p.name LIKE ? OR p.sku LIKE ? OR p.brand LIKE ? OR p.description LIKE ?)";
-            $count_query .= " AND (p.name LIKE ? OR p.sku LIKE ? OR p.brand LIKE ? OR p.description LIKE ?)";
-            $search_term = "%$search%";
-            $params = array_merge($params, [$search_term, $search_term, $search_term, $search_term]);
-            $count_params = array_merge($count_params, [$search_term, $search_term, $search_term, $search_term]);
-        }
-
-        // Add category filter
-        if (!empty($category_id)) {
-            $query .= " AND p.category_id = ?";
-            $count_query .= " AND p.category_id = ?";
-            $params[] = $category_id;
-            $count_params[] = $category_id;
-        }
-
-        // Add status filter
-        if (!empty($status)) {
-            $query .= " AND p.status = ?";
-            $count_query .= " AND p.status = ?";
-            $params[] = $status;
-            $count_params[] = $status;
-        }
-
-        // Get total count first (without limit/offset)
-        $total_result = $this->db->fetch($count_query, $count_params);
-        $total = $total_result['total'] ?? 0;
-
-        // Add ordering and pagination to main query
-        $query .= " ORDER BY p.created_at DESC LIMIT ? OFFSET ?";
-        $params[] = $limit;
-        $params[] = $offset;
-
-        // Get paginated products
-        $products_data = $this->db->fetchAll($query, $params);
-
-        $products = [];
-        foreach ($products_data as $row) {
-            $row['images'] = $this->getProductImages($row['id']);
-            $products[] = $row;
-        }
-
-        return [
-            'products' => $products,
-            'total' => $total
-        ];
-    }
-
-    // Add to ProductModel class
-
-    public function getDiscountProducts($limit = 20)
-    {
-        $query = "SELECT p.*, c.name as category_name 
-              FROM products p 
-              LEFT JOIN categories c ON p.category_id = c.id 
-              WHERE p.discount_price > 0 AND p.status = 'active'
-              ORDER BY (p.price - p.discount_price) DESC 
-              LIMIT ?";
-
-        $products = $this->db->fetchAll($query, [$limit]);
-
-        foreach ($products as &$product) {
-            $product['images'] = $this->getProductImages($product['id']);
-        }
-
-        return $products;
-    }
-
-    public function getRecentlyViewedProducts($limit = 20)
-    {
-        $query = "SELECT p.*, c.name as category_name 
-              FROM products p 
-              LEFT JOIN categories c ON p.category_id = c.id 
-              WHERE p.status = 'active'
-              ORDER BY p.created_at DESC 
-              LIMIT ?";
-
-        $products = $this->db->fetchAll($query, [$limit]);
-
-        foreach ($products as &$product) {
-            $product['images'] = $this->getProductImages($product['id']);
-        }
-
         return $products;
     }
 
     public function getProductsByCategorySlug($slug, $limit = 50)
     {
-        $query = "SELECT p.*, c.name as category_name 
-              FROM products p 
-              LEFT JOIN categories c ON p.category_id = c.id 
-              WHERE c.slug = ? AND p.status = 'active'
-              ORDER BY p.created_at DESC 
-              LIMIT ?";
-
-        $products = $this->db->fetchAll($query, [$slug, $limit]);
-
+        $products = $this->db->fetchAll("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE c.slug = ? AND p.status = 'active' ORDER BY p.created_at DESC LIMIT ?", [$slug, $limit]);
         foreach ($products as &$product) {
             $product['images'] = $this->getProductImages($product['id']);
         }
+        return $products;
+    }
 
+    public function getProductsWithPagination($search = '', $category_id = '', $status = '', $offset = 0, $limit = 10)
+    {
+        $query       = "SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE 1=1";
+        $count_query = "SELECT COUNT(*) as total FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE 1=1";
+        $params      = [];
+        $count_params = [];
+
+        if (!empty($search)) {
+            $cond = " AND (p.name LIKE ? OR p.sku LIKE ? OR p.brand LIKE ? OR p.description LIKE ?)";
+            $query       .= $cond;
+            $count_query .= $cond;
+            $s = "%$search%";
+            $params       = array_merge($params, [$s, $s, $s, $s]);
+            $count_params = array_merge($count_params, [$s, $s, $s, $s]);
+        }
+        if (!empty($category_id)) {
+            $query       .= " AND p.category_id = ?";
+            $count_query .= " AND p.category_id = ?";
+            $params[]      = $category_id;
+            $count_params[] = $category_id;
+        }
+        if (!empty($status)) {
+            $query       .= " AND p.status = ?";
+            $count_query .= " AND p.status = ?";
+            $params[]      = $status;
+            $count_params[] = $status;
+        }
+
+        $total_result = $this->db->fetch($count_query, $count_params);
+        $total        = $total_result['total'] ?? 0;
+
+        $query    .= " ORDER BY p.created_at DESC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+
+        $products_data = $this->db->fetchAll($query, $params);
+        $products = [];
+        foreach ($products_data as $row) {
+            $row['images'] = $this->getProductImages($row['id']);
+            $products[]    = $row;
+        }
+
+        return ['products' => $products, 'total' => $total];
+    }
+
+    public function searchProducts($searchTerm, $limit = 20)
+    {
+        $s        = "%$searchTerm%";
+        $products = $this->db->fetchAll("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE (p.name LIKE ? OR p.sku LIKE ? OR p.brand LIKE ? OR p.description LIKE ?) AND p.status = 'active' ORDER BY p.created_at DESC LIMIT ?", [$s, $s, $s, $s, $limit]);
+        foreach ($products as &$product) {
+            $product['images'] = $this->getProductImages($product['id']);
+        }
+        return $products;
+    }
+
+    public function updateStockQuantity($productId, $newQuantity)
+    {
+        return $this->db->execute("UPDATE products SET stock_quantity = ?, updated_at = NOW() WHERE id = ?", [$newQuantity, $productId]);
+    }
+
+    public function getLowStockProducts($threshold = 10)
+    {
+        $products = $this->db->fetchAll("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.stock_quantity <= ? AND p.status = 'active' ORDER BY p.stock_quantity ASC", [$threshold]);
+        foreach ($products as &$product) {
+            $product['images'] = $this->getProductImages($product['id']);
+        }
         return $products;
     }
 
     public function getMainCategories()
     {
-        $query = "SELECT * FROM categories WHERE parent_id IS NULL ORDER BY name";
-        return $this->db->fetchAll($query);
+        return $this->db->fetchAll("SELECT * FROM categories WHERE parent_id IS NULL ORDER BY name");
     }
 
     public function getSubCategories($parentId)
     {
-        $query = "SELECT * FROM categories WHERE parent_id = ? ORDER BY name";
-        return $this->db->fetchAll($query, [$parentId]);
+        return $this->db->fetchAll("SELECT * FROM categories WHERE parent_id = ? ORDER BY name", [$parentId]);
     }
 
-    public function getSubSubCategories($parentId)
+    public function getProductCountByStatus($status = '')
     {
-        $query = "SELECT * FROM categories WHERE parent_id = ? ORDER BY name";
-        return $this->db->fetchAll($query, [$parentId]);
+        $query  = "SELECT COUNT(*) as count FROM products";
+        $params = [];
+        if (!empty($status)) {
+            $query   .= " WHERE status = ?";
+            $params[] = $status;
+        }
+        $result = $this->db->fetch($query, $params);
+        return $result['count'] ?? 0;
     }
 
+    public function getStatusOptions()
+    {
+        return ['active' => 'Active', 'inactive' => 'Inactive', 'draft' => 'Draft'];
+    }
+
+    private function getProductImages($productId)
+    {
+        return $this->db->fetchAll("SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, display_order ASC", [$productId]);
+    }
+
+    private function addProductImages($productId, $images)
+    {
+        foreach ($images as $index => $image) {
+            $this->db->execute(
+                "INSERT INTO product_images (product_id, image_url, is_primary, display_order) VALUES (?, ?, ?, ?)",
+                [$productId, $image['image_url'], $image['is_primary'] ? 1 : 0, $image['display_order'] ?? $index]
+            );
+        }
+    }
 }
 ?>

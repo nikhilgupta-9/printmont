@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'user/printmont-admin',
-        'pretty_version' => 'dev-main',
-        'version' => 'dev-main',
-        'reference' => '53ec773cd6ad91267f597ab722ab06d4d6fc6734',
+        'pretty_version' => 'dev-backend',
+        'version' => 'dev-backend',
+        'reference' => 'c4c5214d9a40871293eb21f3243808db316f4e3d',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -38,9 +38,9 @@
             'dev_requirement' => false,
         ),
         'user/printmont-admin' => array(
-            'pretty_version' => 'dev-main',
-            'version' => 'dev-main',
-            'reference' => '53ec773cd6ad91267f597ab722ab06d4d6fc6734',
+            'pretty_version' => 'dev-backend',
+            'version' => 'dev-backend',
+            'reference' => 'c4c5214d9a40871293eb21f3243808db316f4e3d',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

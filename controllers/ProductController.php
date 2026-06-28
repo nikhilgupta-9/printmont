@@ -126,96 +126,218 @@ class ProductController
     public function addProduct($data, $files)
     {
         try {
-            // Validate required fields
+            // Required field validation
             $required = ['product_name', 'product_slug', 'sku_code', 'regular_price', 'product_quantity', 'category_id'];
             foreach ($required as $field) {
                 if (empty($data[$field])) {
-                    throw new Exception("Field $field is required");
+                    throw new Exception("Field '$field' is required");
                 }
             }
 
-            // Handle image uploads
+            // ── Image uploads ──────────────────────────────────────────────
             $thumbnailImage = '';
-            $mainImages = [];
-            $galleryImages = [];
+            $mainImages     = [];
+            $galleryImages  = [];
 
-            // Upload thumbnail image
             if (!empty($files['thumbnail_image']['name'])) {
                 $thumbnailImage = $this->uploadImage($files['thumbnail_image'], 'thumbnail');
             }
-
-            // Upload main images
             if (!empty($files['main_images']['name'][0])) {
                 $mainImages = $this->uploadMultipleImages($files['main_images'], 'main');
             }
-
-            // Upload gallery images
             if (!empty($files['gallery_images']['name'][0])) {
                 $galleryImages = $this->uploadMultipleImages($files['gallery_images'], 'gallery');
             }
 
-            // Prepare product data
+            // Format main images for product_images table
+            $formattedMainImages = [];
+            foreach ($mainImages as $index => $path) {
+                $formattedMainImages[] = [
+                    'image_url'     => $path,
+                    'is_primary'    => ($index === 0),
+                    'display_order' => $index,
+                ];
+            }
+
+            // ── Bulk pricing (JSON) ────────────────────────────────────────
+            $bulkPricing = [];
+            if (!empty($data['bulk_min_qty']) && is_array($data['bulk_min_qty'])) {
+                foreach ($data['bulk_min_qty'] as $i => $minQty) {
+                    if ($minQty !== '') {
+                        $bulkPricing[] = [
+                            'min_qty' => intval($minQty),
+                            'max_qty' => intval($data['bulk_max_qty'][$i] ?? 0),
+                            'price'   => floatval($data['bulk_price'][$i] ?? 0),
+                        ];
+                    }
+                }
+            }
+
+            // ── Customization fields (JSON) ───────────────────────────────
+            $customizationFields = [];
+            if (!empty($data['customization_labels']) && is_array($data['customization_labels'])) {
+                foreach ($data['customization_labels'] as $i => $label) {
+                    if (!empty($label)) {
+                        $customizationFields[] = [
+                            'label'    => $label,
+                            'type'     => $data['customization_types'][$i] ?? 'text',
+                            'required' => isset($data['customization_required'][$i]) ? 1 : 0,
+                        ];
+                    }
+                }
+            }
+
+            // ── Size attributes (JSON) ────────────────────────────────────
+            $sizeAttributes = [];
+            if (!empty($data['size_names']) && is_array($data['size_names'])) {
+                foreach ($data['size_names'] as $i => $name) {
+                    if (!empty($name)) {
+                        $sizeAttributes[] = [
+                            'name'  => $name,
+                            'price' => floatval($data['size_prices'][$i] ?? 0),
+                        ];
+                    }
+                }
+            }
+
+            // ── Color attributes (JSON) ───────────────────────────────────
+            $colorAttributes = [];
+            if (!empty($data['color_names']) && is_array($data['color_names'])) {
+                foreach ($data['color_names'] as $i => $name) {
+                    if (!empty($name)) {
+                        $colorAttributes[] = [
+                            'name'  => $name,
+                            'hex'   => $data['color_hexes'][$i] ?? '#000000',
+                            'price' => floatval($data['color_prices'][$i] ?? 0),
+                        ];
+                    }
+                }
+            }
+
+            // ── Quantity pricing tiers (JSON) ─────────────────────────────
+            $quantityPricing = [];
+            if (!empty($data['qty_tier_qty']) && is_array($data['qty_tier_qty'])) {
+                foreach ($data['qty_tier_qty'] as $i => $qty) {
+                    if ($qty !== '') {
+                        $quantityPricing[] = [
+                            'qty'   => intval($qty),
+                            'price' => floatval($data['qty_tier_price'][$i] ?? 0),
+                        ];
+                    }
+                }
+            }
+
+            // ── Addon product IDs ─────────────────────────────────────────
+            $addonIds = !empty($data['addon_product_ids']) ? $data['addon_product_ids'] : '[]';
+
+            // ── Assemble all fields ───────────────────────────────────────
             $productData = [
-                'name' => trim($data['product_name']),
-                'product_slug' => trim($data['product_slug']),
-                'description' => trim($data['description'] ?? ''),
-                'long_description' => trim($data['long_description'] ?? ''),
-                'instructions' => trim($data['instructions'] ?? ''),
-                'delivery_info' => trim($data['delivery_info'] ?? ''),
-                'alt_tag' => trim($data['alt_tag'] ?? ''),
-                'thumbnail_image' => $thumbnailImage,
-                'gallery_images' => json_encode($galleryImages), // Store gallery images as JSON array
+                // Tab 1 – General
+                'name'                   => trim($data['product_name']),
+                'product_slug'           => trim($data['product_slug']),
+                'description'            => $data['description'] ?? '',
+                'long_description'       => $data['long_description'] ?? '',
+                'instructions'           => $data['instructions'] ?? '',
+                'delivery_info'          => $data['delivery_info'] ?? '',
+                'price'                  => floatval($data['regular_price']),
+                'regular_price'          => floatval($data['regular_price']),
+                'offer_price'            => !empty($data['offer_price']) ? floatval($data['offer_price']) : null,
+                'discount_price'         => !empty($data['offer_price']) ? floatval($data['offer_price']) : null,
+                'sort_order'             => intval($data['sort_order'] ?? 0),
+                'stock_quantity'         => intval($data['product_quantity']),
+                'product_quantity'       => intval($data['product_quantity']),
+                'out_of_stock_status'    => $data['out_of_stock_status'] ?? 'in_stock',
+                'minimum_quantity'       => intval($data['minimum_quantity'] ?? 1),
+                'bulk_price_variance'    => !empty($bulkPricing) ? json_encode($bulkPricing) : '',
+                'sku'                    => trim($data['sku_code']),
 
-                // Categories
-                'category_id' => $data['category_id'] ?? null,
-                'sub_category_id' => $data['sub_category_id'] ?? null,
-                'sub_sub_category_id' => $data['sub_sub_category_id'] ?? null,
-                'homepage_category_id' => $data['homepage_category_id'] ?? null,
-                'homepage_carousel_id' => $data['homepage_carousel_id'] ?? null,
-
-                // Filters
-                'brand' => trim($data['brand'] ?? ''),
-                'color' => trim($data['color'] ?? ''),
-                'type' => trim($data['type'] ?? ''),
-                'material' => trim($data['material'] ?? ''),
-                'occasion' => trim($data['occasion'] ?? ''),
-                'discount_type' => trim($data['discount_type'] ?? ''),
-                'shape' => trim($data['shape'] ?? ''),
-                'gender' => trim($data['gender'] ?? ''),
-                'gift_type' => trim($data['gift_type'] ?? ''),
-                'ideal_for' => trim($data['ideal_for'] ?? ''),
-                'customization_tech' => trim($data['customization_tech'] ?? ''),
+                // Tab 2 – Filters
+                'color'                  => trim($data['color'] ?? ''),
+                'type'                   => trim($data['type'] ?? ''),
+                'material'               => trim($data['material'] ?? ''),
+                'occasion'               => trim($data['occasion'] ?? ''),
+                'discount_type'          => trim($data['discount_type'] ?? ''),
+                'brand'                  => trim($data['brand'] ?? ''),
+                'shape'                  => trim($data['shape'] ?? ''),
+                'gender'                 => trim($data['gender'] ?? ''),
+                'gift_type'              => trim($data['gift_type'] ?? ''),
+                'ideal_for'              => trim($data['ideal_for'] ?? ''),
+                'customization_tech'     => trim($data['customization_tech'] ?? ''),
                 'customization_location' => trim($data['customization_location'] ?? ''),
-                'capacity' => trim($data['capacity'] ?? ''),
-                'ink_color' => trim($data['ink_color'] ?? ''),
-                'features' => trim($data['features'] ?? ''),
+                'capacity'               => trim($data['capacity'] ?? ''),
+                'ink_color'              => trim($data['ink_color'] ?? ''),
+                'features'               => trim($data['features'] ?? ''),
 
-                // Pricing & Inventory
-                'price' => floatval($data['regular_price']),
-                'discount_price' => !empty($data['offer_price']) ? floatval($data['offer_price']) : null,
-                'sort_order' => intval($data['sort_order'] ?? 0),
-                'stock_quantity' => intval($data['product_quantity']),
-                'out_of_stock_status' => $data['out_of_stock_status'] ?? 'in_stock',
-                'minimum_quantity' => intval($data['minimum_quantity'] ?? 1),
-                'bulk_price_variance' => trim($data['bulk_price_variance'] ?? ''),
-                'sku' => trim($data['sku_code']),
-                'status' => $data['status'] ?? 'active',
-                'featured' => isset($data['featured']) ? 1 : 0,
-
-                // Additional flags
-                'top_selection' => isset($data['top_selection']) ? 1 : 0,
-                'our_bestseller' => isset($data['our_bestseller']) ? 1 : 0,
-                'top_rated' => isset($data['top_rated']) ? 1 : 0,
+                // Tab 3 – Category links
+                'category_id'            => !empty($data['category_id']) ? intval($data['category_id']) : null,
+                'sub_category_id'        => !empty($data['sub_category_id']) ? intval($data['sub_category_id']) : null,
+                'sub_sub_category_id'    => !empty($data['sub_sub_category_id']) ? intval($data['sub_sub_category_id']) : null,
+                'homepage_category_id'   => !empty($data['homepage_category_id']) ? intval($data['homepage_category_id']) : null,
+                'homepage_carousel_id'   => !empty($data['homepage_carousel_id']) ? intval($data['homepage_carousel_id']) : null,
+                'status'                 => $data['status'] ?? 'active',
+                'featured'               => isset($data['featured']) ? 1 : 0,
+                'top_selection'          => isset($data['top_selection']) ? 1 : 0,
+                'our_bestseller'         => isset($data['our_bestseller']) ? 1 : 0,
+                'top_rated'              => isset($data['top_rated']) ? 1 : 0,
                 'top_deal_by_categories' => isset($data['top_deal_by_categories']) ? 1 : 0,
-                'view_count' => 0,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
+
+                // Tab 4 – Images
+                'alt_tag'                => trim($data['alt_tag'] ?? ''),
+                'thumbnail_image'        => $thumbnailImage,
+                'gallery_images'         => !empty($galleryImages) ? json_encode(array_values($galleryImages)) : null,
+
+                // Tab 5 – SEO
+                'meta_title'             => trim($data['meta_title'] ?? ''),
+                'meta_keywords'          => trim($data['meta_keywords'] ?? ''),
+                'meta_description'       => trim($data['meta_description'] ?? ''),
+
+                // Tab 6 – Visibility
+                'show_quantity'          => isset($data['show_quantity']) ? 1 : 0,
+                'show_help_button'       => isset($data['show_help_button']) ? 1 : 0,
+                'show_bulk_form'         => isset($data['show_bulk_form']) ? 1 : 0,
+
+                // Tab 7 – Customization
+                'show_customization_label' => isset($data['show_customization_label']) ? 1 : 0,
+                'customization_label'    => trim($data['customization_label'] ?? ''),
+                'customization_fields'   => !empty($customizationFields) ? json_encode($customizationFields) : null,
+
+                // Tab 8 – Addons
+                'addon_product_ids'      => $addonIds,
+
+                // Tab 9 – Attributes
+                'show_sizes'             => isset($data['show_sizes']) ? 1 : 0,
+                'show_colors'            => isset($data['show_colors']) ? 1 : 0,
+                'size_attributes'        => !empty($sizeAttributes) ? json_encode($sizeAttributes) : null,
+                'color_attributes'       => !empty($colorAttributes) ? json_encode($colorAttributes) : null,
+                'material_attributes'    => !empty($data['attr_material']) ? json_encode([$data['attr_material']]) : null,
+                'lamination_attributes'  => !empty($data['attr_lamination']) ? json_encode([$data['attr_lamination']]) : null,
+                'orientation_attributes' => !empty($data['attr_orientation']) ? json_encode([$data['attr_orientation']]) : null,
+                'quantity_price_breaks'  => !empty($quantityPricing) ? json_encode($quantityPricing) : null,
+
+                // Tab 10 – Shipping
+                'shipping_method_status'    => isset($data['shipping_method_status']) ? 1 : 0,
+                'local_shipping_charge'     => floatval($data['local_shipping_charge'] ?? 0),
+                'local_shipping_message'    => trim($data['local_shipping_message'] ?? ''),
+                'regional_shipping_charge'  => floatval($data['regional_shipping_charge'] ?? 0),
+                'regional_shipping_message' => trim($data['regional_shipping_message'] ?? ''),
+                'national_shipping_charge'  => floatval($data['national_shipping_charge'] ?? 0),
+                'national_shipping_message' => trim($data['national_shipping_message'] ?? ''),
+
+                // Tab 11 – Cancel
+                'cancel_available'       => isset($data['cancel_available']) ? 1 : 0,
+                'cancel_type'            => $data['cancel_type'] ?? 'hours',
+                'cancel_time'            => intval($data['cancel_time'] ?? 24),
+
+                // Tab 12 – COD
+                'cod_available'          => isset($data['cod_available']) ? 1 : 0,
+
+                // Meta
+                'view_count'             => 0,
+                'created_at'             => date('Y-m-d H:i:s'),
+                'updated_at'             => date('Y-m-d H:i:s'),
             ];
 
-            // Create product using ProductModel
-            require_once(__DIR__ . '/../models/ProductModel.php');
-            // $productModel = new ProductModel($this->conn);
-            $productId = $this->productModel->createProduct($productData, $mainImages);
+            $productId = $this->productModel->createProduct($productData, $formattedMainImages);
 
             return ['success' => true, 'product_id' => $productId, 'message' => 'Product added successfully!'];
 
@@ -635,83 +757,6 @@ class ProductController
     }
 
 
-    private function handleUpdateProduct($id)
-    {
-        try {
-            $required = ['name', 'category_id', 'price', 'stock_quantity', 'sku'];
-            foreach ($required as $field) {
-                if (empty($_POST[$field])) {
-                    throw new Exception("Field $field is required");
-                }
-            }
-
-            $productData = [
-                'name' => trim($_POST['name']),
-                'description' => trim($_POST['description'] ?? ''),
-                'category_id' => $_POST['category_id'],
-                'brand' => trim($_POST['brand'] ?? ''),
-                'price' => floatval($_POST['price']),
-                'discount_price' => !empty($_POST['discount_price']) ? floatval($_POST['discount_price']) : null,
-                'stock_quantity' => intval($_POST['stock_quantity']),
-                'sku' => trim($_POST['sku']),
-                'status' => $_POST['status'] ?? 'active',
-                'featured' => isset($_POST['featured']) ? 1 : 0
-            ];
-
-            $images = [];
-            if (!empty($_FILES['images']['name'][0])) {
-                $images = $this->handleImageUpload($_FILES['images']);
-            }
-
-            $success = $this->productModel->updateProduct($id, $productData, $images);
-
-            if ($success) {
-                return ['success' => true];
-            } else {
-                throw new Exception("Failed to update product");
-            }
-        } catch (Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
-        }
-    }
-
-    // private function handleImageUpload($files) {
-    //     $uploadedImages = [];
-    //     $uploadDir = 'uploads/products/';
-
-    //     if (!is_dir($uploadDir)) {
-    //         mkdir($uploadDir, 0755, true);
-    //     }
-
-    //     foreach ($files['tmp_name'] as $key => $tmp_name) {
-    //         if ($files['error'][$key] === UPLOAD_ERR_OK) {
-    //             $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    //             $fileType = mime_content_type($tmp_name);
-
-    //             if (!in_array($fileType, $allowedTypes)) {
-    //                 throw new Exception("Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.");
-    //             }
-
-    //             $fileName = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9-_\.]/', '', $files['name'][$key]);
-    //             $filePath = $uploadDir . $fileName;
-
-    //             if (move_uploaded_file($tmp_name, $filePath)) {
-    //                 $uploadedImages[] = [
-    //                     'image_url' => $filePath,
-    //                     'is_primary' => ($key === 0),
-    //                     'display_order' => $key
-    //                 ];
-    //             } else {
-    //                 throw new Exception("Failed to upload image: " . $files['name'][$key]);
-    //             }
-    //         }
-    //     }
-
-    //     return $uploadedImages;
-    // }
-
-
-
     public function deleteProduct($id)
     {
         return $this->productModel->deleteProduct($id);
@@ -981,11 +1026,10 @@ class ProductController
         }
     }
 
-    // Recently Viewed API  
     public function getRecentlyViewedApi()
     {
         try {
-            $products = $this->productModel->getRecentlyViewedProducts();
+            $products = $this->productModel->getActiveProducts();
             return ['success' => true, 'data' => $products];
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
@@ -1031,76 +1075,21 @@ class ProductController
     public function searchProducts($params)
     {
         try {
-            $database = new Database();
-            $db = $database->getConnection();
-
-            $query = "
-                SELECT 
-                    p.*,
-                    c.name as category_name,
-                    GROUP_CONCAT(pi.image_url) as image_urls,
-                    GROUP_CONCAT(pi.is_primary) as primary_flags
-                FROM products p
-                LEFT JOIN categories c ON p.category_id = c.id
-                LEFT JOIN product_images pi ON p.id = pi.product_id
-                WHERE p.status = 'active'
-            ";
-
-            $conditions = [];
-            $bindings = [];
-
-            if (!empty($params['query'])) {
-                $conditions[] = "(p.name LIKE :query OR p.description LIKE :query OR c.name LIKE :query)";
-                $bindings[':query'] = "%{$params['query']}%";
+            $term  = $params['query'] ?? '';
+            $limit = isset($params['limit']) ? (int) $params['limit'] : 20;
+            $products = $this->productModel->searchProducts($term, $limit);
+            $formatted = [];
+            foreach ($products as $p) {
+                $formatted[] = $this->formatProductForApi($p);
             }
-
-            if (!empty($params['category'])) {
-                $conditions[] = "c.name = :category";
-                $bindings[':category'] = $params['category'];
-            }
-
-            if (!empty($params['min_price'])) {
-                $conditions[] = "p.price >= :min_price";
-                $bindings[':min_price'] = $params['min_price'];
-            }
-
-            if (!empty($params['max_price'])) {
-                $conditions[] = "p.price <= :max_price";
-                $bindings[':max_price'] = $params['max_price'];
-            }
-
-            if (!empty($conditions)) {
-                $query .= " AND " . implode(" AND ", $conditions);
-            }
-
-            $query .= " GROUP BY p.id ORDER BY p.created_at DESC";
-
-            if (!empty($params['limit'])) {
-                $query .= " LIMIT :limit";
-                $bindings[':limit'] = (int) $params['limit'];
-            }
-
-            $stmt = $db->prepare($query);
-
-            foreach ($bindings as $key => $value) {
-                if ($key === ':limit') {
-                    $stmt->bindValue($key, $value, PDO::PARAM_INT);
-                } else {
-                    $stmt->bindValue($key, $value);
-                }
-            }
-
-            $stmt->execute();
-
-            $products = [];
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $products[] = $this->formatProductForApi($row);
-            }
-
-            return $products;
-
+            return $formatted;
         } catch (Exception $e) {
             throw new Exception("Search failed: " . $e->getMessage());
         }
+    }
+
+    public function searchProductsForAddon($term, $excludeId = null)
+    {
+        return $this->productModel->searchProductsByName($term, $excludeId, 10);
     }
 }

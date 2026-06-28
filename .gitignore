@@ -1,0 +1,21 @@
+# Zip and Archive files (Jo galti se commit ho jaati hain)
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Core XAMPP / OS temporary files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE / Editor configuration folders
+.vscode/
+.idea/
+
+# Environment / Secret files (Agar future me use karo to credentials leak na hon)
+.env
+.env.local
+
+# Node modules (Agar npx ya node use ho raha ho)
+node_modules/
