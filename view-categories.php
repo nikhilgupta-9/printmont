@@ -336,11 +336,12 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                                                         </span>
                                                                                 <?php endif; ?>
                                                                 
-                                                                                <?php if ($category['image']): ?>
-                                                                                        <img src="<?php echo htmlspecialchars($category['image']); ?>" 
-                                                                                             class="category-image me-3" 
+                                                                                <?php $thumb = $category['desktop_image'] ?: $category['image']; ?>
+                                                                                <?php if ($thumb): ?>
+                                                                                        <img src="<?php echo htmlspecialchars($thumb); ?>"
+                                                                                             class="category-image me-3"
                                                                                              alt="<?php echo htmlspecialchars($category['name']); ?>"
-                                                                                             onerror="this.src='https://via.placeholder.com/50?text=No+Image'">
+                                                                                             onerror="this.style.display='none'">
                                                                                 <?php else: ?>
                                                                                         <div class="category-image me-3 bg-light d-flex align-items-center justify-content-center rounded">
                                                                                             <?php if ($category['icon']): ?>
@@ -437,11 +438,12 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                                 <?php foreach ($categories as $category): ?>
                                                                         <tr class="category-level-<?php echo $category['level']; ?>">
                                                                             <td>
-                                                                                <?php if ($category['image']): ?>
-                                                                                        <img src="<?php echo htmlspecialchars($category['image']); ?>" 
-                                                                                             class="category-image" 
+                                                                                <?php $thumb = $category['desktop_image'] ?: $category['image']; ?>
+                                                                                <?php if ($thumb): ?>
+                                                                                        <img src="<?php echo htmlspecialchars($thumb); ?>"
+                                                                                             class="category-image"
                                                                                              alt="<?php echo htmlspecialchars($category['name']); ?>"
-                                                                                             onerror="this.src='https://via.placeholder.com/50?text=No+Image'">
+                                                                                             onerror="this.style.display='none'">
                                                                                 <?php else: ?>
                                                                                         <div class="category-image bg-light d-flex align-items-center justify-content-center rounded">
                                                                                             <?php if ($category['icon']): ?>

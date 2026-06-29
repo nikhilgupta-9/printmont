@@ -32,17 +32,21 @@ if ($_POST && isset($_POST['confirm_delete'])) {
             exit();
         }
 
-        // Delete category image if exists
-        if (!empty($category['image']) && file_exists($category['image'])) {
-            unlink($category['image']);
+        // Delete all category images
+        $imgCols = ['image','desktop_image','desktop_bg_image','mobile_image','mobile_bg_image','desktop_menu_image'];
+        foreach ($imgCols as $col) {
+            if (!empty($category[$col]) && file_exists($category[$col])) {
+                unlink($category[$col]);
+            }
         }
 
         // Delete subcategories if requested
         if (isset($_POST['delete_subcategories']) && $_POST['delete_subcategories'] == '1' && $hasChildren) {
             foreach ($subcategories as $subcategory) {
-                // Delete subcategory image if exists
-                if (!empty($subcategory['image']) && file_exists($subcategory['image'])) {
-                    unlink($subcategory['image']);
+                foreach ($imgCols as $col) {
+                    if (!empty($subcategory[$col]) && file_exists($subcategory[$col])) {
+                        unlink($subcategory[$col]);
+                    }
                 }
                 $categoryController->deleteCategory($subcategory['id']);
             }

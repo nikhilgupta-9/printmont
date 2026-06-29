@@ -12,7 +12,6 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 $categoryId = (int)$_GET['id'];
 $categoryController = new CategoryController();
 $category = $categoryController->getCategoryById($categoryId);
-$parentCategories = $categoryController->getParentCategories();
 
 if (!$category) {
     $_SESSION['error_message'] = "Category not found!";
@@ -20,583 +19,549 @@ if (!$category) {
     exit();
 }
 
-// Handle form submission
-if ($_POST) {
-    try {
-        $image_path = $category['image']; // Keep existing image by default
-        
-        // Handle new image upload
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $upload_dir = 'uploads/category/';
-            
-            // Create upload directory if it doesn't exist
-            if (!file_exists($upload_dir)) {
-                mkdir($upload_dir, 0777, true);
-            }
-            
-            $file_name = $_FILES['image']['name'];
-            $file_tmp = $_FILES['image']['tmp_name'];
-            $file_size = $_FILES['image']['size'];
-            $file_error = $_FILES['image']['error'];
-            
-            // Get file extension
-            $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-            
-            // Allowed file types
-            $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-            
-            // Validate file type
-            if (in_array($file_ext, $allowed_ext)) {
-                // Validate file size (max 5MB)
-                if ($file_size <= 5 * 1024 * 1024) {
-                    // Delete old image if exists and new image is being uploaded
-                    if (!empty($category['image']) && file_exists($category['image'])) {
-                        unlink($category['image']);
-                    }
-                    
-                    // Generate unique file name
-                    $new_file_name = uniqid('category_', true) . '.' . $file_ext;
-                    $destination = $upload_dir . $new_file_name;
-                    
-                    // Move uploaded file
-                    if (move_uploaded_file($file_tmp, $destination)) {
-                        $image_path = $destination;
-                    } else {
-                        throw new Exception("Failed to upload image. Please try again.");
-                    }
-                } else {
-                    throw new Exception("Image size too large. Maximum size is 5MB.");
-                }
-            } else {
-                throw new Exception("Invalid file type. Only JPG, JPEG, PNG, GIF, and WebP are allowed.");
-            }
-        } elseif (isset($_POST['remove_image']) && $_POST['remove_image'] == '1') {
-            // Remove existing image if requested
-            if (!empty($category['image']) && file_exists($category['image'])) {
-                unlink($category['image']);
-            }
-            $image_path = '';
-        } elseif (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {
-            // Handle upload errors
-            $upload_errors = [
-                UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
-                UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.',
-                UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded.',
-                UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
-                UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
-                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
-                UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.'
-            ];
-            
-            $error_code = $_FILES['image']['error'];
-            $error_message = $upload_errors[$error_code] ?? 'Unknown upload error.';
-            throw new Exception("Upload error: " . $error_message);
-        }
-        
-        $data = [
-            'name' => trim($_POST['name']),
-            'slug' => trim($_POST['slug']),
-            'description' => trim($_POST['description']),
-            'parent_id' => isset($_POST['parent_id']) ? (int)$_POST['parent_id'] : 0,
-            'image' => $image_path,
-            'icon' => trim($_POST['icon']),
-            'status' => $_POST['status'],
-            'display_order' => isset($_POST['display_order']) ? (int)$_POST['display_order'] : 0,
-            'is_featured' => isset($_POST['is_featured']) ? 1 : 0
-        ];
+// Image upload helper
+function uploadEditImg($fileKey, $subdir, $existing = '') {
+    if (empty($_FILES[$fileKey]['name'])) return $existing;
+    $file = $_FILES[$fileKey];
+    $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, ['jpg','jpeg','png','gif','webp']) || $file['size'] > 5*1024*1024) return $existing;
+    $dir = __DIR__ . "/uploads/category/{$subdir}/";
+    if (!is_dir($dir)) mkdir($dir, 0755, true);
+    // Remove old file
+    if ($existing && file_exists(__DIR__ . '/' . $existing)) @unlink(__DIR__ . '/' . $existing);
+    $fn = uniqid() . '_' . time() . '.' . $ext;
+    return move_uploaded_file($file['tmp_name'], $dir . $fn) ? "uploads/category/{$subdir}/{$fn}" : $existing;
+}
 
-        if ($categoryController->updateCategory($categoryId, $data)) {
-            $_SESSION['success_message'] = "Category updated successfully!";
-            header("Location: view-categories.php");
-            exit();
-        } else {
-            $_SESSION['error_message'] = "Failed to update category.";
-        }
-    } catch (Exception $e) {
-        $_SESSION['error_message'] = $e->getMessage();
+function removeImg($col, $category) {
+    if (!empty($category[$col]) && file_exists(__DIR__ . '/' . $category[$col])) {
+        @unlink(__DIR__ . '/' . $category[$col]);
     }
-    
-    // Refresh category data after update
+    return '';
+}
+
+$error   = '';
+$success = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = trim($_POST['name'] ?? '');
+    $slug = trim($_POST['slug'] ?? '');
+    if ($slug === '') {
+        $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $name));
+        $slug = trim($slug, '-');
+    }
+
+    // Handle each image: remove > upload > keep
+    $desktop_menu_image = isset($_POST['remove_desktop_menu_image']) ? removeImg('desktop_menu_image', $category) : uploadEditImg('desktop_menu_image', 'menu',       $category['desktop_menu_image'] ?? '');
+    $desktop_image      = isset($_POST['remove_desktop_image'])      ? removeImg('desktop_image',      $category) : uploadEditImg('desktop_image',      'desktop',    $category['desktop_image'] ?? '');
+    $desktop_bg_image   = isset($_POST['remove_desktop_bg_image'])   ? removeImg('desktop_bg_image',   $category) : uploadEditImg('desktop_bg_image',   'bg',         $category['desktop_bg_image'] ?? '');
+    $mobile_image       = isset($_POST['remove_mobile_image'])       ? removeImg('mobile_image',       $category) : uploadEditImg('mobile_image',       'mobile',     $category['mobile_image'] ?? '');
+    $mobile_bg_image    = isset($_POST['remove_mobile_bg_image'])    ? removeImg('mobile_bg_image',    $category) : uploadEditImg('mobile_bg_image',    'mobile-bg',  $category['mobile_bg_image'] ?? '');
+
+    $data = [
+        'name'                 => $name,
+        'slug'                 => $slug,
+        'description'          => trim($_POST['description'] ?? ''),
+        'status'               => $_POST['status'] ?? 'active',
+        'is_featured'          => (int)($_POST['is_featured'] ?? 0),
+        'icon'                 => trim($_POST['icon'] ?? ''),
+        'display_order'        => (int)($_POST['display_order'] ?? 0),
+        // Desktop menu
+        'desktop_menu_status'  => $_POST['desktop_menu_status'] ?? 'show',
+        'desktop_menu_order'   => (int)($_POST['desktop_menu_order'] ?? 0),
+        'desktop_menu_view'    => $_POST['desktop_menu_view'] ?? 'no',
+        'desktop_menu_design'  => $_POST['desktop_menu_design'] ?? '',
+        'desktop_menu_tag'     => trim($_POST['desktop_menu_tag'] ?? ''),
+        'desktop_menu_image'   => $desktop_menu_image,
+        // Desktop home
+        'desktop_home_show'    => $_POST['desktop_home_show'] ?? 'no',
+        'desktop_home_design'  => $_POST['desktop_home_design'] ?? '',
+        'desktop_home_order'   => (int)($_POST['desktop_home_order'] ?? 0),
+        'desktop_bg_color'     => $_POST['desktop_bg_color'] ?? '',
+        'desktop_image'        => $desktop_image,
+        'desktop_bg_image'     => $desktop_bg_image,
+        // Mobile menu
+        'mobile_topbar_status' => $_POST['mobile_topbar_status'] ?? 'show',
+        'mobile_topbar_order'  => (int)($_POST['mobile_topbar_order'] ?? 0),
+        'mobile_menu_view'     => $_POST['mobile_menu_view'] ?? 'no',
+        'mobile_menu_design'   => $_POST['mobile_menu_design'] ?? '',
+        'mobile_sidebar_order' => (int)($_POST['mobile_sidebar_order'] ?? 0),
+        // Mobile home
+        'mobile_home_show'     => $_POST['mobile_home_show'] ?? 'no',
+        'mobile_home_design'   => $_POST['mobile_home_design'] ?? '',
+        'mobile_home_format'   => $_POST['mobile_home_format'] ?? '4',
+        'mobile_home_order'    => (int)($_POST['mobile_home_order'] ?? 0),
+        'mobile_bg_color'      => $_POST['mobile_bg_color'] ?? '',
+        'mobile_image'         => $mobile_image,
+        'mobile_bg_image'      => $mobile_bg_image,
+        // SEO
+        'meta_title'           => trim($_POST['meta_title'] ?? ''),
+        'meta_keywords'        => trim($_POST['meta_keywords'] ?? ''),
+        'meta_description'     => trim($_POST['meta_description'] ?? ''),
+    ];
+
+    if (empty($data['name'])) {
+        $error = 'Category name is required.';
+    } else {
+        if ($categoryController->updateCategory($categoryId, $data)) {
+            $_SESSION['success_message'] = 'Category updated successfully!';
+            header('Location: view-categories.php');
+            exit;
+        } else {
+            $error = 'Failed to update category. Please try again.';
+        }
+    }
+
+    // Refresh for re-display
     $category = $categoryController->getCategoryById($categoryId);
 }
-?>
 
+$level = (int)($category['level'] ?? 1);
+
+// Helper: show current image with remove checkbox
+function currentImgBlock($col, $label, $category) {
+    $path = $category[$col] ?? '';
+    if (!$path) return;
+    echo '<div class="mb-2">';
+    echo '<small class="text-muted d-block mb-1">Current ' . htmlspecialchars($label) . ':</small>';
+    echo '<img src="' . htmlspecialchars($path) . '" style="max-height:80px;border-radius:4px;" onerror="this.style.display=\'none\'">';
+    echo '<div class="form-check mt-1"><input class="form-check-input" type="checkbox" name="remove_' . $col . '" id="rm_' . $col . '" value="1">';
+    echo '<label class="form-check-label text-danger small" for="rm_' . $col . '">Remove this image</label></div>';
+    echo '</div>';
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="shortcut icon" href="img/icons/icon-48x48.png" />
     <title>Edit Category | Printmont</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
     <script src="js/settings.js"></script>
     <style>
-        .form-label { font-weight: 500; }
-        .required:after { content: " *"; color: red; }
-        .image-preview { max-width: 200px; max-height: 200px; margin-top: 10px; border-radius: 4px; display: none; }
-        .upload-area { border: 2px dashed #dee2e6; border-radius: 4px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; }
-        .upload-area:hover { border-color: #007bff; background-color: #f8f9fa; }
-        .upload-area.dragover { border-color: #007bff; background-color: #e7f3ff; }
-        .file-info { margin-top: 10px; font-size: 0.875rem; color: #6c757d; }
-        .remove-image { color: #dc3545; cursor: pointer; margin-left: 10px; }
-        .current-image { max-width: 200px; max-height: 200px; border-radius: 4px; margin-bottom: 10px; }
-        .image-actions { margin-top: 10px; }
+        body { opacity: 0; }
+        .required-field::after { content: " *"; color: #dc3545; }
+        .section-card { border-left: 4px solid #0d6efd; }
+        .section-card.mobile { border-left-color: #198754; }
+        .section-card.seo { border-left-color: #ffc107; }
+        .design-option { border: 2px solid #dee2e6; border-radius: 8px; padding: 10px; text-align: center; transition: all .2s; cursor: pointer; }
+        .design-option:hover { border-color: #0d6efd; }
+        input[type=radio]:checked + .design-option { border-color: #0d6efd; background: #e8f4fd; }
+        .image-preview { max-height: 120px; border-radius: 6px; margin-top: 8px; display: none; }
+        .conditional-block { display: none; }
     </style>
 </head>
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
-    <div class="wrapper">
-        <?php include_once "includes/side-navbar.php"; ?>
-        <div class="main">
-            <?php include_once "includes/top-navbar.php"; ?>
-            
-            <main class="content">
-                <div class="container-fluid p-0">
-                    <div class="row mb-2 mb-xl-3">
-                        <div class="col-auto d-none d-sm-block">
-                            <h3><strong>Edit</strong> Category</h3>
-                        </div>
-                        <div class="col-auto ms-auto text-end mt-n1">
-                            <a href="view-categories.php" class="btn btn-secondary">View Categories</a>
+<div class="wrapper">
+    <?php include_once "includes/side-navbar.php"; ?>
+    <div class="main">
+        <?php include_once "includes/top-navbar.php"; ?>
+        <main class="content">
+            <div class="container-fluid p-0">
+
+                <div class="row mb-3">
+                    <div class="col-auto d-none d-sm-block">
+                        <h3><strong>Edit</strong> Category
+                            <span class="badge bg-<?php echo $level==1?'primary':($level==2?'success':'warning'); ?> ms-2">
+                                Level <?php echo $level; ?> – <?php echo $level==1?'Main':($level==2?'Sub':'Sub Sub'); ?>
+                            </span>
+                        </h3>
+                    </div>
+                    <div class="col-auto ms-auto text-end mt-n1">
+                        <a href="view-categories.php" class="btn btn-secondary">View All Categories</a>
+                    </div>
+                </div>
+
+                <?php if ($error): ?>
+                    <div class="alert alert-danger alert-dismissible"><button class="btn-close" data-bs-dismiss="alert"></button><?php echo htmlspecialchars($error); ?></div>
+                <?php endif; ?>
+                <?php if (!empty($_SESSION['success_message'])): ?>
+                    <div class="alert alert-success alert-dismissible"><button class="btn-close" data-bs-dismiss="alert"></button><?php echo htmlspecialchars($_SESSION['success_message']); ?></div>
+                    <?php unset($_SESSION['success_message']); ?>
+                <?php endif; ?>
+
+                <form method="POST" enctype="multipart/form-data">
+
+                    <!-- BASIC INFO -->
+                    <div class="card mb-4">
+                        <div class="card-header"><h5 class="mb-0">Basic Information</h5></div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label required-field">Category Name</label>
+                                    <input type="text" class="form-control" name="name" id="catName" required
+                                           value="<?php echo htmlspecialchars($category['name']); ?>">
+                                </div>
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label required-field">Slug</label>
+                                    <input type="text" class="form-control" name="slug" id="catSlug"
+                                           value="<?php echo htmlspecialchars($category['slug']); ?>">
+                                    <small class="text-muted">Lowercase letters and hyphens only.</small>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Status</label>
+                                    <select name="status" class="form-control">
+                                        <option value="active"   <?php echo $category['status']=='active'  ?'selected':''; ?>>Active</option>
+                                        <option value="inactive" <?php echo $category['status']=='inactive'?'selected':''; ?>>Inactive</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Featured</label>
+                                    <select name="is_featured" class="form-control">
+                                        <option value="0" <?php echo !$category['is_featured']?'selected':''; ?>>No</option>
+                                        <option value="1" <?php echo  $category['is_featured']?'selected':''; ?>>Yes</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Display Order</label>
+                                    <input type="number" class="form-control" name="display_order" value="<?php echo (int)$category['display_order']; ?>" min="0">
+                                </div>
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Icon Class <small class="text-muted">(optional)</small></label>
+                                    <input type="text" class="form-control" name="icon" value="<?php echo htmlspecialchars($category['icon']); ?>" placeholder="fas fa-tag">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="description" rows="2"><?php echo htmlspecialchars($category['description']); ?></textarea>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Messages -->
-                    <?php if (isset($_SESSION['success_message'])): ?>
-                        <div class="alert alert-success alert-dismissible" role="alert">
-                            <div class="alert-message"><?php echo htmlspecialchars($_SESSION['success_message']); ?></div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <!-- DESKTOP TOP MENU -->
+                    <div class="card mb-4 section-card">
+                        <div class="card-header bg-primary bg-opacity-10">
+                            <h5 class="mb-0 text-primary"><i class="fas fa-desktop me-2"></i>Desktop – Top Menu Settings</h5>
                         </div>
-                        <?php unset($_SESSION['success_message']); ?>
-                    <?php endif; ?>
-
-                    <?php if (isset($_SESSION['error_message'])): ?>
-                        <div class="alert alert-danger alert-dismissible" role="alert">
-                            <div class="alert-message"><?php echo htmlspecialchars($_SESSION['error_message']); ?></div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                        <?php unset($_SESSION['error_message']); ?>
-                    <?php endif; ?>
-
-                    <div class="row">
-                        <div class="col-12 col-md-8">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="card-title">Category Information</h5>
-                                    <h6 class="card-subtitle text-muted">Update category information.</h6>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Top Menu Status</label>
+                                    <select name="desktop_menu_status" class="form-control">
+                                        <option value="show" <?php echo ($category['desktop_menu_status']??'show')=='show'?'selected':''; ?>>Show</option>
+                                        <option value="hide" <?php echo ($category['desktop_menu_status']??'')=='hide'?'selected':''; ?>>Hide</option>
+                                    </select>
                                 </div>
-                                <div class="card-body">
-                                    <form method="POST" id="categoryForm" enctype="multipart/form-data">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="name" class="form-label required">Category Name</label>
-                                                    <input type="text" class="form-control" id="name" name="name" 
-                                                           value="<?php echo htmlspecialchars($category['name']); ?>" 
-                                                           required maxlength="255">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="slug" class="form-label required">Slug</label>
-                                                    <input type="text" class="form-control" id="slug" name="slug" 
-                                                           value="<?php echo htmlspecialchars($category['slug']); ?>" 
-                                                           required maxlength="255">
-                                                    <small class="form-text text-muted">URL-friendly version of the name</small>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label for="description" class="form-label">Description</label>
-                                            <textarea class="form-control" id="description" name="description" 
-                                                      rows="3" maxlength="500"><?php echo htmlspecialchars($category['description']); ?></textarea>
-                                        </div>
-
-                                        <!-- Current Image Display -->
-                                        <?php if (!empty($category['image']) && file_exists($category['image'])): ?>
-                                        <div class="mb-3">
-                                            <label class="form-label">Current Image</label>
-                                            <div>
-                                                <img src="<?php echo htmlspecialchars($category['image']); ?>" 
-                                                     class="current-image" 
-                                                     alt="<?php echo htmlspecialchars($category['name']); ?>"
-                                                     onerror="this.style.display='none'">
-                                                <div class="image-actions">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" id="remove_image" name="remove_image" value="1">
-                                                        <label class="form-check-label text-danger" for="remove_image">
-                                                            Remove current image
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <?php endif; ?>
-
-                                        <!-- Image Upload Section -->
-                                        <div class="mb-3">
-                                            <label class="form-label"><?php echo empty($category['image']) ? 'Category Image' : 'Upload New Image'; ?></label>
-                                            <div class="upload-area" id="uploadArea">
-                                                <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
-                                                <p class="mb-1">Click to upload or drag and drop</p>
-                                                <p class="small text-muted mb-0">PNG, JPG, GIF, WebP (Max. 5MB)</p>
-                                                <input type="file" id="image" name="image" accept=".jpg,.jpeg,.png,.gif,.webp" style="display: none;">
-                                            </div>
-                                            <div class="file-info" id="fileInfo"></div>
-                                            <img id="imagePreview" class="image-preview" alt="Image preview">
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="parent_id" class="form-label">Parent Category</label>
-                                                    <select class="form-control" id="parent_id" name="parent_id">
-                                                        <option value="0">No Parent (Main Category)</option>
-                                                        <?php foreach ($parentCategories as $parent): ?>
-                                                            <?php if ($parent['id'] != $category['id']): ?>
-                                                                <option value="<?php echo $parent['id']; ?>" 
-                                                                    <?php echo $parent['id'] == $category['parent_id'] ? 'selected' : ''; ?>>
-                                                                    <?php echo htmlspecialchars($parent['name']); ?>
-                                                                </option>
-                                                            <?php endif; ?>
-                                                        <?php endforeach; ?>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="display_order" class="form-label">Display Order</label>
-                                                    <input type="number" class="form-control" id="display_order" name="display_order" 
-                                                           value="<?php echo $category['display_order']; ?>" min="0">
-                                                    <small class="form-text text-muted">Lower numbers display first</small>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="icon" class="form-label">Icon Class</label>
-                                                    <input type="text" class="form-control" id="icon" name="icon" 
-                                                           value="<?php echo htmlspecialchars($category['icon']); ?>" 
-                                                           placeholder="fas fa-folder" maxlength="100">
-                                                    <small class="form-text text-muted">Font Awesome icon class (e.g., fas fa-folder)</small>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="status" class="form-label required">Status</label>
-                                                    <select class="form-control" id="status" name="status" required>
-                                                        <option value="active" <?php echo $category['status'] == 'active' ? 'selected' : ''; ?>>Active</option>
-                                                        <option value="inactive" <?php echo $category['status'] == 'inactive' ? 'selected' : ''; ?>>Inactive</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured" value="1"
-                                                       <?php echo $category['is_featured'] ? 'checked' : ''; ?>>
-                                                <label class="form-check-label" for="is_featured">
-                                                    Featured Category
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        <div class="d-flex gap-2">
-                                            <button type="submit" class="btn btn-primary">Update Category</button>
-                                            <a href="view-categories.php" class="btn btn-secondary">Cancel</a>
-                                            <button type="button" class="btn btn-outline-danger" onclick="confirmDelete()">Delete Category</button>
-                                        </div>
-                                    </form>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Top Menu Sort Order</label>
+                                    <input type="number" class="form-control" name="desktop_menu_order" value="<?php echo (int)($category['desktop_menu_order']??0); ?>" min="0">
                                 </div>
+                                <?php if ($level == 1): ?>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Show Category View Design?</label>
+                                    <select name="desktop_menu_view" class="form-control" id="desktopMenuView">
+                                        <option value="no"  <?php echo ($category['desktop_menu_view']??'no')=='no' ?'selected':''; ?>>No</option>
+                                        <option value="yes" <?php echo ($category['desktop_menu_view']??'')=='yes'?'selected':''; ?>>Yes</option>
+                                    </select>
+                                </div>
+                                <?php else: ?>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Menu Tag <small class="text-muted">(e.g. New, Hot)</small></label>
+                                    <input type="text" class="form-control" name="desktop_menu_tag" value="<?php echo htmlspecialchars($category['desktop_menu_tag']??''); ?>" placeholder="New">
+                                </div>
+                                <?php endif; ?>
                             </div>
-                        </div>
-                        
-                        <div class="col-12 col-md-4">
-                            <div class="card shadow-sm border-0">
-                                <div class="card-header text-dark">
-                                    <h5 class="card-title mb-0">Quick Tips</h5>
+                            <?php if ($level == 1): ?>
+                            <div class="conditional-block" id="desktopMenuDesignBlock">
+                                <label class="form-label">Select Desktop Menu Design</label>
+                                <div class="row g-3 mb-3">
+                                    <?php foreach (['design_dm1'=>'Menu Design 1','design_dm2'=>'Menu Design 2','design_dm3'=>'Menu Design 3','design_dm4'=>'Menu Design 4'] as $val => $lbl): ?>
+                                    <div class="col-6 col-md-3">
+                                        <input type="radio" name="desktop_menu_design" value="<?php echo $val; ?>" id="dmd_<?php echo $val; ?>" class="d-none"
+                                               <?php echo ($category['desktop_menu_design']??'')==$val?'checked':''; ?>>
+                                        <label for="dmd_<?php echo $val; ?>" class="design-option d-block">
+                                            <div class="bg-light rounded mb-2" style="height:60px;display:flex;align-items:center;justify-content:center;font-size:24px">🖥️</div>
+                                            <small><?php echo $lbl; ?></small>
+                                        </label>
+                                    </div>
+                                    <?php endforeach; ?>
                                 </div>
-
-                                <div class="card-body">
-
-                                    <!-- Category Tips -->
-                                    <div class="alert alert-info p-2">
-                                        <h6 class="fw-bold mb-2">
-                                            <i class="fas fa-diagram-3"></i> Category Hierarchy
-                                        </h6>
-                                        <ul class="mb-0 ps-3">
-                                            <li>Select <strong>No Parent</strong> for main categories</li>
-                                            <li>Choose a parent category for subcategories</li>
-                                            <li>You can create unlimited subcategory levels</li>
-                                        </ul>
+                                <!-- Desktop Menu Image -->
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Desktop Menu Category Image</label>
+                                        <?php currentImgBlock('desktop_menu_image', 'Desktop Menu Image', $category); ?>
+                                        <input type="file" class="form-control mt-1" name="desktop_menu_image" accept="image/*" onchange="previewImg(this,'prvDeskMenu')">
+                                        <img id="prvDeskMenu" class="image-preview">
+                                        <small class="text-muted">Image shown in top menu dropdown · Max 5 MB</small>
                                     </div>
-
-                                    <!-- Image Guidelines -->
-                                    <div class="alert alert-warning p-2">
-                                        <h6 class="fw-bold mb-2">
-                                            <i class="fas fa-image"></i> Image Guidelines
-                                        </h6>
-                                        <ul class="mb-0 ps-3">
-                                            <li>Supported: JPG, PNG, GIF, WebP</li>
-                                            <li>Max file size: 5MB</li>
-                                            <li>Recommended ratio: <strong>1:1 (square)</strong></li>
-                                        </ul>
-                                    </div>
-
-                                    <!-- Slug Guidelines -->
-                                    <div class="alert alert-secondary p-2">
-                                        <h6 class="fw-bold mb-2">
-                                            <i class="fas fa-link"></i> Slug Guidelines
-                                        </h6>
-                                        <ul class="mb-0 ps-3">
-                                            <li>Use lowercase letters, numbers, and hyphens</li>
-                                            <li>Must be URL-friendly and descriptive</li>
-                                        </ul>
-                                    </div>
-
-                                </div>
-                            </div>
-
-                            <!-- Category Details -->
-                            <div class="card mt-3 shadow-sm border-0">
-                                <div class="card-header text-dark">
-                                    <h5 class="card-title mb-0">Category Details</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-2">
-                                        <small class="text-muted">Created:</small>
-                                        <div class="fw-semibold"><?php echo date('M j, Y g:i A', strtotime($category['created_at'])); ?></div>
-                                    </div>
-                                    <div class="mb-2">
-                                        <small class="text-muted">Last Updated:</small>
-                                        <div class="fw-semibold"><?php echo date('M j, Y g:i A', strtotime($category['updated_at'])); ?></div>
-                                    </div>
-                                    <div class="mb-2">
-                                        <small class="text-muted">Category Level:</small>
-                                        <div>
-                                            <span class="badge bg-info">Level <?php echo $category['level']; ?></span>
-                                        </div>
-                                    </div>
-                                    <div class="mb-2">
-                                        <small class="text-muted">Current Status:</small>
-                                        <div>
-                                            <span class="badge bg-<?php echo $category['status'] == 'active' ? 'success' : 'secondary'; ?>">
-                                                <?php echo ucfirst($category['status']); ?>
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <?php if ($category['is_featured']): ?>
-                                    <div class="mb-2">
-                                        <small class="text-muted">Featured:</small>
-                                        <div>
-                                            <span class="badge bg-warning">Yes</span>
-                                        </div>
-                                    </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-
-                            <!-- Subcategories -->
-                            <?php
-                            $subcategories = $categoryController->getSubcategories($categoryId);
-                            if (!empty($subcategories)):
-                            ?>
-                            <div class="card mt-3 shadow-sm border-0">
-                                <div class="card-header text-dark">
-                                    <h5 class="card-title mb-0">Subcategories</h5>
-                                </div>
-                                <div class="card-body">
-                                    <p class="small text-muted mb-2">This category has <?php echo count($subcategories); ?> subcategory(ies):</p>
-                                    <ul class="list-unstyled mb-3">
-                                        <?php foreach ($subcategories as $subcat): ?>
-                                            <li class="mb-1">
-                                                <i class="fas fa-folder text-muted me-2"></i>
-                                                <a href="edit-category.php?id=<?php echo $subcat['id']; ?>" class="text-decoration-none">
-                                                    <?php echo htmlspecialchars($subcat['name']); ?>
-                                                </a>
-                                                <span class="badge bg-<?php echo $subcat['status'] == 'active' ? 'success' : 'secondary'; ?> ms-2">
-                                                    <?php echo ucfirst($subcat['status']); ?>
-                                                </span>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                    <a href="add-category.php?parent_id=<?php echo $categoryId; ?>" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-plus"></i> Add Subcategory
-                                    </a>
                                 </div>
                             </div>
                             <?php endif; ?>
                         </div>
                     </div>
-                </div>
-            </main>
-            <?php include_once "includes/footer.php"; ?>
-        </div>
+
+                    <!-- DESKTOP HOME PAGE -->
+                    <div class="card mb-4 section-card">
+                        <div class="card-header bg-primary bg-opacity-10">
+                            <h5 class="mb-0 text-primary"><i class="fas fa-home me-2"></i>Desktop – Home Page Display</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Show on Desktop Home Page?</label>
+                                    <select name="desktop_home_show" class="form-control" id="desktopHomeShow">
+                                        <option value="no"  <?php echo ($category['desktop_home_show']??'no')=='no' ?'selected':''; ?>>No</option>
+                                        <option value="yes" <?php echo ($category['desktop_home_show']??'')=='yes'?'selected':''; ?>>Yes</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Home Page Sort Order</label>
+                                    <input type="number" class="form-control" name="desktop_home_order" value="<?php echo (int)($category['desktop_home_order']??0); ?>" min="0">
+                                </div>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Background Color</label>
+                                    <div class="input-group">
+                                        <input type="color" class="form-control form-control-color" name="desktop_bg_color" id="desktopBgColorPicker"
+                                               value="<?php echo htmlspecialchars($category['desktop_bg_color'] ?: '#ffffff'); ?>" style="width:50px">
+                                        <input type="text" class="form-control" id="desktopBgColorText"
+                                               value="<?php echo htmlspecialchars($category['desktop_bg_color']??''); ?>" placeholder="#ffffff" maxlength="7">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Desktop images always visible -->
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Desktop Category Image</label>
+                                    <?php currentImgBlock('desktop_image', 'Desktop Image', $category); ?>
+                                    <input type="file" class="form-control mt-1" name="desktop_image" accept="image/*" onchange="previewImg(this,'prevDesktopImg')">
+                                    <img id="prevDesktopImg" class="image-preview">
+                                    <small class="text-muted">Max 5 MB · JPG/PNG/WebP</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Desktop Background Image <small class="text-muted">(optional)</small></label>
+                                    <?php currentImgBlock('desktop_bg_image', 'Desktop BG Image', $category); ?>
+                                    <input type="file" class="form-control mt-1" name="desktop_bg_image" accept="image/*" onchange="previewImg(this,'prevDesktopBg')">
+                                    <img id="prevDesktopBg" class="image-preview">
+                                </div>
+                            </div>
+                            <div class="conditional-block" id="desktopHomeBlock">
+                                <label class="form-label">Select Home Page Design (Desktop)</label>
+                                <div class="row g-3">
+                                    <?php foreach (['design1'=>['📱','Design 1'],'design2'=>['🖼️','Design 2'],'design3'=>['🗂️','Design 3'],'design4'=>['🎨','Design 4']] as $val => [$icon,$lbl]): ?>
+                                    <div class="col-6 col-md-3">
+                                        <input type="radio" name="desktop_home_design" value="<?php echo $val; ?>" id="dhd_<?php echo $val; ?>" class="d-none"
+                                               <?php echo ($category['desktop_home_design']??'')==$val?'checked':''; ?>>
+                                        <label for="dhd_<?php echo $val; ?>" class="design-option d-block">
+                                            <div class="bg-light rounded mb-2" style="height:60px;display:flex;align-items:center;justify-content:center;font-size:24px"><?php echo $icon; ?></div>
+                                            <small><?php echo $lbl; ?></small>
+                                        </label>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MOBILE TOP BAR -->
+                    <div class="card mb-4 section-card mobile">
+                        <div class="card-header bg-success bg-opacity-10">
+                            <h5 class="mb-0 text-success"><i class="fas fa-mobile-alt me-2"></i>Mobile – Top Bar Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Mobile Top Bar Status</label>
+                                    <select name="mobile_topbar_status" class="form-control">
+                                        <option value="show" <?php echo ($category['mobile_topbar_status']??'show')=='show'?'selected':''; ?>>Show</option>
+                                        <option value="hide" <?php echo ($category['mobile_topbar_status']??'')=='hide'?'selected':''; ?>>Hide</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Top Bar Sort Order</label>
+                                    <input type="number" class="form-control" name="mobile_topbar_order" value="<?php echo (int)($category['mobile_topbar_order']??0); ?>" min="0">
+                                </div>
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Sidebar Sort Order</label>
+                                    <input type="number" class="form-control" name="mobile_sidebar_order" value="<?php echo (int)($category['mobile_sidebar_order']??0); ?>" min="0">
+                                </div>
+                                <div class="mb-3 col-md-3">
+                                    <label class="form-label">Show Menu View Design?</label>
+                                    <select name="mobile_menu_view" class="form-control" id="mobileMenuView">
+                                        <option value="no"  <?php echo ($category['mobile_menu_view']??'no')=='no' ?'selected':''; ?>>No</option>
+                                        <option value="yes" <?php echo ($category['mobile_menu_view']??'')=='yes'?'selected':''; ?>>Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="conditional-block" id="mobileMenuDesignBlock">
+                                <label class="form-label">Select Mobile Menu Design</label>
+                                <div class="row g-3">
+                                    <?php foreach (['mobile_design1'=>'Mobile Design 1','mobile_design2'=>'Mobile Design 2'] as $val => $lbl): ?>
+                                    <div class="col-6 col-md-3">
+                                        <input type="radio" name="mobile_menu_design" value="<?php echo $val; ?>" id="mmd_<?php echo $val; ?>" class="d-none"
+                                               <?php echo ($category['mobile_menu_design']??'')==$val?'checked':''; ?>>
+                                        <label for="mmd_<?php echo $val; ?>" class="design-option d-block">
+                                            <div class="bg-light rounded mb-2" style="height:60px;display:flex;align-items:center;justify-content:center;font-size:24px">📱</div>
+                                            <small><?php echo $lbl; ?></small>
+                                        </label>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MOBILE HOME PAGE -->
+                    <div class="card mb-4 section-card mobile">
+                        <div class="card-header bg-success bg-opacity-10">
+                            <h5 class="mb-0 text-success"><i class="fas fa-home me-2"></i>Mobile – Home Page Display</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Show on Mobile Home Page?</label>
+                                    <select name="mobile_home_show" class="form-control" id="mobileHomeShow">
+                                        <option value="no"  <?php echo ($category['mobile_home_show']??'no')=='no' ?'selected':''; ?>>No</option>
+                                        <option value="yes" <?php echo ($category['mobile_home_show']??'')=='yes'?'selected':''; ?>>Yes</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Mobile Home Sort Order</label>
+                                    <input type="number" class="form-control" name="mobile_home_order" value="<?php echo (int)($category['mobile_home_order']??0); ?>" min="0">
+                                </div>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Background Color</label>
+                                    <div class="input-group">
+                                        <input type="color" class="form-control form-control-color" name="mobile_bg_color" id="mobileBgColorPicker"
+                                               value="<?php echo htmlspecialchars($category['mobile_bg_color'] ?: '#ffffff'); ?>" style="width:50px">
+                                        <input type="text" class="form-control" id="mobileBgColorText"
+                                               value="<?php echo htmlspecialchars($category['mobile_bg_color']??''); ?>" placeholder="#ffffff" maxlength="7">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Mobile images always visible -->
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Mobile Category Image</label>
+                                    <?php currentImgBlock('mobile_image', 'Mobile Image', $category); ?>
+                                    <input type="file" class="form-control mt-1" name="mobile_image" accept="image/*" onchange="previewImg(this,'prevMobileImg')">
+                                    <img id="prevMobileImg" class="image-preview">
+                                    <small class="text-muted">Max 5 MB · JPG/PNG/WebP</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Mobile Background Image <small class="text-muted">(optional)</small></label>
+                                    <?php currentImgBlock('mobile_bg_image', 'Mobile BG Image', $category); ?>
+                                    <input type="file" class="form-control mt-1" name="mobile_bg_image" accept="image/*" onchange="previewImg(this,'prevMobileBg')">
+                                    <img id="prevMobileBg" class="image-preview">
+                                </div>
+                            </div>
+                            <div class="conditional-block" id="mobileHomeBlock">
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label">Mobile Home Design</label>
+                                        <div class="row g-2">
+                                            <?php foreach (['design1'=>['📱','Design 1'],'design2'=>['🖼️','Design 2'],'design3'=>['🗂️','Design 3'],'design4'=>['🎨','Design 4']] as $val => [$icon,$lbl]): ?>
+                                            <div class="col-3">
+                                                <input type="radio" name="mobile_home_design" value="<?php echo $val; ?>" id="mhd_<?php echo $val; ?>" class="d-none"
+                                                       <?php echo ($category['mobile_home_design']??'')==$val?'checked':''; ?>>
+                                                <label for="mhd_<?php echo $val; ?>" class="design-option d-block">
+                                                    <div class="bg-light rounded mb-1" style="height:50px;display:flex;align-items:center;justify-content:center;font-size:20px"><?php echo $icon; ?></div>
+                                                    <small><?php echo $lbl; ?></small>
+                                                </label>
+                                            </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Product Box Format</label>
+                                        <select name="mobile_home_format" class="form-control">
+                                            <option value="4" <?php echo ($category['mobile_home_format']??'4')=='4'?'selected':''; ?>>4 Image Product Box</option>
+                                            <option value="6" <?php echo ($category['mobile_home_format']??'')=='6'?'selected':''; ?>>6 Image Product Box</option>
+                                            <option value="8" <?php echo ($category['mobile_home_format']??'')=='8'?'selected':''; ?>>8 Image Product Box</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SEO -->
+                    <div class="card mb-4 section-card seo">
+                        <div class="card-header bg-warning bg-opacity-10">
+                            <h5 class="mb-0"><i class="fas fa-search me-2"></i>SEO Meta</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Meta Title</label>
+                                <input type="text" class="form-control" name="meta_title" maxlength="255"
+                                       value="<?php echo htmlspecialchars($category['meta_title']??''); ?>">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Meta Keywords</label>
+                                <input type="text" class="form-control" name="meta_keywords"
+                                       value="<?php echo htmlspecialchars($category['meta_keywords']??''); ?>">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Meta Description</label>
+                                <textarea class="form-control" name="meta_description" rows="3" maxlength="160"><?php echo htmlspecialchars($category['meta_description']??''); ?></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">Update Category</button>
+                        <a href="view-categories.php" class="btn btn-secondary">Cancel</a>
+                        <a href="delete-category.php?id=<?php echo $categoryId; ?>" class="btn btn-outline-danger ms-auto"
+                           onclick="return confirm('Delete this category? This cannot be undone.')">
+                            <i class="fas fa-trash me-1"></i>Delete Category
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </main>
+        <?php include_once "includes/footer.php"; ?>
     </div>
+</div>
+<script src="js/app.js"></script>
+<script>
+// Slug auto-generate
+const catName = document.getElementById('catName');
+const catSlug = document.getElementById('catSlug');
+catName.addEventListener('input', function () {
+    if (!catSlug._manual) catSlug.value = this.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+});
+catSlug.addEventListener('input', function () { this._manual = !!this.value; });
 
-    <script src="js/app.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
-    <script>
-        // Auto-generate slug from name
-        document.getElementById('name').addEventListener('input', function() {
-            const name = this.value;
-            const slug = name.toLowerCase()
-                .trim()
-                .replace(/[^a-z0-9 -]/g, '')
-                .replace(/\s+/g, '-')
-                .replace(/-+/g, '-');
-            document.getElementById('slug').value = slug;
-        });
+// Conditional show/hide blocks
+function bindToggle(selectId, blockId, triggerVal = 'yes') {
+    const sel = document.getElementById(selectId);
+    const blk = document.getElementById(blockId);
+    if (!sel || !blk) return;
+    const update = () => blk.style.display = (sel.value === triggerVal) ? 'block' : 'none';
+    sel.addEventListener('change', update);
+    update();
+}
+<?php if ($level == 1): ?>
+bindToggle('desktopMenuView',  'desktopMenuDesignBlock');
+<?php endif; ?>
+bindToggle('desktopHomeShow',  'desktopHomeBlock');
+bindToggle('mobileMenuView',   'mobileMenuDesignBlock');
+bindToggle('mobileHomeShow',   'mobileHomeBlock');
 
-        // Image upload functionality
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('image');
-        const fileInfo = document.getElementById('fileInfo');
-        const imagePreview = document.getElementById('imagePreview');
-        const removeImageCheckbox = document.getElementById('remove_image');
+// Color picker sync
+function syncColor(pickerId, textId) {
+    const picker = document.getElementById(pickerId);
+    const text   = document.getElementById(textId);
+    if (!picker || !text) return;
+    picker.addEventListener('input', () => text.value = picker.value);
+    text.addEventListener('input', () => { if (/^#[0-9a-f]{6}$/i.test(text.value)) picker.value = text.value; });
+}
+syncColor('desktopBgColorPicker', 'desktopBgColorText');
+syncColor('mobileBgColorPicker',  'mobileBgColorText');
 
-        // Click to upload
-        uploadArea.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        // File input change
-        fileInput.addEventListener('change', function(e) {
-            handleFileSelection(this.files[0]);
-        });
-
-        // Drag and drop functionality
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            
-            if (e.dataTransfer.files.length) {
-                fileInput.files = e.dataTransfer.files;
-                handleFileSelection(e.dataTransfer.files[0]);
-            }
-        });
-
-        function handleFileSelection(file) {
-            if (file) {
-                // Validate file type
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-                if (!allowedTypes.includes(file.type)) {
-                    alert('Please select a valid image file (JPG, PNG, GIF, or WebP).');
-                    return;
-                }
-
-                // Validate file size (5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('File size must be less than 5MB.');
-                    return;
-                }
-
-                // Display file info
-                fileInfo.innerHTML = `
-                    <strong>Selected file:</strong> ${file.name} 
-                    <span class="remove-image" onclick="removeNewImage()">
-                        <i class="fas fa-times"></i> Remove
-                    </span>
-                `;
-
-                // Uncheck remove current image if uploading new one
-                if (removeImageCheckbox) {
-                    removeImageCheckbox.checked = false;
-                }
-
-                // Preview image
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
-                    imagePreview.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function removeNewImage() {
-            fileInput.value = '';
-            fileInfo.innerHTML = '';
-            imagePreview.style.display = 'none';
-        }
-
-        // Form validation
-        document.getElementById('categoryForm').addEventListener('submit', function(e) {
-            const name = document.getElementById('name').value.trim();
-            const slug = document.getElementById('slug').value.trim();
-            
-            if (!name) {
-                e.preventDefault();
-                alert('Please enter a category name');
-                document.getElementById('name').focus();
-                return;
-            }
-            
-            if (!slug) {
-                e.preventDefault();
-                alert('Please enter a slug');
-                document.getElementById('slug').focus();
-                return;
-            }
-            
-            // Validate slug format
-            if (!/^[a-z0-9-]+$/.test(slug)) {
-                e.preventDefault();
-                alert('Slug can only contain lowercase letters, numbers, and hyphens');
-                document.getElementById('slug').focus();
-                return;
-            }
-
-            // Validate file if selected
-            const file = fileInput.files[0];
-            if (file) {
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-                if (!allowedTypes.includes(file.type)) {
-                    e.preventDefault();
-                    alert('Please select a valid image file (JPG, PNG, GIF, or WebP).');
-                    return;
-                }
-
-                if (file.size > 5 * 1024 * 1024) {
-                    e.preventDefault();
-                    alert('File size must be less than 5MB.');
-                    return;
-                }
-            }
-        });
-
-        function confirmDelete() {
-            if (confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
-                window.location.href = 'delete-category.php?id=<?php echo $categoryId; ?>';
-            }
-        }
-
-        // Prevent selecting self as parent
-        document.addEventListener('DOMContentLoaded', function() {
-            const parentSelect = document.getElementById('parent_id');
-            const currentCategoryId = <?php echo $categoryId; ?>;
-            
-            for (let i = 0; i < parentSelect.options.length; i++) {
-                if (parseInt(parentSelect.options[i].value) === currentCategoryId) {
-                    parentSelect.options[i].disabled = true;
-                    parentSelect.options[i].textContent += ' (Current)';
-                    break;
-                }
-            }
-        });
-    </script>
+// Image preview
+function previewImg(input, previewId) {
+    const el = document.getElementById(previewId);
+    if (!input.files || !input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => { el.src = e.target.result; el.style.display = 'block'; };
+    reader.readAsDataURL(input.files[0]);
+}
+</script>
 </body>
 </html>
