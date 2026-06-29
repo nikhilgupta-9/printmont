@@ -19,15 +19,34 @@ if (!$category) {
     exit();
 }
 
+// Count products linked to a category (including its subcategories)
+function countLinkedProducts($database, $categoryId) {
+    $row = $database->fetch("SELECT COUNT(*) as cnt FROM products WHERE category_id = ?", [$categoryId]);
+    return (int)($row['cnt'] ?? 0);
+}
+
 // Handle delete confirmation
 if ($_POST && isset($_POST['confirm_delete'])) {
     try {
         // Check if category has subcategories
         $subcategories = $categoryController->getSubcategories($categoryId);
         $hasChildren = !empty($subcategories);
-        
+
         if ($hasChildren && (!isset($_POST['delete_subcategories']) || $_POST['delete_subcategories'] != '1')) {
             $_SESSION['error_message'] = "This category has subcategories. You must delete them first or select the option to delete all subcategories.";
+            header("Location: delete-category.php?id=" . $categoryId);
+            exit();
+        }
+
+        // Block deletion if any products are assigned to this category or its subcategories
+        $productCount = countLinkedProducts($database, $categoryId);
+        if ($hasChildren && isset($_POST['delete_subcategories'])) {
+            foreach ($subcategories as $sub) {
+                $productCount += countLinkedProducts($database, $sub['id']);
+            }
+        }
+        if ($productCount > 0) {
+            $_SESSION['error_message'] = "Cannot delete: {$productCount} product(s) are assigned to this category (or its subcategories). Please reassign or delete those products first.";
             header("Location: delete-category.php?id=" . $categoryId);
             exit();
         }
@@ -72,6 +91,12 @@ if ($_POST && isset($_POST['confirm_delete'])) {
 // Get subcategories for warning display
 $subcategories = $categoryController->getSubcategories($categoryId);
 $hasChildren = !empty($subcategories);
+
+// Count products linked to this category and subcategories
+$linkedProducts = countLinkedProducts($database, $categoryId);
+foreach ($subcategories as $sub) {
+    $linkedProducts += countLinkedProducts($database, $sub['id']);
+}
 ?>
 
 <!DOCTYPE html>
@@ -168,6 +193,20 @@ $hasChildren = !empty($subcategories);
                                         <?php endif; ?>
                                     </div>
 
+                                    <!-- Products Warning -->
+                                    <?php if ($linkedProducts > 0): ?>
+                                    <div class="alert alert-danger text-start">
+                                        <h6 class="alert-heading">
+                                            <i class="fas fa-box me-2"></i>
+                                            Cannot Delete – Products Are Assigned!
+                                        </h6>
+                                        <p class="mb-0">
+                                            <strong><?php echo $linkedProducts; ?> product(s)</strong> are currently assigned to this category<?php echo $hasChildren ? ' or its subcategories' : ''; ?>.
+                                            Please <strong>reassign or delete those products first</strong>, then come back to delete this category.
+                                        </p>
+                                    </div>
+                                    <?php endif; ?>
+
                                     <!-- Subcategories Warning -->
                                     <?php if ($hasChildren): ?>
                                     <div class="alert alert-warning text-start">
@@ -219,7 +258,8 @@ $hasChildren = !empty($subcategories);
 
                                     <form method="POST" id="deleteForm">
                                         <div class="d-flex gap-2 justify-content-center">
-                                            <button type="submit" name="confirm_delete" value="1" class="btn btn-danger">
+                                            <button type="submit" name="confirm_delete" value="1" class="btn btn-danger"
+                                                    <?php echo $linkedProducts > 0 ? 'disabled title="Reassign products first"' : ''; ?>>
                                                 <i class="fas fa-trash me-2"></i>Yes, Delete Category
                                             </button>
                                             <a href="view-categories.php" class="btn btn-secondary">
