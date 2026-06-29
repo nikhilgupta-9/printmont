@@ -4,7 +4,7 @@ import PropTypes from "prop-types";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-// import "./carousel.css"; // Ensure your CSS is imported here!
+import "./carousel.css"; // Ensure your CSS is imported here!
 
 // --- RICH DATA STRUCTURE (Passed in by the user) ---
 // Note: I will use the user-provided 'twoimgcarousel' structure as the default for consistency
@@ -41,14 +41,14 @@ const carouselDataWithDetails = [
 
 
 // --- Custom Arrow Components (Used by both sliders) ---
-const NextArrow = ({ onClick }) => (
-  <div className="arrow next" onClick={onClick}>
+const NextArrow = ({ className, style, onClick }) => (
+  <div className={`${className} arrow next`} style={{ ...style, display: "flex" }} onClick={onClick}>
     <IoIosArrowForward />
   </div>
 );
 
-const PrevArrow = ({ onClick }) => (
-  <div className="arrow prev" onClick={onClick}>
+const PrevArrow = ({ className, style, onClick }) => (
+  <div className={`${className} arrow prev`} style={{ ...style, display: "flex" }} onClick={onClick}>
     <IoIosArrowBack />
   </div>
 );
@@ -134,7 +134,7 @@ const MainTwoImgCarousel = ({ images, showDetails }) => {
                 src={img.src} 
                 alt={img.alt || `slide-${index}`}
                 className="carousel-img"
-                style={{ objectFit: 'contain' }}
+                style={{ objectFit: 'cover' }}
               />
               
               {/* Text details for Desktop (2 image) */}

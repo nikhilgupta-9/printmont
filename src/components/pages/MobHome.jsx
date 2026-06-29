@@ -1,261 +1,193 @@
 import React from 'react'
-
 import Categories from './category-list/Categories'
-import BannerTwo from './sections/BannerTwo'
-import Bannerthree from './Bannerthree'
-import Slider from './carousel/Slider'
-import SectionOne from './sections/SectionOne'
-import SecondCarousel from './carousel/SecondCarousel'
-
-
-import { bannerImages, bannerSet1, bannerTwoDesktop, bannerTwoMobile, bestHealth, bestsellerProduct, bestsellerProducts, budsItems, dealsandcategories, girloutfit, gridproducts, gridsectionfirst, gridsectionsecond, homeDecorItems, mensFashionItems, mobileItems, productList, sampleItems, sampleProducts, sectiontwoimg, specialoffer, tablewareItems, womensFashionItems } from '../../../data/data'
-import SingleProduct from './carousel/Singleproduct'
-import SectionTwo from './sections/SectionTwo'
-import ProductGrid from './sections/ProductGrid'
-import SectionFour from './sections/SectionFour'
+import {
+  ResponsiveHeroCarousel,
+  MobileHeroSlider,
+  BannerGrid,
+  ResponsiveBannerSet,
+  StaticResponsiveBanner,
+  ProductCarousel,
+  CompactProductGrid,
+  MobileProductList,
+  CategoryProductMosaic,
+  FeaturedProductGrid,
+  BrandDirectorySection
+} from '../home'
 import SectionNine from './sections/SectionNine'
-import Banner from './sections/Banner'
-import SectionEightSingle from './sections/SectionEightSingle'
-import ProductList from './sections/ProductList'
-import SectionSix from './sections/SectionGrid'
-import SectionGrid from './sections/SectionGrid'
-import BrandDirectory from './sections/BrandDirectory'
-import FirstCarousel from './carousel/FirstCarousel'
-import SectionTen from './sections/SectionTen'
+import {
+  bannerImages,
+  bannerSet1,
+  sectiontwoimg,
+  specialoffer,
+  tablewareItems,
+  womensFashionItems,
+  budsItems,
+  homeDecorItems,
+  mobileItems,
+  mensFashionItems,
+  gridsectionfirst,
+  gridsectionsecond,
+  sampleProducts
+} from '../../../data/data'
 
 const MobHome = () => {
-const baseURL = import.meta.env.VITE_BASE_URL;
+  const baseURL = import.meta.env.VITE_BASE_URL;
 
   return (    
     <>
-    <div className='bg-white w-100 home-mobile-content home-layout-gap'>
-        <div className='top-5'> <Categories isSticky={false}/></div>
-
-        <div>
-          {/* <FirstCarousel images={fristcrouselImg} carouselId="mainCarousel" /> */}
-          <FirstCarousel apiUrl={`${baseURL}api/banner_api.php`} basePath={`${baseURL}uploads/banners/`}/>
-        </div>
-
-        <Slider apiUrl={`${baseURL}api/banner_api.php`} />
-
-        <div>
-            <SectionOne apiUrl={`${baseURL}api/banner_api.php`}/>
-        </div>
-
-        <div className='bg-white'>
-            <SingleProduct apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`} title="Recently Viewed" />
-        </div>
-
-        <div><SectionTwo images={sectiontwoimg} apiurl={`${baseURL}api/banner_api.php`}/></div>
-
-        <div><ProductGrid title="End of Season Sale" apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} /></div>
-
-        <div>
-            <SectionFour   columns={[ {
-                  title: 'Tableware & Dinnerware',
-                  items: tablewareItems,
-                },
-            ]}
-            backgroundImageUrl="./bg/super.png"
-            />
-        </div>
-
-        <div>
-            <SingleProduct products={specialoffer} title='Only for 1 Hour' backgroundImageUrl="./bg/flashsale.png"/>
-        </div>
-
-        <div>
-             <Banner images={bannerImages} />
-        </div>
-
-        <div><SectionNine products={sampleProducts}/></div>
-
-        <div className='bg-white'>
-            {/* Pass data from API only for one section like home decor or dinnerware */}
-            <SectionFour
-              apiUrl={`${baseURL}api/home-product-api.php?action=grouped_categories`}
-              backgroundImageUrl="./bg/bg-3.png"
-              imageColumn={{
-                imageUrl: "/girl-product-img/girl-1.webp",
-                alt: "Featured",
-              }}
-            /> 
-        </div>
-
-        <div>
-            <SectionFour columns={[ {
-                  title: 'Women\'s Fashion',
-                  items: womensFashionItems,
-                }, ]}
-            backgroundImageUrl="./bg/bg-4.png" />
-        </div>
-
-        <div>
-        {/* <SecondCarousel products={bestsellerProduct} title="Top Selection" /> */}
-        <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Top Selection" badgeText="Customizable" />
-      </div>
-
-      <div><Banner images={bannerImages} /></div>
-
-      <div>
-        {/* <SecondCarousel products={bestsellerProducts} title="Discount For You" /> */}
-        <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Discount For You" badgeText="Customizable" />
-      </div>
-
-      <div><Banner images={bannerImages} /></div>
-
-      <div>
-        {/* <SecondCarousel products={dealsandcategories} title="Top Deals on categories" /> */}
-        <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Top Deals on categories" badgeText="Customizable" />
-      </div>
-
-      <div><Banner images={bannerImages} /></div>
-
-      <div className='defc'>
-        <SingleProduct apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Women's" />
-      </div>
-
-      <div><SectionOne banners={bannerSet1}/></div>
-
-      <div>
-            <BannerTwo apiUrl={`${baseURL}api/banner_api.php`} />
-      </div>
-      
-      <div>
-            <SectionFour   columns={[ {
-                  title: 'EarBuds & Headphones',
-                  items: budsItems,
-                },]}
-            backgroundImageUrl="./bg/bg-4.png"
-            />
-        </div>
-
-      <div>
-        <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Top Deals on categories" badgeText="Customizable" />        
-      </div>
-        <div>
-          <ProductList apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`}/>
-        </div>
-      <div>
-         <SectionFour columns={[ {
-                      title: 'Home Decor Items',
-                      items: homeDecorItems,
-                    },]}
-            backgroundImageUrl="./bg/bg-4.png"
-            />
-      </div>
-
-        <div><ProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`}/></div>
-
-        <div><Banner images={bannerImages} /></div>
-
-        <div>
-            <SectionFour   columns={[ {
-                  title: 'Mobiles',
-                  items: mobileItems,
-                },]}
-            backgroundImageUrl="./bg/bg-5.png"
-            />
-        </div>
-
-        <div><ProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`}/></div>
-
-        <div><ProductGrid title="Great Choices" apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} bgImage={'/bg/grid-product-bg.png'} /></div>
-
-        <div><ProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`}/></div>
-
-      <div>
-        <SectionGrid/>
-      </div>
-
-      <div>
-            <SectionFour   columns={[ {
-                  title: 'Men\'s Fashion',
-                  items: mensFashionItems,
- 
-                },
-            ]}
-            backgroundImageUrl="./bg/bg-3.png"
-            />
-        </div>
-        <div><Banner images={bannerImages} /></div>
-        <div>
-          <SectionGrid data={gridsectionfirst} />
-        </div>
-
-        <div>
-          <Bannerthree/>
-        </div>
-
-        <div>
-          <SectionGrid data={gridsectionsecond} />
-        </div>
-
-        <div>
-            <SectionFour   columns={[ {
-                  title: 'New Fashion',
-                  items: mensFashionItems,
- 
-                },
-            ]}
-            backgroundImageUrl="./bg/bg-3.png"
-            />
-        </div>
-
-        <div><ProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`}/></div>
-
-        <div>
-          {/* <SecondCarousel products={bestHealth} title="Best of Health & Wellness" /> */}
-        <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Best of Health & Wellness" badgeText="Customizable" />
-        </div>
-
-        <div>
-          {/* <SecondCarousel products={sampleProducts} title="Electronics" /> */}
-          <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`} title="Electronics" badgeText="Customizable" />
-          
-        </div>
-
-        <div><Banner images={bannerImages} /></div>
-
-        <div><ProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`}/></div>
-
-        <div>
-          {/* <SecondCarousel products={bestHealth} title="Home Usage" /> */}
-          <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Home Usage" badgeText="Customizable" />
-        </div>
-
-        <div>
-            <SectionFour   columns={[ {
-                  title: 'Best for Health',
-                  items: mensFashionItems,
- 
-                },
-            ]}
-            backgroundImageUrl="./bg/bg-3.png"
-            />
-        </div>
-
-        <div><ProductList apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`}/></div>
+      <div className='bg-white w-100 home-mobile-content home-layout-gap'>
+        <Categories isSticky={false}/>
+        <ResponsiveHeroCarousel apiUrl={`${baseURL}api/banner_api.php`} basePath={`${baseURL}uploads/banners/`}/>
+        <MobileHeroSlider apiUrl={`${baseURL}api/banner_api.php`} />
+        <BannerGrid apiUrl={`${baseURL}api/banner_api.php`} sectionKey="home_above_fold" columns={4} mobileColumns={2} />
+        <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`} title="Recently Viewed" />
+        <BannerGrid banners={sectiontwoimg} apiUrl={`${baseURL}api/banner_api.php`} sectionKey="home_mid_section_3" columns={1} mobileColumns={1} />
+        <CompactProductGrid title="End of Season Sale" apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} />
         
-        <div className='bg-white'>
-            <SingleProduct apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Recently Viewed" />
-        </div>
-
-        <div><Bannerthree/></div>
+        <CategoryProductMosaic
+          columns={[
+            {
+              title: 'Tableware & Dinnerware',
+              items: tablewareItems,
+            },
+          ]}
+          backgroundImageUrl="./bg/super.png"
+          variant="grouped"
+        />
         
-        <div>
-            <Banner images={bannerImages} />
-        </div>
-        <div>
-            <SectionTen  title="Women's" apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`}/>
-        </div>
-
-        <div>
-          <BrandDirectory/>
-        </div>
-    </div>
+        <ProductCarousel products={specialoffer} title='Only for 1 Hour' backgroundImageUrl="./bg/flashsale.png"/>
+        <BannerGrid banners={bannerImages} columns={2} mobileColumns={1} />
+        <SectionNine products={sampleProducts}/>
+        
+        <CategoryProductMosaic
+          apiUrl={`${baseURL}api/home-product-api.php?action=grouped_categories`}
+          backgroundImageUrl="./bg/bg-3.png"
+          imageColumn={{
+            imageUrl: "/girl-product-img/girl-1.webp",
+            alt: "Featured",
+          }}
+          variant="grouped"
+        /> 
+        
+        <CategoryProductMosaic
+          columns={[
+            {
+              title: "Women's Fashion",
+              items: womensFashionItems,
+            },
+          ]}
+          backgroundImageUrl="./bg/bg-4.png"
+          variant="grouped"
+        />
+        
+        <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Top Selection" badgeText="Customizable" />
+        <BannerGrid banners={bannerImages} columns={2} mobileColumns={1} />
+        <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Discount For You" badgeText="Customizable" />
+        <BannerGrid banners={bannerImages} columns={2} mobileColumns={1} />
+        <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Top Deals on categories" badgeText="Customizable" />
+        <BannerGrid banners={bannerImages} columns={2} mobileColumns={1} />
+        <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Women's" />
+        <BannerGrid banners={bannerSet1} columns={4} mobileColumns={2} />
+        <ResponsiveBannerSet apiUrl={`${baseURL}api/banner_api.php`} />
+        
+        <CategoryProductMosaic
+          columns={[
+            {
+              title: 'EarBuds & Headphones',
+              items: budsItems,
+            },
+          ]}
+          backgroundImageUrl="./bg/bg-4.png"
+          variant="grouped"
+        />
+        
+        <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Top Deals on categories" badgeText="Customizable" />        
+        <MobileProductList apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`}/>
+        
+        <CategoryProductMosaic
+          columns={[
+            {
+              title: 'Home Decor Items',
+              items: homeDecorItems,
+            },
+          ]}
+          backgroundImageUrl="./bg/bg-4.png"
+          variant="grouped"
+        />
+        
+        <MobileProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`}/>
+        <BannerGrid banners={bannerImages} columns={2} mobileColumns={1} />
+        
+        <CategoryProductMosaic
+          columns={[
+            {
+              title: 'Mobiles',
+              items: mobileItems,
+            },
+          ]}
+          backgroundImageUrl="./bg/bg-5.png"
+          variant="grouped"
+        />
+        
+        <MobileProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`}/>
+        <CompactProductGrid title="Great Choices" apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} bgImage={'/bg/grid-product-bg.png'} />
+        <MobileProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`}/>
+        <FeaturedProductGrid />
+        
+        <CategoryProductMosaic
+          columns={[
+            {
+              title: "Men's Fashion",
+              items: mensFashionItems,
+            },
+          ]}
+          backgroundImageUrl="./bg/bg-3.png"
+          variant="grouped"
+        />
+        
+        <BannerGrid banners={bannerImages} columns={2} mobileColumns={1} />
+        <FeaturedProductGrid data={gridsectionfirst} />
+        <StaticResponsiveBanner />
+        <FeaturedProductGrid data={gridsectionsecond} />
+        
+        <CategoryProductMosaic
+          columns={[
+            {
+              title: 'New Fashion',
+              items: mensFashionItems,
+            },
+          ]}
+          backgroundImageUrl="./bg/bg-3.png"
+          variant="grouped"
+        />
+        
+        <MobileProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`}/>
+        <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Best of Health & Wellness" badgeText="Customizable" />
+        <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`} title="Electronics" badgeText="Customizable" />
+        <BannerGrid banners={bannerImages} columns={2} mobileColumns={1} />
+        <MobileProductList apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`}/>
+        <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Home Usage" badgeText="Customizable" />
+        
+        <CategoryProductMosaic
+          columns={[
+            {
+              title: 'Best for Health',
+              items: mensFashionItems,
+            },
+          ]}
+          backgroundImageUrl="./bg/bg-3.png"
+          variant="grouped"
+        />
+        
+        <MobileProductList apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`}/>
+        <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Recently Viewed" />
+        <StaticResponsiveBanner />
+        <BannerGrid banners={bannerImages} columns={2} mobileColumns={1} />
+        <CategoryProductMosaic title="Women's" apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} variant="flat" />
+        <BrandDirectorySection />
+      </div>
     </>
   )
 }
 
-export default MobHome
+export default MobHome;

@@ -41,6 +41,8 @@ import PrintmontCoin from "./components/prinmontCoin/PrintmontCoin";
 import CategoryPage from "./components/pages/category-list/CategoryPage";
 import BusinessSolutions from "./components/businessSolutions/BusinessSolutions";
 import BecomeASeller from "./components/becomeSeller/BecomeASeller";
+import AffiliateProgram from "./components/pages/AffiliateProgram";
+import TermsOfUse from "./components/pages/TermsOfUse";
 
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
@@ -96,6 +98,8 @@ function App() {
           <Route path="/become-a-seller" element={<BecomeASeller />} />
           <Route path="/category" element={<CategoryPage />} />
           <Route path="/category/:id" element={<CategoryPage />} />
+          <Route path="/affiliate-program" element={<AffiliateProgram />} />
+          <Route path="/terms-of-use" element={<TermsOfUse />} />
           <Route path="/policy/*" element={<PolicyPage />} />
 
           <Route path="/user" element={<User />}>

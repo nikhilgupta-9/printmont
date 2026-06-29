@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import SecondCarousel from "./SecondCarousel";
+import { ProductCarousel } from "../../home";
 import { bestsellerProduct, bestsellerProducts, dealsandcategories, discount } from "../../../../data/data";
 
 const TabCarousel = ({ allProducts, casual, formal, shorts, jackets, trousers }) => {
@@ -52,22 +52,22 @@ const TabCarousel = ({ allProducts, casual, formal, shorts, jackets, trousers })
       {/* Carousel Section */}
       <div className="carouselSection">
         {activeCategory === "All Categories" && (
-           <SecondCarousel products={bestsellerProducts} title="New" />
+           <ProductCarousel products={bestsellerProducts} title="New" />
         )}
         {activeCategory === "Casual Shirts" && (
-          <SecondCarousel products={bestsellerProduct} title="Top Selection"/>
+          <ProductCarousel products={bestsellerProduct} title="Top Selection"/>
         )}
         {activeCategory === "Formal Shirts" && (
-          <SecondCarousel products={discount} title="Discount For You" />
+          <ProductCarousel products={discount} title="Discount For You" />
         )}
         {activeCategory === "Men's Shorts" && (
-          <SecondCarousel products={dealsandcategories} title="Discount For You" />
+          <ProductCarousel products={dealsandcategories} title="Discount For You" />
         )}
         {activeCategory === "Men's Jackets" && (
-          <SecondCarousel products={discount} title="Discount For You" />
+          <ProductCarousel products={discount} title="Discount For You" />
         )}
         {activeCategory === "Men's Trousers" && (
-          <SecondCarousel products={bestsellerProduct} title="Discount For You" />
+          <ProductCarousel products={bestsellerProduct} title="Discount For You" />
         )}
         
       </div>

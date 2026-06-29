@@ -35,14 +35,13 @@ import {
 import SliderReact from 'react-slick';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Scrollbar, Pagination } from 'swiper/modules';
+import FrequentlyBoughtTogether from './FrequentlyBoughtTogether';
 import ProductReview from './ProductReview';
 import ProductQASection from './ProductQASection';
-import FrequentlyBoughtTogether from './FrequentlyBoughtTogether';
-import SecondCarousel from "./../pages/carousel/SecondCarousel";
+import { ProductCarousel } from '../home';
 import { discount, girloutfit } from '../../../data/data';
 import { Singleproductdata } from '../../../data/reviewData';
 import TabCarousel from '../pages/carousel/TabCarousel';
-import SingleProduct from '../pages/carousel/Singleproduct';
 
 // Custom arrows for vertical thumbnails
 const PrevArrow = ({ className, onClick }) => (
@@ -128,15 +127,27 @@ const ProductDetails = () => {
         
         let p = data;
         if (data && data.success && data.data) p = data.data;
+        else if (data && data.success && data.product) p = data.product;
         else if (Array.isArray(data) && data.length > 0) p = data[0];
 
-        let images = ['https://placehold.co/400x550/cccccc/000?text=No+Image'];
+        let images = [];
         if (Array.isArray(p.images) && p.images.length > 0) {
-          images = p.images.map(img => img.image_url || img);
+          images = p.images
+            .map(img => {
+              if (typeof img === 'string') return img;
+              return img.image_url || img.image || img.image_path || img.img_url || '';
+            })
+            .filter(Boolean);
         } else if (p.img) {
           images = [p.img];
         } else if (p.image_url) {
           images = [p.image_url];
+        } else if (p.image) {
+          images = [p.image];
+        }
+
+        if (images.length === 0) {
+          images = ['https://placehold.co/400x550/cccccc/000?text=No+Image'];
         }
 
         const price = parseFloat(p.price) || 1200;
@@ -1180,19 +1191,19 @@ const ProductDetails = () => {
 
         {/* SECTIONS 8-11: Product Carousels */}
         <Row className='p-0 mx-0 my-3 w-100'>
-          <SecondCarousel products={discount} title="Similar Products" />
+          <ProductCarousel products={discount} title="Similar Products" />
         </Row>
 
         <Row className='p-0 mx-0 my-3 w-100'>
-          <SecondCarousel products={discount} title="Discount on Similar Products" />
+          <ProductCarousel products={discount} title="Discount on Similar Products" />
         </Row>
 
         <Row className='p-0 mx-0 my-3 w-100'>
-          <SingleProduct products={girloutfit} title="You Might Be Interested" />
+          <ProductCarousel products={girloutfit} title="You Might Be Interested" />
         </Row>
 
         <Row className='p-0 mx-0 my-3 w-100'>
-          <SingleProduct products={girloutfit} title="Your Recently Viewed" />
+          <ProductCarousel products={girloutfit} title="Your Recently Viewed" />
         </Row>
 
       </Container>

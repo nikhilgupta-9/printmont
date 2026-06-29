@@ -1,6 +1,6 @@
 import React from "react";
 import Categories from "../category-list/Categories";
-import FourImgCarousel from "../carousel/FourImgCarousel";
+import { MultiColumnBannerCarousel } from "../../home";
 import TwoImgCarousel from "../carousel/TwoImgCarousel";
 import { fourimgcarousel, twoimgcarousel } from "../../../../data/data";
 import { Row, Col } from "react-bootstrap";
@@ -104,14 +104,8 @@ const Sidebar = () => {
 const Blog = () => {
   return (
     <div className="py-0">
-      {/* --- CATEGORIES SECTION --- */}
-      <div className="bg-white d-none d-lg-flex py-0">
-        <Categories space={"15px 0px"} showImages={false} bg="rgb(11, 83, 161)" color="white" />
-        <div className="py-2 py-lg-3 py-xl-3 py-xxl-4"></div>
-      </div>
       <div className="bg-white d-block d-lg-none py-0">
         <Categories space={"0px 0px"} showImages={true} color="white" />
-        <Categories space={"0px 0px"} showImages={true}  color="white" />
         <div className="py-1 py-lg-3 py-xl-3 py-xxl-4"></div>
         <div>
           <Link to={'#'} className="text-decoration-none">
@@ -122,7 +116,7 @@ const Blog = () => {
 
       {/* --- TOP CAROUSEL --- */}
       <div className="d-none d-sm-none d-md-flex mb-0 mb-mb-2 mb-lg-4">
-        <FourImgCarousel images={fourimgcarousel} />
+        <MultiColumnBannerCarousel banners={fourimgcarousel} columns={4} />
       </div>
 
       {/* --- MAIN BLOG CONTENT --- */}

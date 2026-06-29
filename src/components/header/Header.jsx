@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Navbar, Container, Nav } from "react-bootstrap";
-import { Link } from "react-router-dom"; // ✅ React Router Link
+import { Link, useLocation } from "react-router-dom"; // ✅ React Router Link
+import Categories from "../pages/category-list/Categories";
 import { GoHeart } from "react-icons/go";
 import { PiDotsThreeOutlineVerticalFill, PiHeadsetBold } from "react-icons/pi";
 import { LuChartNoAxesCombined } from "react-icons/lu";
@@ -18,8 +19,9 @@ import { API_ENDPOINTS, ASSET_URL } from "../../config/apiEndpoints";
 import { useAuth } from "../../context/AuthContext";
 
 const Header = () => {
-  const { getUsernamePath } = useAuth();
+  const { user, getUsernamePath } = useAuth();
   const usernamePath = getUsernamePath();
+  const location = useLocation();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
   const [showPreferences, setShowPreferences] = useState(false);
   const [showLoginDropdown, setShowLoginDropdown] = useState(false);
@@ -148,7 +150,7 @@ const Header = () => {
   return (
     <>
       <div ref={headerRef} className="container-fluid p-0 sticky-navbar">
-        <div className="container-fluid bg-white headon">
+        <div className="container-fluid bg-white">
           <Navbar expand="lg" className="border-bottom py-1 container-fluid px-5">
             <Container className="d-flex align-items-center" style={{ maxWidth: '1440px' }}>
             
@@ -327,23 +329,23 @@ const Header = () => {
                   {showPreferences && (
                     <div className="dropdown-menu show preference-menu position-absolute end-0 top-100 z-3 d-block min-w-200 p-2 shadow rounded bg-white border-0">
                       
-                      <Link to="/notification-preference" className="dropdown-item d-flex align-items-center gap-2">
+                      <Link to={user ? "/notification-preference" : "/login"} className="dropdown-item d-flex align-items-center gap-2">
                         <FaBell size={23}  className="text-warning  pa"/> Notification Preferences
                       </Link>
 
-                      <Link to="/support" className="dropdown-item d-flex align-items-center gap-2">
+                      <Link to={user ? "/support" : "/login"} className="dropdown-item d-flex align-items-center gap-2">
                         <PiHeadsetBold size={21} className="me-1 rounded-circle bg-theme pa"/> Support
                       </Link>
 
-                      <Link to="/business-solutions" className="dropdown-item d-flex align-items-center gap-2">
+                      <Link to={user ? "/business-solutions" : "/login"} className="dropdown-item d-flex align-items-center gap-2">
                         <LuChartNoAxesCombined size={21} className="me-1 rounded-circle bg-theme pa" /> Business Solutions
                       </Link>
 
-                      <Link to="/become-a-seller" className="dropdown-item d-flex align-items-center gap-2">
+                      <Link to={user ? "/become-a-seller" : "/login"} className="dropdown-item d-flex align-items-center gap-2">
                         <FaHandshake size={21} className="me-1 rounded-circle bg-theme pa" /> Become a Seller
                       </Link>
 
-                      <Link to="/app-download" className="dropdown-item d-flex align-items-center gap-2">
+                      <Link to={user ? "/app-download" : "/login"} className="dropdown-item d-flex align-items-center gap-2">
                         <RiDownload2Line size={21} className="me-1 rounded-circle bg-theme pa" /> Download the App
                       </Link>
                     </div>
@@ -355,6 +357,11 @@ const Header = () => {
           </Navbar>
         </div>
       </div>
+      {location.pathname !== '/' && (
+        <div className="d-none d-lg-block">
+          <Categories showImages={false} space="5px 0" bg="rgb(11, 83, 161)" color="white" isSticky={true} />
+        </div>
+      )}
       <div className="site-header-spacer" aria-hidden="true" />
     </>
   );

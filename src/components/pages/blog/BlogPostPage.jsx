@@ -29,7 +29,9 @@ const BlogPostPage = () => {
 
   return (
     <>
-    <Categories bg="rgb(11, 83, 161)" color="white" showImages={false} space="15px 0"/>
+    <div className="d-block d-lg-none">
+      <Categories bg="rgb(11, 83, 161)" color="white" showImages={false} space="15px 0"/>
+    </div>
     <Container className="blog-page mt-5">
       <Row>
         {/* LEFT — Blog Content */}

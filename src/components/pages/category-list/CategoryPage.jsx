@@ -1,17 +1,15 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-// ── Existing user components ──────────────
-import FirstCarousel    from "../carousel/FirstCarousel";
-import SecondCarousel   from "../carousel/SecondCarousel";
-import Slider           from "../carousel/Slider";
-import FourImgCarousel  from "../carousel/FourImgCarousel";
-import ThreeImgCarousel from "../carousel/ThreeImgCarousel";
+// ── Migrated homepage components ──────────
+import {
+  ResponsiveHeroCarousel,
+  ProductCarousel,
+  MultiColumnBannerCarousel,
+  ResponsiveBannerSet
+} from "../../home";
 import TwoImgCarousel   from "../carousel/TwoImgCarousel";
-import Banner           from "../sections/Banner";
-import BannerTwo        from "../sections/BannerTwo";
 import BannerSmall      from "../sections/BannerSmall";
-import SectionTen       from "../sections/SectionTen";
 import BeforeAfterSlider   from "./BeforeAfterSlider";
 import CategoryGridSection  from "./CategoryGridSection";
 import MobileBannerCarousel from "./MobileBannerCarousel";
@@ -152,9 +150,9 @@ const CategoryPage = () => {
           </div>
 
 
-          {/* 5. New Arrivals — SecondCarousel */}
+          {/* 5. New Arrivals — ProductCarousel */}
           <div className="cp-card-section">
-            <SecondCarousel
+            <ProductCarousel
               apiUrl={`${BASE_URL}api/home-product-api.php?action=top_selection`}
               title="New Arrivals"
               badgeText="NEW ARRIVAL"
@@ -164,7 +162,7 @@ const CategoryPage = () => {
 
           {/* 5. Main Slider */}
           <div className="cp-card-section">
-            <FirstCarousel
+            <ResponsiveHeroCarousel
               apiUrl={`${BASE_URL}api/banner_api.php`}
               basePath={`${BASE_URL}uploads/banners/`}
               carouselId="catSmallCarousel"
@@ -172,9 +170,9 @@ const CategoryPage = () => {
           </div>
           
 
-          {/* 6. Best Sellers — SecondCarousel */}
+          {/* 6. Best Sellers — ProductCarousel */}
           <div className="cp-card-section">
-            <SecondCarousel
+            <ProductCarousel
               apiUrl={`${BASE_URL}api/home-product-api.php?action=top_deal`}
               title="Best Sellers"
               badgeText="BEST SELLER"
@@ -183,9 +181,9 @@ const CategoryPage = () => {
 
           
 
-          {/* 7. BannerTwo */}
+          {/* 7. ResponsiveBannerSet */}
           <div className="cp-card-section">
-            <BannerTwo apiUrl={`${BASE_URL}api/banner_api7.php`} />
+            <ResponsiveBannerSet apiUrl={`${BASE_URL}api/banner_api7.php`} />
           </div>
 
           {/* 7.5. Personalized Gifts Section */}
@@ -195,12 +193,12 @@ const CategoryPage = () => {
 
           {/* 7.6. Four Image Banner */}
           <div className="cp-card-section">
-            <FourImgCarousel apiUrl={`${BASE_URL}api/banner_api.php`} />
+            <MultiColumnBannerCarousel apiUrl={`${BASE_URL}api/banner_api.php`} columns={4} sectionKey="home_mid_section_2" />
           </div>
 
           {/* Special Offers Carousel */}
           <div className="cp-card-section">
-            <SecondCarousel
+            <ProductCarousel
               apiUrl={`${BASE_URL}api/home-product-api.php?action=discount_for_you`}
               title="Special Offers"
               badgeText="SPECIAL OFFER"
@@ -249,7 +247,7 @@ const CategoryPage = () => {
 
         {/* 4 - Best Sellers product carousel */}
         <div className="mob-section-gap">
-          <SecondCarousel
+          <ProductCarousel
             apiUrl={`${BASE_URL}api/home-product-api.php?action=top_deal`}
             title="Best Sellers"
             badgeText="BEST SELLER"
@@ -368,7 +366,7 @@ const CategoryPage = () => {
 
         {/* 18 - Kids product carousel */}
         <div className="mob-section-gap">
-          <SecondCarousel
+          <ProductCarousel
             apiUrl={`${BASE_URL}api/home-product-api.php?action=top_selection`}
             title="Kids"
             badgeText="NEW ARRIVAL"
@@ -393,7 +391,7 @@ const CategoryPage = () => {
 
         {/* 20 - Special Offers product carousel */}
         <div className="mob-section-gap">
-          <SecondCarousel
+          <ProductCarousel
             apiUrl={`${BASE_URL}api/home-product-api.php?action=discount_for_you`}
             title="Special Offers"
             badgeText="SPECIAL OFFER"

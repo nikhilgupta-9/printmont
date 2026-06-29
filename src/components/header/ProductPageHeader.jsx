@@ -330,19 +330,19 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
                                 {user ? (user.first_name || user.firstName || user.name || (user.email ? user.email.split('@')[0] : 'User')) : 'Buyer Name'}
                                 </>} className="mt-2 custom-dropdown" data-bs-theme>
                                 
+                                <Dropdown.Item as={Link} to={user ? `/${usernamePath}/profile` : "/login"}>My Profile</Dropdown.Item>
+                                <Dropdown.Item as={Link} to={user ? "/orders" : "/login"}>Orders</Dropdown.Item>
+                                <Dropdown.Item as={Link} to="/track-order">Track your Orders</Dropdown.Item>
+                                <Dropdown.Item as={Link} to={user ? "/printmont-coin" : "/login"}>Printmont Coins</Dropdown.Item>
                                 {user ? (
                                     <>
-                                        <Dropdown.Item as={Link} to={`/${usernamePath}/profile`}>My Profile</Dropdown.Item>
-                                        <Dropdown.Item as={Link} to="/orders">Orders</Dropdown.Item>
-                                        <Dropdown.Item as={Link} to="/track-order">Track your Orders</Dropdown.Item>
-                                        <Dropdown.Item as={Link} to="/printmont-coin">Printmont Coins</Dropdown.Item>
                                         <Dropdown.Divider />
                                         <Dropdown.Item as="button" onClick={logout} className="text-danger">Log Out</Dropdown.Item>
                                     </>
                                 ) : (
                                     <>
-                                        <Dropdown.Item as={Link} to="/login">Login</Dropdown.Item>
-                                        <Dropdown.Item as={Link} to="/login">Signup</Dropdown.Item>
+                                        <Dropdown.Divider />
+                                        <Dropdown.Item as={Link} to="/login">Login / Signup</Dropdown.Item>
                                     </>
                                 )}
                             </DropdownButton>

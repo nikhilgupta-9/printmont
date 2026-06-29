@@ -24,8 +24,34 @@ const MobileHeader = () => {
 
   const searchRef = useRef();
   const headerRef = useRef();
+  const [categoriesData, setCategoriesData] = useState([]);
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
+  // Fetch Categories for Sidebar
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(API_ENDPOINTS.CATEGORIES);
+        const data = await response.json();
+        if (data.success) {
+          setCategoriesData(data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching categories in MobileHeader:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
+  const getArray = (data) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (typeof data === 'object') return Object.values(data);
+    return [];
+  };
+
+  const safeCategories = getArray(categoriesData);
+  const visibleCategories = showAllCategories ? safeCategories : safeCategories.slice(0, 8);
 
   const toggleDropdown = (key) => {
     setDropdowns((prev) => ({
@@ -275,49 +301,108 @@ const MobileHeader = () => {
       </div>
       <div className="site-header-spacer" aria-hidden="true" />
 
-      {/* Offcanvas Sidebar (unchanged) */}
+      {/* Offcanvas Sidebar */}
       <div className="offcanvas offcanvas-start w-75" tabIndex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-        <div className="offcanvas-header bg-primary text-white py-3">
+        <div className="offcanvas-header text-white py-3 d-flex align-items-center justify-content-between" style={{ backgroundColor: "rgb(11, 83, 161)" }}>
           <div className="d-flex align-items-center gap-2">
-            <FaUser />
-            <h6 className="mb-0">Login & Signup</h6>
+            <FaUser className="fs-5" />
+            <h6 className="mb-0 fw-semibold fs-5">Login & Signup</h6>
           </div>
-          <button type="button" className="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+          <button type="button" className="btn-close btn-close-white ms-auto" data-bs-dismiss="offcanvas" aria-label="Close" style={{ opacity: 1 }}></button>
         </div>
 
         <div className="offcanvas-body p-0">
           <ul className="list-group rounded-0">
-            {Array.from({ length: 8 }, (_, i) => {
-              const key = `set${i + 1}`;
+            {visibleCategories.map((item, index) => {
+              const itemChildren = getArray(item.children);
               return (
-                <li className="list-group-item px-3 py-1" key={key}>
-                  <div className="d-flex justify-content-between align-items-center" onClick={() => toggleDropdown(key)} style={{ cursor: 'pointer' }}>
-                    <span className="text-muted small fw-semibold">Set {i + 1}</span>
-                    <span className="fw-bold fs-5">{dropdowns[key] ? '−' : '+'}</span>
-                  </div>
-                  {dropdowns[key] && (
-                    <ul className="list-unstyled mt-2 ps-3">
-                      <li>
-                        <Link to="/corporate-gifts" className="text-decoration-none text-secondary d-block py-1">Corporate Gifts</Link>
-                      </li>
-                      <li>
-                        <Link to="/employee-gifts" className="text-decoration-none text-secondary d-block py-1">Employee Gifts</Link>
-                      </li>
-                    </ul>
+                <li className="list-group-item px-3 py-2" key={item.id || index} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                  {itemChildren.length > 0 ? (
+                    <>
+                      <div 
+                        className="d-flex justify-content-between align-items-center" 
+                        onClick={() => toggleDropdown(item.id)} 
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <span className="text-dark fw-medium" style={{ fontSize: "14px" }}>{item.name}</span>
+                        <span className="fw-bold fs-5 text-secondary" style={{ width: "20px", textAlign: "center" }}>
+                          {dropdowns[item.id] ? '−' : '+'}
+                        </span>
+                      </div>
+                      {dropdowns[item.id] && (
+                        <ul className="list-unstyled mt-2 ps-3 border-start" style={{ borderColor: "#eee" }}>
+                          <li>
+                            <Link 
+                              to={`/category/${item.slug}`} 
+                              className="text-decoration-none text-secondary d-block py-1"
+                              style={{ fontSize: "13px" }}
+                              data-bs-dismiss="offcanvas"
+                            >
+                              All {item.name}
+                            </Link>
+                          </li>
+                          {itemChildren.map((sub, sIdx) => (
+                            <li key={sIdx}>
+                              <Link 
+                                to={`/category/${sub.slug}`} 
+                                className="text-decoration-none text-secondary d-block py-1"
+                                style={{ fontSize: "13px" }}
+                                data-bs-dismiss="offcanvas"
+                              >
+                                {sub.name}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </>
+                  ) : (
+                    <Link 
+                      to={`/category/${item.slug}`} 
+                      className="d-flex justify-content-between align-items-center text-decoration-none text-dark"
+                      data-bs-dismiss="offcanvas"
+                    >
+                      <span className="fw-medium" style={{ fontSize: "14px" }}>{item.name}</span>
+                    </Link>
                   )}
                 </li>
               );
             })}
+            
+            {safeCategories.length > 8 && (
+              <li className="list-group-item px-3 py-2 text-center" style={{ backgroundColor: "#f8f9fa", borderBottom: "1px solid #f0f0f0" }}>
+                <button 
+                  className="btn btn-sm btn-link text-primary fw-semibold text-decoration-none p-0"
+                  onClick={() => setShowAllCategories(!showAllCategories)}
+                >
+                  {showAllCategories ? "Show Less" : "+ More Categories"}
+                </button>
+              </li>
+            )}
           </ul> 
 
-          <div className="bg-light mt-2 pt-1">
-            <ul className="list-group list-group-flush m-0 p-0">
-              <li className="list-group-item d-flex align-items-center gap-2"><FaUser /> <Link to="/account" className="text-decoration-none text-dark">My Account</Link></li>
-              <li className="list-group-item d-flex align-items-center gap-2"><FaBoxOpen /> <Link to="/orders" className="text-decoration-none text-dark">My Orders</Link></li>
-              <li className="list-group-item d-flex align-items-center gap-2"><FaPaperPlane /> <Link to="/track-order" className="text-decoration-none text-dark">Track Order</Link></li>
-              <li className="list-group-item d-flex align-items-center gap-2"><FaWallet /> <Link to="/wallet" className="text-decoration-none text-dark">My Wallet</Link></li>
-              <li className="list-group-item d-flex align-items-center gap-2"><LuChartNoAxesCombined /> <Link to="/business-solutions" className="text-decoration-none text-dark">Business Solutions</Link></li>
-              <li className="list-group-item d-flex align-items-center gap-2"><FaStore /> <Link to="/become-a-seller" className="text-decoration-none text-dark">Sell On Printmont</Link></li>
+          <div className="mt-3 border-top">
+            <ul className="list-group rounded-0">
+              <li className="list-group-item d-flex align-items-center gap-3 px-3 py-3" style={{ borderBottom: "1px solid #f0f0f0" }}>
+                <FaUser className="text-secondary fs-5" /> 
+                <Link to="/account" className="text-decoration-none text-dark fw-medium" style={{ fontSize: "14px" }} data-bs-dismiss="offcanvas">My Account</Link>
+              </li>
+              <li className="list-group-item d-flex align-items-center gap-3 px-3 py-3" style={{ borderBottom: "1px solid #f0f0f0" }}>
+                <FaBoxOpen className="text-secondary fs-5" /> 
+                <Link to="/orders" className="text-decoration-none text-dark fw-medium" style={{ fontSize: "14px" }} data-bs-dismiss="offcanvas">My Orders</Link>
+              </li>
+              <li className="list-group-item d-flex align-items-center gap-3 px-3 py-3" style={{ borderBottom: "1px solid #f0f0f0" }}>
+                <FaPaperPlane className="text-secondary fs-5" /> 
+                <Link to="/track-order" className="text-decoration-none text-dark fw-medium" style={{ fontSize: "14px" }} data-bs-dismiss="offcanvas">Track Order</Link>
+              </li>
+              <li className="list-group-item d-flex align-items-center gap-3 px-3 py-3" style={{ borderBottom: "1px solid #f0f0f0" }}>
+                <FaWallet className="text-secondary fs-5" /> 
+                <Link to="/wallet" className="text-decoration-none text-dark fw-medium" style={{ fontSize: "14px" }} data-bs-dismiss="offcanvas">My Wallet</Link>
+              </li>
+              <li className="list-group-item d-flex align-items-center gap-3 px-3 py-3" style={{ borderBottom: "1px solid #f0f0f0" }}>
+                <FaStore className="text-secondary fs-5" /> 
+                <Link to="/become-a-seller" className="text-decoration-none text-dark fw-medium" style={{ fontSize: "14px" }} data-bs-dismiss="offcanvas">Sell On Printmont</Link>
+              </li>
             </ul>
           </div>
         </div>

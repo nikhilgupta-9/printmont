@@ -95,6 +95,16 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
 
   const safeCategories = getArray(categoriesData);
 
+  const mobileCategories = safeCategories.slice(0, 12);
+  const half = Math.ceil(mobileCategories.length / 2);
+  const columnsData = [];
+  for (let i = 0; i < half; i++) {
+    columnsData.push({
+      top: mobileCategories[i],
+      bottom: mobileCategories[i + half] || null
+    });
+  }
+
   return (
     <>
       <div
@@ -110,51 +120,49 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
         } : {}}
       >
       {/* SMALL SCREENS */}
-      <div className="d-flex flex-column d-lg-none px-2 pt-1 pb-0" style={{padding:`${space}`, backgroundColor:`${bg || '#ffffff'}`}}>
-        <div className="d-flex overflow-x-auto hide-scrollbar gap-2">
-          {safeCategories.slice(0, 6).map((item, index) => (
-            <Link
-              to={`/category/${item.slug}`}
-              key={index}
-              className="d-flex flex-column align-items-center text-center flex-shrink-0 p-1 categoires-cont-width text-decoration-none"
-            >
-              {showImages && (
-              <img
-                src={getImageUrl(item.image)}
-                alt={item.name}
-                className="rounded mb-1 border categoires-img-width"
-                style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
-              />
+      <div className="d-flex flex-column d-lg-none px-2 pt-1 pb-1" style={{padding:`${space}`, backgroundColor:`${bg || '#ffffff'}`}}>
+        <div className="d-flex overflow-x-auto hide-scrollbar gap-2 py-1 w-100">
+          {columnsData.map((col, index) => (
+            <div key={index} className="d-flex flex-column gap-2 flex-shrink-0">
+              {col.top && (
+                <Link
+                  to={`/category/${col.top.slug}`}
+                  className="d-flex flex-column align-items-center text-center p-1 categoires-cont-width text-decoration-none"
+                >
+                  {showImages && (
+                    <img
+                      src={getImageUrl(col.top.image)}
+                      alt={col.top.name}
+                      className="rounded mb-1 border categoires-img-width"
+                      style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
+                    />
+                  )}
+                  <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
+                    {col.top.name}
+                  </small>
+                </Link>
               )}
-              <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
-                {item.name}
-              </small>
-            </Link>
+              {col.bottom && (
+                <Link
+                  to={`/category/${col.bottom.slug}`}
+                  className="d-flex flex-column align-items-center text-center p-1 categoires-cont-width text-decoration-none"
+                >
+                  {showImages && (
+                    <img
+                      src={getImageUrl(col.bottom.image)}
+                      alt={col.bottom.name}
+                      className="rounded mb-1 border categoires-img-width"
+                      style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
+                    />
+                  )}
+                  <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
+                    {col.bottom.name}
+                  </small>
+                </Link>
+              )}
+            </div>
           ))}
         </div>
-        {safeCategories.length > 6 && (
-          <div className="d-flex overflow-x-auto hide-scrollbar gap-2 mt-1">
-            {safeCategories.slice(6, 12).map((item, index) => (
-              <Link
-                to={`/category/${item.slug}`}
-                key={index + 6}
-                className="d-flex flex-column align-items-center text-center flex-shrink-0 p-1 categoires-cont-width text-decoration-none"
-              >
-                {showImages && (
-                <img
-                  src={getImageUrl(item.image)}
-                  alt={item.name}
-                  className="rounded mb-1 border categoires-img-width"
-                  style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
-                />
-                )}
-                <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
-                  {item.name}
-                </small>
-              </Link>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* LARGE SCREENS */}

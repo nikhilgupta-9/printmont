@@ -1,30 +1,35 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import Categories from './category-list/Categories.jsx'
-import FirstCarousel from './carousel/FirstCarousel.jsx'
-import SectionOne from './sections/SectionOne'
-import SecondCarousel from './carousel/SecondCarousel'
-import SectionTwo from './sections/SectionTwo'
-import Banner from './sections/Banner'
-import BannerTwo from './sections/BannerTwo'
-import { discount, bestsellerProduct, bestsellerProducts, girloutfit, homeDecorItems, tablewareItems, tablewareItems2, homeDecorItems2, dealsandcategories, columns, gridsectionfirst, gridsectionsecond, bannerImages, bannerSet1, sectiontwoimg, bannerTwoDesktop, bannerTwoMobile, threeimgcarousel, fourimgcarousel, sampleItems, imageColumn, } from '../../../data/data'
-import Singleproduct from './carousel/Singleproduct'
-import SectionFour from './sections/SectionFour'
-import SectionFourReverse from './sections/SectionFourReverse'
-import SectionGrid from './sections/SectionGrid.jsx'
-import BrandDirectory from './sections/BrandDirectory'
-import SectionEight from './sections/SectionEight.jsx'
-import Slider from './carousel/Slider.jsx'
-import BulkOrder from './sections/BulkOrder.jsx'
+import {
+  ResponsiveHeroCarousel,
+  MobileHeroSlider,
+  BannerGrid,
+  ResponsiveBannerSet,
+  MultiColumnBannerCarousel,
+  ProductCarousel,
+  CategoryProductMosaic,
+  FeaturedProductGrid,
+  GiftFinderSection,
+  BrandDirectorySection,
+  BulkOrderWidget
+} from '../home'
+import {
+  bestsellerProducts,
+  columns,
+  gridsectionfirst,
+  gridsectionsecond,
+  bannerImages,
+  sectiontwoimg,
+  bannerTwoDesktop,
+  threeimgcarousel,
+  fourimgcarousel,
+  sampleItems,
+  imageColumn,
+} from '../../../data/data'
 import MobHome from './MobHome.jsx'
-import GiftFinder from './sections/GiftFinder.jsx'
-import ThreeImgCarousel from './carousel/ThreeImgCarousel.jsx'
-import FourImgCarousel from './carousel/FourImgCarousel.jsx'
-import SectionTen from './sections/SectionTen.jsx'
 
 const Home = () => {
-
-const baseURL = import.meta.env.VITE_BASE_URL;
-console.log(baseURL)
+  const baseURL = import.meta.env.VITE_BASE_URL;
 
   return (
     <>
@@ -34,142 +39,58 @@ console.log(baseURL)
 
         <div className='home-desktop-content mx-auto home-desktop-wrapper'>
           <div className='relative w-100 home-layout-gap'>
-            <div>
-              {/* <FirstCarousel images={`${baseURL}api/banner-api.php`} carouselId="mainCarousel" /> */}
-              <FirstCarousel apiUrl={`${baseURL}api/banner_api.php`} basePath={`${baseURL}uploads/banners/`}/>
-            </div>
-
-          <Slider apiUrl={`${baseURL}api/banner_api.php`} />
-
-
-          <div className='bg-transparent'>
-            {/* <SectionOne banners={bannerSet1}/> */}
-            <SectionOne apiUrl={`${baseURL}api/banner_api.php`} />
-
-
-          </div>
-          <div>
-            {/* <ThreeImgCarousel images={threeimgcarousel} /> */}
-            <ThreeImgCarousel apiUrl={`${baseURL}api/banner_api.php`} />
-          </div>
-          <div>
-            {/* <FourImgCarousel images={fourimgcarousel}/> */}
-            <FourImgCarousel apiUrl={`${baseURL}api/banner_api.php`} />
-          </div>
-
-          <div>
-            {/* <SecondCarousel products={bestsellerProducts} title="Our Bestellers" badgeText="Customizable" /> */}
-            <SecondCarousel apiUrl={`${baseURL}api/bestseller-products.php`} title="Our Bestellers" badgeText="Customizable" />
-          </div>
-
-          <div className='px-2'>
-            {/* <SectionTwo images={sectiontwoimg} /> */}
-            <SectionTwo images={sectiontwoimg} apiurl={`${baseURL}api/banner_api.php`} />
-          </div>
-          <GiftFinder />
-
-          <div>
-            {/* <SecondCarousel products={bestsellerProduct} title="Top Selection" badgeText="Customizable" /> */}
-            <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Top Selection" badgeText="Customizable" />
-          </div>
-
-          <div>
-            <Banner apiUrl={`${baseURL}api/banner_api6.php`} />
-          </div>
-
-          <div>
-            <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Discount For You" badgeText="Customizable" />
-          </div>
-
-          <div>
-            <BannerTwo apiUrl={`${baseURL}api/banner_api7.php`} />
-          </div>
-
-          <div>
-            <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`} title="Top Rated" badgeText="Customizable" />
-          </div>
-
-          <div>
-            <BannerTwo apiUrl={`${baseURL}api/banner_api8.php`} />
-          </div>
-
-          <div>
-            <SecondCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Top Deals and Categories" badgeText="Customizable" />
-          </div>
-
-          <div>
-            <BannerTwo apiUrl={`${baseURL}api/banner_api9.php`} />
-          </div>
-
-          <div>
-            <Singleproduct apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Women's Outfits" />
-          </div>
-
-          <div>
-            <SectionFour
+            <ResponsiveHeroCarousel apiUrl={`${baseURL}api/banner_api.php`} basePath={`${baseURL}uploads/banners/`} banners={bannerImages} />
+            <MobileHeroSlider apiUrl={`${baseURL}api/banner_api.php`} banners={bannerImages} />
+            <BannerGrid apiUrl={`${baseURL}api/banner_api.php`} sectionKey="home_above_fold" banners={bannerImages} columns={4} mobileColumns={2} />
+            <MultiColumnBannerCarousel apiUrl={`${baseURL}api/banner_api.php`} banners={threeimgcarousel} columns={3} sectionKey="home_mid_section_1" />
+            <MultiColumnBannerCarousel apiUrl={`${baseURL}api/banner_api.php`} banners={fourimgcarousel} columns={4} sectionKey="home_mid_section_2" />
+            <ProductCarousel apiUrl={`${baseURL}api/bestseller-products.php`} title="Our Bestellers" badgeText="Customizable" products={bestsellerProducts} />
+            <BannerGrid banners={sectiontwoimg} apiUrl={`${baseURL}api/banner_api.php`} sectionKey="home_mid_section_3" columns={1} mobileColumns={1} />
+            <GiftFinderSection />
+            <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Top Selection" badgeText="Customizable" products={sampleItems} />
+            <BannerGrid apiUrl={`${baseURL}api/banner_api6.php`} banners={bannerTwoDesktop} columns={2} mobileColumns={1} />
+            <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Discount For You" badgeText="Customizable" products={bestsellerProducts} />
+            <ResponsiveBannerSet apiUrl={`${baseURL}api/banner_api7.php`} banners={bannerTwoDesktop} />
+            <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`} title="Top Rated" badgeText="Customizable" products={sampleItems} />
+            <ResponsiveBannerSet apiUrl={`${baseURL}api/banner_api8.php`} banners={bannerTwoDesktop} />
+            <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} title="Top Deals and Categories" badgeText="Customizable" products={bestsellerProducts} />
+            <ResponsiveBannerSet apiUrl={`${baseURL}api/banner_api9.php`} banners={bannerTwoDesktop} />
+            <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=top_selection`} title="Women's Outfits" products={sampleItems} />
+            
+            <CategoryProductMosaic
               apiUrl={`${baseURL}api/home-product-api.php?action=grouped_categories`}
               backgroundImageUrl="https://example.com/bg.png"
+              columns={columns}
+              variant="grouped"
             />
-          </div>
-
-          <div>
-            {/* <Banner apiUrl={`${baseURL}api/banner_api10.php`} /> */}
-          </div>
-          <div className='custom-bg'>
-            <SectionFourReverse
+            <CategoryProductMosaic
               apiUrl={`${baseURL}api/home-product-api.php?action=grouped_categories`}
               backgroundImageUrl="https://example.com/bg.png"
               imageColumn={{
                 imageUrl: "/girl-product-img/girl-1.webp",
                 alt: "Featured Product",
               }}
+              columns={columns}
+              variant="grouped"
+              reverse={true}
             />
-
+            
+            <BannerGrid apiUrl={`${baseURL}api/banner_api11.php`} banners={bannerTwoDesktop} columns={2} mobileColumns={1} />
+            <CategoryProductMosaic columns={columns} variant="grouped" />
+            <ResponsiveBannerSet apiUrl={`${baseURL}api/banner_api14.php`} banners={bannerTwoDesktop} />
+            <FeaturedProductGrid data={gridsectionfirst} />
+            <BannerGrid apiUrl={`${baseURL}api/banner_api13.php`} banners={bannerTwoDesktop} columns={2} mobileColumns={1} />
+            <FeaturedProductGrid data={gridsectionsecond} />
+            <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            <CategoryProductMosaic title="Men's" apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`} imageColumn={imageColumn} columns={columns} variant="flat" />
+            <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            <CategoryProductMosaic title="Women's" apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} imageColumn={imageColumn} columns={columns} variant="flat" />
+            <ProductCarousel apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Recently Viewed" products={sampleItems} />
+            <BrandDirectorySection />
+            <BulkOrderWidget />
           </div>
-
-          <div>
-            <Banner apiUrl={`${baseURL}api/banner_api11.php`} />
-          </div>
-
-          <div>
-            <SectionEight columns={columns} />
-          </div>
-          <div>
-            <BannerTwo apiUrl={`${baseURL}api/banner_api14.php`} />
-          </div>
-
-          <div>
-            <SectionGrid data={gridsectionfirst} />
-          </div>
-          <div>
-            <Banner apiUrl={`${baseURL}api/banner_api13.php`} />
-          </div>
-          <div>
-            <SectionGrid data={gridsectionsecond} />
-          </div>
-          <SectionTwo images={sectiontwoimg} />
-          <div>
-            <SectionTen  title="Men's" apiUrl={`${baseURL}api/home-product-api.php?action=top_rated`} imageColumn={imageColumn}/>
-          </div>
-          <SectionTwo images={sectiontwoimg} />
-
-          <div>
-            <SectionTen  title="Women's" apiUrl={`${baseURL}api/home-product-api.php?action=top_deal`} imageColumn={imageColumn}/>
-          </div>
-
-          <div>
-            <Singleproduct apiUrl={`${baseURL}api/home-product-api.php?action=discount_for_you`} title="Recently Viewed" />
-          </div>
-
-
-          <div>
-            <BrandDirectory />
-          </div>
-
-          <BulkOrder />
         </div>
       </div>
-    </div>
       <div className='d-block d-lg-none'>
         <MobHome />
       </div>
@@ -177,4 +98,4 @@ console.log(baseURL)
   )
 }
 
-export default Home
+export default Home;

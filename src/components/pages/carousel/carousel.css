@@ -37,20 +37,29 @@
 /* Arrows */
 .arrow {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 50% !important;
+  transform: translateY(-50%) !important;
   z-index: 2;
-  background: rgba(0, 0, 0, 0.4);
-  color: #000;
-  opacity: 0.5;
-  display: flex;
+  opacity: 0.8 !important;
+  display: flex !important;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  transition: background 0.3s ease;
-  font-size: 3rem;
-  padding:28px 4px;
-  background-color: aliceblue;
+  transition: all 0.3s ease;
+  width: 35px !important;
+  height: 65px !important;
+  background-color: rgba(240, 248, 255, 0.9) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.arrow::before {
+  content: none !important;
+}
+
+.arrow svg {
+  display: block !important;
+  font-size: 24px !important;
+  color: #333 !important;
 }
 
 .arrow:hover {
@@ -59,16 +68,15 @@
 }
 
 .prev {
-  left: 0px;
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
-  
+  left: 0px !important;
+  border-top-right-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
 }
 
 .next {
-  right: 0px;
-  border-top-left-radius: 8px;
-  border-bottom-left-radius: 8px;
+  right: 0px !important;
+  border-top-left-radius: 8px !important;
+  border-bottom-left-radius: 8px !important;
 }
 
 .slick-dots {

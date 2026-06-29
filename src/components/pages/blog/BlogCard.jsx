@@ -61,7 +61,7 @@ const BlogCard = ({ cardData }) => {
             <p className="card-text text-black text-secondary mb-1">{summary}</p>
 
             <Link
-              to={'/blogpage'}
+              to={`/blog/${cardData?.id || 1}`}
               className="small fw-semibold text-primary text-decoration-none"
             >
               Read More

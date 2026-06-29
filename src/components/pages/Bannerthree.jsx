@@ -1,12 +1,8 @@
-import React from 'react'
+import React from "react";
+import StaticResponsiveBanner from "../home/banners/StaticResponsiveBanner";
 
-const Bannerthree = () => {
-  return (
-    <div className='container-fluid p-0 custom-bg'>
-        <img src="./section-img/desktop-banner.jpg" className='d-none d-md-block carousel-img' alt="image not found" width={"100%"}  />
-        <img src="./section-img/mobile-banner.jpg" className='d-block d-md-none carousel-img' alt="image not found" width={"100%"}  />
-    </div>
-  )
-}
+const Bannerthree = (props) => {
+  return <StaticResponsiveBanner {...props} />;
+};
 
-export default Bannerthree
+export default Bannerthree;

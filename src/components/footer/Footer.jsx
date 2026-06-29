@@ -29,18 +29,19 @@ const Footer = () => {
                     <li><Link to="/about" className="text-light text-decoration-none">About Us</Link></li>
                     <li><Link to="/careers" className="text-light text-decoration-none">Careers</Link></li>
                     <li><Link to="/blog" className="text-light text-decoration-none">Blog</Link></li>
+                    <li><Link to="/affiliate-program" className="text-light text-decoration-none">Affiliate Program</Link></li>
                   </ul>
-
                 </div>
 
 
                 <div className="col-6 col-md-3">
                   <h6 className="text-uppercase small text-white-50">Policy Info</h6>
                   <ul className="list-unstyled txsm d-flex flex-column gap-1">
+                    <li><Link to="/terms-of-use" className="text-light text-decoration-none">Terms of Use</Link></li>
                     <li><Link to="/policy/terms" className="text-light text-decoration-none">Terms & Conditions</Link></li>
                     <li><Link to="/policy/privacy" className="text-light text-decoration-none">Privacy Policy</Link></li>
                     <li><Link to="/policy/shipping" className="text-light text-decoration-none">Shipping Policy</Link></li>
-                    <li><Link to="/policy/returns" className="text-light text-decoration-none">Return & Refund Policy</Link></li>
+                    <li><Link to="/policy/refund" className="text-light text-decoration-none">Return & Refund Policy</Link></li>
                   </ul>
 
                 </div>

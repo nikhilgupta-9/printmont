@@ -39,22 +39,35 @@ const LoginDropdown = () => {
         )}
 
         <ul className="list-unstyled mb-0">
+          <li className="dropdown-item-custom">
+            <CgProfile size={19} className="me-2 text-theme" /> 
+            <Link to={user ? `/${usernamePath}/profile` : "/login"} className="text-decoration-none text-black">My Profile</Link>
+          </li>
+          <li className="dropdown-item-custom">
+            <img src="/printmont-coin.png" className="me-2 rounded-circle shadow-md" alt="" width={20} height={20}/>
+            <Link to={user ? '/printmont-coin' : "/login"} className="text-decoration-none text-black">Printmont Coins</Link>
+          </li>
+          <li className="dropdown-item-custom text-black">
+            <GiCardboardBoxClosed className="me-2 text-theme" size={21} /> 
+            <Link to={user ? '/orders' : "/login"} className="text-decoration-none text-black">Orders</Link>
+          </li>
+          <li className="dropdown-item-custom text-black">
+            <RiTruckLine className="me-2 text-theme" size={20} /> 
+            <Link to="/track-order" className="text-decoration-none text-black">Track your Orders</Link>
+          </li>
+          <li className="dropdown-item-custom text-black">
+            <GiWallet className="me-2 text-theme" size={18} /> 
+            <Link to={user ? '#' : "/login"} className="text-decoration-none text-black">My Wallet</Link>
+          </li>
+          <li className="dropdown-item-custom text-black">
+            <FaGift size={17} className="me-2 text-theme" /> 
+            <Link to="/orders" className="text-decoration-none text-black">Coupons</Link>
+          </li>
           {user && (
-            <>
-              <li className="dropdown-item-custom"><CgProfile size={19} className="me-2 text-theme" /> <Link to={`/${usernamePath}/profile`} className="text-decoration-none text-black">My Profile</Link></li>
-              <li className="dropdown-item-custom"><img src="/printmont-coin.png" className="me-2 rounded-circle shadow-md" alt="" width={20} height={20}/>
-              <Link to={'/printmont-coin'} className="text-decoration-none text-black">Printmont Coins</Link>
-              </li>
-            </>
-          )}
-          <li className="dropdown-item-custom text-black"><GiCardboardBoxClosed className="me-2 text-theme" size={21} /> <Link to={'/orders'} className="text-decoration-none text-black">Orders</Link></li>
-          <li className="dropdown-item-custom text-black"><RiTruckLine className="me-2 text-theme" size={20} /> <Link to={'/track-order'} className="text-decoration-none text-black">Track your Orders</Link></li>
-          {user && (
-            <>
-              <li className="dropdown-item-custom text-black"><GiWallet className="me-2 text-theme"size={18} /> <Link to={'#'} className="text-decoration-none text-black">My Wallet</Link></li>
-              <li className="dropdown-item-custom text-black"><FaGift size={17} className="me-2 text-theme" /> <Link to={'/orders'} className="text-decoration-none text-black">Coupons</Link></li>
-              <li className="dropdown-item-custom"><RiLogoutCircleRLine size={20} className="me-2 text-theme" /> <button onClick={logout} className="btn btn-link text-decoration-none text-black p-0 border-0 bg-transparent text-start">Log Out</button></li>
-            </>
+            <li className="dropdown-item-custom">
+              <RiLogoutCircleRLine size={20} className="me-2 text-theme" /> 
+              <button onClick={logout} className="btn btn-link text-decoration-none text-black p-0 border-0 bg-transparent text-start">Log Out</button>
+            </li>
           )}
         </ul>
       </div>
