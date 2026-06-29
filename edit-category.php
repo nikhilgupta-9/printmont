@@ -229,6 +229,13 @@ function currentImgBlock($col, $label, $category) {
                                 <label class="form-label">Description</label>
                                 <textarea class="form-control" name="description" rows="2"><?php echo htmlspecialchars($category['description']); ?></textarea>
                             </div>
+                            <?php if (!empty($category['image'])): ?>
+                            <div class="alert alert-info p-2">
+                                <small><strong>Legacy Image (old column):</strong></small><br>
+                                <img src="<?php echo htmlspecialchars($category['image']); ?>" style="max-height:80px;border-radius:4px;margin-top:4px;" onerror="this.style.display='none'">
+                                <p class="mb-0 mt-1 small text-muted">This is the old image. Upload a new Desktop Category Image below to replace it.</p>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -266,6 +273,16 @@ function currentImgBlock($col, $label, $category) {
                                 <?php endif; ?>
                             </div>
                             <?php if ($level == 1): ?>
+                            <!-- Menu image always visible -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Desktop Menu Category Image</label>
+                                    <?php currentImgBlock('desktop_menu_image', 'Desktop Menu Image', $category); ?>
+                                    <input type="file" class="form-control mt-1" name="desktop_menu_image" accept="image/*" onchange="previewImg(this,'prvDeskMenu')">
+                                    <img id="prvDeskMenu" class="image-preview">
+                                    <small class="text-muted">Image shown in top menu dropdown · Max 5 MB</small>
+                                </div>
+                            </div>
                             <div class="conditional-block" id="desktopMenuDesignBlock">
                                 <label class="form-label">Select Desktop Menu Design</label>
                                 <div class="row g-3 mb-3">
@@ -279,16 +296,6 @@ function currentImgBlock($col, $label, $category) {
                                         </label>
                                     </div>
                                     <?php endforeach; ?>
-                                </div>
-                                <!-- Desktop Menu Image -->
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Desktop Menu Category Image</label>
-                                        <?php currentImgBlock('desktop_menu_image', 'Desktop Menu Image', $category); ?>
-                                        <input type="file" class="form-control mt-1" name="desktop_menu_image" accept="image/*" onchange="previewImg(this,'prvDeskMenu')">
-                                        <img id="prvDeskMenu" class="image-preview">
-                                        <small class="text-muted">Image shown in top menu dropdown · Max 5 MB</small>
-                                    </div>
                                 </div>
                             </div>
                             <?php endif; ?>
