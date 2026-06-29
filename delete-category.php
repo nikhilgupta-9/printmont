@@ -3,6 +3,9 @@ session_start();
 require_once 'config/constants.php';
 require_once 'controllers/CategoryController.php';
 
+$database = new Database();
+$conn = $database->getConnection();
+
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     $_SESSION['error_message'] = "Invalid category ID!";
     header("Location: view-categories.php");
@@ -19,9 +22,12 @@ if (!$category) {
     exit();
 }
 
-// Count products linked to a category (including its subcategories)
-function countLinkedProducts($database, $categoryId) {
-    $row = $database->fetch("SELECT COUNT(*) as cnt FROM products WHERE category_id = ?", [$categoryId]);
+// Count products linked to a category
+function countLinkedProducts($conn, $categoryId) {
+    $stmt = $conn->prepare("SELECT COUNT(*) as cnt FROM products WHERE category_id = ?");
+    $stmt->bind_param("i", $categoryId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
     return (int)($row['cnt'] ?? 0);
 }
 
@@ -39,10 +45,10 @@ if ($_POST && isset($_POST['confirm_delete'])) {
         }
 
         // Block deletion if any products are assigned to this category or its subcategories
-        $productCount = countLinkedProducts($database, $categoryId);
+        $productCount = countLinkedProducts($conn, $categoryId);
         if ($hasChildren && isset($_POST['delete_subcategories'])) {
             foreach ($subcategories as $sub) {
-                $productCount += countLinkedProducts($database, $sub['id']);
+                $productCount += countLinkedProducts($conn, $sub['id']);
             }
         }
         if ($productCount > 0) {
@@ -93,9 +99,9 @@ $subcategories = $categoryController->getSubcategories($categoryId);
 $hasChildren = !empty($subcategories);
 
 // Count products linked to this category and subcategories
-$linkedProducts = countLinkedProducts($database, $categoryId);
+$linkedProducts = countLinkedProducts($conn, $categoryId);
 foreach ($subcategories as $sub) {
-    $linkedProducts += countLinkedProducts($database, $sub['id']);
+    $linkedProducts += countLinkedProducts($conn, $sub['id']);
 }
 ?>
 

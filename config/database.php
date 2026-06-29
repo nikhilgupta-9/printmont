@@ -5,7 +5,7 @@ error_reporting(E_ALL);
 
 // Define BASE_URL outside the class
 // define("BASE_URL", "https://mediumvioletred-pelican-783174.hostingersite.com/");
-define("BASE_URL", "http://localhost/printmont-admin/");
+if (!defined('BASE_URL')) define("BASE_URL", "http://localhost/printmont-admin/");
 
 class Database {
     private $host = "217.21.91.234";
