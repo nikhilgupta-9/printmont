@@ -174,7 +174,7 @@ class CategoryController
         $e = fn($v) => $this->db->real_escape_string($v ?? '');
 
         $cols = ['name','slug','description','parent_id','image','icon','status','display_order','is_featured','level',
-                 'desktop_menu_status','desktop_menu_order','desktop_menu_view','desktop_menu_design','desktop_menu_tag',
+                 'desktop_menu_status','desktop_menu_order','desktop_menu_view','desktop_menu_design','desktop_menu_tag','desktop_menu_image',
                  'desktop_home_show','desktop_home_design','desktop_home_order','desktop_bg_color','desktop_bg_image','desktop_image',
                  'mobile_topbar_status','mobile_topbar_order','mobile_menu_view','mobile_menu_design','mobile_sidebar_order',
                  'mobile_home_show','mobile_home_design','mobile_home_format','mobile_home_order','mobile_bg_color','mobile_bg_image','mobile_image',

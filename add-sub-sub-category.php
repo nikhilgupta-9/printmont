@@ -330,6 +330,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </div>
                                 </div>
                             </div>
+                            <!-- Mobile images always visible -->
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Mobile Category Image</label>
+                                    <input type="file" class="form-control" name="mobile_image" accept="image/*" onchange="previewImg(this,'prvMobImg')">
+                                    <img id="prvMobImg" class="image-preview">
+                                    <small class="text-muted">Max 5 MB · JPG/PNG/WebP</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Mobile Background Image <small class="text-muted">(optional)</small></label>
+                                    <input type="file" class="form-control" name="mobile_bg_image" accept="image/*" onchange="previewImg(this,'prvMobBg')">
+                                    <img id="prvMobBg" class="image-preview">
+                                </div>
+                            </div>
                             <div class="conditional-block" id="mobileHomeBlock">
                                 <div class="row mb-3">
                                     <div class="col-md-8">
@@ -353,18 +367,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <option value="6">6 Image Product Box</option>
                                             <option value="8">8 Image Product Box</option>
                                         </select>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Mobile Category Image</label>
-                                        <input type="file" class="form-control" name="mobile_image" accept="image/*" onchange="previewImg(this,'prvMobImg')">
-                                        <img id="prvMobImg" class="image-preview">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Mobile Background Image</label>
-                                        <input type="file" class="form-control" name="mobile_bg_image" accept="image/*" onchange="previewImg(this,'prvMobBg')">
-                                        <img id="prvMobBg" class="image-preview">
                                     </div>
                                 </div>
                             </div>

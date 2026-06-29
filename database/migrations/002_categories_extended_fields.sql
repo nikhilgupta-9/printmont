@@ -13,6 +13,7 @@ ALTER TABLE `categories`
   ADD COLUMN IF NOT EXISTS `desktop_menu_view`        ENUM('yes','no')    NOT NULL DEFAULT 'no'       COMMENT 'Show design view in desktop top menu?',
   ADD COLUMN IF NOT EXISTS `desktop_menu_design`      VARCHAR(50)         NOT NULL DEFAULT ''         COMMENT 'Desktop top menu design type key',
   ADD COLUMN IF NOT EXISTS `desktop_menu_tag`         VARCHAR(100)        NOT NULL DEFAULT ''         COMMENT 'Tag label shown in desktop menu (sub/sub-sub only)',
+  ADD COLUMN IF NOT EXISTS `desktop_menu_image`       VARCHAR(255)        NOT NULL DEFAULT ''         COMMENT 'Image shown in desktop top menu dropdown',
 
   -- ── DESKTOP HOME PAGE ─────────────────────────────────────
   ADD COLUMN IF NOT EXISTS `desktop_home_show`        ENUM('yes','no')    NOT NULL DEFAULT 'no'       COMMENT 'Show on desktop home page?',

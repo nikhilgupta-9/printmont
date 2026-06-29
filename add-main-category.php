@@ -42,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'desktop_menu_order'   => (int)($_POST['desktop_menu_order'] ?? 0),
         'desktop_menu_view'    => $_POST['desktop_menu_view'] ?? 'no',
         'desktop_menu_design'  => $_POST['desktop_menu_design'] ?? '',
+        'desktop_menu_image'   => uploadCatImage('desktop_menu_image', 'menu'),
         // Desktop home
         'desktop_home_show'    => $_POST['desktop_home_show'] ?? 'no',
         'desktop_home_design'  => $_POST['desktop_home_design'] ?? '',
@@ -211,7 +212,7 @@ unset($_SESSION['success_message']);
                             </div>
                             <div class="conditional-block" id="desktopMenuDesignBlock">
                                 <label class="form-label">Select Desktop Menu Design</label>
-                                <div class="row g-3">
+                                <div class="row g-3 mb-3">
                                     <?php foreach (['design_dm1'=>'Menu Design 1','design_dm2'=>'Menu Design 2','design_dm3'=>'Menu Design 3','design_dm4'=>'Menu Design 4'] as $val => $lbl): ?>
                                     <div class="col-6 col-md-3">
                                         <input type="radio" name="desktop_menu_design" value="<?php echo $val; ?>" id="dmd_<?php echo $val; ?>" class="d-none">
@@ -221,6 +222,15 @@ unset($_SESSION['success_message']);
                                         </label>
                                     </div>
                                     <?php endforeach; ?>
+                                </div>
+                                <!-- Desktop Menu Image Upload -->
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Desktop Menu Category Image</label>
+                                        <input type="file" class="form-control" name="desktop_menu_image" accept="image/*" onchange="previewImg(this,'prvDeskMenu')">
+                                        <img id="prvDeskMenu" class="image-preview">
+                                        <small class="text-muted">Image shown in top menu dropdown · Max 5 MB</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -252,9 +262,24 @@ unset($_SESSION['success_message']);
                                     </div>
                                 </div>
                             </div>
+                            <!-- Desktop Home images always visible -->
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Desktop Category Image</label>
+                                    <input type="file" class="form-control" name="desktop_image" accept="image/*" onchange="previewImg(this,'previewDesktopImg')">
+                                    <img id="previewDesktopImg" class="image-preview">
+                                    <small class="text-muted">Max 5 MB · JPG/PNG/WebP</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Desktop Background Image <small class="text-muted">(optional)</small></label>
+                                    <input type="file" class="form-control" name="desktop_bg_image" accept="image/*" onchange="previewImg(this,'previewDesktopBg')">
+                                    <img id="previewDesktopBg" class="image-preview">
+                                    <small class="text-muted">Used as section background</small>
+                                </div>
+                            </div>
                             <div class="conditional-block" id="desktopHomeBlock">
                                 <label class="form-label">Select Home Page Design (Desktop)</label>
-                                <div class="row g-3 mb-3">
+                                <div class="row g-3">
                                     <?php foreach (['design1'=>['📱','Design 1'],'design2'=>['🖼️','Design 2'],'design3'=>['🗂️','Design 3'],'design4'=>['🎨','Design 4']] as $val => [$icon, $lbl]): ?>
                                     <div class="col-6 col-md-3">
                                         <input type="radio" name="desktop_home_design" value="<?php echo $val; ?>" id="dhd_<?php echo $val; ?>" class="d-none">
@@ -264,19 +289,6 @@ unset($_SESSION['success_message']);
                                         </label>
                                     </div>
                                     <?php endforeach; ?>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Desktop Category Image</label>
-                                        <input type="file" class="form-control" name="desktop_image" accept="image/*" onchange="previewImg(this,'previewDesktopImg')">
-                                        <img id="previewDesktopImg" class="image-preview">
-                                        <small class="text-muted">Max 5 MB · JPG/PNG/WebP</small>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Desktop Background Image <small class="text-muted">(optional)</small></label>
-                                        <input type="file" class="form-control" name="desktop_bg_image" accept="image/*" onchange="previewImg(this,'previewDesktopBg')">
-                                        <img id="previewDesktopBg" class="image-preview">
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -355,6 +367,20 @@ unset($_SESSION['success_message']);
                                     </div>
                                 </div>
                             </div>
+                            <!-- Mobile images always visible -->
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Mobile Category Image</label>
+                                    <input type="file" class="form-control" name="mobile_image" accept="image/*" onchange="previewImg(this,'previewMobileImg')">
+                                    <img id="previewMobileImg" class="image-preview">
+                                    <small class="text-muted">Max 5 MB · JPG/PNG/WebP</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Mobile Background Image <small class="text-muted">(optional)</small></label>
+                                    <input type="file" class="form-control" name="mobile_bg_image" accept="image/*" onchange="previewImg(this,'previewMobileBg')">
+                                    <img id="previewMobileBg" class="image-preview">
+                                </div>
+                            </div>
                             <div class="conditional-block" id="mobileHomeBlock">
                                 <div class="row mb-3">
                                     <div class="col-md-8">
@@ -378,19 +404,6 @@ unset($_SESSION['success_message']);
                                             <option value="6">6 Image Product Box</option>
                                             <option value="8">8 Image Product Box</option>
                                         </select>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Mobile Category Image</label>
-                                        <input type="file" class="form-control" name="mobile_image" accept="image/*" onchange="previewImg(this,'previewMobileImg')">
-                                        <img id="previewMobileImg" class="image-preview">
-                                        <small class="text-muted">Max 5 MB · JPG/PNG/WebP</small>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Mobile Background Image <small class="text-muted">(optional)</small></label>
-                                        <input type="file" class="form-control" name="mobile_bg_image" accept="image/*" onchange="previewImg(this,'previewMobileBg')">
-                                        <img id="previewMobileBg" class="image-preview">
                                     </div>
                                 </div>
                             </div>
