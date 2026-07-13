@@ -65,6 +65,7 @@ $page_groups = [
 
 	// Home Page Management
 	'home_settings' => [
+		'home-layout-manager.php',
 		'view-banner.php',
 		'add-banner.php',
 		'services.php'
@@ -252,7 +253,7 @@ function shouldExpand($group_name, $current_page, $page_groups)
 								data-feather="settings"></i>
 							Settings</a>
 						<div class="dropdown-divider"></div>
-						<a class="dropdown-item logout" href="<?= BASE_URL ?>/api/auth/logout.php">
+						<a class="dropdown-item logout" href="<?= BASE_URL ?>api/auth/logout.php">
 							<i class="align-middle me-1" data-feather="log-out"></i> Log out
 						</a>
 					</div>
@@ -380,6 +381,14 @@ function shouldExpand($group_name, $current_page, $page_groups)
 					<ul id="home-settings"
 						class="sidebar-dropdown list-unstyled collapse <?php echo isActiveGroup('home_settings', $current_page, $page_groups) ? 'show' : ''; ?>"
 						data-bs-parent="#sidebar">
+						<li
+							class="sidebar-item <?php echo isActivePage('home-layout-manager.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='home-layout-manager.php'>
+								<i class="align-middle"
+									data-feather="<?php echo isActivePage('home-layout-manager.php', $current_page) ? 'circle' : 'circle'; ?>"></i>
+								<span class="align-middle">Layout Manager</span>
+							</a>
+						</li>
 						<li
 							class="sidebar-item <?php echo isActivePage('view-banner.php', $current_page) ? 'active' : ''; ?>">
 							<a class='sidebar-link' href='view-banner.php'>
