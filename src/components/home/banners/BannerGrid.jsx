@@ -1,6 +1,7 @@
 import React from "react";
 import useHomeBanners from "../hooks/useHomeBanners";
 import BannerImage from "./BannerImage";
+import normalizeBanner from "../utils/normalizeBanner";
 
 /**
  * Renders a set of banners in a CSS grid with layout gaps.
@@ -11,7 +12,8 @@ import BannerImage from "./BannerImage";
  */
 export default function BannerGrid({ apiUrl, sectionKey, banners: propBanners, columns = 2, mobileColumns = 1 }) {
   const { banners: fetchedBanners, loading, error } = useHomeBanners(apiUrl, sectionKey);
-  const banners = propBanners || fetchedBanners || [];
+  const rawBanners = propBanners || fetchedBanners || [];
+  const banners = rawBanners.map(b => normalizeBanner(b)).filter(Boolean);
 
   if (loading && !propBanners) {
     const skeletonCount = propBanners ? propBanners.length : columns;

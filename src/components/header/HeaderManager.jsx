@@ -10,9 +10,10 @@ const PRODUCT_HEADER_PATHS = [
   '/help-center',
   '/contact',
   '/quick-links',
-  'track-order',
+  '/track-order',
   '/my-account',
-  '/category'
+  '/category',
+  '/support'
 ];
 
 const HeaderManager = () => {
@@ -34,6 +35,7 @@ const HeaderManager = () => {
     if (currentPath.startsWith('/track-order')) return 'Track Order';
     if (currentPath.startsWith('/my-account')) return 'My Account';
     if (currentPath.startsWith('/category')) return 'Categories';
+    if (currentPath.startsWith('/support')) return 'Support';
     return 'Shop';
   };
 

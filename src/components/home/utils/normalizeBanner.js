@@ -18,6 +18,11 @@ export default function normalizeBanner(item, basePath = "") {
   if (typeof item === "string") {
     large = item;
     small = item;
+  } else if (item.large || item.small) {
+    large = item.large || "";
+    small = item.small || large;
+    target = item.target || "#";
+    alt = item.alt || item.title || "";
   } else if (item.url) {
     large = item.url;
     small = item.url;

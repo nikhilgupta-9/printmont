@@ -23,7 +23,8 @@ export default function CategoryProductMosaic({
   imageColumn,
   backgroundImageUrl,
   title = "Products",
-  reverse = false
+  reverse = false,
+  bgColor
 }) {
   const [columnsState, setColumnsState] = React.useState(propColumns || []);
   const [loading, setLoading] = React.useState(!!apiUrl);
@@ -56,13 +57,13 @@ export default function CategoryProductMosaic({
       <div
         className="border bg-white rounded-3 h-100 custom-bg-image"
         style={{
-          padding: "1.5px",
+          padding: "var(--home-card-gap, 8px)",
           ...(backgroundImageUrl ? { backgroundImage: `url(${backgroundImageUrl})`, backgroundSize: "cover" } : {})
         }}
       >
         <div 
-          className="d-flex justify-content-between align-items-center mb-1"
-          style={{ padding: "1.5px 3px 0 3px" }}
+          className="d-flex justify-content-between align-items-center mb-2"
+          style={{ padding: 0 }}
         >
           <p className="m-0 section-title fw-semibold text-black">{colTitle}</p>
           <button 
@@ -81,14 +82,14 @@ export default function CategoryProductMosaic({
               id: item.id || item.productId || "",
               title: item.title || item.name || "",
               img: item.image || item.img || "/default-img.jpg",
-              price: item.price !== undefined ? item.price : 0,
+              price: (item.price !== undefined && item.price !== null) ? item.price : null,
               originalPrice: item.originalPrice || null,
               discount: item.discount || "",
               badge: item.badge || ""
             };
 
             return (
-              <div className="card-grid-item-2col" key={idx2}>
+              <div className="card-grid-item-grouped" key={idx2}>
                 <ProductCard
                   product={mappedProduct}
                   variant="mosaic"
@@ -142,24 +143,27 @@ export default function CategoryProductMosaic({
     return (
       <div className="container-fluid m-0 bg-transparent p-0 home-layout-gap">
         <div 
-          className="border bg-white rounded-3 w-100"
-          style={{ padding: "3px" }}
+          className="border rounded-3 w-100"
+          style={{ 
+            padding: "var(--home-card-gap, 8px)",
+            backgroundColor: bgColor || "#ffffff"
+          }}
         >
           {/* Section Header */}
-          <div className="d-flex justify-content-between align-items-center mb-1 p-0">
-            <h4 className="m-0 fw-semibold text-black fs-5 fs-md-4 ps-1">{title}</h4>
-            <button 
-              className="border-0 bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-1" 
-              style={{ width: "26px", height: "26px" }}
-              aria-label="View category"
+          <div className="d-flex justify-content-between align-items-center mb-2 p-0" style={{ paddingLeft: "4px", paddingRight: "4px" }}>
+            <h4 className="m-0 fw-bold text-black fs-5 fs-md-4">{title}</h4>
+            <Link
+              to="/cart"
+              className="d-flex align-items-center justify-content-center rounded bg-theme px-2 py-1 text-white text-decoration-none me-1"
+              style={{ fontSize: '0.75rem', height: '24px', whiteSpace: 'nowrap' }}
             >
-              <FaChevronRight size={14} />
-            </button>
+              View All <MdKeyboardArrowRight size={16} />
+            </Link>
           </div>
 
           <div 
             className="d-flex flex-column flex-md-row align-items-stretch m-0 p-0"
-            style={{ gap: "3px" }}
+            style={{ gap: "var(--home-card-gap, 8px)" }}
           >
             {/* Left Promotional Image Column */}
             {imageColumn && (
@@ -191,7 +195,7 @@ export default function CategoryProductMosaic({
                     id: item.id || "",
                     title: item.title || item.name || "",
                     img: item.image || item.img || "/default-img.jpg",
-                    price: item.price !== undefined ? item.price : 0,
+                    price: (item.price !== undefined && item.price !== null) ? item.price : null,
                     originalPrice: item.originalPrice || null,
                     discount: item.discount || "",
                     badge: item.badge || ""
@@ -250,7 +254,7 @@ export default function CategoryProductMosaic({
             className="col-12 col-sm-12 col-md-12 col-lg-4 p-0"
             style={{ flex: "1 1 0px", minWidth: 0 }}
           >
-            <div className="border rounded-3 h-100 overflow-hidden bg-white" style={{ padding: "3px" }}>
+            <div className="border rounded-3 h-100 overflow-hidden bg-white" style={{ padding: "var(--home-card-gap, 8px)" }}>
               <img
                 src={imageColumn.imageUrl}
                 alt={imageColumn.alt || "Showcase"}

@@ -122,8 +122,12 @@ export default function ResponsiveBannerSet({ apiUrl, banners: propBanners }) {
     return <div className="text-center p-3 text-danger">Error: {error}</div>;
   }
 
-  const finalDesktopBanners = propBanners ? desktopBanners : desktopBanners;
-  const finalMobileBanners = propBanners ? mobileBanners : mobileBanners;
+  const finalDesktopBanners = propBanners
+    ? propBanners.map(b => normalizeBanner(b)).filter(Boolean)
+    : desktopBanners;
+  const finalMobileBanners = propBanners
+    ? propBanners.map(b => normalizeBanner(b)).filter(Boolean)
+    : mobileBanners;
 
   if (finalDesktopBanners.length === 0 && finalMobileBanners.length === 0) {
     return null;

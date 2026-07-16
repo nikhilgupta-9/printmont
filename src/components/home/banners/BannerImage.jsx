@@ -7,13 +7,13 @@ import { Link } from "react-router-dom";
  */
 export default function BannerImage({ large, small, target, alt, className = "" }) {
   const imageElement = (
-    <picture style={{ display: "block", width: "100%", height: "100%", borderRadius: "10px", overflow: "hidden" }}>
+    <picture className="home-banner-picture" style={{ display: "block", width: "100%", borderRadius: "10px", overflow: "hidden" }}>
       {large && <source media="(min-width: 768px)" srcSet={large} />}
       <img
         src={small || large}
         alt={alt || "Banner"}
         className={`home-banner-img ${className}`}
-        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        style={{ width: "100%", objectFit: "cover" }}
         loading="lazy"
       />
     </picture>

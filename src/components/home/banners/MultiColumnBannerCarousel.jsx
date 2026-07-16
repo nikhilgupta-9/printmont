@@ -80,7 +80,7 @@ export default function MultiColumnBannerCarousel({
   }
 
   return (
-    <div className="home-banner-carousel-container w-100">
+    <div className="home-banner-carousel-container w-100" data-columns={columns}>
       <Slider {...settings}>
         {banners.map((banner, index) => (
           <div key={index} className="home-banner-carousel-slide">

@@ -20,17 +20,17 @@ const MobileFooter = () => {
                 <div>
                     <div><img src={'/free.png'} alt="Free Shipping" className="me-2 feature-icon" /></div>
                     <p className="txsm mb-0 fw-semibold">Free Shipping.</p>
-                    <p className="text-muted txex">No one rejects Dislike.</p>
+                    <p className="text-muted txex">No min. rejects, clothes.</p>
                 </div>
                 <div>
-                    <div><img src={'/secure.png'} alt="Free Shipping" className="me-2 feature-icon" /></div>
+                    <div><img src={'/secure.png'} alt="Online Payment" className="me-2 feature-icon" /></div>
                     <p className="txsm mb-0 fw-semibold">Online Payment.</p>
-                    <p className="text-muted txex">100% secure payment.</p>
+                    <p className="text-muted txex">100% Safe and secure payments.</p>
                 </div>
                 <div>
-                    <div><img src={'/original.png'} alt="Free Shipping" className="me-2 feature-icon" /></div>
-                    <p className="txsm mb-0 fw-semibold">100% Original</p>
-                    <p className="text-muted txex">Guaranteed products</p>
+                    <div><img src={'/original.png'} alt="100% Original Guarantee" className="me-2 feature-icon" /></div>
+                    <p className="txsm mb-0 fw-semibold">100% Original Guarantee.</p>
+                    <p className="text-muted txex">For all products at printmont.</p>
                 </div>
             </div>
 

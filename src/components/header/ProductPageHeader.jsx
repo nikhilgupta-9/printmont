@@ -233,11 +233,7 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
                             )}
                             {/* Logo/Icon */}
                             <Link to="/" className="d-flex align-items-center">
-                                {logo ? (
-                                    <img src={logo} alt="Logo" style={{ height: "24px", marginRight: '5px', objectFit: "contain" }} />
-                                ) : (
-                                    <div style={{ height: "24px", width: "80px", marginRight: '5px' }} className="shimmer-bg"></div>
-                                )}
+                                <img src="/PrintwhiteLogo.png" alt="Logo" style={{ height: "24px", marginRight: '5px', objectFit: "contain" }} />
                             </Link>
 
                             {/* Page Title - Hidden on Product Details mobile page */}

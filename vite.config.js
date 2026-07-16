@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://mediumvioletred-pelican-783174.hostingersite.com',
+        target: 'http://localhost/printmont/printmont-backend',
         changeOrigin: true
       }
     }

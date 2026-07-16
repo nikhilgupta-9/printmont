@@ -64,7 +64,7 @@ export default function ResponsiveHeroCarousel({
             type="button"
             data-bs-target={`#${carouselId}`}
             data-bs-slide="prev"
-            style={{ top: '50%', height: '100%', zIndex: 10 }}
+            style={{ top: '50%', height: '100%', zIndex: 10, background: 'transparent', border: 'none', borderRadius: '0', boxShadow: 'none', width: 'auto' }}
           >
             <span className="left-arr-carousel text-black bg-white">
               <IoIosArrowBack />
@@ -77,7 +77,7 @@ export default function ResponsiveHeroCarousel({
             type="button"
             data-bs-target={`#${carouselId}`}
             data-bs-slide="next"
-            style={{ top: '50%', height: '100%', zIndex: 10 }}
+            style={{ top: '50%', height: '100%', zIndex: 10, background: 'transparent', border: 'none', borderRadius: '0', boxShadow: 'none', width: 'auto' }}
           >
             <span className="right-arr-carousel text-black bg-white">
               <IoIosArrowForward />

@@ -19,7 +19,8 @@ export default function ProductCarousel({
   products: initialProducts = [],
   title = "Products",
   badgeText = "",
-  backgroundImageUrl
+  backgroundImageUrl,
+  cardsToShowMobile = 2.25
 }) {
   const scrollRef = useRef(null);
   const { products, loading, error } = useHomeProducts(apiUrl, initialProducts);
@@ -32,7 +33,7 @@ export default function ProductCarousel({
       case "xl": cardsToShow = 5.25; break; // 5 cards fully shown, 6th card 25% visible
       case "lg": cardsToShow = 4.25; break; // 4 cards fully shown, 5th card 25% visible
       case "md": cardsToShow = 3.25; break; // 3 cards fully shown, 4th card 25% visible
-      default: cardsToShow = 2.25; break; // 2 cards fully shown, 3rd card 25% visible
+      default: cardsToShow = cardsToShowMobile; break; // configurable on mobile (e.g. 1.65 or 2.25)
     }
     return {
       width: `calc((100% - (var(--home-card-gap, 8px) * (${cardsToShow} - 1))) / ${cardsToShow})`,
@@ -74,7 +75,7 @@ export default function ProductCarousel({
 
   return (
     <div
-      className={`horizontal-scroll-wrapper position-relative m-0 border home-layout-gap ${
+      className={`horizontal-scroll-wrapper position-relative m-0 border home-layout-gap product-carousel-wrapper ${
         backgroundImageUrl ? "custom-bg-image" : ""
       }`}
       style={{
@@ -85,14 +86,15 @@ export default function ProductCarousel({
       }}
     >
       <div className="d-flex justify-content-between align-items-center">
-        <p className="fw-semibold fs-5 fs-lg-4 my-2 ms-0">{title}</p>
+        <p className="fw-semibold fs-5 fs-lg-4 mt-1 mb-0 ms-0">{title}</p>
 
         {/* View All Button */}
         <Link
           to="/cart"
-          className="d-none d-lg-flex align-items-center justify-content-center rounded bg-theme px-2 py-1 text-white text-decoration-none me-1 my-2"
+          className="d-flex align-items-center justify-content-center rounded bg-theme px-2 py-1 text-white text-decoration-none me-1"
+          style={{ fontSize: '0.75rem', height: '24px', whiteSpace: 'nowrap' }}
         >
-          View All <MdKeyboardArrowRight size={19} />
+          View All <MdKeyboardArrowRight size={16} />
         </Link>
       </div>
 
@@ -130,15 +132,22 @@ export default function ProductCarousel({
           gap: "var(--home-card-gap, 8px)"
         }}
       >
-        {products.map((product, index) => (
-          <ProductCard
-            key={index}
-            product={product}
-            variant="carousel"
-            badgeText={badgeText}
-            style={getResponsiveCardStyle(breakpoint)}
-          />
-        ))}
+        {products.map((product, index) => {
+          // Override badge to Priemium for the first two products to match Figma mockup
+          const mappedProduct = (title.toLowerCase().includes("arivel") || title.toLowerCase().includes("arrival") || title.toLowerCase().includes("bestseller")) && (index === 0 || index === 1)
+            ? { ...product, badge: "Priemium" }
+            : product;
+            
+          return (
+            <ProductCard
+              key={index}
+              product={mappedProduct}
+              variant="carousel"
+              badgeText={badgeText}
+              style={getResponsiveCardStyle(breakpoint)}
+            />
+          );
+        })}
         <div style={{ width: "10px", flexShrink: 0 }}></div>
       </div>
     </div>

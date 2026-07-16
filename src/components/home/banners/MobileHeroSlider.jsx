@@ -15,7 +15,9 @@ import "swiper/css/pagination";
 export default function MobileHeroSlider({
   apiUrl,
   banners: propBanners,
-  basePath = ""
+  basePath = "",
+  slidesPerView = 1,
+  spaceBetween = 0
 }) {
   const { banners: fetchedBanners, loading, error } = useHomeBanners(apiUrl, "home_hero", basePath);
   const banners = propBanners || fetchedBanners || [];
@@ -36,11 +38,15 @@ export default function MobileHeroSlider({
     return null;
   }
 
+  const showPagination = slidesPerView === 1;
+
   return (
     <div className="d-block d-lg-none w-100 home-banner-section">
       <Swiper
-        pagination={{ clickable: true }}
-        modules={[Pagination]}
+        slidesPerView={slidesPerView}
+        spaceBetween={spaceBetween}
+        pagination={showPagination ? { clickable: true } : false}
+        modules={showPagination ? [Pagination] : []}
         className="mySwiper w-100"
       >
         {banners.map((banner, index) => (

@@ -34,45 +34,73 @@ export default function ProductCard({
           loading="lazy"
         />
         
-        {/* Product Badges (e.g., Best Seller, Top Rated) */}
+        {/* Product Badges (e.g., Best Seller, Top Rated, Premium) */}
         {product.badge && (
-          <span className="product-card-badge position-absolute top-0 start-0 m-1 badge bg-primary">
+          <span 
+            className="product-card-badge position-absolute top-0 start-0 m-1 badge"
+            style={{
+              backgroundColor: (product.badge.toLowerCase().includes('priemium') || product.badge.toLowerCase().includes('premium')) ? '#00a65a' : '#0b53a1',
+              color: '#ffffff',
+              fontSize: '0.65rem',
+              fontWeight: '600',
+              zIndex: 10
+            }}
+          >
             {product.badge}
           </span>
+        )}
+
+        {/* Customizable Banner at bottom of image */}
+        {(badgeText || product.overlayTag) && (
+          <div 
+            className="position-absolute bottom-0 start-0 w-100 text-uppercase text-white text-center fw-semibold py-1" 
+            style={{ 
+              backgroundColor: '#1d3557', 
+              fontSize: '0.65rem', 
+              letterSpacing: '0.5px', 
+              opacity: 0.95,
+              zIndex: 10 
+            }}
+          >
+            {badgeText || product.overlayTag}
+          </div>
         )}
       </div>
 
       {/* Product Content Details Area */}
       <div className="product-card-body d-flex flex-column p-1 w-100 flex-grow-1 justify-content-end text-center">
-        {badgeText && (
-          <div className="product-card-action-badge d-none d-lg-flex justify-content-center align-items-center bg-theme text-uppercase text-white fw-medium mt-1 border w-100">
-            {badgeText}
-          </div>
-        )}
         
-        <p className="product-card-title text-truncate fs-6 mt-1 text-center mb-1">
+        <p 
+          className="product-card-title mt-1 text-center mb-1 px-1"
+          style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            maxHeight: "2.4em",
+            lineHeight: "1.2",
+            fontSize: "0.72rem",
+            fontWeight: "500"
+          }}
+        >
           {product.title}
         </p>
         
-        <p className="product-card-price mb-0 p-0 small text-center text-dark">
-          <span className="fw-bold fs-6">₹{product.price}</span>
-          {product.originalPrice && (
-            <>
-              {" "}
-              <del className="text-muted" style={{ fontSize: "0.7rem" }}>
-                ₹{product.originalPrice}
-              </del>
-            </>
+        <div className="product-card-price mb-0 p-0 text-center text-dark d-flex align-items-center justify-content-center gap-1 flex-wrap">
+          {product.price !== undefined && product.price !== null && product.price > 0 && (
+            <span className="fw-bold fs-6" style={{ fontSize: '0.8rem' }}>₹{product.price}</span>
+          )}
+          {product.originalPrice && product.originalPrice > 0 && (
+            <del className="text-muted" style={{ fontSize: "0.6rem" }}>
+              ₹{product.originalPrice}
+            </del>
           )}
           {product.discount && (
-            <>
-              {" "}
-              <span className="text-success fw-bold small">
-                {product.discount}
-              </span>
-            </>
+            <span className="text-success fw-bold" style={{ fontSize: '0.65rem' }}>
+              ({product.discount.includes("off") || product.discount.includes("%") ? product.discount : `${product.discount} off`})
+            </span>
           )}
-        </p>
+        </div>
       </div>
     </Link>
   );

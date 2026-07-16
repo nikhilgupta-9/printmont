@@ -4,8 +4,19 @@ import { IoIosArrowDown, IoIosArrowForward } from "react-icons/io";
 import { Link } from "react-router-dom";
 import { API_ENDPOINTS, ASSET_URL } from "../../../config/apiEndpoints";
 
-const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky = false }) => {
-  const [categoriesData, setCategoriesData] = useState([]);
+const fallbackCategories = [
+  { id: 1, name: "Offer Zone", slug: "offer-zone", image: "/electro/mobile-1.jpeg" },
+  { id: 2, name: "Categories", slug: "categories", image: "/girl-product-img/subsubcat-104.jpeg" },
+  { id: 3, name: "Categories", slug: "categories", image: "/electro/buds-1.jpeg" },
+  { id: 4, name: "Categories", slug: "categories", image: "/girl-product-img/plant-1.jpeg" },
+  { id: 5, name: "Categorie", slug: "categorie", image: "/women-dress/women-dress-1.jpeg" },
+  { id: 6, name: "Categorie", slug: "categorie", image: "/electro/watch-1.jpeg" },
+  { id: 7, name: "Categorie", slug: "categorie", image: "/section-img/pro12.jpeg" },
+  { id: 8, name: "Categorie", slug: "categorie", image: "/men_shirt/men-shirt-2.jpeg" }
+];
+
+const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky = false, categories }) => {
+  const [categoriesData, setCategoriesData] = useState(categories || []);
   const [show, setShow] = useState(true);
   const [categoryHeight, setCategoryHeight] = useState(0);
   const [activeCategory, setActiveCategory] = useState(null);
@@ -15,19 +26,26 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
   const frameRef = useRef(null);
 
   useEffect(() => {
+    if (categories) {
+      setCategoriesData(categories);
+      return;
+    }
     const fetchCategories = async () => {
       try {
         const response = await fetch(API_ENDPOINTS.CATEGORIES);
         const data = await response.json();
-        if (data.success) {
+        if (data.success && data.data && data.data.length > 0) {
           setCategoriesData(data.data);
+        } else {
+          setCategoriesData(fallbackCategories);
         }
       } catch (error) {
-        console.error("Error fetching categories:", error);
+        console.error("Error fetching categories, using fallback:", error);
+        setCategoriesData(fallbackCategories);
       }
     };
     fetchCategories();
-  }, []);
+  }, [categories]);
 
   useEffect(() => {
     if (!isSticky) return;

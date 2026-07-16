@@ -25,3 +25,11 @@
 .quick-title{
     color: rgb(39, 36, 36);
 }
+
+.quicklinks-row-hover {
+  transition: background-color 0.2s ease;
+}
+
+.quicklinks-row-hover:hover {
+  background-color: #f8f9fa !important;
+}
