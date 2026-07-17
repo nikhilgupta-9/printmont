@@ -141,6 +141,63 @@ class CategoryController
         return $categories;
     }
 
+    // Sub + Sub-Sub categories together, with parent name, for the "Top Menu Inside Pages" category picker
+    public function getSubAndSubSubCategories()
+    {
+        $sql = "SELECT c.id, c.name, c.slug, c.level, c.parent_id, p.name AS parent_name
+                FROM categories c
+                LEFT JOIN categories p ON p.id = c.parent_id
+                WHERE c.level IN (2, 3) AND c.status = 'active'
+                ORDER BY c.level, p.name, c.display_order, c.name";
+        $result = $this->db->query($sql);
+
+        $categories = [];
+        if ($result && $result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $categories[] = $row;
+            }
+        }
+        return $categories;
+    }
+
+    // Main categories configured as header "Top Icons", for the All Menus list
+    public function getTopIconCategories()
+    {
+        $sql = "SELECT id, name, slug, image, desktop_menu_image, desktop_menu_status, desktop_menu_order
+                FROM categories
+                WHERE level = 1
+                ORDER BY desktop_menu_order, name";
+        $result = $this->db->query($sql);
+
+        $categories = [];
+        if ($result && $result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $categories[] = $row;
+            }
+        }
+        return $categories;
+    }
+
+    // Sub / Sub-Sub categories configured for "Top Menu Inside Pages", for the All Menus list
+    public function getMenuInsidePages()
+    {
+        $sql = "SELECT c.id, c.name, c.slug, c.level, c.desktop_menu_design, c.desktop_menu_image,
+                       c.desktop_menu_order, c.desktop_menu_status, p.name AS parent_name
+                FROM categories c
+                LEFT JOIN categories p ON p.id = c.parent_id
+                WHERE c.level IN (2, 3)
+                ORDER BY c.desktop_menu_order, c.name";
+        $result = $this->db->query($sql);
+
+        $categories = [];
+        if ($result && $result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $categories[] = $row;
+            }
+        }
+        return $categories;
+    }
+
     public function getCategoryById($id)
     {
         return $this->category->getById((int)$id);
@@ -208,6 +265,22 @@ class CategoryController
         return $result && $result->num_rows > 0;
     }
 
+    // Next display_order for a new category: end of the list within its level/parent scope
+    public function getNextDisplayOrder($level, $parentId = 0)
+    {
+        $level = (int) $level;
+        $parentId = (int) $parentId;
+
+        if ($level == 1) {
+            $sql = "SELECT COALESCE(MAX(display_order), 0) + 1 AS next_order FROM categories WHERE level = 1";
+        } else {
+            $sql = "SELECT COALESCE(MAX(display_order), 0) + 1 AS next_order FROM categories WHERE level = $level AND parent_id = $parentId";
+        }
+
+        $result = $this->db->query($sql);
+        $row = $result ? $result->fetch_assoc() : null;
+        return $row ? (int) $row['next_order'] : 1;
+    }
 
 }
 ?>

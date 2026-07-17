@@ -336,7 +336,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                                                         </span>
                                                                                 <?php endif; ?>
                                                                 
-                                                                                <?php $thumb = $category['desktop_image'] ?: $category['image']; ?>
+                                                                                <?php $thumb = $category['image'] ?: $category['image']; ?>
                                                                                 <?php if ($thumb): ?>
                                                                                         <img src="<?php echo htmlspecialchars($thumb); ?>"
                                                                                              class="category-image me-3"

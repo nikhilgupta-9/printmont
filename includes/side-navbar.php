@@ -43,6 +43,7 @@ $menu_access = [
 	'orders' => ['admin', 'manager', 'staff'],
 	'products' => ['admin', 'manager', 'staff'],
 	'categories' => ['admin', 'manager'],
+	'header_menu' => ['admin', 'manager'],
 	'home_page' => ['admin', 'manager'],
 	'customers' => ['admin', 'manager', 'staff'],
 	'marketing' => ['admin', 'manager'],
@@ -78,6 +79,14 @@ $page_groups = [
 		'add-sub-category.php',
 		'add-sub-sub-category.php',
 		'home-page-categories.php'
+	],
+
+	// Header Category Menu
+	'header_menu' => [
+		'header-menu-list.php',
+		'add-top-icon.php',
+		'add-menu-page.php',
+		'header-menu-design.php'
 	],
 
 	// Products Management
@@ -446,6 +455,14 @@ function shouldExpand($group_name, $current_page, $page_groups)
 								</a>
 							</li>
 							<li
+								class="sidebar-item <?php echo isActivePage('view-categories.php?level=1', $current_page) ? 'active' : ''; ?>">
+								<a class='sidebar-link' href='view-categories.php?level=1'>
+									<i class="align-middle"
+										data-feather="<?php echo isActivePage('view-categories.php?level=1', $current_page) ? 'circle' : 'circle'; ?>"></i>
+									<span class="align-middle">View Category</span>
+								</a>
+							</li>
+							<li
 								class="sidebar-item <?php echo isActivePage('add-sub-category.php', $current_page) ? 'active' : ''; ?>">
 								<a class='sidebar-link' href='add-sub-category.php'>
 									<i class="align-middle"
@@ -454,11 +471,69 @@ function shouldExpand($group_name, $current_page, $page_groups)
 								</a>
 							</li>
 							<li
+								class="sidebar-item <?php echo isActivePage('view-categories.php?level=2', $current_page) ? 'active' : ''; ?>">
+								<a class='sidebar-link' href='view-categories.php?level=2'>
+									<i class="align-middle"
+										data-feather="<?php echo isActivePage('view-categories.php?level=2', $current_page) ? 'circle' : 'circle'; ?>"></i>
+									<span class="align-middle">View Sub Category</span>
+								</a>
+							</li>
+							<li
 								class="sidebar-item <?php echo isActivePage('add-sub-sub-category.php', $current_page) ? 'active' : ''; ?>">
 								<a class='sidebar-link' href='add-sub-sub-category.php'>
 									<i class="align-middle"
 										data-feather="<?php echo isActivePage('add-sub-sub-category.php', $current_page) ? 'circle' : 'circle'; ?>"></i>
 									<span class="align-middle">Add Sub Sub Category</span>
+								</a>
+							</li>
+							<li
+								class="sidebar-item <?php echo isActivePage('view-categories.php?level=3', $current_page) ? 'active' : ''; ?>">
+								<a class='sidebar-link' href='view-categories.php?level=3'>
+									<i class="align-middle"
+										data-feather="<?php echo isActivePage('view-categories.php?level=3', $current_page) ? 'circle' : 'circle'; ?>"></i>
+									<span class="align-middle">View Sub Sub Category</span>
+								</a>
+							</li>
+						</ul>
+					</li>
+				<?php endif; ?>
+
+				<!-- Header Category Menu -->
+				<?php if (shouldDisplay($menu_access['header_menu'], $user_role)): ?>
+					<li class="sidebar-item">
+						<a data-bs-target="#headerMenu" data-bs-toggle="collapse"
+							class="sidebar-link <?php echo isActiveGroup('header_menu', $current_page, $page_groups) ? '' : 'collapsed'; ?>">
+							<i class="align-middle" data-feather="menu"></i>
+							<span class="align-middle">Header Category Menu</span>
+							<?php if (isActiveGroup('header_menu', $current_page, $page_groups)): ?>
+								<span class="sidebar-badge">●</span>
+							<?php endif; ?>
+						</a>
+						<ul id="headerMenu"
+							class="sidebar-dropdown list-unstyled collapse <?php echo isActiveGroup('header_menu', $current_page, $page_groups) ? 'show' : ''; ?>"
+							data-bs-parent="#sidebar">
+							<li class="sidebar-item <?php echo isActivePage('add-top-icon.php', $current_page) ? 'active' : ''; ?>">
+								<a class='sidebar-link' href='add-top-icon.php'>
+									<i class="align-middle" data-feather="circle"></i>
+									<span class="align-middle">Top Icon</span>
+								</a>
+							</li>
+							<li class="sidebar-item <?php echo isActivePage('add-menu-page.php', $current_page) ? 'active' : ''; ?>">
+								<a class='sidebar-link' href='add-menu-page.php'>
+									<i class="align-middle" data-feather="circle"></i>
+									<span class="align-middle">Top Menu Inside Pages</span>
+								</a>
+							</li>
+							<li class="sidebar-item <?php echo isActivePage('header-menu-design.php', $current_page) ? 'active' : ''; ?>">
+								<a class='sidebar-link' href='header-menu-design.php'>
+									<i class="align-middle" data-feather="circle"></i>
+									<span class="align-middle">Select Design</span>
+								</a>
+							</li>
+							<li class="sidebar-item <?php echo isActivePage('header-menu-list.php', $current_page) ? 'active' : ''; ?>">
+								<a class='sidebar-link' href='header-menu-list.php'>
+									<i class="align-middle" data-feather="circle"></i>
+									<span class="align-middle">All Menus</span>
 								</a>
 							</li>
 						</ul>

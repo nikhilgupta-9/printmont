@@ -7,6 +7,27 @@ $controller    = new CategoryController();
 $mainCategories = $controller->getMainCategories();
 $error   = '';
 
+// AJAX: suggest the next display order for the selected main category
+if (isset($_GET['get_next_order']) && isset($_GET['parent_id'])) {
+    header('Content-Type: application/json');
+    echo json_encode(['next_order' => $controller->getNextDisplayOrder(2, (int)$_GET['parent_id'])]);
+    exit;
+}
+
+function old($key, $default = '') {
+    return htmlspecialchars($_POST[$key] ?? $default);
+}
+function oldSel($key, $value, $default = '') {
+    return (($_POST[$key] ?? $default) === $value) ? 'selected' : '';
+}
+function oldChecked($key, $value) {
+    return (($_POST[$key] ?? '') === $value) ? 'checked' : '';
+}
+
+// Pre-select parent when arriving from "Add Sub Category" on a specific main category row
+$selectedParentId = (int)($_POST['parent_id'] ?? $_GET['parent_id'] ?? 0);
+$nextOrder = $selectedParentId ? $controller->getNextDisplayOrder(2, $selectedParentId) : 1;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name'] ?? '');
     $slug = trim($_POST['slug'] ?? '');
@@ -36,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'status'               => $_POST['status'] ?? 'active',
         'is_featured'          => (int)($_POST['is_featured'] ?? 0),
         'icon'                 => trim($_POST['icon'] ?? ''),
-        'display_order'        => (int)($_POST['display_order'] ?? 0),
+        'display_order'        => (int)($_POST['display_order'] ?? $controller->getNextDisplayOrder(2, $parentId)),
         // Desktop menu
         'desktop_menu_status'  => $_POST['desktop_menu_status'] ?? 'show',
         'desktop_menu_order'   => (int)($_POST['desktop_menu_order'] ?? 0),
@@ -70,6 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Sub category name is required.';
     } elseif (!$parentId) {
         $error = 'Please select a main category.';
+    } elseif ($controller->checkCategoryExists($data['name'], $data['slug'])) {
+        $error = 'A category with this name or slug already exists. Please choose a different name or slug.';
     } else {
         $result = $controller->createCategory($data);
         if ($result) {
@@ -134,10 +157,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="card-body">
                             <div class="mb-3">
                                 <label class="form-label required-field">Main Category</label>
-                                <select name="parent_id" class="form-control" required>
+                                <select name="parent_id" id="parentCatSelect" class="form-control" required>
                                     <option value="">— Select Main Category —</option>
                                     <?php foreach ($mainCategories as $mc): ?>
-                                        <option value="<?php echo $mc['id']; ?>" <?php echo (($_POST['parent_id'] ?? '') == $mc['id']) ? 'selected' : ''; ?>>
+                                        <option value="<?php echo $mc['id']; ?>" <?php echo ($selectedParentId == $mc['id']) ? 'selected' : ''; ?>>
                                             <?php echo htmlspecialchars($mc['name']); ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -147,12 +170,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3 col-md-6">
                                     <label class="form-label required-field">Sub Category Name</label>
                                     <input type="text" class="form-control" name="name" id="catName" required
-                                           placeholder="e.g. Laptops" value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>">
+                                           placeholder="e.g. Laptops" value="<?php echo old('name'); ?>">
                                 </div>
                                 <div class="mb-3 col-md-6">
                                     <label class="form-label required-field">Slug</label>
                                     <input type="text" class="form-control" name="slug" id="catSlug"
-                                           placeholder="auto-generated" value="<?php echo htmlspecialchars($_POST['slug'] ?? ''); ?>">
+                                           placeholder="auto-generated" value="<?php echo old('slug'); ?>">
                                     <small class="text-muted">Auto-fills from name.</small>
                                 </div>
                             </div>
@@ -160,29 +183,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3 col-md-3">
                                     <label class="form-label">Status</label>
                                     <select name="status" class="form-control">
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
+                                        <option value="active" <?php echo oldSel('status', 'active', 'active'); ?>>Active</option>
+                                        <option value="inactive" <?php echo oldSel('status', 'inactive', 'active'); ?>>Inactive</option>
                                     </select>
                                 </div>
                                 <div class="mb-3 col-md-3">
                                     <label class="form-label">Featured</label>
                                     <select name="is_featured" class="form-control">
-                                        <option value="0">No</option>
-                                        <option value="1">Yes</option>
+                                        <option value="0" <?php echo oldSel('is_featured', '0', '0'); ?>>No</option>
+                                        <option value="1" <?php echo oldSel('is_featured', '1', '0'); ?>>Yes</option>
                                     </select>
                                 </div>
                                 <div class="mb-3 col-md-3">
                                     <label class="form-label">Display Order</label>
-                                    <input type="number" class="form-control" name="display_order" value="0" min="0">
+                                    <input type="number" class="form-control" name="display_order" id="displayOrderInput" value="<?php echo old('display_order', $nextOrder); ?>" min="0">
+                                    <small class="text-muted">Auto-suggested based on the selected main category.</small>
                                 </div>
                                 <div class="mb-3 col-md-3">
                                     <label class="form-label">Icon <small class="text-muted">(optional)</small></label>
-                                    <input type="text" class="form-control" name="icon" placeholder="fas fa-tag">
+                                    <input type="text" class="form-control" name="icon" placeholder="fas fa-tag" value="<?php echo old('icon'); ?>">
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Description</label>
-                                <textarea class="form-control" name="description" rows="2"></textarea>
+                                <textarea class="form-control" name="description" rows="2"><?php echo old('description'); ?></textarea>
                             </div>
                         </div>
                     </div>
@@ -197,17 +221,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3 col-md-4">
                                     <label class="form-label">Top Menu Inside Status</label>
                                     <select name="desktop_menu_status" class="form-control">
-                                        <option value="show">Show</option>
-                                        <option value="hide">Hide</option>
+                                        <option value="show" <?php echo oldSel('desktop_menu_status', 'show', 'show'); ?>>Show</option>
+                                        <option value="hide" <?php echo oldSel('desktop_menu_status', 'hide', 'show'); ?>>Hide</option>
                                     </select>
                                 </div>
                                 <div class="mb-3 col-md-4">
                                     <label class="form-label">Top Menu Inside Sort Order</label>
-                                    <input type="number" class="form-control" name="desktop_menu_order" value="0" min="0">
+                                    <input type="number" class="form-control" name="desktop_menu_order" value="<?php echo old('desktop_menu_order', '0'); ?>" min="0">
                                 </div>
                                 <div class="mb-3 col-md-4">
                                     <label class="form-label">Top Menu Tag <small class="text-muted">(e.g. New, Hot)</small></label>
-                                    <input type="text" class="form-control" name="desktop_menu_tag" placeholder="New" maxlength="100">
+                                    <input type="text" class="form-control" name="desktop_menu_tag" placeholder="New" maxlength="100" value="<?php echo old('desktop_menu_tag'); ?>">
                                 </div>
                             </div>
                         </div>
@@ -223,19 +247,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3 col-md-4">
                                     <label class="form-label">Show on Desktop Home Page?</label>
                                     <select name="desktop_home_show" class="form-control" id="desktopHomeShow">
-                                        <option value="no">No</option>
-                                        <option value="yes">Yes</option>
+                                        <option value="no" <?php echo oldSel('desktop_home_show', 'no', 'no'); ?>>No</option>
+                                        <option value="yes" <?php echo oldSel('desktop_home_show', 'yes', 'no'); ?>>Yes</option>
                                     </select>
                                 </div>
                                 <div class="mb-3 col-md-4">
                                     <label class="form-label">Home Sort Order</label>
-                                    <input type="number" class="form-control" name="desktop_home_order" value="0" min="0">
+                                    <input type="number" class="form-control" name="desktop_home_order" value="<?php echo old('desktop_home_order', '0'); ?>" min="0">
                                 </div>
                                 <div class="mb-3 col-md-4">
                                     <label class="form-label">Background Color</label>
                                     <div class="input-group">
-                                        <input type="color" class="form-control form-control-color" name="desktop_bg_color" value="#ffffff" style="width:50px" id="desktopBgColorPicker">
-                                        <input type="text" class="form-control" id="desktopBgColorText" placeholder="#ffffff" maxlength="7">
+                                        <input type="color" class="form-control form-control-color" name="desktop_bg_color" value="<?php echo old('desktop_bg_color', '#ffffff'); ?>" style="width:50px" id="desktopBgColorPicker">
+                                        <input type="text" class="form-control" id="desktopBgColorText" value="<?php echo old('desktop_bg_color'); ?>" placeholder="#ffffff" maxlength="7">
                                     </div>
                                 </div>
                             </div>
@@ -244,7 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="row g-3 mb-3">
                                     <?php foreach (['design1'=>['📱','Design 1'],'design2'=>['🖼️','Design 2'],'design3'=>['🗂️','Design 3'],'design4'=>['🎨','Design 4']] as $val => [$icon,$lbl]): ?>
                                     <div class="col-6 col-md-3">
-                                        <input type="radio" name="desktop_home_design" value="<?php echo $val; ?>" id="dhd_<?php echo $val; ?>" class="d-none">
+                                        <input type="radio" name="desktop_home_design" value="<?php echo $val; ?>" id="dhd_<?php echo $val; ?>" class="d-none" <?php echo oldChecked('desktop_home_design', $val); ?>>
                                         <label for="dhd_<?php echo $val; ?>" class="design-option d-block">
                                             <div class="bg-light rounded mb-2" style="height:60px;display:flex;align-items:center;justify-content:center;font-size:24px"><?php echo $icon; ?></div>
                                             <small><?php echo $lbl; ?></small>
@@ -278,17 +302,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3 col-md-4">
                                     <label class="form-label">Mobile Top Bar Inside Status</label>
                                     <select name="mobile_topbar_status" class="form-control">
-                                        <option value="show">Show</option>
-                                        <option value="hide">Hide</option>
+                                        <option value="show" <?php echo oldSel('mobile_topbar_status', 'show', 'show'); ?>>Show</option>
+                                        <option value="hide" <?php echo oldSel('mobile_topbar_status', 'hide', 'show'); ?>>Hide</option>
                                     </select>
                                 </div>
                                 <div class="mb-3 col-md-4">
                                     <label class="form-label">Top Bar Inside Sort Order</label>
-                                    <input type="number" class="form-control" name="mobile_topbar_order" value="0" min="0">
+                                    <input type="number" class="form-control" name="mobile_topbar_order" value="<?php echo old('mobile_topbar_order', '0'); ?>" min="0">
                                 </div>
                                 <div class="mb-3 col-md-4">
                                     <label class="form-label">Sidebar Inside Sort Order</label>
-                                    <input type="number" class="form-control" name="mobile_sidebar_order" value="0" min="0">
+                                    <input type="number" class="form-control" name="mobile_sidebar_order" value="<?php echo old('mobile_sidebar_order', '0'); ?>" min="0">
                                 </div>
                             </div>
                         </div>
@@ -304,19 +328,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3 col-md-4">
                                     <label class="form-label">Show on Mobile Home?</label>
                                     <select name="mobile_home_show" class="form-control" id="mobileHomeShow">
-                                        <option value="no">No</option>
-                                        <option value="yes">Yes</option>
+                                        <option value="no" <?php echo oldSel('mobile_home_show', 'no', 'no'); ?>>No</option>
+                                        <option value="yes" <?php echo oldSel('mobile_home_show', 'yes', 'no'); ?>>Yes</option>
                                     </select>
                                 </div>
                                 <div class="mb-3 col-md-4">
                                     <label class="form-label">Mobile Home Sort Order</label>
-                                    <input type="number" class="form-control" name="mobile_home_order" value="0" min="0">
+                                    <input type="number" class="form-control" name="mobile_home_order" value="<?php echo old('mobile_home_order', '0'); ?>" min="0">
                                 </div>
                                 <div class="mb-3 col-md-4">
                                     <label class="form-label">Background Color</label>
                                     <div class="input-group">
-                                        <input type="color" class="form-control form-control-color" name="mobile_bg_color" value="#ffffff" style="width:50px" id="mobileBgColorPicker">
-                                        <input type="text" class="form-control" id="mobileBgColorText" placeholder="#ffffff" maxlength="7">
+                                        <input type="color" class="form-control form-control-color" name="mobile_bg_color" value="<?php echo old('mobile_bg_color', '#ffffff'); ?>" style="width:50px" id="mobileBgColorPicker">
+                                        <input type="text" class="form-control" id="mobileBgColorText" value="<?php echo old('mobile_bg_color'); ?>" placeholder="#ffffff" maxlength="7">
                                     </div>
                                 </div>
                             </div>
@@ -341,7 +365,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <div class="row g-2">
                                             <?php foreach (['design1'=>['📱','Design 1'],'design2'=>['🖼️','Design 2'],'design3'=>['🗂️','Design 3'],'design4'=>['🎨','Design 4']] as $val => [$icon,$lbl]): ?>
                                             <div class="col-3">
-                                                <input type="radio" name="mobile_home_design" value="<?php echo $val; ?>" id="mhd_<?php echo $val; ?>" class="d-none">
+                                                <input type="radio" name="mobile_home_design" value="<?php echo $val; ?>" id="mhd_<?php echo $val; ?>" class="d-none" <?php echo oldChecked('mobile_home_design', $val); ?>>
                                                 <label for="mhd_<?php echo $val; ?>" class="design-option d-block">
                                                     <div class="bg-light rounded mb-1" style="height:50px;display:flex;align-items:center;justify-content:center;font-size:20px"><?php echo $icon; ?></div>
                                                     <small><?php echo $lbl; ?></small>
@@ -353,9 +377,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <div class="col-md-4">
                                         <label class="form-label">Product Box Format</label>
                                         <select name="mobile_home_format" class="form-control">
-                                            <option value="4">4 Image Product Box</option>
-                                            <option value="6">6 Image Product Box</option>
-                                            <option value="8">8 Image Product Box</option>
+                                            <option value="4" <?php echo oldSel('mobile_home_format', '4', '4'); ?>>4 Image Product Box</option>
+                                            <option value="6" <?php echo oldSel('mobile_home_format', '6', '4'); ?>>6 Image Product Box</option>
+                                            <option value="8" <?php echo oldSel('mobile_home_format', '8', '4'); ?>>8 Image Product Box</option>
                                         </select>
                                     </div>
                                 </div>
@@ -371,15 +395,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="card-body">
                             <div class="mb-3">
                                 <label class="form-label">Meta Title</label>
-                                <input type="text" class="form-control" name="meta_title" maxlength="255" placeholder="SEO title">
+                                <input type="text" class="form-control" name="meta_title" maxlength="255" placeholder="SEO title" value="<?php echo old('meta_title'); ?>">
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Meta Keywords</label>
-                                <input type="text" class="form-control" name="meta_keywords" placeholder="keyword1, keyword2">
+                                <input type="text" class="form-control" name="meta_keywords" placeholder="keyword1, keyword2" value="<?php echo old('meta_keywords'); ?>">
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Meta Description</label>
-                                <textarea class="form-control" name="meta_description" rows="3" maxlength="160" placeholder="Max 160 chars"></textarea>
+                                <textarea class="form-control" name="meta_description" rows="3" maxlength="160" placeholder="Max 160 chars"><?php echo old('meta_description'); ?></textarea>
                             </div>
                         </div>
                     </div>
@@ -402,6 +426,17 @@ catName.addEventListener('input', function () {
     if (!catSlug._manual) catSlug.value = this.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 });
 catSlug.addEventListener('input', function () { this._manual = !!this.value; });
+
+// Auto-suggest the next display order when the main category changes
+const parentSelect = document.getElementById('parentCatSelect');
+const displayOrderInput = document.getElementById('displayOrderInput');
+displayOrderInput.addEventListener('input', function () { this._manual = true; });
+parentSelect.addEventListener('change', function () {
+    if (displayOrderInput._manual || !this.value) return;
+    fetch(`add-sub-category.php?get_next_order=1&parent_id=${this.value}`)
+        .then(r => r.json())
+        .then(data => { displayOrderInput.value = data.next_order; });
+});
 
 function bindToggle(selectId, blockId) {
     const sel = document.getElementById(selectId);
