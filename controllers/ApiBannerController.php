@@ -120,8 +120,7 @@ class ApiBannerController {
     }
 
     private function baseUrl(): string {
-        $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        return $proto . '://' . ($_SERVER['HTTP_HOST'] ?? '') . '/';
+        return BASE_URL;
     }
 }
 ?>

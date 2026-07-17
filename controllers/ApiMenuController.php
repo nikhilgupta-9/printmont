@@ -10,10 +10,14 @@ class ApiMenuController {
     }
 
     // ----------------------------------------------------------------
-    // GET /api/menu_api.php?type=home                  → both desktop + mobile
-    // GET /api/menu_api.php?type=home&device=desktop    → desktop only
-    // GET /api/menu_api.php?type=home&device=mobile     → mobile only
-    // Categories configured to appear ON the home page.
+    // GET /api/menu_api.php?type=home                  → tree, both desktop + mobile
+    // GET /api/menu_api.php?type=home&device=desktop    → tree, desktop only
+    // GET /api/menu_api.php?type=home&device=mobile     → tree, mobile only
+    // The FULL 3-level category tree (Main → Sub → Sub-Sub), same as
+    // ?type=inner and the admin "All Menus" tree. Every node carries
+    // shown_on_home so the caller can decide what to actually render —
+    // nothing is pruned, so the tree shape is always visible even when
+    // few categories are flagged.
     // ----------------------------------------------------------------
     public function getHomeMenu(): void {
         $device = strtolower(trim($_GET['device'] ?? ''));
@@ -21,16 +25,16 @@ class ApiMenuController {
             $device = '';
         }
 
+        $flat = $this->model->getAllActiveFlat();
+
         if ($device === '') {
-            $desktop = $this->model->getHomeMenu('desktop');
-            $mobile  = $this->model->getHomeMenu('mobile');
             $this->ok([
-                'desktop' => array_map(fn($c) => $this->formatHomeItem($c, 'desktop'), $desktop),
-                'mobile'  => array_map(fn($c) => $this->formatHomeItem($c, 'mobile'), $mobile),
-            ], ['desktop_total' => count($desktop), 'mobile_total' => count($mobile)]);
+                'desktop' => $this->buildHomeTree($flat, 0, 'desktop'),
+                'mobile'  => $this->buildHomeTree($flat, 0, 'mobile'),
+            ], ['total_categories' => count($flat)]);
         } else {
-            $rows = $this->model->getHomeMenu($device);
-            $this->ok(array_map(fn($c) => $this->formatHomeItem($c, $device), $rows), ['device' => $device, 'total' => count($rows)]);
+            $tree = $this->buildHomeTree($flat, 0, $device);
+            $this->ok($tree, ['device' => $device, 'total_categories' => count($flat)]);
         }
     }
 
@@ -61,6 +65,21 @@ class ApiMenuController {
 
             $node = $this->formatMenuNode($c);
             $children = $this->buildMenuTree($categories, (int) $c['id']);
+            if ($children) $node['children'] = $children;
+            $branch[] = $node;
+        }
+        return $branch;
+    }
+
+    private function buildHomeTree(array $categories, int $parentId, string $device): array {
+        $showCol = $device === 'mobile' ? 'mobile_home_show' : 'desktop_home_show';
+        $branch = [];
+        foreach ($categories as $c) {
+            if ((int) $c['parent_id'] !== $parentId) continue;
+
+            $node = $this->formatHomeItem($c, $device);
+            $node['shown_on_home'] = $c[$showCol] === 'yes';
+            $children = $this->buildHomeTree($categories, (int) $c['id'], $device);
             if ($children) $node['children'] = $children;
             $branch[] = $node;
         }

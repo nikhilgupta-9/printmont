@@ -2,15 +2,20 @@
 /**
  * Unified Menu API
  *
- * GET /api/menu_api.php?type=home                    → Home Page Menu, desktop + mobile
- * GET /api/menu_api.php?type=home&device=desktop      → Home Page Menu, desktop only
- * GET /api/menu_api.php?type=home&device=mobile       → Home Page Menu, mobile only
+ * GET /api/menu_api.php?type=home                    → Home Page Menu tree, desktop + mobile
+ * GET /api/menu_api.php?type=home&device=desktop      → Home Page Menu tree, desktop only
+ * GET /api/menu_api.php?type=home&device=mobile       → Home Page Menu tree, mobile only
  * GET /api/menu_api.php?type=inner                    → Inner Page Menu (header top-menu tree)
  *
- * Home Page Menu   = categories flagged desktop_home_show / mobile_home_show = 'yes'
+ * Both are returned as the FULL 3-level category tree (Main → Sub → Sub-Sub),
+ * unpruned — every active category appears. Each node carries a flag
+ * (shown_on_home, or desktop/mobile.status for inner) telling the caller
+ * whether that specific category is actually meant to render there.
+ *
+ * Home Page Menu   = tree with shown_on_home = desktop_home_show / mobile_home_show = 'yes'
  *                     (the category tiles/sections shown ON the home page)
- * Inner Page Menu  = categories flagged desktop_menu_status / mobile_topbar_status = 'show'
- *                     (the persistent header top-menu shown across all pages)
+ * Inner Page Menu  = tree pruned only where BOTH desktop_menu_status and
+ *                     mobile_topbar_status = 'hide' (the persistent header top-menu)
  */
 
 header('Content-Type: application/json');
