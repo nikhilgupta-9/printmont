@@ -54,6 +54,7 @@ const MyAccount = () => {
                     subtext: "Quick Checkout, Easy Adjust Coins.",
                     tag: "New",
                     arrow: true,
+                    to: "/printmont-coin"
                 },
                 {
                     icon: <FaBoxOpen className="text-primary fs-5" />,
@@ -112,16 +113,16 @@ const MyAccount = () => {
                 {
                     icon: <FaStar className="text-primary fs-5" />,
                     text: "Review",
-                    subtext: "Low investment, high return I promise.",
+                    subtext: "Write reviews and feedback for purchased products.",
                     arrow: true,
-                    to: "/user/profile"
+                    to: "/orders"
                 },
                 {
                     icon: <FaQuestionCircle className="text-primary fs-5" />,
                     text: "Questions and Answers",
-                    subtext: "Sell online to crores of customers at 0% Commission.",
+                    subtext: "Find answers or ask questions about services.",
                     arrow: true,
-                    to: "/user/profile"
+                    to: "/faq"
                 },
             ],
         },
@@ -133,14 +134,14 @@ const MyAccount = () => {
                     text: "Bulk Orders",
                     subtext: "Best discount to all product on bulk orders.",
                     arrow: true,
-                    to: "/business-solutions"
+                    to: "/bulk-orders"
                 },
                 {
                     icon: <FaStore className="text-primary fs-5" />,
                     text: "Franchise",
-                    subtext: "Low investment, high return I promise.",
+                    subtext: "Own a PrintMont express outlet or kiosk in your city.",
                     arrow: true,
-                    to: "/become-a-seller"
+                    to: "/franchise"
                 },
                 {
                     icon: <FaUserPlus className="text-primary fs-5" />,

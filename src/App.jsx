@@ -43,6 +43,8 @@ import BusinessSolutions from "./components/businessSolutions/BusinessSolutions"
 import BecomeASeller from "./components/becomeSeller/BecomeASeller";
 import AffiliateProgram from "./components/pages/AffiliateProgram";
 import TermsOfUse from "./components/pages/TermsOfUse";
+import BulkOrderPage from "./components/pages/BulkOrderPage";
+import FranchisePage from "./components/pages/FranchisePage";
 
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
@@ -96,10 +98,19 @@ function App() {
           <Route path="/printmont-coin" element={<PrintmontCoin />} />
           <Route path="/business-solutions" element={<BusinessSolutions />} />
           <Route path="/become-a-seller" element={<BecomeASeller />} />
+          <Route path="/bulk-orders" element={<BulkOrderPage />} />
+          <Route path="/bulk-order" element={<BulkOrderPage />} />
+          <Route path="/franchise" element={<FranchisePage />} />
+          <Route path="/franchises" element={<FranchisePage />} />
           <Route path="/category" element={<CategoryPage />} />
           <Route path="/category/:id" element={<CategoryPage />} />
           <Route path="/affiliate-program" element={<AffiliateProgram />} />
-          <Route path="/terms-of-use" element={<TermsOfUse />} />
+          <Route path="/terms-of-use" element={<PolicyPage />} />
+          <Route path="/terms-and-conditions" element={<PolicyPage />} />
+          <Route path="/privacy-policy" element={<PolicyPage />} />
+          <Route path="/shipping-policy" element={<PolicyPage />} />
+          <Route path="/refund-policy" element={<PolicyPage />} />
+          <Route path="/return-policy" element={<PolicyPage />} />
           <Route path="/policy/*" element={<PolicyPage />} />
 
           <Route path="/user" element={<User />}>

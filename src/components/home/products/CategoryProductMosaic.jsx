@@ -62,10 +62,10 @@ export default function CategoryProductMosaic({
         }}
       >
         <div 
-          className="d-flex justify-content-between align-items-center mb-2"
-          style={{ padding: 0 }}
+          className="d-flex justify-content-between align-items-center"
+          style={{ padding: "10px 6px" }}
         >
-          <p className="m-0 section-title fw-semibold text-black">{colTitle}</p>
+          <p className="m-0 section-title fw-semibold text-black" style={{ paddingTop: "4px", paddingBottom: "4px" }}>{colTitle}</p>
           <button 
             className="border-0 bg-primary text-white rounded-circle d-flex justify-content-center align-items-center" 
             style={{ width: "26px", height: "26px" }}

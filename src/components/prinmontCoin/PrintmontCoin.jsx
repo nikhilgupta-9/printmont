@@ -1,91 +1,218 @@
 import React from "react";
-import { Container, Card, Button } from "react-bootstrap";
-import { FaBolt } from "react-icons/fa";
+import { Container, Row, Col, Card, Button, Badge, ProgressBar, ListGroup } from "react-bootstrap";
+import { 
+  FaCoins, 
+  FaCrown, 
+  FaHistory, 
+  FaGift, 
+  FaExchangeAlt, 
+  FaInfoCircle, 
+  FaBoxOpen, 
+  FaMapMarkerAlt, 
+  FaWallet, 
+  FaStore, 
+  FaSignOutAlt 
+} from "react-icons/fa";
+import { useAuth } from "../../context/AuthContext";
+import { Link, useNavigate } from "react-router-dom";
 import "./PrintmontCoin.css";
 
 const PrintmontCoin = () => {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
   const transactions = [
-    { text: "Redemption of Rs.800 Off on MediBuddy Full Body Health C...", change: -20, date: "Debited on 29 Apr 2025" },
-    { text: "Hindware Smart Appliances 85 L Desert Air Cooler", change: +25, date: "To be credited by 05 May 2025" },
-    { text: "nextwave LAPTOP STAND WITH ADJUSTMENT LEVELS F...", change: +4, date: "To be credited by 02 May 2025" },
-    { text: "maeesa Women Ethnic Dress Grey Midi/Calf Length Dress", change: +10, date: "To be credited by 05 May 2025" },
-    { text: "NIRLON Stainless Steel Fridge Water Bottle 1000 ml Bottle", change: +2, date: "Credited on 20 Apr 2025 | Valid till 20 Jul 2025" },
-    { text: "Extra Coins Cashback on NIRLON Stainless Steel Fridge W...", change: +181, date: "Credited on 20 Apr 2025 | Expires in 21 days" },
-    { text: "MILTON Glide 1000 Stainless Steel Single Walled Water Bot...", change: +4, date: "Credited on 19 Apr 2025 | Expires in 20 days" },
+    { text: "Redeemed: ₹200 Discount Coupon on Custom Hoodies", change: -20, date: "Debited on 29 Apr 2025", type: "debit" },
+    { text: "Earned: Order Placement Reward (Custom Polo Shirt)", change: 25, date: "Credited on 05 May 2025", type: "credit" },
+    { text: "Earned: Signup Welcome Bonus Coins", change: 440, date: "Credited on 20 Apr 2025", type: "credit" },
   ];
 
+  const rewardVouchers = [
+    { title: "₹100 Off Coupon", coins: 100, desc: "Applicable on any customized gift mugs or keychains.", code: "MUG100" },
+    { title: "Free Standard Delivery", coins: 150, desc: "Get free delivery on your next 3 consecutive orders.", code: "FREESHIP" },
+    { title: "₹300 Off Coupon", coins: 300, desc: "Applicable on corporate gift hampers or customized hoodies.", code: "HOODIE300" },
+  ];
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  // Helper to get initials
+  const getUserInitials = () => {
+    if (!user) return "U";
+    const first = user.firstName || user.first_name || user.name || "U";
+    const last = user.lastName || user.last_name || "";
+    return (first[0] + (last ? last[0] : "")).toUpperCase();
+  };
+
+  // Helper to get display name
+  const getUserDisplayName = () => {
+    if (!user) return "Store Guest";
+    if (user.firstName || user.first_name) {
+      return `${user.firstName || user.first_name} ${user.lastName || user.last_name || ""}`.trim();
+    }
+    return user.name || (user.email ? user.email.split("@")[0] : "User");
+  };
+
   return (
-    <div className="pmc-wrapper">
-      <Container className="pmc-container py-3">
-        {/* Header */}
-        <Card className="pmc-header-card text-center border-0 shadow-sm mb-3">
-          <h2 className="fw-bold mb-1 d-flex justify-content-start justify-content-lg-center align-items-center">
-            <img src="/printmont-coin.png" width={25} alt="" className="me-1"/>
-            445
-          </h2>
-          <p className="text-muted text-start text-lg-center small mb-2">Available Balance</p>
-
-          <div className="d-flex flex-column flex-md-row align-items-start gap-4 justify-content-center">
-            <div className="pmc-info bg-light rounded p-2 mb-2 text-start text-md-center">
-            <span className="fw-semibold text-primary">
-              💡 114 SuperCoins on the way
-            </span>
-            <p className="text-muted small mb-0">
-              SuperCoins are credited after return period is over.
-            </p>
-          </div>
-
-          <div className="pmc-info bg-light rounded p-2 mb-2 text-start text-md-center">
-            <span className="fw-semibold text-danger">
-              ⚠️ 128 SuperCoins expiring in 1 day
-            </span>
-          </div>
-          </div>
-
-          {/* This button is visible on large screens */}
-          <div className="d-none d-md-block">
-            <Button className="rounded-sm bg-theme px-4 py-2 fw-semibold">
-              Use SuperCoins
-            </Button>
-          </div>
-
-          <p className="small text-muted mt-2 mb-0">
-            SuperCoins now available on <b>Myntra</b> & <b>Cleartrip</b>
-          </p>
-        </Card>
-
-        {/* Transactions */}
-        <Card className="pmc-transactions border-0 shadow-sm mb-0 mb-lg-5">
-          <h6 className="fw-bold p-3 border-bottom mb-0">Recent Transactions</h6>
-          <div className="pmc-transaction-list">
-            {transactions.map((t, i) => (
-              <div
-                key={i}
-                className="pmc-transaction-item d-flex justify-content-between align-items-start border-bottom p-2"
-              >
-                <div className="">
-                  <p className="mb-1 small fw-semibold text-dark">{t.text}</p>
-                  <p className="mb-0 text-muted small">{t.date}</p>
+    <div className="bg-light py-4 py-md-5" style={{ minHeight: "85vh" }}>
+      <Container>
+        <Row className="g-4">
+          {/* LEFT USER SIDEBAR NAVIGATION (Cohesive Account Layout) */}
+          <Col lg={3} md={4} className="d-none d-md-block">
+            {/* User Profile Card */}
+            <Card className="border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+              <div className="d-flex align-items-center gap-3">
+                <div className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold fs-5" style={{ width: "50px", height: "50px", backgroundColor: "#0b53a1" }}>
+                  {getUserInitials()}
                 </div>
-                <span
-                  className={`fw-bold small ${
-                    t.change > 0 ? "text-success" : "text-danger"
-                  } ps-3`}
-                >
-                  {t.change > 0 ? `+${t.change}` : t.change}
-                </span>
+                <div className="min-w-0">
+                  <div className="text-secondary small">Hello,</div>
+                  <h6 className="fw-bold text-dark text-truncate mb-0" style={{ fontSize: "0.95rem" }}>{getUserDisplayName()}</h6>
+                </div>
               </div>
-            ))}
-          </div>
-        </Card>
-      </Container>
+            </Card>
 
-      {/* Sticky button only for mobile */}
-      <div className="pmc-sticky-btn shadow-lg d-md-none p-0 ">
-        <Button className="w-100 fw-semibold py-2 bg-theme rounded-0">
-          Use SuperCoins
-        </Button>
-      </div>
+            {/* Sidebar Navigation */}
+            <Card className="border-0 shadow-sm rounded-4 p-3 bg-white">
+              <div className="d-flex flex-column gap-1">
+                <Link to="/orders" className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-secondary text-decoration-none hover-bg-light">
+                  <FaBoxOpen className="text-primary" size={18} />
+                  <span>My Orders</span>
+                </Link>
+                <Link to="/user/manage-address" className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-secondary text-decoration-none hover-bg-light">
+                  <FaMapMarkerAlt className="text-primary" size={18} />
+                  <span>Saved Addresses</span>
+                </Link>
+                <Link to="/printmont-coin" className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-primary text-decoration-none bg-primary-subtle shadow-sm">
+                  <FaWallet className="text-primary" size={18} />
+                  <span>PrintCoins Wallet</span>
+                </Link>
+                <Link to="/become-a-seller" className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-secondary text-decoration-none hover-bg-light">
+                  <FaStore className="text-primary" size={18} />
+                  <span>Sell on PrintMont</span>
+                </Link>
+                <hr className="my-2 border-secondary border-opacity-25" />
+                <Button variant="link" onClick={handleLogout} className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-danger text-decoration-none hover-bg-light border-0 text-start">
+                  <FaSignOutAlt size={18} />
+                  <span>Logout Account</span>
+                </Button>
+              </div>
+            </Card>
+          </Col>
+
+          {/* MAIN WALLET PORTLET */}
+          <Col lg={9} md={8} xs={12}>
+            {/* HERO WALLET CARD */}
+            <Card 
+              className="border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4 text-white position-relative overflow-hidden" 
+              style={{ 
+                background: "linear-gradient(135deg, #0b53a1 0%, #002b66 100%)",
+                boxShadow: "0 15px 30px rgba(11, 83, 161, 0.15)"
+              }}
+            >
+              {/* Decorative Background Circles */}
+              <div className="position-absolute bg-white bg-opacity-5 rounded-circle" style={{ width: "300px", height: "300px", top: "-100px", right: "-100px" }} />
+              <div className="position-absolute bg-white bg-opacity-5 rounded-circle" style={{ width: "150px", height: "150px", bottom: "-50px", left: "-50px" }} />
+
+              <Row className="align-items-center g-4 position-relative">
+                <Col md={7}>
+                  <div className="d-flex align-items-center gap-2 mb-3">
+                    <FaCrown size={22} className="text-warning animate-bounce" />
+                    <Badge bg="warning" className="text-dark fw-bold text-uppercase px-3 py-1.5 rounded-pill fs-7">
+                      Gold Tier Member
+                    </Badge>
+                  </div>
+                  <h6 className="text-white-50 text-uppercase fw-bold tracking-wider mb-1" style={{ fontSize: "0.85rem" }}>
+                    Available PrintCoins Balance
+                  </h6>
+                  <h1 className="fw-bold display-4 mb-2 d-flex align-items-center gap-2">
+                    <FaCoins className="text-warning" />
+                    445 <span className="fs-6 fw-normal text-white-50">Coins</span>
+                  </h1>
+                  <p className="small text-white-50 mb-0">
+                    💡 1 Coin = ₹1. Use these coins for additional order discounts at checkout.
+                  </p>
+                </Col>
+                <Col md={5}>
+                  <div className="bg-white bg-opacity-10 rounded-4 p-3 border border-white border-opacity-10 text-white">
+                    <div className="d-flex justify-content-between align-items-center mb-2 small fw-semibold">
+                      <span>Next Tier: Platinum</span>
+                      <span>55 Coins Needed</span>
+                    </div>
+                    <ProgressBar now={89} variant="warning" className="mb-2" style={{ height: "6px" }} />
+                    <span className="text-white-50 xsmall d-block">
+                      Spend ₹55 to unlock 2x cashback rate and free priority processing!
+                    </span>
+                  </div>
+                </Col>
+              </Row>
+            </Card>
+
+            {/* EXPIRY ALERTS BAR */}
+            <div className="alert alert-warning border-0 shadow-sm rounded-4 p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2" style={{ background: "#fff9db" }}>
+              <div className="d-flex align-items-center gap-2 text-dark small">
+                <span className="fs-5">⚠️</span>
+                <span><strong>128 SuperCoins expiring soon:</strong> Redeem these coins before they expire to avoid losing your cashback balance.</span>
+              </div>
+              <Button variant="warning" size="sm" className="rounded-pill fw-bold text-dark fs-7 px-3 py-1">
+                Redeem Coins
+              </Button>
+            </div>
+
+            {/* VOUCHER & REWARDS DECK */}
+            <h5 className="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+              <FaGift className="text-primary" /> Claim Reward Vouchers
+            </h5>
+            <Row className="g-3 mb-4">
+              {rewardVouchers.map((voucher, idx) => (
+                <Col key={idx} xs={12} md={4}>
+                  <Card className="border-0 shadow-sm rounded-4 p-3 bg-white h-100 border-top border-4 border-warning">
+                    <h6 className="fw-bold text-dark mb-1 fs-6">{voucher.title}</h6>
+                    <p className="small text-muted mb-3" style={{ fontSize: "0.8rem", lineHeight: "1.4" }}>
+                      {voucher.desc}
+                    </p>
+                    <div className="d-flex align-items-center justify-content-between pt-2 border-top mt-auto">
+                      <span className="fw-bold text-primary small d-flex align-items-center gap-1">
+                        <FaCoins size={12} className="text-warning" /> {voucher.coins} Coins
+                      </span>
+                      <Button variant="outline-primary" size="sm" className="rounded-pill fw-bold fs-8 px-3">
+                        Claim Code
+                      </Button>
+                    </div>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+
+            {/* RECENT TRANSACTIONS FEED */}
+            <Card className="border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-0 mb-lg-5">
+              <div className="d-flex align-items-center gap-2 p-3 border-bottom bg-white">
+                <FaHistory className="text-primary" />
+                <h6 className="fw-bold text-dark m-0">Recent Coin Transactions</h6>
+              </div>
+              <ListGroup variant="flush">
+                {transactions.map((t, idx) => (
+                  <ListGroup.Item key={idx} className="d-flex justify-content-between align-items-center py-3 border-bottom px-3">
+                    <div className="min-w-0 me-3">
+                      <p className="mb-0.5 text-dark fw-semibold small text-truncate" style={{ fontSize: "0.85rem" }}>
+                        {t.text}
+                      </p>
+                      <span className="text-muted" style={{ fontSize: "0.72rem" }}>
+                        <FaExchangeAlt size={10} className="me-1" /> {t.date}
+                      </span>
+                    </div>
+                    <span className={`fw-bold small fs-6 flex-shrink-0 ${t.type === 'credit' ? 'text-success' : 'text-danger'}`}>
+                      {t.type === 'credit' ? `+${t.change}` : t.change}
+                    </span>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
     </div>
   );
 };

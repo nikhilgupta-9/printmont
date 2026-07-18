@@ -13,18 +13,35 @@ const PRODUCT_HEADER_PATHS = [
   '/track-order',
   '/my-account',
   '/category',
-  '/support'
+  '/support',
+  '/policy',
+  '/privacy-policy',
+  '/terms-and-conditions',
+  '/terms-of-use',
+  '/shipping-policy',
+  '/refund-policy',
+  '/return-policy',
+  '/bulk-orders',
+  '/bulk-order',
+  '/franchise',
+  '/franchises',
+  '/affiliate-program',
+  '/become-a-seller',
+  '/about',
+  '/careers',
+  '/faq',
+  '/security',
+  '/blog',
+  '/printmont-coin',
+  '/manage-address',
+  '/notification-preference'
 ];
 
 const HeaderManager = () => {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const useProductHeader = PRODUCT_HEADER_PATHS.some(path =>
-    currentPath.startsWith(path)
-  );
-
-  // 🧠 Dynamic title mapping
+  // 🧠 Dynamic title mapping for inner pages
   const getPageTitle = () => {
     if (currentPath.startsWith('/cart')) return 'Cart';
     if (currentPath.startsWith('/help-center')) return 'Help Center';
@@ -36,14 +53,27 @@ const HeaderManager = () => {
     if (currentPath.startsWith('/my-account')) return 'My Account';
     if (currentPath.startsWith('/category')) return 'Categories';
     if (currentPath.startsWith('/support')) return 'Support';
+    if (currentPath.includes('policy') || currentPath.includes('terms') || currentPath.includes('privacy') || currentPath.includes('shipping') || currentPath.includes('refund')) return 'Company Policies';
+    if (currentPath.startsWith('/bulk')) return 'Bulk Orders';
+    if (currentPath.startsWith('/franchise')) return 'Franchise Partner';
+    if (currentPath.startsWith('/affiliate')) return 'Affiliate Program';
+    if (currentPath.startsWith('/become-a-seller')) return 'Sell on Printmont';
+    if (currentPath.startsWith('/about')) return 'About Us';
+    if (currentPath.startsWith('/careers')) return 'Careers';
+    if (currentPath.startsWith('/faq')) return 'FAQs';
+    if (currentPath.startsWith('/security')) return 'Security';
+    if (currentPath.startsWith('/blog')) return 'Blog';
+    if (currentPath.startsWith('/printmont-coin')) return 'Printmont Coin';
     return 'Shop';
   };
 
-  if (useProductHeader) {
-    return <ProductPageHeader pageTitle={getPageTitle()} />;
+  // Check if current page is Home page
+  if (currentPath === '/') {
+    return <Header />;
   }
 
-  return <Header />;
+  // For all inner pages, render ProductPageHeader
+  return <ProductPageHeader pageTitle={getPageTitle()} />;
 };
 
 export default HeaderManager;

@@ -29,10 +29,10 @@ export default function FeaturedProductGrid({ data = [] }) {
             >
               {/* Header */}
               <div 
-                className="d-flex justify-content-between align-items-center mb-1"
-                style={{ padding: "1.5px 3px 0 3px" }}
+                className="d-flex justify-content-between align-items-center"
+                style={{ padding: "10px 6px" }}
               >
-                <h4 className="m-0 section-title fw-semibold text-black">{cat.title}</h4>
+                <h4 className="m-0 section-title fw-semibold text-black" style={{ paddingTop: "4px", paddingBottom: "4px" }}>{cat.title}</h4>
                 <button 
                   className="border-0 bg-primary text-white rounded-circle d-flex justify-content-center align-items-center" 
                   style={{ width: "26px", height: "26px" }}

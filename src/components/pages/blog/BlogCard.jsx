@@ -1,7 +1,7 @@
-// src/components/BlogCard.jsx
+// src/components/pages/blog/BlogCard.jsx
 import React from "react";
-import { MdOutlineKeyboardArrowRight } from "react-icons/md";
-import { Link } from "react-router-dom"; // ✅ use react-router-dom
+import { MdOutlineKeyboardArrowRight, MdPerson, MdCalendarToday, MdLocalOffer } from "react-icons/md";
+import { Link } from "react-router-dom";
 
 const BlogCard = ({ cardData }) => {
   const {
@@ -14,59 +14,79 @@ const BlogCard = ({ cardData }) => {
     tag,
     tags,
     summary,
-    readMoreLink = "#",
+    slug,
+    id
   } = cardData || {};
 
-  // Handle variations
-  const imageUrl = imageSrc || image || "https://via.placeholder.com/150";
+  const imageUrl = imageSrc || image || "/default-img.jpg";
   const displayTag = tag || tags || "General";
+  const targetUrl = slug ? `/blog/${slug}` : `/blog/${id || 1}`;
 
   return (
-    <div className="card h-100 blog-card">
-      <div className="card-body rounded border">
-        {/* Category */}
-        <div className="d-flex justify-content-center align-items-center mb-2">
-          <h4 className="text-dark fw-bold mb-0 d-flex align-items-center">
-            {category}
-            <i className="bi bi-chevron-right text-black"><MdOutlineKeyboardArrowRight size={30} />
-</i>
-          </h4>
-        </div>
+    <div className="card h-100 blog-card border-0 bg-transparent p-2">
+      <div className="card-body rounded border bg-white shadow-sm d-flex flex-column justify-content-between p-3 p-md-4 h-100 transition-all hover-shadow">
+        <div>
+          {/* Category Header */}
+          <div className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+            <span className="badge bg-primary-subtle text-primary fw-bold px-2 py-1 fs-7 rounded-pill text-uppercase">
+              {category || "Blog"}
+            </span>
+            <span className="text-primary d-flex align-items-center small fw-semibold">
+              Read <MdOutlineKeyboardArrowRight size={20} />
+            </span>
+          </div>
 
-        {/* Image + Details */}
-        <div className="d-flex justify-content-center align-items-center flex-column">
-          {/* Image */}
-          <div
-            className="d-flex flex-column mb-2 mb-sm-0 border-0"
-            style={{ maxWidth: "250px", minWidth: "100px" }}
-          >
+          {/* Featured Image */}
+          <div className="overflow-hidden rounded-3 mb-3 w-100 position-relative" style={{ aspectRatio: "16/9", backgroundColor: "#f8f9fa" }}>
             <img
               src={imageUrl}
-              alt={title}
-              className="img-fluid rounded border-0"
-              style={{ objectFit: "contain", aspectRatio: "1/1" }}
+              alt={title || "Blog Post"}
+              className="w-100 h-100 rounded-3 zoom-hover"
+              style={{ objectFit: "cover", display: "block" }}
+              loading="lazy"
             />
           </div>
 
-          {/* Text */}
-          <div className="ms-3 flex-grow-1 justify-content-center align-items-center mt-3">
-            <h5 className="fw-semibold mt-0">{title}</h5>
+          {/* Title */}
+          <h5 className="fw-bold text-dark mb-2 line-clamp-2 fs-6 fs-md-5" style={{ minHeight: "2.6rem" }}>
+            {title}
+          </h5>
 
-            <p className="card-text small text-muted mb-1">
-              <i className="bi bi-person me-1"></i> {author}{" "}
-              <i className="bi bi-calendar ms-2 me-1"></i> {date}{" "}
-              <i className="bi bi-tags ms-2 me-1"></i> {displayTag}
-            </p>
-
-            <p className="card-text text-black text-secondary mb-1">{summary}</p>
-
-            <Link
-              to={`/blog/${cardData?.id || 1}`}
-              className="small fw-semibold text-primary text-decoration-none"
-            >
-              Read More
-            </Link>
+          {/* Meta Infos */}
+          <div className="d-flex flex-wrap align-items-center text-muted small mb-2 gap-2" style={{ fontSize: "0.78rem" }}>
+            {author && (
+              <span className="d-flex align-items-center gap-1">
+                <MdPerson size={14} className="text-primary" /> {author}
+              </span>
+            )}
+            {date && (
+              <span className="d-flex align-items-center gap-1">
+                <MdCalendarToday size={13} className="text-primary" /> {date}
+              </span>
+            )}
+            {displayTag && (
+              <span className="d-flex align-items-center gap-1 bg-light px-2 py-0.5 rounded text-secondary">
+                <MdLocalOffer size={12} className="text-primary" /> {displayTag}
+              </span>
+            )}
           </div>
+
+          {/* Summary */}
+          {summary && (
+            <p className="card-text text-secondary small mb-3 line-clamp-3" style={{ lineHeight: "1.5", fontSize: "0.85rem" }}>
+              {summary}
+            </p>
+          )}
+        </div>
+
+        {/* Read More Button */}
+        <div className="pt-2">
+          <Link
+            to={targetUrl}
+            className="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold d-inline-flex align-items-center gap-1"
+          >
+            Read Full Post <MdOutlineKeyboardArrowRight size={18} />
+          </Link>
         </div>
       </div>
     </div>

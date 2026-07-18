@@ -13,7 +13,7 @@ import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { API_ENDPOINTS, ASSET_URL } from '../../config/apiEndpoints';
 
-const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
+const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCategories = true }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const checkoutContext = useCheckout();
@@ -22,6 +22,22 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
     const cartItems = checkoutContext ? checkoutContext.cartItems : [];
     
     const isProductPage = location.pathname.startsWith('/product');
+    const isInfoOrPolicyPage = location.pathname.includes('policy') || 
+                               location.pathname.includes('terms') || 
+                               location.pathname.includes('privacy') || 
+                               location.pathname.includes('shipping') || 
+                               location.pathname.includes('refund') ||
+                               location.pathname.includes('bulk') ||
+                               location.pathname.includes('franchise') ||
+                               location.pathname.includes('affiliate') ||
+                               location.pathname.includes('blog') ||
+                               location.pathname.includes('seller') ||
+                               location.pathname.includes('about') ||
+                               location.pathname.includes('careers') ||
+                               location.pathname.includes('faq') ||
+                               location.pathname.includes('security');
+
+    const shouldShowCategories = showCategories && !isInfoOrPolicyPage;
 
     // State to toggle between the default header and the active search bar
     const [isSearchActive, setIsSearchActive] = useState(false);
@@ -346,10 +362,12 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true }) => {
                     </div>
                 </div>
             </div>
-            {/* Hide categories section on mobile screen (< 992px) */}
-            <div className="d-none d-lg-block">
-                <Categories showImages={false} space="5px 0" bg="rgb(11, 83, 161)" color="white" isSticky={true} />
-            </div>
+            {/* Categories section for product pages */}
+            {shouldShowCategories && (
+                <div className="d-none d-lg-block">
+                    <Categories showImages={false} space="5px 0" bg="rgb(11, 83, 161)" color="white" isSticky={true} />
+                </div>
+            )}
             <div style={{ height: "var(--site-header-height, 65px)" }} className="d-none d-lg-block"></div>
             <div style={{ height: "var(--site-header-height, 55px)" }} className="d-block d-lg-none"></div>
         </>
