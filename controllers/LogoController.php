@@ -7,13 +7,22 @@ class LogoController
     private $table_name = "website_assets";
     private $upload_dir = "uploads/logos/";
 
-    public function __construct($db)
+    public function __construct($db = null)
     {
-        $this->conn = $db;
+        if ($db && ($db instanceof mysqli)) {
+            $this->conn = $db;
+        } else {
+            $this->conn = new mysqli("localhost", "root", "", "printmont_db");
+            if ($this->conn->connect_error) {
+                $this->conn = new mysqli("127.0.0.1", "root", "", "printmont_db");
+            }
+            $this->conn->set_charset("utf8");
+        }
 
         // Create upload directory if it doesn't exist
-        if (!file_exists($this->upload_dir)) {
-            mkdir($this->upload_dir, 0777, true);
+        $full_upload_path = __DIR__ . '/../' . $this->upload_dir;
+        if (!file_exists($full_upload_path)) {
+            mkdir($full_upload_path, 0777, true);
         }
     }
 

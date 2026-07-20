@@ -5,8 +5,9 @@ error_reporting(E_ALL);
 
 // Define BASE_URL outside the class
 // define("BASE_URL", "https://mediumvioletred-pelican-783174.hostingersite.com/");
-if (!defined('BASE_URL')) define("BASE_URL", "http://localhost/printmont/");
+if (!defined('BASE_URL')) define("BASE_URL", "http://localhost/printmont/printmont-backend/");
 
+if (!class_exists('Database')) {
 class Database {
     private $host = "localhost";
     private $db_name = "printmont_db";
@@ -181,5 +182,6 @@ class Database {
             $this->conn->close();
         }
     }
+}
 }
 ?>

@@ -17,7 +17,8 @@ try {
 
 	// Check if user is logged in
 	if (!$auth->isLoggedIn()) {
-		header('Location: ../index.php');
+		// The login page is index.php in the backend root, not one level up.
+		header('Location: index.php');
 		exit();
 	}
 
@@ -27,7 +28,7 @@ try {
 
 } catch (Exception $e) {
 	error_log("Authentication error: " . $e->getMessage());
-	header('Location: ../index.php');
+	header('Location: index.php');
 	exit();
 }
 
@@ -54,7 +55,15 @@ $menu_access = [
 	'blog' => ['admin', 'manager', 'staff'],
 	'bulk_orders' => ['admin', 'manager', 'staff'],
 	'payment' => ['admin'],
-	'seo' => ['admin', 'manager']
+	'seo' => ['admin', 'manager'],
+	'carousels' => ['admin', 'manager'],
+	'home_products' => ['admin', 'manager'],
+	'roles' => ['admin'],
+	'gift_finder' => ['admin', 'manager'],
+	'master_modules' => ['admin'],
+	'contact_inquiries' => ['admin', 'manager', 'staff'],
+	'cod' => ['admin'],
+	'product_filters' => ['admin', 'manager']
 ];
 
 // Get current page URL
@@ -69,7 +78,32 @@ $page_groups = [
 		'home-layout-manager.php',
 		'view-banner.php',
 		'add-banner.php',
+		'edit-banner.php',
+		'banner-layouts.php',
 		'services.php'
+	],
+
+	// Home Sliders
+	'home_sliders' => [
+		'slider.php',
+		'add-slider.php',
+		'edit-slider.php',
+		'home-sliders.php',
+		'add-home-slider.php',
+		'edit-home-slider.php'
+	],
+
+	// Home Services
+	'home_services' => [
+		'home-services.php',
+		'add-home-service.php'
+	],
+
+	// Banner Carousels
+	'banner_carousels' => [
+		'banner-carousels.php',
+		'add-banner-carousel.php',
+		'edit-banner-carousel.php'
 	],
 
 	// Categories Management
@@ -78,6 +112,7 @@ $page_groups = [
 		'add-main-category.php',
 		'add-sub-category.php',
 		'add-sub-sub-category.php',
+		'edit-category.php',
 		'home-page-categories.php'
 	],
 
@@ -92,18 +127,40 @@ $page_groups = [
 	// Products Management
 	'products' => [
 		'product.php',
+		'edit-product.php',
 		'view-products.php',
 		'top-selection-products.php',
 		'besteseller-prodcuts.php',
 		'deactive-products.php',
-		'single-product-version.php',
+		'single-product-version.php'
+	],
+
+	// Product Filters
+	'product_filters' => [
 		'product-filters.php'
 	],
 
 	// Products Review
 	'reviews' => [
 		'add-review.php',
-		'reviews.php'
+		'reviews.php',
+		'edit-review.php',
+		'view-review.php'
+	],
+
+	// Manage Carousels
+	'carousels' => [
+		'carousels.php',
+		'add-carousel.php',
+		'edit-carousel.php'
+	],
+
+	// Home Page Products
+	'home_products' => [
+		'home-products.php',
+		'add-home-product.php',
+		'edit-home-product.php',
+		'deactive-home-products.php'
 	],
 
 	// Website Pages
@@ -111,11 +168,17 @@ $page_groups = [
 		'add-page.php',
 		'contact-view.php',
 		'about-page.php',
+		'edit-about-page.php',
 		'careers.php',
+		'add-career.php',
+		'edit-career.php',
+		'career-applications.php',
 		'affiliate-page.php',
+		'policy-management.php',
 		'policy-edit.php',
 		'faq-view.php',
 		'faq-view-category.php',
+		'edit-faq.php',
 		'help-center.php'
 	],
 
@@ -135,19 +198,25 @@ $page_groups = [
 		'completed-orders.php',
 		'declined-orders.php',
 		'refund-orders.php',
-		'total-sold-orders.php'
+		'total-sold-orders.php',
+		'edit-order.php',
+		'view-order.php'
 	],
 
 	// Coupons
 	'coupons' => [
 		'add-coupon.php',
 		'coupons.php',
+		'edit-coupon.php',
 		'expired-coupons.php'
 	],
 
 	// Customers
 	'customers' => [
 		'customers.php',
+		'add-customer.php',
+		'edit-customer.php',
+		'view-customer.php',
 		'customer-images.php'
 	],
 
@@ -156,26 +225,38 @@ $page_groups = [
 		'new-inquiry.php',
 		'all-inquiry.php',
 		'pending-inquiry.php',
-		'completed-inquiry.php'
+		'completed-inquiry.php',
+		'bulk-inquiries.php'
+	],
+
+	// Contact Inquiries
+	'contact_inquiries' => [
+		'contact-inquiries.php'
 	],
 
 	// Blog Management
 	'blog' => [
 		'blog-categories.php',
 		'add-blog-category.php',
+		'edit-blog-category.php',
 		'add-blog-post.php',
-		'blog-posts.php'
+		'edit-blog-post.php',
+		'blog-posts.php',
+		'blog-tags.php',
+		'blog-comments.php'
 	],
 
 	// Email Settings
 	'email' => [
 		'email-templates.php',
-		'email-configurations.php'
+		'email-configurations.php',
+		'edit-email-template.php'
 	],
 
 	// Social Media
 	'social' => [
 		'add-social-link.php',
+		'edit-social-link.php',
 		'social-links.php'
 	],
 
@@ -186,19 +267,61 @@ $page_groups = [
 		'meta-keywords.php'
 	],
 
+	// Payment Settings
+	'payment_settings' => [
+		'payment-settings.php'
+	],
+
+	// COD Settings
+	'cod_settings' => [
+		'cod-settings.php'
+	],
+
+	// Roles Management
+	'roles' => [
+		'roles.php',
+		'add-role.php',
+		'edit-role.php'
+	],
+
 	// General Settings
 	'general' => [
 		'logo-management.php',
+		'edit-logo.php',
 		'loader-settings.php',
 		'footer-management.php',
-		'login-background.php'
+		'footer-company-info.php',
+		'footer-links.php',
+		'footer-sections.php',
+		'login-background.php',
+		'favicon-settings.php',
+		'website-content.php',
+		'error-background.php',
+		'maintenance-settings.php',
+		'general-settings.php'
 	],
 
 	// Staff Management
 	'staff_mgmt' => [
 		'add-staff.php',
+		'edit-staff.php',
 		'staff.php',
 		'deactivated-staff.php'
+	],
+
+	// Gift Finder
+	'gift_finder' => [
+		'gift-finder.php'
+	],
+
+	// Master Modules
+	'master_modules' => [
+		'master-modules.php'
+	],
+
+	// Product Filters (standalone)
+	'product_filters_setting' => [
+		'product-filters.php'
 	],
 
 	// Analytics
@@ -641,6 +764,78 @@ function shouldExpand($group_name, $current_page, $page_groups)
 						</ul>
 					</li>
 				<?php endif; ?>
+			<?php endif; ?>
+
+			<!-- Manage Carousels -->
+			<?php if (shouldDisplay($menu_access['carousels'], $user_role)): ?>
+				<li class="sidebar-header">
+					Manage Carousels
+				</li>
+				<li class="sidebar-item">
+					<a data-bs-target="#carousels" data-bs-toggle="collapse"
+						class="sidebar-link <?php echo isActiveGroup('carousels', $current_page, $page_groups) ? '' : 'collapsed'; ?>">
+						<i class="align-middle" data-feather="columns"></i>
+						<span class="align-middle">Carousels</span>
+						<?php if (isActiveGroup('carousels', $current_page, $page_groups)): ?>
+							<span class="sidebar-badge">●</span>
+						<?php endif; ?>
+					</a>
+					<ul id="carousels"
+						class="sidebar-dropdown list-unstyled collapse <?php echo isActiveGroup('carousels', $current_page, $page_groups) ? 'show' : ''; ?>"
+						data-bs-parent="#sidebar">
+						<li class="sidebar-item <?php echo isActivePage('add-carousel.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='add-carousel.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Add New Carousel</span>
+							</a>
+						</li>
+						<li class="sidebar-item <?php echo isActivePage('carousels.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='carousels.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">All Carousels</span>
+							</a>
+						</li>
+					</ul>
+				</li>
+			<?php endif; ?>
+
+			<!-- Home Page Products -->
+			<?php if (shouldDisplay($menu_access['home_products'], $user_role)): ?>
+				<li class="sidebar-header">
+					Home Page Products
+				</li>
+				<li class="sidebar-item">
+					<a data-bs-target="#home-products" data-bs-toggle="collapse"
+						class="sidebar-link <?php echo isActiveGroup('home_products', $current_page, $page_groups) ? '' : 'collapsed'; ?>">
+						<i class="align-middle" data-feather="package"></i>
+						<span class="align-middle">Home Products</span>
+						<?php if (isActiveGroup('home_products', $current_page, $page_groups)): ?>
+							<span class="sidebar-badge">●</span>
+						<?php endif; ?>
+					</a>
+					<ul id="home-products"
+						class="sidebar-dropdown list-unstyled collapse <?php echo isActiveGroup('home_products', $current_page, $page_groups) ? 'show' : ''; ?>"
+						data-bs-parent="#sidebar">
+						<li class="sidebar-item <?php echo isActivePage('add-home-product.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='add-home-product.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Add Product</span>
+							</a>
+						</li>
+						<li class="sidebar-item <?php echo isActivePage('home-products.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='home-products.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">View Products</span>
+							</a>
+						</li>
+						<li class="sidebar-item <?php echo isActivePage('deactive-home-products.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='deactive-home-products.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Deactivated</span>
+							</a>
+						</li>
+					</ul>
+				</li>
 			<?php endif; ?>
 
 			<!-- Website Management -->
@@ -1111,6 +1306,30 @@ function shouldExpand($group_name, $current_page, $page_groups)
 								<span class="align-middle">Login Background</span>
 							</a>
 						</li>
+						<li class="sidebar-item <?php echo isActivePage('favicon-settings.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='favicon-settings.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Favicon</span>
+							</a>
+						</li>
+						<li class="sidebar-item <?php echo isActivePage('website-content.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='website-content.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Website Contents</span>
+							</a>
+						</li>
+						<li class="sidebar-item <?php echo isActivePage('error-background.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='error-background.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Error Background</span>
+							</a>
+						</li>
+						<li class="sidebar-item <?php echo isActivePage('maintenance-settings.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='maintenance-settings.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Website Maintenance</span>
+							</a>
+						</li>
 					</ul>
 				</li>
 
@@ -1151,6 +1370,85 @@ function shouldExpand($group_name, $current_page, $page_groups)
 							</a>
 						</li>
 					</ul>
+				</li>
+
+				<!-- Payment Settings -->
+				<li class="sidebar-item <?php echo isActivePage('payment-settings.php', $current_page) ? 'active' : ''; ?>">
+					<a class='sidebar-link' href='payment-settings.php'>
+						<i class="align-middle" data-feather="credit-card"></i>
+						<span class="align-middle">Payment Settings</span>
+					</a>
+				</li>
+
+				<!-- COD Settings -->
+				<li class="sidebar-item <?php echo isActivePage('cod-settings.php', $current_page) ? 'active' : ''; ?>">
+					<a class='sidebar-link' href='cod-settings.php'>
+						<i class="align-middle" data-feather="dollar-sign"></i>
+						<span class="align-middle">COD Settings</span>
+					</a>
+				</li>
+
+				<!-- Manage Roles -->
+				<li class="sidebar-item">
+					<a data-bs-target="#roles" data-bs-toggle="collapse"
+						class="sidebar-link <?php echo isActiveGroup('roles', $current_page, $page_groups) ? '' : 'collapsed'; ?>">
+						<i class="align-middle" data-feather="shield"></i>
+						<span class="align-middle">Manage Roles</span>
+						<?php if (isActiveGroup('roles', $current_page, $page_groups)): ?>
+							<span class="sidebar-badge">●</span>
+						<?php endif; ?>
+					</a>
+					<ul id="roles"
+						class="sidebar-dropdown list-unstyled collapse <?php echo isActiveGroup('roles', $current_page, $page_groups) ? 'show' : ''; ?>"
+						data-bs-parent="#sidebar">
+						<li class="sidebar-item <?php echo isActivePage('add-role.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='add-role.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Add New Role</span>
+							</a>
+						</li>
+						<li class="sidebar-item <?php echo isActivePage('roles.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='roles.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">All Roles</span>
+							</a>
+						</li>
+					</ul>
+				</li>
+			<?php endif; ?>
+
+			<!-- Product Filters, Gift Finder, Master Modules -->
+			<?php if (shouldDisplay($menu_access['product_filters'], $user_role)): ?>
+				<li class="sidebar-header">
+					Advanced Settings
+				</li>
+
+				<li class="sidebar-item <?php echo isActivePage('product-filters.php', $current_page) ? 'active' : ''; ?>">
+					<a class='sidebar-link' href='product-filters.php'>
+						<i class="align-middle" data-feather="filter"></i>
+						<span class="align-middle">Product Filters</span>
+					</a>
+				</li>
+
+				<li class="sidebar-item <?php echo isActivePage('gift-finder.php', $current_page) ? 'active' : ''; ?>">
+					<a class='sidebar-link' href='gift-finder.php'>
+						<i class="align-middle" data-feather="gift"></i>
+						<span class="align-middle">Gift Finder</span>
+					</a>
+				</li>
+
+				<li class="sidebar-item <?php echo isActivePage('master-modules.php', $current_page) ? 'active' : ''; ?>">
+					<a class='sidebar-link' href='master-modules.php'>
+						<i class="align-middle" data-feather="layers"></i>
+						<span class="align-middle">Master Modules</span>
+					</a>
+				</li>
+
+				<li class="sidebar-item <?php echo isActivePage('contact-inquiries.php', $current_page) ? 'active' : ''; ?>">
+					<a class='sidebar-link' href='contact-inquiries.php'>
+						<i class="align-middle" data-feather="message-square"></i>
+						<span class="align-middle">Contact Inquiries</span>
+					</a>
 				</li>
 			<?php endif; ?>
 
