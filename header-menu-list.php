@@ -4,6 +4,28 @@ require_once(__DIR__ . '/config/database.php');
 require_once(__DIR__ . '/controllers/CategoryController.php');
 
 $controller = new CategoryController();
+
+$database = new Database();
+$conn = $database->getConnection();
+
+if (isset($_POST['action']) && $_POST['action'] === 'toggle_header_status') {
+    header('Content-Type: application/json');
+    $catId = (int)($_POST['id'] ?? 0);
+    $newStatus = (isset($_POST['status']) && $_POST['status'] === 'show') ? 'show' : 'hide';
+
+    if ($catId > 0) {
+        $stmt = $conn->prepare("UPDATE categories SET desktop_menu_status = ? WHERE id = ?");
+        $stmt->bind_param("si", $newStatus, $catId);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'status' => $newStatus]);
+        } else {
+            echo json_encode(['success' => false, 'error' => $conn->error]);
+        }
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Invalid category ID']);
+    }
+    exit;
+}
 $flatCategories = $controller->getAllActiveCategoriesFlat();
 
 $configFile = __DIR__ . '/config/header_menu_design.json';
@@ -130,9 +152,21 @@ $categoryTree = buildMenuCategoryTree($flatCategories);
                                                 <span class="badge bg-secondary" title="Sort order">
                                                     <i class="fas fa-sort-numeric-up me-1"></i><?php echo (int) $node['desktop_menu_order']; ?>
                                                 </span>
-                                                <span class="badge bg-<?php echo $node['desktop_menu_status'] == 'show' ? 'success' : 'secondary'; ?>">
-                                                    <?php echo ucfirst($node['desktop_menu_status']); ?>
-                                                </span>
+                                                 <div class="form-check form-switch mb-0 d-inline-flex align-items-center" style="cursor: pointer;" title="Toggle Header Menu Visibility (Show/Hide)">
+                                                     <input class="form-check-input me-1" 
+                                                            type="checkbox" 
+                                                            role="switch" 
+                                                            id="headerSwitch_<?php echo $node['id']; ?>"
+                                                            <?php echo ($node['desktop_menu_status'] ?? 'show') === 'show' ? 'checked' : ''; ?>
+                                                            onchange="toggleHeaderMenuStatus(<?php echo $node['id']; ?>, this)"
+                                                            style="cursor: pointer; width: 2.2em; height: 1.1em;">
+                                                     <label class="form-check-label badge bg-<?php echo ($node['desktop_menu_status'] ?? 'show') === 'show' ? 'success' : 'secondary'; ?>" 
+                                                            id="headerBadge_<?php echo $node['id']; ?>" 
+                                                            for="headerSwitch_<?php echo $node['id']; ?>"
+                                                            style="cursor: pointer;">
+                                                         Header: <?php echo ucfirst($node['desktop_menu_status'] ?? 'show'); ?>
+                                                     </label>
+                                                 </div>
                                                 <a href="<?php echo $editUrl; ?>" class="btn btn-outline-primary btn-sm" title="Edit">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
@@ -172,6 +206,48 @@ function toggleMenuChildren(el) {
         container.classList.add('collapsed');
         icon.className = 'fas fa-chevron-right';
     }
+}
+
+function toggleHeaderMenuStatus(categoryId, switchElem) {
+    const isChecked = switchElem.checked;
+    const newStatus = isChecked ? 'show' : 'hide';
+
+    switchElem.disabled = true;
+
+    const formData = new FormData();
+    formData.append('action', 'toggle_header_status');
+    formData.append('id', categoryId);
+    formData.append('status', newStatus);
+
+    fetch('header-menu-list.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        switchElem.disabled = false;
+        if (data.success) {
+            const badge = document.getElementById(`headerBadge_${categoryId}`);
+            if (badge) {
+                badge.textContent = 'Header: ' + newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                if (newStatus === 'show') {
+                    badge.classList.remove('bg-secondary');
+                    badge.classList.add('bg-success');
+                } else {
+                    badge.classList.remove('bg-success');
+                    badge.classList.add('bg-secondary');
+                }
+            }
+        } else {
+            alert('Error updating header status: ' + (data.error || 'Unknown error'));
+            switchElem.checked = !isChecked;
+        }
+    })
+    .catch(err => {
+        switchElem.disabled = false;
+        alert('Network error while updating status.');
+        switchElem.checked = !isChecked;
+    });
 }
 </script>
 </body>

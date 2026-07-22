@@ -387,7 +387,7 @@ function esc($v)              { return htmlspecialchars($v ?? '', ENT_QUOTES); }
                                         <select class="form-select" name="homepage_category_id">
                                             <option value="">— None —</option>
                                             <?php foreach ($mainCategories as $cat): ?>
-                                                <option value="<?php echo $cat['id']; ?>" <?php echo sel($p['homepage_category_id'], $cat['id']); ?>><?php echo esc($cat['name']); ?></option>
+                                                <option value="<?php echo $cat['id']; ?>" <?php echo sel($p['homepage_category_id'] ?? '', $cat['id']); ?>><?php echo esc($cat['name']); ?></option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>

@@ -11,6 +11,7 @@ if ($_POST) {
     if (isset($_POST['add_configuration'])) {
         $data = [
             'config_name' => $_POST['config_name'],
+            'purpose' => $_POST['purpose'] ?? 'Customer Support',
             'mail_driver' => $_POST['mail_driver'],
             'mail_host' => $_POST['mail_host'],
             'mail_port' => $_POST['mail_port'],
@@ -134,6 +135,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                 <thead>
                                                     <tr>
                                                         <th>Config Name</th>
+                                                        <th>Purpose</th>
                                                         <th>Driver</th>
                                                         <th>Host</th>
                                                         <th>Port</th>
@@ -147,9 +149,12 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                 <tbody>
                                                     <?php foreach ($configurations as $config): ?>
                                                         <tr>
-                                                            <td>
-                                                                <strong><?php echo htmlspecialchars($config['config_name']); ?></strong>
-                                                            </td>
+                                                             <td>
+                                                                 <strong><?php echo htmlspecialchars($config['config_name']); ?></strong>
+                                                             </td>
+                                                             <td>
+                                                                 <span class="badge bg-primary"><?php echo htmlspecialchars($config['purpose'] ?? 'Customer Support'); ?></span>
+                                                             </td>
                                                             <td>
                                                                 <span class="badge bg-secondary"><?php echo strtoupper($config['mail_driver']); ?></span>
                                                             </td>
@@ -162,11 +167,14 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                             <td>
                                                                 <small><?php echo htmlspecialchars($config['mail_from_address']); ?></small>
                                                             </td>
-                                                            <td>
-                                                                <span class="encryption-badge encryption-<?php echo $config['mail_encryption']; ?>">
-                                                                    <?php echo strtoupper($config['mail_encryption']); ?>
-                                                                </span>
-                                                            </td>
+                                                             <td>
+                                                                 <?php 
+                                                                     $encVal = !empty($config['mail_encryption']) ? $config['mail_encryption'] : (!empty($config['encryption']) ? $config['encryption'] : 'tls');
+                                                                 ?>
+                                                                 <span class="encryption-badge encryption-<?php echo htmlspecialchars($encVal); ?>">
+                                                                     <?php echo strtoupper(htmlspecialchars($encVal)); ?>
+                                                                 </span>
+                                                             </td>
                                                             <td>
                                                                 <span class="status-badge status-<?php echo $config['status']; ?>">
                                                                     <?php echo ucfirst($config['status']); ?>
@@ -217,6 +225,108 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                             </div>
                         </div>
                     </div>
+
+                    <!-- Transactional System Emails & Purpose Mapping Reference Card -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-header bg-light d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h5 class="card-title mb-0"><i class="fas fa-envelope-open-text me-2 text-primary"></i>Transactional Emails & Purpose Mapping Reference</h5>
+                                        <small class="text-muted">System automatically uses the designated Mail Purpose for sending these transactional emails.</small>
+                                    </div>
+                                    <span class="badge bg-info">System Reference</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <!-- Column 1: Auth & Account -->
+                                        <div class="col-md-4">
+                                            <div class="border rounded p-3 bg-white h-100">
+                                                <h6 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="fas fa-shield-alt me-1"></i> Authentication & Security</h6>
+                                                <ul class="list-unstyled mb-0">
+                                                    <li class="d-flex align-items-center justify-content-between mb-2">
+                                                        <span><i class="fas fa-key text-warning me-2"></i>OTP</span>
+                                                        <span class="badge bg-warning text-dark">Verification / OTP</span>
+                                                    </li>
+                                                    <li class="d-flex align-items-center justify-content-between mb-2">
+                                                        <span><i class="fas fa-user-check text-success me-2"></i>Email Verification</span>
+                                                        <span class="badge bg-warning text-dark">Verification / OTP</span>
+                                                    </li>
+                                                    <li class="d-flex align-items-center justify-content-between mb-2">
+                                                        <span><i class="fas fa-lock text-danger me-2"></i>Password Reset</span>
+                                                        <span class="badge bg-secondary">Security / Security</span>
+                                                    </li>
+                                                    <li class="d-flex align-items-center justify-content-between">
+                                                        <span><i class="fas fa-smile text-info me-2"></i>Welcome Email</span>
+                                                        <span class="badge bg-info">Notifications</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <!-- Column 2: Orders & Logistics -->
+                                        <div class="col-md-4">
+                                            <div class="border rounded p-3 bg-white h-100">
+                                                <h6 class="fw-bold text-success border-bottom pb-2 mb-3"><i class="fas fa-box me-1"></i> Orders & Logistics</h6>
+                                                <ul class="list-unstyled mb-0">
+                                                    <li class="d-flex align-items-center justify-content-between mb-2">
+                                                        <span><i class="fas fa-shopping-cart text-primary me-2"></i>Order Confirmation</span>
+                                                        <span class="badge bg-primary">Orders</span>
+                                                    </li>
+                                                    <li class="d-flex align-items-center justify-content-between mb-2">
+                                                        <span><i class="fas fa-truck text-info me-2"></i>Order Shipped</span>
+                                                        <span class="badge bg-primary">Orders</span>
+                                                    </li>
+                                                    <li class="d-flex align-items-center justify-content-between mb-2">
+                                                        <span><i class="fas fa-shipping-fast text-warning me-2"></i>Out for Delivery</span>
+                                                        <span class="badge bg-primary">Orders</span>
+                                                    </li>
+                                                    <li class="d-flex align-items-center justify-content-between mb-2">
+                                                        <span><i class="fas fa-check-circle text-success me-2"></i>Delivered</span>
+                                                        <span class="badge bg-primary">Orders</span>
+                                                    </li>
+                                                    <li class="d-flex align-items-center justify-content-between">
+                                                        <span><i class="fas fa-times-circle text-danger me-2"></i>Cancelled</span>
+                                                        <span class="badge bg-primary">Orders</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <!-- Column 3: Billing, Refunds & Engagement -->
+                                        <div class="col-md-4">
+                                            <div class="border rounded p-3 bg-white h-100">
+                                                <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-file-invoice-dollar me-1"></i> Billing, Refunds & Promo</h6>
+                                                <ul class="list-unstyled mb-0">
+                                                    <li class="d-flex align-items-center justify-content-between mb-2">
+                                                        <span><i class="fas fa-receipt text-success me-2"></i>Invoice / Payment Success</span>
+                                                        <span class="badge bg-success">Billing</span>
+                                                    </li>
+                                                    <li class="d-flex align-items-center justify-content-between mb-2">
+                                                        <span><i class="fas fa-exclamation-triangle text-danger me-2"></i>Payment Failed</span>
+                                                        <span class="badge bg-danger">Billing</span>
+                                                    </li>
+                                                    <li class="d-flex align-items-center justify-content-between mb-2">
+                                                        <span><i class="fas fa-undo text-secondary me-2"></i>Refund / Return Approved</span>
+                                                        <span class="badge bg-secondary">Returns & Refund</span>
+                                                    </li>
+                                                    <li class="d-flex align-items-center justify-content-between mb-2">
+                                                        <span><i class="fas fa-wallet text-primary me-2"></i>Wallet Credit</span>
+                                                        <span class="badge bg-dark">Accounts</span>
+                                                    </li>
+                                                    <li class="d-flex align-items-center justify-content-between">
+                                                        <span><i class="fas fa-heart text-danger me-2"></i>Wishlist Price Drop</span>
+                                                        <span class="badge bg-warning text-dark">Offers & Promotions</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </main>
             <?php include_once "includes/footer.php"; ?>
@@ -234,12 +344,37 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                     </div>
                     <div class="modal-body">
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label class="form-label">Configuration Name *</label>
                                 <input type="text" class="form-control" name="config_name" 
-                                       placeholder="e.g., Gmail SMTP, SendGrid" required>
+                                       placeholder="e.g., Gmail SMTP, Orders Mail" required>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Purpose (Mail Use Case) *</label>
+                                <select class="form-select" name="purpose" required>
+                                    <option value="Customer Support">Customer Support</option>
+                                    <option value="Orders">Orders</option>
+                                    <option value="No Reply">No Reply</option>
+                                    <option value="Sales">Sales</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Offers & Promotions">Offers & Promotions</option>
+                                    <option value="Contact Page">Contact Page</option>
+                                    <option value="Returns & Refund">Returns & Refund</option>
+                                    <option value="Billing">Billing</option>
+                                    <option value="Accounts">Accounts</option>
+                                    <option value="Careers">Careers</option>
+                                    <option value="HR">HR</option>
+                                    <option value="Vendor/Seller Support">Vendor/Seller Support</option>
+                                    <option value="Partnership">Partnership</option>
+                                    <option value="Legal">Legal</option>
+                                    <option value="Privacy / DPDP">Privacy / DPDP</option>
+                                    <option value="Security">Security</option>
+                                    <option value="Verification / OTP">Verification / OTP</option>
+                                    <option value="Notifications">Notifications</option>
+                                    <option value="Newsletter">Newsletter</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
                                 <label class="form-label">Mail Driver *</label>
                                 <select class="form-select" name="mail_driver" id="mail_driver" required>
                                     <option value="smtp">SMTP</option>

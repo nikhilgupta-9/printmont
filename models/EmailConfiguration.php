@@ -8,7 +8,7 @@ class EmailConfiguration {
     }
 
     public function getAll() {
-        $query = "SELECT id, config_name, mail_driver, mail_host, mail_port, mail_from_address, mail_from_name, status, created_at FROM {$this->table} ORDER BY created_at DESC";
+        $query = "SELECT * FROM {$this->table} ORDER BY created_at DESC";
         $result = $this->conn->query($query);
         
         $configs = [];
@@ -36,13 +36,17 @@ class EmailConfiguration {
     }
 
     public function create($data) {
-        // Deactivate all other configurations first
-        $this->deactivateAll();
+        if ($data['status'] == 'active') {
+            $this->deactivateAll();
+        }
         
-        $query = "INSERT INTO {$this->table} (config_name, mail_driver, mail_host, mail_port, mail_username, mail_password, mail_encryption, mail_from_address, mail_from_name, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $purpose = $data['purpose'] ?? 'Customer Support';
+
+        $query = "INSERT INTO {$this->table} (config_name, purpose, mail_driver, mail_host, mail_port, mail_username, mail_password, mail_encryption, mail_from_address, mail_from_name, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("ssssssssss", 
+        $stmt->bind_param("sssssssssss", 
             $data['config_name'], 
+            $purpose,
             $data['mail_driver'], 
             $data['mail_host'], 
             $data['mail_port'], 
@@ -57,15 +61,17 @@ class EmailConfiguration {
     }
 
     public function update($id, $data) {
-        // If setting to active, deactivate all others first
         if ($data['status'] == 'active') {
             $this->deactivateAll();
         }
+
+        $purpose = $data['purpose'] ?? 'Customer Support';
         
-        $query = "UPDATE {$this->table} SET config_name = ?, mail_driver = ?, mail_host = ?, mail_port = ?, mail_username = ?, mail_password = ?, mail_encryption = ?, mail_from_address = ?, mail_from_name = ?, status = ? WHERE id = ?";
+        $query = "UPDATE {$this->table} SET config_name = ?, purpose = ?, mail_driver = ?, mail_host = ?, mail_port = ?, mail_username = ?, mail_password = ?, mail_encryption = ?, mail_from_address = ?, mail_from_name = ?, status = ? WHERE id = ?";
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("ssssssssssi", 
+        $stmt->bind_param("sssssssssssi", 
             $data['config_name'], 
+            $purpose,
             $data['mail_driver'], 
             $data['mail_host'], 
             $data['mail_port'], 

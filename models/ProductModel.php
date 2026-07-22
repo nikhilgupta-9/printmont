@@ -166,7 +166,7 @@ class ProductModel
                   FROM products p
                   LEFT JOIN categories c1 ON p.category_id = c1.id
                   $whereClause
-                  ORDER BY p.sort_order, p.created_at DESC";
+                  ORDER BY p.created_at DESC";
 
         return $this->db->fetchAll($query, $params);
     }

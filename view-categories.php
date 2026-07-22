@@ -9,6 +9,30 @@ $conn = $database->getConnection();
 
 $categoryController = new CategoryController();
 
+// Handle AJAX status toggle request
+if (isset($_POST['action']) && ($_POST['action'] === 'toggle_status' || $_POST['action'] === 'toggle_header_status')) {
+    header('Content-Type: application/json');
+    $catId = (int)($_POST['id'] ?? 0);
+    $action = $_POST['action'];
+
+    if ($action === 'toggle_status') {
+        $newStatus = (isset($_POST['status']) && $_POST['status'] === 'active') ? 'active' : 'inactive';
+        $stmt = $conn->prepare("UPDATE categories SET status = ? WHERE id = ?");
+        $stmt->bind_param("si", $newStatus, $catId);
+    } else {
+        $newStatus = (isset($_POST['status']) && $_POST['status'] === 'show') ? 'show' : 'hide';
+        $stmt = $conn->prepare("UPDATE categories SET desktop_menu_status = ? WHERE id = ?");
+        $stmt->bind_param("si", $newStatus, $catId);
+    }
+
+    if ($catId > 0 && $stmt->execute()) {
+        echo json_encode(['success' => true, 'status' => $newStatus]);
+    } else {
+        echo json_encode(['success' => false, 'error' => $conn->error ?: 'Invalid ID']);
+    }
+    exit;
+}
+
 // Get filter parameters
 $level_filter = isset($_GET['level']) ? (int) $_GET['level'] : 0;
 $parent_filter = isset($_GET['parent_id']) ? (int) $_GET['parent_id'] : 0;
@@ -373,15 +397,25 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                                                 </div>
                                                                             </div>
                                                             
-                                                                            <div class="d-flex gap-2 align-items-center">
-                                                                                <?php if ($category['is_featured']): ?>
-                                                                                        <span class="badge bg-warning">
-                                                                                            <i class="fas fa-star me-1"></i> Featured
-                                                                                        </span>
-                                                                                <?php endif; ?>
-                                                                                <span class="badge bg-<?php echo $category['status'] == 'active' ? 'success' : 'danger'; ?>">
-                                                                                    <?php echo ucfirst($category['status']); ?>
-                                                                                </span>
+                                                                            <div class="d-flex gap-2 align-items-center">                                                                                 <?php if ($category['is_featured']): ?>
+                                                                                         <span class="badge bg-warning">
+                                                                                             <i class="fas fa-star me-1"></i> Featured
+                                                                                         </span>
+                                                                                 <?php endif; ?>                                                                                  <div class="form-check form-switch mb-0 d-inline-flex align-items-center me-1" style="cursor: pointer;" title="Toggle Category Active/Inactive Status">
+                                                                                      <input class="form-check-input me-1" 
+                                                                                             type="checkbox" 
+                                                                                             role="switch" 
+                                                                                             id="statusSwitch_tree_<?php echo $category['id']; ?>"
+                                                                                             <?php echo $category['status'] === 'active' ? 'checked' : ''; ?>
+                                                                                             onchange="toggleCategoryStatus(<?php echo $category['id']; ?>, this)"
+                                                                                             style="cursor: pointer; width: 2.2em; height: 1.1em;">
+                                                                                      <label class="form-check-label badge bg-<?php echo $category['status'] == 'active' ? 'success' : 'danger'; ?>" 
+                                                                                             id="statusBadge_tree_<?php echo $category['id']; ?>" 
+                                                                                             for="statusSwitch_tree_<?php echo $category['id']; ?>"
+                                                                                             style="cursor: pointer;">
+                                                                                          <?php echo ucfirst($category['status']); ?>
+                                                                                      </label>
+                                                                                  </div>
                                                                                 <span class="badge bg-info">
                                                                                     <i class="fas fa-sort-numeric-up me-1"></i> <?php echo $category['display_order']; ?>
                                                                                 </span>
@@ -497,10 +531,40 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                                                 </span>
                                                                             </td>
                                                                             <td>
-                                                                                <span class="badge bg-<?php echo $category['status'] == 'active' ? 'success' : 'danger'; ?>">
-                                                                                    <?php echo ucfirst($category['status']); ?>
-                                                                                </span>
+                                                                                <div class="form-check form-switch mb-0 d-inline-flex align-items-center" style="cursor: pointer;">
+                                                                                     <input class="form-check-input me-1" 
+                                                                                            type="checkbox" 
+                                                                                            role="switch" 
+                                                                                            id="statusSwitch_tbl_<?php echo $category['id']; ?>"
+                                                                                            <?php echo $category['status'] === 'active' ? 'checked' : ''; ?>
+                                                                                            onchange="toggleCategoryStatus(<?php echo $category['id']; ?>, this)"
+                                                                                            title="Toggle Active/Inactive"
+                                                                                            style="cursor: pointer; width: 2.2em; height: 1.1em;">
+                                                                                     <label class="form-check-label badge bg-<?php echo $category['status'] == 'active' ? 'success' : 'danger'; ?>" 
+                                                                                            id="statusBadge_tbl_<?php echo $category['id']; ?>" 
+                                                                                            for="statusSwitch_tbl_<?php echo $category['id']; ?>"
+                                                                                            style="cursor: pointer;">
+                                                                                         <?php echo ucfirst($category['status']); ?>
+                                                                                     </label>
+                                                                                 </div>
                                                                             </td>
+                                                                            <td>
+                                                                                <div class="form-check form-switch mb-0 d-inline-flex align-items-center" style="cursor: pointer;" title="Toggle Header Menu Visibility">
+                                                                                     <input class="form-check-input me-1" 
+                                                                                            type="checkbox" 
+                                                                                            role="switch" 
+                                                                                            id="headerSwitch_tbl_<?php echo $category['id']; ?>"
+                                                                                            <?php echo ($category['desktop_menu_status'] ?? 'show') === 'show' ? 'checked' : ''; ?>
+                                                                                            onchange="toggleHeaderStatus(<?php echo $category['id']; ?>, this)"
+                                                                                            style="cursor: pointer; width: 2.2em; height: 1.1em;">
+                                                                                     <label class="form-check-label badge bg-<?php echo ($category['desktop_menu_status'] ?? 'show') === 'show' ? 'primary' : 'secondary'; ?>" 
+                                                                                            id="headerBadge_tbl_<?php echo $category['id']; ?>" 
+                                                                                            for="headerSwitch_tbl_<?php echo $category['id']; ?>"
+                                                                                            style="cursor: pointer;">
+                                                                                         <?php echo ucfirst($category['desktop_menu_status'] ?? 'show'); ?>
+                                                                                     </label>
+                                                                                 </div>
+                                                                             </td>
                                                                             <td>
                                                                                 <?php if ($category['is_featured']): ?>
                                                                                         <span class="badge bg-warning">
@@ -566,6 +630,89 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
             if (confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
                 window.location.href = 'delete-category.php?id=' + categoryId;
             }
+        }
+
+        function toggleCategoryStatus(categoryId, switchElem) {
+            const isChecked = switchElem.checked;
+            const newStatus = isChecked ? 'active' : 'inactive';
+
+            switchElem.disabled = true;
+
+            const formData = new FormData();
+            formData.append('action', 'toggle_status');
+            formData.append('id', categoryId);
+            formData.append('status', newStatus);
+
+            fetch('view-categories.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                switchElem.disabled = false;
+                if (data.success) {
+                    // Update badges matching this category ID
+                    document.querySelectorAll(`#statusBadge_tree_${categoryId}, #statusBadge_tbl_${categoryId}`).forEach(badge => {
+                        badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                        if (newStatus === 'active') {
+                            badge.classList.remove('bg-danger');
+                            badge.classList.add('bg-success');
+                        } else {
+                            badge.classList.remove('bg-success');
+                            badge.classList.add('bg-danger');
+                        }
+                    });
+                } else {
+                    alert('Error updating status: ' + (data.error || 'Unknown error'));
+                    switchElem.checked = !isChecked;
+                }
+            })
+            .catch(err => {
+                switchElem.disabled = false;
+                alert('Network error while updating status.');
+                switchElem.checked = !isChecked;
+            });
+        }
+
+        function toggleHeaderStatus(categoryId, switchElem) {
+            const isChecked = switchElem.checked;
+            const newStatus = isChecked ? 'show' : 'hide';
+
+            switchElem.disabled = true;
+
+            const formData = new FormData();
+            formData.append('action', 'toggle_header_status');
+            formData.append('id', categoryId);
+            formData.append('status', newStatus);
+
+            fetch('view-categories.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                switchElem.disabled = false;
+                if (data.success) {
+                    document.querySelectorAll(`#headerBadge_tree_${categoryId}, #headerBadge_tbl_${categoryId}`).forEach(badge => {
+                        badge.textContent = (badge.id.includes('tree') ? 'Header: ' : '') + newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                        if (newStatus === 'show') {
+                            badge.classList.remove('bg-secondary');
+                            badge.classList.add('bg-primary');
+                        } else {
+                            badge.classList.remove('bg-primary');
+                            badge.classList.add('bg-secondary');
+                        }
+                    });
+                } else {
+                    alert('Error updating header status: ' + (data.error || 'Unknown error'));
+                    switchElem.checked = !isChecked;
+                }
+            })
+            .catch(err => {
+                switchElem.disabled = false;
+                alert('Network error while updating header status.');
+                switchElem.checked = !isChecked;
+            });
         }
 
         // Initialize - collapse all subcategories in tree view

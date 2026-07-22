@@ -135,8 +135,8 @@ class BannerModel {
         return $this->db->insert(
             "INSERT INTO {$this->table}
              (title, description, image_url_desktop, image_url_mobile,
-              target_url, section_id, display_order, status, start_date, end_date)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              target_url, section_id, layout_format, display_order, status, start_date, end_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['title'],
                 $data['description'] ?? '',
@@ -144,6 +144,7 @@ class BannerModel {
                 $data['image_url_mobile']  ?? '',
                 $data['target_url']        ?? '',
                 $data['section_id']        ?? null,
+                $data['layout_format']     ?? 'desktop_format_1',
                 $data['display_order']     ?? 0,
                 $data['status']            ?? 'active',
                 $data['start_date']        ?: null,
@@ -156,7 +157,7 @@ class BannerModel {
         return (bool)$this->db->execute(
             "UPDATE {$this->table} SET
              title = ?, description = ?, image_url_desktop = ?, image_url_mobile = ?,
-             target_url = ?, section_id = ?, display_order = ?, status = ?,
+             target_url = ?, section_id = ?, layout_format = ?, display_order = ?, status = ?,
              start_date = ?, end_date = ?, updated_at = NOW()
              WHERE id = ?",
             [
@@ -166,6 +167,7 @@ class BannerModel {
                 $data['image_url_mobile']  ?? '',
                 $data['target_url']     ?? '',
                 $data['section_id']     ?? null,
+                $data['layout_format']  ?? 'desktop_format_1',
                 $data['display_order']  ?? 0,
                 $data['status']         ?? 'active',
                 $data['start_date']     ?: null,

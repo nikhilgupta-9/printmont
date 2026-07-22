@@ -132,6 +132,36 @@ foreach ($sections as $s) {
                                           placeholder="Short description"><?php echo htmlspecialchars($banner['description'] ?? ''); ?></textarea>
                             </div>
 
+                            <!-- Layout Format Selection -->
+                            <div class="row">
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label required-field">Layout Format Structure</label>
+                                    <?php $currentFmt = $banner['layout_format'] ?? 'desktop_format_1'; ?>
+                                    <select name="layout_format" id="layoutFormatSelect" class="form-control" required>
+                                        <optgroup label="Desktop Layout Formats (From Diagram)">
+                                            <option value="desktop_format_1" data-d-dim="600×600 px (Square)" data-m-dim="600×600 px (Square)" <?php echo $currentFmt==='desktop_format_1'?'selected':''; ?>>Format 1: Single Square Offer Banner (1:1)</option>
+                                            <option value="desktop_format_2" data-d-dim="Square: 600×600 px | Tall: 600×900 px" data-m-dim="600×400 px" <?php echo $currentFmt==='desktop_format_2'?'selected':''; ?>>Format 2: Square + Tall Offer Banner</option>
+                                            <option value="desktop_format_3" data-d-dim="Squares: 600×600 px | Wide: 1200×400 px" data-m-dim="600×400 px" <?php echo $currentFmt==='desktop_format_3'?'selected':''; ?>>Format 3: 2 Square + 1 Wide Offer Banner</option>
+                                            <option value="desktop_format_4" data-d-dim="600×600 px per item (2×3 Grid)" data-m-dim="600×600 px" <?php echo $currentFmt==='desktop_format_4'?'selected':''; ?>>Format 4: 2 Columns × 3 Rows Square Grid</option>
+                                            <option value="desktop_format_5" data-d-dim="1920×250 px / 1200×200 px (Strip)" data-m-dim="800×250 px (Strip)" <?php echo $currentFmt==='desktop_format_5'?'selected':''; ?>>Format 5: Single Small Offer Banner (Strip)</option>
+                                            <option value="desktop_format_6" data-d-dim="600×600 px per item (3×2 Grid)" data-m-dim="600×600 px" <?php echo $currentFmt==='desktop_format_6'?'selected':''; ?>>Format 6: 3 Columns × 2 Rows Square Grid</option>
+                                            <option value="desktop_carousel_1" data-d-dim="1920×600 px / 1200×400 px" data-m-dim="600×400 px" <?php echo $currentFmt==='desktop_carousel_1'?'selected':''; ?>>Desktop Carousel: Single Full Width Banner</option>
+                                            <option value="desktop_carousel_multi" data-d-dim="960×450 px (2-Col) / 640×360 px (3-Col)" data-m-dim="600×400 px" <?php echo $currentFmt==='desktop_carousel_multi'?'selected':''; ?>>Desktop Carousel: Multi-Column Carousel</option>
+                                        </optgroup>
+                                        <optgroup label="Mobile Layout Options">
+                                            <option value="mobile_carousel_square" data-d-dim="600×600 px" data-m-dim="600×600 px (Square 1:1)" <?php echo $currentFmt==='mobile_carousel_square'?'selected':''; ?>>Mobile Carousel: Single Square (1:1)</option>
+                                            <option value="mobile_carousel_double" data-d-dim="600×400 px" data-m-dim="600×400 px (2-Items)" <?php echo $currentFmt==='mobile_carousel_double'?'selected':''; ?>>Mobile Carousel: Double Image Normal Height</option>
+                                            <option value="mobile_carousel_peek" data-d-dim="600×400 px" data-m-dim="600×400 px (1.5 Peek View)" <?php echo $currentFmt==='mobile_carousel_peek'?'selected':''; ?>>Mobile Carousel: 1.5 Peek Carousel</option>
+                                            <option value="mobile_carousel_small" data-d-dim="800×250 px" data-m-dim="800×250 px (Small Height)" <?php echo $currentFmt==='mobile_carousel_small'?'selected':''; ?>>Mobile Carousel: Single Small Carousel</option>
+                                            <option value="mobile_banner_square" data-d-dim="600×600 px" data-m-dim="600×600 px (Square)" <?php echo $currentFmt==='mobile_banner_square'?'selected':''; ?>>Mobile Static Banner: Single Square Banner</option>
+                                            <option value="mobile_banner_two" data-d-dim="600×400 px" data-m-dim="600×400 px (2-Items)" <?php echo $currentFmt==='mobile_banner_two'?'selected':''; ?>>Mobile Static Banner: Two Image Normal</option>
+                                            <option value="mobile_banner_small" data-d-dim="800×250 px" data-m-dim="800×250 px (Small Strip)" <?php echo $currentFmt==='mobile_banner_small'?'selected':''; ?>>Mobile Static Banner: Single Small Banner</option>
+                                        </optgroup>
+                                    </select>
+                                    <small class="text-muted">Select the layout structure to display recommended dimensions below</small>
+                                </div>
+                            </div>
+
                             <!-- Section picker -->
                             <div class="row">
                                 <div class="mb-3 col-md-6">
@@ -177,7 +207,10 @@ foreach ($sections as $s) {
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <div class="card h-100">
-                                        <div class="card-header"><h6 class="mb-0">Desktop Image <?php echo $is_edit ? '<small class="text-muted">(leave blank to keep current)</small>' : '<span class="text-danger">*</span>'; ?></h6></div>
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">Desktop Image <?php echo $is_edit ? '<small class="text-muted">(leave blank to keep current)</small>' : '<span class="text-danger">*</span>'; ?></h6>
+                                            <span class="badge bg-primary" id="desktopDimBadge">Recommended: 600×600 px</span>
+                                        </div>
                                         <div class="card-body">
                                             <?php if ($is_edit && !empty($banner['image_url_desktop'])): ?>
                                                 <p class="mb-1"><small class="text-muted">Current:</small></p>
@@ -185,7 +218,7 @@ foreach ($sections as $s) {
                                             <?php endif; ?>
                                             <input type="file" class="form-control mb-2" name="image_desktop"
                                                    accept="image/*" <?php echo $is_edit ? '' : 'required'; ?> id="desktopFile">
-                                            <small class="text-muted">Recommended 1920×600 px · max 5 MB</small>
+                                            <small class="text-muted" id="desktopDimGuide">Recommended: 600×600 px · max 5 MB</small>
                                             <div class="image-preview-container mt-2" id="desktopPreview">
                                                 <small class="text-muted">New image preview will appear here</small>
                                             </div>
@@ -194,7 +227,10 @@ foreach ($sections as $s) {
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <div class="card h-100">
-                                        <div class="card-header"><h6 class="mb-0">Mobile Image <small class="text-muted">(optional)</small></h6></div>
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">Mobile Image <small class="text-muted">(optional)</small></h6>
+                                            <span class="badge bg-info text-dark" id="mobileDimBadge">Recommended: 600×600 px</span>
+                                        </div>
                                         <div class="card-body">
                                             <?php if ($is_edit && !empty($banner['image_url_mobile'])): ?>
                                                 <p class="mb-1"><small class="text-muted">Current:</small></p>
@@ -245,6 +281,31 @@ foreach ($sections as $s) {
 
 <script src="js/app.js"></script>
 <script>
+// Layout Format — update dimension badges & helper guide text
+const layoutFormatSelect = document.getElementById('layoutFormatSelect');
+const desktopDimBadge = document.getElementById('desktopDimBadge');
+const desktopDimGuide = document.getElementById('desktopDimGuide');
+const mobileDimBadge  = document.getElementById('mobileDimBadge');
+const mobileDimGuide  = document.getElementById('mobileDimGuide');
+
+function updateDimensionGuides() {
+    const opt = layoutFormatSelect.options[layoutFormatSelect.selectedIndex];
+    if (!opt) return;
+    const dDim = opt.dataset.dDim || '1920×600 px';
+    const mDim = opt.dataset.mDim || '768×400 px';
+
+    desktopDimBadge.textContent = `Recommended: ${dDim}`;
+    desktopDimGuide.innerHTML   = `Recommended: ${dDim} · max 5 MB`;
+
+    mobileDimBadge.textContent  = `Recommended: ${mDim}`;
+    mobileDimGuide.innerHTML    = `Recommended: ${mDim} · max 5 MB<br>If blank, desktop image is used on mobile.`;
+}
+
+if (layoutFormatSelect) {
+    layoutFormatSelect.addEventListener('change', updateDimensionGuides);
+    updateDimensionGuides(); // initial trigger
+}
+
 const sectionSelect = document.getElementById('sectionSelect');
 const sectionInfo   = document.getElementById('sectionInfo');
 const infoType      = document.getElementById('sectionInfoType');

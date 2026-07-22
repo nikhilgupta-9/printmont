@@ -9,7 +9,7 @@ class Category {
 
     public function getAllWithHierarchy() {
         $query = "SELECT * FROM " . $this->table . " 
-                
+                 WHERE status = 'active'
                  ORDER BY display_order ASC, name ASC";
         
         $result = $this->conn->query($query);
