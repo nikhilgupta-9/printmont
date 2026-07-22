@@ -6,8 +6,22 @@ export const useCheckout = () => useContext(CheckoutContext);
 
 export const CheckoutProvider = ({ children }) => {
   const [checkoutStep, setCheckoutStep] = useState(1);
-  const [cartItems, setCartItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('printmont_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Sync cart items to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('printmont_cart', JSON.stringify(cartItems));
+    } catch (e) {}
+  }, [cartItems]);
   
   // Checkout State Data
   const [savedItems, setSavedItems] = useState([]);
@@ -23,39 +37,77 @@ export const CheckoutProvider = ({ children }) => {
   const COUPON_DISCOUNT = 450;
   const CASH_COINS_DISCOUNT = 20;
 
-  // 1. Fetch Cart Items on Mount
+  // 1. Fetch Cart Items on Mount (if backend cart API available)
   useEffect(() => {
     fetchCartItems();
   }, []);
 
   const fetchCartItems = async () => {
+    // If local cart already has items, do not overwrite with backend empty state
+    const saved = localStorage.getItem('printmont_cart');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return;
+      } catch (e) {}
+    }
+
     try {
-      setIsLoading(true);
-      // Try to fetch from backend API
       const response = await fetch(`${API_URL}/cart-api.php`);
       if (response.ok) {
         const data = await response.json();
-        if (data.success && data.data) {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
            setCartItems(data.data);
-           setIsLoading(false);
-           return;
         }
       }
     } catch (error) {
-      console.warn("Could not fetch cart from backend, using fallback data", error);
+      // Keep real items from localStorage or empty state
     }
-    
-    // Fallback Dummy Data if backend is unavailable or empty
-    setCartItems([
-      { id: 1, name: "Printmont Rust Brown Half-Sleeves Knitted Mens Shirt", size: "M", color: "Brown", price: 549, originalPrice: 645, discount: 35, offers: 2, quantity: 1, image: "/men_shirt/men-shirt-2.jpeg" },
-      { id: 2, name: "Printmont Blue Half-Sleeves Knitted Mens Shirt", size: "L", color: "Blue", price: 699, originalPrice: 999, discount: 30, offers: 1, quantity: 1, image: "/men_shirt/men-shirt-2.jpeg" },
-      { id: 3, name: "Printmont Green T-Shirt", size: "M", color: "Green", price: 349, originalPrice: 499, discount: 20, offers: 0, quantity: 1, image: "/men_shirt/men-shirt-2.jpeg" },
-      { id: 4, name: "Printmont White Casual Shirt", size: "XL", color: "White", price: 799, originalPrice: 1199, discount: 40, offers: 3, quantity: 1, image: "/men_shirt/men-shirt-2.jpeg" }
-    ]);
-    setIsLoading(false);
   };
 
   // Cart Actions
+  const addToCart = (product, qty = 1, options = {}) => {
+    setCartItems(prev => {
+      const productId = product.id || product.productId || (product.title ? product.title.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'product-' + Date.now());
+      const existingIndex = prev.findIndex(item => String(item.id) === String(productId));
+      
+      if (existingIndex > -1) {
+        const updated = [...prev];
+        updated[existingIndex].quantity += qty;
+        return updated;
+      }
+
+      const price = Number(product.perPiecePrice || product.currentPrice || product.price || 499);
+      const originalPrice = Number(product.originalPrice || (price * 1.3));
+      const rawDiscount = product.discount ? parseInt(product.discount) : 20;
+
+      let imageSrc = '/men_shirt/men-shirt-2.jpeg';
+      if (product.images && product.images.length > 0) {
+        imageSrc = product.images[0];
+      } else if (product.image) {
+        imageSrc = product.image;
+      } else if (product.primary_image) {
+        imageSrc = product.primary_image;
+      }
+
+      const newItem = {
+        id: productId,
+        name: product.title || product.name || 'Printmont Custom Product',
+        price: isNaN(price) ? 499 : price,
+        originalPrice: isNaN(originalPrice) ? 699 : originalPrice,
+        discount: isNaN(rawDiscount) ? 20 : rawDiscount,
+        quantity: qty > 0 ? qty : 1,
+        image: imageSrc,
+        size: options.size || 'M',
+        color: options.color || 'Default',
+        seller: product.brand || 'Printmont Assured',
+        offers: 2,
+        ...options
+      };
+      return [...prev, newItem];
+    });
+  };
+
   const updateQuantity = (id, newQuantity) => {
     if (newQuantity < 1) return;
     setCartItems(items => items.map(item => item.id === id ? { ...item, quantity: newQuantity } : item));
@@ -159,7 +211,7 @@ export const CheckoutProvider = ({ children }) => {
       PRINTMONT_COINS_BALANCE,
       
       // Actions
-      updateQuantity, removeItem, saveForLater, moveToCart,
+      addToCart, updateQuantity, removeItem, saveForLater, moveToCart,
       submitOrder,
       
       // Computed

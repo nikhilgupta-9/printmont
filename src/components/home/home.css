@@ -336,15 +336,109 @@
   width: calc((100% - (var(--home-card-gap, 8px) * 2)) / 3) !important;
   flex-shrink: 0 !important;
 }
-
-@media (min-width: 768px) {
+@media (max-width: 575.98px) {
   .card-grid-item-3col {
-    width: calc((100% - (var(--home-card-gap, 8px) * 3)) / 4) !important;
+    width: calc((100% - (var(--home-card-gap, 8px) * 2)) / 3) !important;
   }
 }
+
+/* ==========================================================================
+   Desktop-Only Layout & Typography Enhancements (Min-Width: 992px)
+   ========================================================================== */
+@media (min-width: 992px) {
+  /* Reduce top and bottom padding around section/column headers (Mobile, Buds, Laptop) */
+  .mosaic-header-container {
+    padding: 4px 8px 2px 8px !important;
+  }
+  
+  .mosaic-header-title {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Standardize product and category item text size on desktop */
+  .product-card-title {
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+    max-height: 2.6em !important;
+  }
+
+  .product-card-discount-text {
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+  }
+
+  .product-card-main-price {
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+  }
+}
+
 
 @media (min-width: 992px) {
   .card-grid-item-3col {
     width: calc((100% - (var(--home-card-gap, 8px) * 5)) / 6) !important;
+  }
+}
+
+/* ==========================================================================
+   Banner Format Designs & Aspect Ratio Utilities
+   ========================================================================== */
+.aspect-square {
+  aspect-ratio: 1 / 1 !important;
+  height: auto !important;
+  object-fit: cover !important;
+}
+
+.aspect-tall {
+  aspect-ratio: 2 / 3 !important;
+  height: auto !important;
+  object-fit: cover !important;
+}
+
+.aspect-wide {
+  aspect-ratio: 3 / 1 !important;
+  height: auto !important;
+  object-fit: cover !important;
+}
+
+.aspect-strip {
+  aspect-ratio: 5 / 1 !important;
+  height: auto !important;
+  max-height: 250px !important;
+  object-fit: cover !important;
+}
+
+/* Format 2: Square + Tall side by side */
+.banner-format-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--home-gap, 10px);
+}
+
+/* Format 4: 2 columns x 3 rows grid */
+.banner-grid-2col-3row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--home-gap, 10px);
+}
+
+/* Format 6: 3 columns x 2 rows grid */
+.banner-grid-3col-2row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--home-gap, 10px);
+}
+
+@media (max-width: 767.98px) {
+  .banner-format-2,
+  .banner-grid-2col-3row {
+    grid-template-columns: 1fr;
+  }
+  .banner-grid-3col-2row {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

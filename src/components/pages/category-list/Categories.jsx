@@ -5,17 +5,17 @@ import { Link } from "react-router-dom";
 import { API_ENDPOINTS, ASSET_URL } from "../../../config/apiEndpoints";
 
 const fallbackCategories = [
-  { id: 1, name: "Offer Zone", slug: "offer-zone", image: "/electro/mobile-1.jpeg" },
-  { id: 2, name: "Categories", slug: "categories", image: "/girl-product-img/subsubcat-104.jpeg" },
-  { id: 3, name: "Categories", slug: "categories", image: "/electro/buds-1.jpeg" },
-  { id: 4, name: "Categories", slug: "categories", image: "/girl-product-img/plant-1.jpeg" },
-  { id: 5, name: "Categorie", slug: "categorie", image: "/women-dress/women-dress-1.jpeg" },
-  { id: 6, name: "Categorie", slug: "categorie", image: "/electro/watch-1.jpeg" },
-  { id: 7, name: "Categorie", slug: "categorie", image: "/section-img/pro12.jpeg" },
-  { id: 8, name: "Categorie", slug: "categorie", image: "/men_shirt/men-shirt-2.jpeg" }
+  { id: 1, name: "Electronics", slug: "electronics", image: "/electro/mobile-1.jpeg" },
+  { id: 2, name: "Men's Wear", slug: "mens-wear", image: "/girl-product-img/subsubcat-104.jpeg" },
+  { id: 3, name: "Earbuds & Audio", slug: "earbuds-audio", image: "/electro/buds-1.jpeg" },
+  { id: 4, name: "Home Decor", slug: "home-decor", image: "/girl-product-img/plant-1.jpeg" },
+  { id: 5, name: "Women's Wear", slug: "womens-wear", image: "/women-dress/women-dress-1.jpeg" },
+  { id: 6, name: "Smart Watches", slug: "smart-watches", image: "/electro/watch-1.jpeg" },
+  { id: 7, name: "Stationery", slug: "stationery", image: "/section-img/pro12.jpeg" },
+  { id: 8, name: "Custom Gifts", slug: "custom-gifts", image: "/men_shirt/men-shirt-2.jpeg" }
 ];
 
-const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky = false, categories }) => {
+const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky = false, categories, limit }) => {
   const [categoriesData, setCategoriesData] = useState(categories || []);
   const [show, setShow] = useState(true);
   const [categoryHeight, setCategoryHeight] = useState(0);
@@ -32,7 +32,8 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
     }
     const fetchCategories = async () => {
       try {
-        const response = await fetch(API_ENDPOINTS.CATEGORIES);
+        const fetchUrl = limit ? `${API_ENDPOINTS.CATEGORIES}?limit=${limit}` : API_ENDPOINTS.CATEGORIES;
+        const response = await fetch(fetchUrl);
         const data = await response.json();
         if (data.success && data.data && data.data.length > 0) {
           setCategoriesData(data.data);
@@ -45,7 +46,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
       }
     };
     fetchCategories();
-  }, [categories]);
+  }, [categories, limit]);
 
   useEffect(() => {
     if (!isSticky) return;
@@ -112,8 +113,10 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
   };
 
   const safeCategories = getArray(categoriesData);
+  const headerVisibleCategories = safeCategories.filter(cat => cat.desktop_menu_status !== 'hide');
+  const displayCategories = limit ? headerVisibleCategories.slice(0, limit) : headerVisibleCategories;
 
-  const mobileCategories = safeCategories.slice(0, 12);
+  const mobileCategories = displayCategories.slice(0, 12);
   const half = Math.ceil(mobileCategories.length / 2);
   const columnsData = [];
   for (let i = 0; i < half; i++) {
@@ -153,6 +156,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                       alt={col.top.name}
                       className="rounded mb-1 border categoires-img-width"
                       style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
+                      onError={(e) => { e.target.src = '/default-img.jpg'; }}
                     />
                   )}
                   <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
@@ -171,6 +175,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                       alt={col.bottom.name}
                       className="rounded mb-1 border categoires-img-width"
                       style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
+                      onError={(e) => { e.target.src = '/default-img.jpg'; }}
                     />
                   )}
                   <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
@@ -186,7 +191,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
       {/* LARGE SCREENS */}
       <div className="d-none d-lg-flex justify-content-center w-100 position-relative text-nowrap small border-2 border border-white" style={{padding:`${space}`, backgroundColor:`${bg}`}} >
         <div className="d-flex justify-content-between w-100 mx-auto px-lg-4 position-relative" style={{ maxWidth: showImages ? '1440px' : '100%' }}>
-          {safeCategories.slice(0, 12).map((item, index) => {
+          {displayCategories.map((item, index) => {
             const itemChildren = getArray(item.children);
             return (
           <div
@@ -209,6 +214,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                 alt={item.name}
                 className="rounded mb-1 categoires-img-width"
                 style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
+                onError={(e) => { e.target.src = '/default-img.jpg'; }}
               />
               )}
               <div className="d-flex justify-content-center align-items-center text-decoration-none text-truncate over">

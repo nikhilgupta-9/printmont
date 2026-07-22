@@ -45,6 +45,7 @@ import AffiliateProgram from "./components/pages/AffiliateProgram";
 import TermsOfUse from "./components/pages/TermsOfUse";
 import BulkOrderPage from "./components/pages/BulkOrderPage";
 import FranchisePage from "./components/pages/FranchisePage";
+import SearchPage from "./pages/SearchPage";
 
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
@@ -73,6 +74,7 @@ function App() {
         <Routes>
           {/* <Route path="/" element={<CheckApi />} /> */}
           <Route path="/" element={<Home />} />
+          <Route path="/search" element={<AllProducts />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/login" element={<Login />} />

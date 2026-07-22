@@ -16,6 +16,9 @@ import {
   BulkOrderWidget
 } from "./index";
 
+import LazySection from "./LazySection";
+import { getSkeletonForType } from "./HomeSkeleton";
+
 import SectionNine from "../pages/sections/SectionNine";
 import { ASSET_URL } from "../../config/apiEndpoints";
 
@@ -42,7 +45,14 @@ import {
   sampleProducts
 } from "../../../data/data";
 
-export default function SectionRenderer({ section, baseURL }) {
+/**
+ * @param {object} props
+ * @param {object} props.section — The layout section object from the API.
+ * @param {string} props.baseURL — The base URL of the API.
+ * @param {boolean} [props.lazyLoad=true] — Whether to wrap in LazySection.
+ * @param {boolean} [props.isMobile=false] — Whether this is a mobile layout.
+ */
+export default function SectionRenderer({ section, baseURL, lazyLoad = true, isMobile = false }) {
   const {
     section_type,
     section_key,
@@ -58,14 +68,9 @@ export default function SectionRenderer({ section, baseURL }) {
   // Build API URLs dynamically if an action is specified
   let productApiUrl = null;
   if (api_action) {
-    if (api_action === "bestseller") {
-      productApiUrl = `${baseURL}api/bestseller-products.php`;
-    } else {
-      productApiUrl = `${baseURL}api/home-product-api.php?action=${api_action}`;
-    }
-    // Append limit if present
+    productApiUrl = `${baseURL}api/products/products.php?action=${api_action}`;
     if (product_limit) {
-      productApiUrl += (productApiUrl.includes("?") ? "&" : "?") + `limit=${product_limit}`;
+      productApiUrl += `&limit=${product_limit}`;
     }
   }
 
@@ -76,6 +81,48 @@ export default function SectionRenderer({ section, baseURL }) {
     small: b.small && !b.small.startsWith("http") ? `${ASSET_URL}${b.small}` : b.small,
   }));
 
+  // Resolve the actual section content
+  const content = renderSectionContent({
+    section_type,
+    section_key,
+    label,
+    columns_per_row,
+    productApiUrl,
+    badge_text,
+    background_image_url,
+    formattedBanners,
+    baseURL,
+  });
+
+  if (!content) return null;
+
+  // Wrap in LazySection if lazyLoad is enabled
+  if (lazyLoad) {
+    const skeleton = getSkeletonForType(section_type, isMobile);
+    return (
+      <LazySection skeleton={skeleton} minHeight="100px">
+        {content}
+      </LazySection>
+    );
+  }
+
+  return content;
+}
+
+/**
+ * Internal helper — renders the actual section content without lazy-loading concerns.
+ */
+function renderSectionContent({
+  section_type,
+  section_key,
+  label,
+  columns_per_row,
+  productApiUrl,
+  badge_text,
+  background_image_url,
+  formattedBanners,
+  baseURL,
+}) {
   // Handle specific section properties and fallbacks
   switch (section_type) {
     case "slider":
@@ -232,6 +279,10 @@ export default function SectionRenderer({ section, baseURL }) {
         mosaicColumns = [{ title: "Best for Health", items: mensFashionItems }];
       }
 
+      if (section_key.includes("grouped_2")) {
+        return null;
+      }
+
       const isGrouped = !section_key.includes("flat");
 
       return (
@@ -239,10 +290,8 @@ export default function SectionRenderer({ section, baseURL }) {
           title={label}
           apiUrl={productApiUrl}
           backgroundImageUrl={background_image_url || (section_key.includes("tableware") ? "./bg/super.png" : undefined)}
-          imageColumn={section_key.includes("grouped_2") ? { imageUrl: "/girl-product-img/girl-1.webp", alt: "Featured Product" } : imageColumn}
           columns={mosaicColumns}
           variant={isGrouped ? "grouped" : "flat"}
-          reverse={section_key.includes("grouped_2")}
         />
       );
 

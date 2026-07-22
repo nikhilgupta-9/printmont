@@ -3,6 +3,8 @@ import useHomeBanners from "../hooks/useHomeBanners";
 import BannerImage from "./BannerImage";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
+import normalizeBanner from "../utils/normalizeBanner";
+
 /**
  * @param {string} [apiUrl] The API endpoint to fetch banners from.
  * @param {Array} [banners] Static banner list.
@@ -16,7 +18,8 @@ export default function ResponsiveHeroCarousel({
   basePath = ""
 }) {
   const { banners: fetchedBanners, loading, error } = useHomeBanners(apiUrl, "home_hero", basePath);
-  const banners = propBanners || fetchedBanners || [];
+  const rawBanners = (fetchedBanners && fetchedBanners.length > 0) ? fetchedBanners : (propBanners || []);
+  const banners = rawBanners.map(b => normalizeBanner(b, basePath)).filter(Boolean);
 
   if (loading && !propBanners) {
     return (

@@ -1,33 +1,26 @@
 import React from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination } from "swiper/modules";
 import useHomeBanners from "../hooks/useHomeBanners";
 import BannerImage from "./BannerImage";
 import "swiper/css";
-import "swiper/css/pagination";
-
-import normalizeBanner from "../utils/normalizeBanner";
 
 /**
- * Mobile-only Hero Slider using Swiper.
+ * Mobile-only 1.5 Peek Image Carousel (shows 1 full image + 50% peek of the next image).
  * @param {string} [apiUrl] The API endpoint to fetch banners from.
  * @param {Array} [banners] Static banners list.
- * @param {string} [basePath=''] Base path for relative image URLs.
+ * @param {string} [sectionKey] Optional section key payload.
  */
-export default function MobileHeroSlider({
+export default function OneAndHalfCarousel({
   apiUrl,
   banners: propBanners,
-  basePath = "",
-  slidesPerView = 1,
-  spaceBetween = 0
+  sectionKey = ""
 }) {
-  const { banners: fetchedBanners, loading, error } = useHomeBanners(apiUrl, "home_hero", basePath);
-  const rawBanners = (fetchedBanners && fetchedBanners.length > 0) ? fetchedBanners : (propBanners || []);
-  const banners = rawBanners.map(b => normalizeBanner(b, basePath)).filter(Boolean);
+  const { banners: fetchedBanners, loading, error } = useHomeBanners(apiUrl, sectionKey);
+  const banners = propBanners || fetchedBanners || [];
 
   if (loading && !propBanners) {
     return (
-      <div className="d-block d-lg-none w-100">
+      <div className="d-block d-md-none w-100 px-2">
         <div className="shimmer-bg skeleton-slider-mobile w-100" />
       </div>
     );
@@ -41,15 +34,17 @@ export default function MobileHeroSlider({
     return null;
   }
 
-  const showPagination = slidesPerView === 1;
-
   return (
-    <div className="d-block d-lg-none w-100 home-banner-section">
+    <div className="d-block d-md-none w-100 home-banner-section px-2">
       <Swiper
-        slidesPerView={slidesPerView}
-        spaceBetween={spaceBetween}
-        pagination={showPagination ? { clickable: true } : false}
-        modules={showPagination ? [Pagination] : []}
+        slidesPerView={1.25}
+        spaceBetween={12}
+        breakpoints={{
+          480: {
+            slidesPerView: 1.5,
+            spaceBetween: 14
+          }
+        }}
         className="mySwiper w-100"
       >
         {banners.map((banner, index) => (

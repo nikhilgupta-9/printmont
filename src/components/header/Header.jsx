@@ -9,17 +9,22 @@ import { IoIosSearch, IoMdNotificationsOutline } from "react-icons/io";
 import { IoSearch } from "react-icons/io5";
 import { BsCart4, BsDownload } from "react-icons/bs";
 import { CiBullhorn } from "react-icons/ci";
-import { FaBell, FaHandshake } from "react-icons/fa";
+import { FaBell, FaHandshake, FaShoppingBag } from "react-icons/fa";
 import { AiOutlineClockCircle, AiOutlineClose } from "react-icons/ai";
 import LoginDropdown from "./LoginDropdown";
 import MobileHeader from "./MobileHeader";
+import SearchBar from "../search/SearchBar";
 import axios from "axios";
 import { RiDownload2Line } from "react-icons/ri";
 import { API_ENDPOINTS, ASSET_URL } from "../../config/apiEndpoints";
 import { useAuth } from "../../context/AuthContext";
+import { useCheckout } from "../../context/CheckoutContext";
 
 const Header = () => {
   const { user, getUsernamePath } = useAuth();
+  const checkoutContext = useCheckout();
+  const cartItems = checkoutContext?.cartItems || [];
+  const cartCount = cartItems.reduce((acc, item) => acc + (item.quantity || 1), 0);
   const usernamePath = getUsernamePath();
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
@@ -101,20 +106,17 @@ const Header = () => {
         const response = await fetch(API_ENDPOINTS.LOGO);
         const data = await response.json();
 
-        if (data.success && data.data.length > 0) {
-          // Find the desktop logo, otherwise fallback to the first active logo
-          let logoData = data.data.find(l => l.asset_type === "desktop_logo" && l.is_active === "1");
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          let logoData = data.data.find(l => (l.asset_type === "desktop_logo" || l.asset_type === "header_logo") && (l.is_active == 1 || l.is_active === "1"));
           if (!logoData) {
-            logoData = data.data.find(l => l.is_active === "1") || data.data[0];
+            logoData = data.data.find(l => l.is_active == 1 || l.is_active === "1") || data.data[0];
           }
 
-          // Ensure path formatting is safe
-          const filePath = logoData.file_path.startsWith('/') ? logoData.file_path.substring(1) : logoData.file_path;
-          const imageFullUrl = `${ASSET_URL}${filePath}${logoData.file_name}`;
-
-          setLogo(imageFullUrl);
-        } else {
-          console.warn("No logo found in response.");
+          if (logoData) {
+            const filePath = logoData.file_path.startsWith('/') ? logoData.file_path.substring(1) : logoData.file_path;
+            const imageFullUrl = `${ASSET_URL}${filePath}${logoData.file_name}`;
+            setLogo(imageFullUrl);
+          }
         }
       } catch (error) {
         console.error("Error fetching logo:", error);
@@ -156,121 +158,20 @@ const Header = () => {
             
             {/* ✅ React Router Link for Logo */}
             <Navbar.Brand as={Link} to="/" className="me-3">
-              {logo ? (
-                <img src={logo} alt="Site Logo" style={{ height: "45px" }} />
-              ) : (
-                <p>Loading...</p>
-              )}
+              <img 
+                src={logo || "/PrintLogo.png"} 
+                alt="PrintMont Logo" 
+                style={{ height: "45px", objectFit: "contain" }} 
+                onError={(e) => { e.target.src = "/PrintLogo.png"; }}
+              />
             </Navbar.Brand>
 
             <Navbar.Toggle aria-controls="main-navbar" />
             <Navbar.Collapse id="main-navbar" className="flex-grow-1 d-flex">
               
               {/* Searchbar */}
-              <div className="nav-searchbar rounded border col-lg-7 me-4" ref={searchRef}>
-                <div className="input-group position-relative">
-                  <input
-                    id="desktop-all-product-search"
-                    type="text"
-                    className="form-control bg-transparent border-0"
-                    placeholder="Search for products, Brands and more"
-                    autoComplete="off"
-                    value={searchQuery}
-                    onFocus={() => setShowSearchDropdown(true)}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <button className="rounded border-0 bg-transparent me-3 mb-1" type="button">
-                    <IoSearch size={20} color="rgb(41, 117, 240)" />
-                  </button>
-
-                  {/* Search Dropdown */}
-                  {showSearchDropdown && (
-                    <div
-                      className="position-absolute bg-white rounded shadow w-100 mt-1"
-                      style={{ maxHeight: "400px", overflowY: "auto", top: "100%", left: 0, zIndex: 1050 }}
-                    >
-                      {searchQuery.trim().length > 0 ? (
-                        isSearching ? (
-                          <div className="p-3 text-center text-muted small">Searching...</div>
-                        ) : searchResults.length > 0 ? (
-                          searchResults.map((item, idx) => {
-                            // Extract image
-                            let imagePath = "/placeholder.jpg";
-                            if (item.images && item.images.length > 0) {
-                              const img = item.images[0].image_path || item.images[0].file_path;
-                              if (img) {
-                                imagePath = `${ASSET_URL}${img.startsWith('/') ? img.substring(1) : img}`;
-                              }
-                            } else if (item.image) {
-                               imagePath = `${ASSET_URL}${item.image.startsWith('/') ? item.image.substring(1) : item.image}`;
-                            } else if (item.thumbnail) {
-                               imagePath = `${ASSET_URL}${item.thumbnail.startsWith('/') ? item.thumbnail.substring(1) : item.thumbnail}`;
-                            }
-
-                            return (
-                              <Link
-                                to={`/product/${item.slug || item.id}`}
-                                key={idx}
-                                className="d-flex align-items-center px-3 py-2 text-decoration-none border-bottom"
-                                style={{ cursor: "pointer", transition: "background 0.2s" }}
-                                onClick={() => {
-                                  setShowSearchDropdown(false);
-                                  selectKeyword(item.name);
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                              >
-                                <div className="flex-shrink-0" style={{ width: "35px", height: "35px" }}>
-                                  <img src={imagePath} alt={item.name} className="w-100 h-100 object-fit-contain" />
-                                </div>
-                                <div className="ms-3 flex-grow-1 text-truncate">
-                                  <div className="text-dark text-truncate" style={{ fontSize: "14px", fontWeight: "400" }}>{item.name}</div>
-                                  {item.category_name && (
-                                    <div className="text-primary" style={{ fontSize: "12px", marginTop: "1px" }}>
-                                      in {item.category_name}
-                                    </div>
-                                  )}
-                                </div>
-                              </Link>
-                            );
-                          })
-                        ) : (
-                          <div className="p-3 text-center text-muted small">No results found for "{searchQuery}"</div>
-                        )
-                      ) : (
-                        /* Recent Searches when empty */
-                        recentSearches.length > 0 && (
-                          <div className="py-2">
-                            {recentSearches.map((item, idx) => (
-                              <div
-                                key={idx}
-                                className="d-flex align-items-center justify-content-between px-3 py-2"
-                                style={{ cursor: "pointer" }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                              >
-                                <div
-                                  className="d-flex align-items-center gap-2 w-100"
-                                  onClick={() => selectKeyword(item)}
-                                >
-                                  <AiOutlineClockCircle className="text-secondary" />
-                                  <span className="text-dark" style={{ fontSize: "14px" }}>{item}</span>
-                                </div>
-                                <AiOutlineClose
-                                  className="text-secondary"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeRecent(idx);
-                                  }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        )
-                      )}
-                    </div>
-                  )}
-                </div>
+              <div className="col-lg-7 me-4">
+                <SearchBar />
               </div>
 
               {/* Nav Links */}
@@ -297,10 +198,12 @@ const Header = () => {
                     className="d-flex align-items-center gap-3 text-decoration-none text-dark"
                   >
                     <div className="position-relative">
-                      <BsCart4 size={25} color="#007bff" />
-                      <div className="notify-mes">
-                        <span className="notify-num">4</span>
-                      </div>
+                      <FaShoppingBag size={22} color="#007bff" />
+                      {cartCount > 0 && (
+                        <div className="notify-mes">
+                          <span className="notify-num">{cartCount}</span>
+                        </div>
+                      )}
                     </div>
                     <span className="fs-7">Cart</span>
                   </Link>

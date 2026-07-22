@@ -6,7 +6,8 @@ import {
   ResponsiveHeroCarousel,
   ProductCarousel,
   MultiColumnBannerCarousel,
-  ResponsiveBannerSet
+  ResponsiveBannerSet,
+  MobileProductList
 } from "../../home";
 import TwoImgCarousel   from "../carousel/TwoImgCarousel";
 import BannerSmall      from "../sections/BannerSmall";
@@ -115,6 +116,47 @@ const MobileQuickLinks = ({ links }) => (
   </div>
 );
 
+const CategoryInfoTextField = ({ initialText }) => {
+  const [text, setText] = React.useState(
+    initialText ||
+    "Discover our premium selection of custom printed apparel, corporate merchandise, and high-quality clothing. We use state-of-the-art sublimation and embroidery techniques to deliver vibrant, durable prints tailored for your business or personal needs."
+  );
+  const [isEditing, setIsEditing] = React.useState(false);
+
+  return (
+    <div className="mob-section-gap px-3 pb-4">
+      <div className="bg-light p-3 border rounded shadow-sm">
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <h4 className="fw-bold m-0" style={{ color: "#0b53a1", fontSize: "16px" }}>
+            Category Information Text
+          </h4>
+          <button
+            onClick={() => setIsEditing(!isEditing)}
+            className="btn btn-sm btn-outline-primary py-0 px-2"
+            style={{ fontSize: "12px" }}
+          >
+            {isEditing ? "Save" : "Edit Info"}
+          </button>
+        </div>
+        
+        {isEditing ? (
+          <textarea
+            className="form-control form-control-sm"
+            rows="4"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            style={{ fontSize: "13px" }}
+          />
+        ) : (
+          <p className="text-muted mb-0" style={{ fontSize: "13px", lineHeight: "1.6", whiteSpace: "pre-line" }}>
+            {text}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const CategoryPage = () => {
   return (
     <div className="category-page">
@@ -125,7 +167,7 @@ const CategoryPage = () => {
 
           {/* 2. Small Banner (First 2 images) */}
           <div className="cp-card-section">
-            <BannerSmall apiUrl={`${BASE_URL}api/banner_api.php`} sliceStart={0} sliceEnd={2} />
+            <BannerSmall apiUrl={`${BASE_URL}api/banners/banners.php`} sliceStart={0} sliceEnd={2} />
           </div>
 
           {/* 3. ── BIG BANNER — Before / After comparison slider ── */}
@@ -141,7 +183,7 @@ const CategoryPage = () => {
 
           {/* 4. Small Banner (Next 2 images) */}
           <div className="cp-card-section">
-            <BannerSmall apiUrl={`${BASE_URL}api/banner_api.php`} sliceStart={2} sliceEnd={4} />
+            <BannerSmall apiUrl={`${BASE_URL}api/banners/banners.php`} sliceStart={2} sliceEnd={4} />
           </div>
 
           {/* 4.5. Categories Grid Section */}
@@ -153,7 +195,7 @@ const CategoryPage = () => {
           {/* 5. New Arrivals — ProductCarousel */}
           <div className="cp-card-section">
             <ProductCarousel
-              apiUrl={`${BASE_URL}api/home-product-api.php?action=top_selection`}
+              apiUrl={`${BASE_URL}api/products/products.php?action=top_selection`}
               title="New Arrivals"
               badgeText="NEW ARRIVAL"
             />
@@ -163,7 +205,7 @@ const CategoryPage = () => {
           {/* 5. Main Slider */}
           <div className="cp-card-section">
             <ResponsiveHeroCarousel
-              apiUrl={`${BASE_URL}api/banner_api.php`}
+              apiUrl={`${BASE_URL}api/banners/banners.php`}
               basePath={`${BASE_URL}uploads/banners/`}
               carouselId="catSmallCarousel"
             />
@@ -173,7 +215,7 @@ const CategoryPage = () => {
           {/* 6. Best Sellers — ProductCarousel */}
           <div className="cp-card-section">
             <ProductCarousel
-              apiUrl={`${BASE_URL}api/home-product-api.php?action=top_deal`}
+              apiUrl={`${BASE_URL}api/products/products.php?action=top_deal`}
               title="Best Sellers"
               badgeText="BEST SELLER"
             />
@@ -183,7 +225,7 @@ const CategoryPage = () => {
 
           {/* 7. ResponsiveBannerSet */}
           <div className="cp-card-section">
-            <ResponsiveBannerSet apiUrl={`${BASE_URL}api/banner_api7.php`} />
+            <ResponsiveBannerSet apiUrl={`${BASE_URL}api/banners/banners.php?section=banner_api7`} />
           </div>
 
           {/* 7.5. Personalized Gifts Section */}
@@ -193,13 +235,13 @@ const CategoryPage = () => {
 
           {/* 7.6. Four Image Banner */}
           <div className="cp-card-section">
-            <MultiColumnBannerCarousel apiUrl={`${BASE_URL}api/banner_api.php`} columns={4} sectionKey="home_mid_section_2" />
+            <MultiColumnBannerCarousel apiUrl={`${BASE_URL}api/banners/banners.php`} columns={4} sectionKey="home_mid_section_2" />
           </div>
 
           {/* Special Offers Carousel */}
           <div className="cp-card-section">
             <ProductCarousel
-              apiUrl={`${BASE_URL}api/home-product-api.php?action=discount_for_you`}
+              apiUrl={`${BASE_URL}api/products/products.php?action=discount_for_you`}
               title="Special Offers"
               badgeText="SPECIAL OFFER"
             />
@@ -223,42 +265,42 @@ const CategoryPage = () => {
       {/* ════ MOBILE LAYOUT (< lg) ════════════════════════════════ */}
       <div className="d-block d-lg-none bg-white w-100 home-mobile-content">
 
-        {/* 1 - Single image carousel */}
+        {/* 1 - Slider */}
         <MobileBannerCarousel
-          apiUrl={`${BASE_URL}api/banner_api.php`}
+          apiUrl={`${BASE_URL}api/banners/banners.php?section=category_slider`}
           type="single"
         />
 
-        {/* 2 - Double image carousel */}
+        {/* 2 - Banner carousel (Double image side-by-side) */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banner_api.php`}
+            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_double`}
             type="double"
           />
         </div>
 
-        {/* 3 - Single image carousel */}
+        {/* 3 - Banner and slider */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banner_api.php`}
+            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_banner_slider`}
             type="single"
           />
         </div>
 
-        {/* 4 - Best Sellers product carousel */}
+        {/* 4 - Best Seller (Carousel) */}
         <div className="mob-section-gap">
           <ProductCarousel
-            apiUrl={`${BASE_URL}api/home-product-api.php?action=top_deal`}
-            title="Best Sellers"
+            apiUrl={`${BASE_URL}api/products/products.php?action=bestseller`}
+            title="Best Seller (Carousel)"
             badgeText="BEST SELLER"
           />
         </div>
 
-        {/* 5 - Double image carousel */}
+        {/* 5 - Banner and slider (Sider banner) */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banner_api.php`}
-            type="double"
+            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_banner_slider_2`}
+            type="single"
           />
         </div>
 
@@ -271,15 +313,23 @@ const CategoryPage = () => {
           />
         </div>
 
-        {/* 7 - Single image carousel */}
+        {/* 7 - Banner carousel (Double image side-by-side) */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banner_api.php`}
-            type="single"
+            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_double_2`}
+            type="double"
           />
         </div>
 
-        {/* 8 - Offer Zone Men */}
+        {/* 8 - Product List Men */}
+        <div className="mob-section-gap">
+          <MobileProductList
+            apiUrl={`${BASE_URL}api/products/products.php?action=men`}
+            products={menOfferProducts}
+          />
+        </div>
+
+        {/* 8b - Offer Zone Men */}
         <div className="mob-section-gap">
           <MobileOfferZone
             badge="Offer Zone Activated"
@@ -288,11 +338,11 @@ const CategoryPage = () => {
           />
         </div>
 
-        {/* 9 - Double image carousel */}
+        {/* 9 - Banner and slider */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banner_api7.php`}
-            type="double"
+            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_banner_slider_3`}
+            type="single"
           />
         </div>
 
@@ -305,28 +355,28 @@ const CategoryPage = () => {
           />
         </div>
 
-        {/* 11 - Single image carousel */}
+        {/* 11 - Banner carousel (Double image side-by-side) */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banner_api.php`}
-            type="single"
+            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_double_3`}
+            type="double"
           />
         </div>
 
         {/* 12 - Offer Zone Women */}
         <div className="mob-section-gap">
           <MobileOfferZone
-            badge="Women's Offer Zone"
-            title="Exclusive Deals for Her"
+            badge="Offer Zone Activated"
+            title="Top Discounts on Top Styless"
             products={womenOfferProducts}
           />
         </div>
 
-        {/* 13 - Double image carousel */}
+        {/* 13 - Banner and slider */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banner_api6.php`}
-            type="double"
+            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_banner_slider_4`}
+            type="single"
           />
         </div>
 
@@ -339,11 +389,11 @@ const CategoryPage = () => {
           />
         </div>
 
-        {/* 15 - Single image carousel */}
+        {/* 15 - Banner carousel (Double image side-by-side) */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banner_api.php`}
-            type="single"
+            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_double_4`}
+            type="double"
           />
         </div>
 
@@ -356,45 +406,54 @@ const CategoryPage = () => {
           />
         </div>
 
-        {/* 17 - Double image carousel */}
+        {/* 17 - Banner and slider */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banner_api.php`}
-            type="double"
-          />
-        </div>
-
-        {/* 18 - Kids product carousel */}
-        <div className="mob-section-gap">
-          <ProductCarousel
-            apiUrl={`${BASE_URL}api/home-product-api.php?action=top_selection`}
-            title="Kids"
-            badgeText="NEW ARRIVAL"
-          />
-        </div>
-
-        {/* 18b - Single image carousel after Kids */}
-        <div className="mob-section-gap">
-          <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banner_api.php`}
+            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_banner_slider_5`}
             type="single"
           />
         </div>
 
-        {/* 19 - Double image carousel */}
+        {/* 18 - Kids 3-col grid */}
+        <div className="mob-section-gap">
+          <MobileCategoryGrid
+            title="Kids"
+            items={categoriesData.slice(0, 6)}
+            maxItems={6}
+          />
+        </div>
+
+        {/* 18b - Banner carousel (Double image side-by-side) */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banner_api7.php`}
+            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_double_5`}
             type="double"
           />
         </div>
 
-        {/* 20 - Special Offers product carousel */}
+        {/* 19 - Offer Zone Kids */}
+        <div className="mob-section-gap">
+          <MobileOfferZone
+            badge="Offer Zone Activated"
+            title="Top Discounts on Top Styless"
+            products={kidsOfferProducts}
+          />
+        </div>
+
+        {/* 19b - Product List Kids */}
+        <div className="mob-section-gap">
+          <MobileProductList
+            apiUrl={`${BASE_URL}api/products/products.php?action=kids`}
+            products={kidsOfferProducts}
+          />
+        </div>
+
+        {/* 20 - Kids product carousel */}
         <div className="mob-section-gap">
           <ProductCarousel
-            apiUrl={`${BASE_URL}api/home-product-api.php?action=discount_for_you`}
-            title="Special Offers"
-            badgeText="SPECIAL OFFER"
+            apiUrl={`${BASE_URL}api/products/products.php?action=kids`}
+            title="Kids Carousel"
+            badgeText="KIDS SPECIAL"
           />
         </div>
 
@@ -411,6 +470,9 @@ const CategoryPage = () => {
             </div>
           </div>
         </div>
+
+        {/* 22 - Category Information Custom Live Text Field */}
+        <CategoryInfoTextField initialText={categoryPageData.description} />
 
       </div>
     </div>

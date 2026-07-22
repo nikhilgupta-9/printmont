@@ -45,7 +45,7 @@ const CartProductCard = ({ item, isSavedForLater = false }) => {
             {/* Seller & Assured */}
             <div className="d-flex align-items-center gap-2 mb-3">
               <span className="text-muted small" style={{ fontSize: '13px' }}>Saller : {item.seller || 'name here'}</span>
-              <img src="/Asured.png" height="20" alt="PM Secured" />
+              <img src="/Asured.png" height="32" alt="PM Secured" style={{ objectFit: 'contain' }} />
             </div>
 
             {/* Desktop Action Buttons & Badge (Inline) */}
@@ -103,7 +103,7 @@ const CartProductCard = ({ item, isSavedForLater = false }) => {
               <div className="d-flex align-items-center gap-1 mb-1">
                 <span className="text-success" style={{fontSize: '12px', letterSpacing: '1px'}}>★★★★★</span>
                 <span className="text-secondary" style={{fontSize: '11px'}}>18 Reviews</span>
-                <img src="/Asured.png" height="12" alt="PM Secured" className="ms-1" />
+                <img src="/Asured.png" height="28" alt="PM Secured" className="ms-1" style={{ objectFit: 'contain' }} />
               </div>
 
               <div className="d-flex align-items-center flex-wrap gap-2 mb-1 mt-1">

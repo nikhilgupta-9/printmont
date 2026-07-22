@@ -27,20 +27,22 @@
 }
 
 /* ── Double slide ── */
-.mbc-swiper--double .mbc-slide--double {
-  display: flex;
-  gap: 6px;
-  padding: 0 6px;
+.mbc-swiper--double {
+  padding: 0;
+}
+.mbc-slide--double-peek {
+  width: auto;
+  border-radius: 8px;
+  overflow: hidden;
 }
 .mbc-double-img-wrap {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
   overflow: hidden;
   border-radius: 8px;
 }
 .mbc-swiper--double .mbc-img {
   height: var(--banner-h-mobile, 180px);
-  border-radius: 0;
+  border-radius: 8px;
 }
 
 /* ── Swiper pagination dots ── */

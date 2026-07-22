@@ -78,7 +78,7 @@ const Cart = () => {
                                     <div className="d-flex align-items-center justify-content-center text-white" style={{ width: '16px', height: '16px', backgroundColor: '#0084ff', borderRadius: '3px' }}>
                                       <span style={{lineHeight: 0, marginTop: '-2px'}}>-</span>
                                     </div>
-                                    <span className="text-dark">6/4 items selected</span>
+                                    <span className="text-dark">{cartItems.length} items selected</span>
                                 </div>
 
                                 {/* Desktop Top Bar -> Responsive Top Bar */}
@@ -90,15 +90,26 @@ const Cart = () => {
 
                                 {/* Cart Product List */}
                                 <div className="cart-products-list">
-                                    {cartItems.map(item => (
-                                        <CartProductCard 
-                                            key={item.id} 
-                                            item={item} 
-                                        />
-                                    ))}
+                                    {cartItems.length === 0 ? (
+                                        <div className="bg-white p-5 text-center my-3 shadow-sm rounded">
+                                            <h5 className="fw-bold text-dark mb-3">Your Cart is Empty</h5>
+                                            <p className="text-muted mb-4">Add products to your cart to see them here.</p>
+                                            <button className="btn btn-primary px-4 py-2 fw-bold" onClick={() => window.location.href = '/allproducts'}>
+                                                CONTINUE SHOPPING
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        cartItems.map(item => (
+                                            <CartProductCard 
+                                                key={item.id} 
+                                                item={item} 
+                                            />
+                                        ))
+                                    )}
                                 </div>
 
                                 {/* Mobile Price Details Section matching the image layout */}
+                                {cartItems.length > 0 && (
                                 <div className="d-md-none mb-4" style={{ backgroundColor: '#e0e0e0' }}>
                                     <div className="px-3 py-2 fw-bold text-uppercase" style={{ color: '#0b53a1', fontSize: '14px' }}>
                                       PRICE DETAILS.
@@ -131,8 +142,10 @@ const Cart = () => {
                                         </div>
                                     </div>
                                 </div>
+                                )}
 
                                 {/* Desktop Inline Place Order */}
+                                {cartItems.length > 0 && (
                                 <div className="d-none d-lg-flex justify-content-end bg-white p-3 mb-4 shadow-sm">
                                     <button 
                                         className="btn btn-theme text-white fw-bold px-5 py-2" 
@@ -142,6 +155,7 @@ const Cart = () => {
                                         PLACE ORDER
                                     </button>
                                 </div>
+                                )}
 
                                 {/* Saved For Later Section */}
                                 {savedItems.length > 0 && (
@@ -257,7 +271,8 @@ const Cart = () => {
 
                     </div>
 
-                    {/* Right Column (Sidebar) */}
+                    {/* Right Column (Sidebar) — Hidden when cart is empty */}
+                    {cartItems.length > 0 && (
                     <div className="col-12 col-lg-3 checkout-sidebar-col order-md-2 d-none d-lg-block">
                         <div className="checkout-sidebar-sticky">
                             
@@ -282,11 +297,13 @@ const Cart = () => {
 
                         </div>
                     </div>
+                    )}
 
                 </div>
             </div>
 
             {/* Mobile Fixed Bottom Bar */}
+            {cartItems.length > 0 && (
             <div className="d-md-none fixed-bottom bg-white border-top shadow-lg z-3">
                 {checkoutStep === 1 && (
                     <button 
@@ -298,6 +315,7 @@ const Cart = () => {
                     </button>
                 )}
             </div>
+            )}
 
             {/* Pincode Modal */}
             <Modal show={show} onHide={() => setShow(false)} size="sm" centered>

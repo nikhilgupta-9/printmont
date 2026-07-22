@@ -1,318 +1,402 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { Accordion, Button, Offcanvas, Pagination, Spinner, Alert } from "react-bootstrap";
+import React, { useState, useEffect, useRef } from "react";
+import { Button, Pagination, Offcanvas, Alert } from "react-bootstrap";
 import { GoSortDesc } from "react-icons/go";
-import { FaFilter } from "react-icons/fa6";
+import { FaFilter, FaTimes } from "react-icons/fa";
+import { Link } from "react-router-dom";
 import ProductCard from "./ProductCard";
 import FilterSidebar from "./FilterSidebar";
-import { API_ENDPOINTS } from "../../config/apiEndpoints";
+import { ProductCardSkeleton, FilterSkeleton } from "./ProductCardSkeleton";
+import useProductFilters from "./useProductFilters";
 import "./Product.css";
 
-// --- PAGINATION CONSTANTS ---
-const PRODUCTS_PER_PAGE = 40; // The required limit
-// --- END PAGINATION CONSTANTS ---
-
-const AllProducts = () => {
-  const [productsData, setProductsData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedFilters, setSelectedFilters] = useState([]);
-  const [priceRange, setPriceRange] = useState({ min: "", max: "" });
-  const [showFilters, setShowFilters] = useState(false);
-  const [currentSort, setCurrentSort] = useState("Popularity");
-  const [showSort, setShowSort] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+// Lazy Item Wrapper using IntersectionObserver
+const LazyProductItem = ({ product }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(API_ENDPOINTS.PRODUCTS);
-        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-        const data = await res.json();
-        
-        const rawProducts = data && data.success && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
-        
-        const formattedProducts = rawProducts.map(p => {
-          let images = ['https://placehold.co/400x550/cccccc/000?text=No+Image'];
-          if (Array.isArray(p.images) && p.images.length > 0) {
-            images = p.images.map(img => img.image_url);
-          } else if (p.img) {
-            images = [p.img];
-          } else if (p.image_url) {
-            images = [p.image_url];
-          }
-          
-          const price = parseFloat(p.price) || 0;
-          const discountedPrice = parseFloat(p.discount_price) || price;
-          const originalPrice = price;
-          const discountPercent = price > 0 && discountedPrice < price 
-            ? Math.round(((price - discountedPrice) / price) * 100) 
-            : 0;
+    const el = ref.current;
+    if (!el) return;
 
-          return {
-            id: p.id || Math.random().toString(),
-            title: p.name || p.title || 'Unknown Product',
-            brand: p.brand || 'Generic',
-            image: images,
-            discountedPrice: discountedPrice,
-            originalPrice: originalPrice,
-            discountPercent: discountPercent,
-            sizes: p.sizes ? (typeof p.sizes === 'string' ? p.sizes.split(',') : p.sizes) : ['S', 'M', 'L'],
-            sponsored: false,
-            assured: p.our_bestseller || false
-          };
-        });
+    if (!("IntersectionObserver" in window)) {
+      setIsVisible(true);
+      return;
+    }
 
-        setProductsData(formattedProducts);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(el);
+        }
+      },
+      { rootMargin: "200px 0px" }
+    );
+
+    observer.observe(el);
+    return () => {
+      if (el) observer.unobserve(el);
     };
-    fetchProducts();
   }, []);
 
-  const handleCloseSort = () => setShowSort(false);
-  const handleShowSort = () => setShowSort(true);
+  return (
+    <div ref={ref} className="col-6 col-md-4 col-lg-3 d-flex flex-column mb-3">
+      {isVisible ? <ProductCard product={product} /> : <ProductCardSkeleton />}
+    </div>
+  );
+};
 
-  // --- FILTER HANDLERS (optional if you integrate filtering later) ---
-  const handleClearAll = () => {
-    setSelectedFilters([]);
-    setPriceRange({ min: "", max: "" });
-    setCurrentPage(1);
+const AllProducts = () => {
+  const {
+    products,
+    totalProductsCount,
+    totalPages,
+    currentPage,
+    loading,
+    error,
+    facets,
+    selectedCategory,
+    selectedBrands,
+    selectedSizes,
+    priceMin,
+    priceMax,
+    minDiscount,
+    excludeOutOfStock,
+    currentSort,
+    searchQuery,
+    setCategoryFilter,
+    toggleBrandFilter,
+    toggleSizeFilter,
+    setPriceRangeFilter,
+    setMinDiscountFilter,
+    toggleInStockFilter,
+    setSortOption,
+    setPageNumber,
+    clearAllFilters
+  } = useProductFilters();
+
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const [showMobileSort, setShowMobileSort] = useState(false);
+
+  const sortOptions = [
+    "Popularity",
+    "Price -- Low to High",
+    "Price -- High to Low",
+    "Newest First",
+    "Discount"
+  ];
+
+  // Scroll to top on page change
+  const handlePageChange = (p) => {
+    setPageNumber(p);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSortChange = (sortOption) => {
-    setCurrentSort(sortOption);
-    handleCloseSort();
-    setCurrentPage(1);
-  };
-  // --- END FILTER HANDLERS ---
-
-  // --- SORT + PAGINATION LOGIC ---
-  const { paginatedProducts, totalPages } = useMemo(() => {
-    let sortableProducts = [...productsData];
-
-    // Sorting logic
-    switch (currentSort) {
-      case "Price -- Low to High":
-        sortableProducts.sort((a, b) => a.discountedPrice - b.discountedPrice);
-        break;
-      case "Price -- High to Low":
-        sortableProducts.sort((a, b) => b.discountedPrice - a.discountedPrice);
-        break;
-      case "Newest First":
-        sortableProducts.sort((a, b) => b.id - a.id);
-        break;
-      case "Popularity":
-      default:
-        sortableProducts.sort((a, b) => b.discountPercent - a.discountPercent);
-        break;
-    }
-
-    // Pagination logic
-    const totalCount = sortableProducts.length;
-    const totalPages = Math.ceil(totalCount / PRODUCTS_PER_PAGE);
-    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-    const endIndex = startIndex + PRODUCTS_PER_PAGE;
-    const paginatedProducts = sortableProducts.slice(startIndex, endIndex);
-
-    return { paginatedProducts, totalPages };
-  }, [currentSort, currentPage]);
-
-  // --- PAGINATION UI ---
-  const renderPagination = () => {
-    if (totalPages <= 1) return null;
-
-    const items = [];
-    const MAX_VISIBLE_PAGES = 5;
-    let startPage, endPage;
-
-    if (totalPages <= MAX_VISIBLE_PAGES) {
-      startPage = 1;
-      endPage = totalPages;
-    } else {
-      const half = Math.floor(MAX_VISIBLE_PAGES / 2);
-      if (currentPage <= half) {
-        startPage = 1;
-        endPage = MAX_VISIBLE_PAGES;
-      } else if (currentPage + half >= totalPages) {
-        startPage = totalPages - MAX_VISIBLE_PAGES + 1;
-        endPage = totalPages;
-      } else {
-        startPage = currentPage - half;
-        endPage = currentPage + half;
-      }
-    }
-
-    if (startPage > 1) {
-      items.push(
-        <Pagination.First key="first" onClick={() => setCurrentPage(1)} />
-      );
-      if (startPage > 2) items.push(<Pagination.Ellipsis key="startEllipsis" />);
-    }
-
-    for (let number = startPage; number <= endPage; number++) {
-      items.push(
-        <Pagination.Item
-          key={number}
-          active={number === currentPage}
-          onClick={() => setCurrentPage(number)}
-        >
-          {number}
-        </Pagination.Item>
-      );
-    }
-
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1)
-        items.push(<Pagination.Ellipsis key="endEllipsis" />);
-      items.push(
-        <Pagination.Last
-          key="last"
-          onClick={() => setCurrentPage(totalPages)}
-        />
-      );
-    }
-
-    return (
-      <Pagination className="justify-content-center mt-4 mb-5">
-        <Pagination.Prev
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          disabled={currentPage === 1}
-        />
-        {items}
-        <Pagination.Next
-          onClick={() =>
-            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-          }
-          disabled={currentPage === totalPages}
-        />
-      </Pagination>
-    );
-  };
-  // --- END PAGINATION UI ---
+  // Build list of active filter chips
+  const activeChips = [];
+  if (selectedCategory) {
+    activeChips.push({
+      key: "category",
+      label: `Category: ${selectedCategory}`,
+      onRemove: () => setCategoryFilter("")
+    });
+  }
+  selectedBrands.forEach((b) => {
+    activeChips.push({
+      key: `brand-${b}`,
+      label: b,
+      onRemove: () => toggleBrandFilter(b)
+    });
+  });
+  selectedSizes.forEach((s) => {
+    activeChips.push({
+      key: `size-${s}`,
+      label: `Size: ${s}`,
+      onRemove: () => toggleSizeFilter(s)
+    });
+  });
+  if (priceMin > facets.minPrice || priceMax < facets.maxPrice) {
+    activeChips.push({
+      key: "price",
+      label: `₹${priceMin} - ₹${priceMax}`,
+      onRemove: () => setPriceRangeFilter(facets.minPrice, facets.maxPrice)
+    });
+  }
+  if (minDiscount > 0) {
+    activeChips.push({
+      key: "discount",
+      label: `${minDiscount}%+ Off`,
+      onRemove: () => setMinDiscountFilter(0)
+    });
+  }
+  if (excludeOutOfStock) {
+    activeChips.push({
+      key: "instock",
+      label: "In Stock Only",
+      onRemove: () => toggleInStockFilter()
+    });
+  }
 
   return (
-    <div className="all-products-container p-0 m-0 position-relative mt-0">
-      {/* --- Mobile Header for Filter/Sort --- */}
-      <div className="d-flex justify-content-between align-items-center p-1 d-lg-none bg-white shadow-sm sticky-top">
-        <div className="w-100 d-flex justify-content-evenly align-items-center">
-          <Button
-            size="sm"
-            onClick={handleShowSort}
-            className="d-block d-md-none text-dark bg-transparent border-0 fs-6"
-          >
-            <GoSortDesc size={25} /> Sort
-          </Button>
-          <div className="w-auto bg-secondary d-flex d-md-none">
-            <hr className="rotate-90 w-100 border-1 border" />
-          </div>
-          <Button
-            size="sm"
-            className="text-dark bg-transparent border-0 fs-6"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <FaFilter /> Filter
-          </Button>
+    <div className="ap-page-wrapper bg-light min-vh-100 pb-5">
+      {/* Top Breadcrumb Navigation */}
+      <div className="bg-white border-bottom py-2 px-3">
+        <div className="container-fluid max-width-1400">
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb mb-0 fs-7">
+              <li className="breadcrumb-item">
+                <Link to="/" className="text-decoration-none text-muted">
+                  Home
+                </Link>
+              </li>
+              <li className="breadcrumb-item active fw-semibold text-dark" aria-current="page">
+                {selectedCategory ? selectedCategory : "All Products"}
+              </li>
+            </ol>
+          </nav>
         </div>
       </div>
 
-      {/* --- Main Layout: Sidebar + Products --- */}
-      <div className="d-flex flex-wrap mt-0">
-        {/* ✅ Filter Sidebar */}
-        <div
-          className={`filters-sidebar bg-white border-end p-2${
-            showFilters ? "show" : ""
-          }`}
-        >
-          <FilterSidebar onClose={() => setShowFilters(true)} />
+      {/* Main Layout */}
+      <div className="container-fluid max-width-1400 py-3">
+        {/* Mobile Sticky Bar for Sort & Filter */}
+        <div className="d-flex d-lg-none bg-white shadow-sm rounded mb-3 p-2 sticky-top ap-mobile-bar" style={{ zIndex: 100 }}>
+          <Button
+            variant="light"
+            size="sm"
+            onClick={() => setShowMobileSort(true)}
+            className="flex-fill me-1 border-0 bg-transparent text-dark fw-semibold d-flex align-items-center justify-content-center"
+          >
+            <GoSortDesc size={20} className="me-1" /> Sort
+          </Button>
+          <div className="vr my-1 text-muted" />
+          <Button
+            variant="light"
+            size="sm"
+            onClick={() => setShowMobileFilter(true)}
+            className="flex-fill ms-1 border-0 bg-transparent text-dark fw-semibold d-flex align-items-center justify-content-center"
+          >
+            <FaFilter size={14} className="me-1" /> Filter {activeChips.length ? `(${activeChips.length})` : ""}
+          </Button>
         </div>
 
-        {/* ✅ Product Grid Section */}
-        <div className="products-area flex-grow-1 bg-white p-2">
-          {/* Desktop Sort Buttons */}
-          <div className="d-flex align-items-center mb-3 border-bottom pb-2 d-none d-md-flex">
-            <span className="fw-semibold me-3">Sort By</span>
-            {[
-              "Popularity",
-              "Price -- Low to High",
-              "Price -- High to Low",
-              "Newest First",
-            ].map((sortOption) => (
-              <Button
-                key={sortOption}
-                variant="link"
-                className={`text-decoration-none px-2 py-1 me-2 ${
-                  sortOption === currentSort
-                    ? "text-primary border-bottom border-primary border-2 fw-bold"
-                    : "text-muted"
-                }`}
-                onClick={() => handleSortChange(sortOption)}
-              >
-                {sortOption}
-              </Button>
-            ))}
+        <div className="row g-3">
+          {/* DESKTOP FILTER SIDEBAR */}
+          <div className="col-lg-3 col-xl-2-5 d-none d-lg-block">
+            <div className="bg-white border rounded shadow-sm sticky-top ap-desktop-sidebar">
+              {loading ? (
+                <FilterSkeleton />
+              ) : (
+                <FilterSidebar
+                  facets={facets}
+                  selectedCategory={selectedCategory}
+                  selectedBrands={selectedBrands}
+                  selectedSizes={selectedSizes}
+                  priceMin={priceMin}
+                  priceMax={priceMax}
+                  minDiscount={minDiscount}
+                  excludeOutOfStock={excludeOutOfStock}
+                  onCategoryChange={setCategoryFilter}
+                  onBrandToggle={toggleBrandFilter}
+                  onSizeToggle={toggleSizeFilter}
+                  onPriceChange={setPriceRangeFilter}
+                  onDiscountChange={setMinDiscountFilter}
+                  onInStockToggle={toggleInStockFilter}
+                  onClearAll={clearAllFilters}
+                />
+              )}
+            </div>
           </div>
 
-          {/* Product Cards */}
-          <div className="row g-2">
-            {loading ? (
-              <div className="col-12 text-center p-5">
-                <Spinner animation="border" variant="primary" />
-                <p className="mt-3">Loading products...</p>
-              </div>
-            ) : error ? (
-              <div className="col-12 p-5">
-                <Alert variant="danger">Failed to load products: {error}</Alert>
-              </div>
-            ) : paginatedProducts.length === 0 ? (
-              <div className="col-12 text-center p-5 text-muted">No products found.</div>
-            ) : (
-              paginatedProducts.map((product) => (
-                <div className="col-6 col-md-4 col-lg-3" key={product.id}>
-                  <ProductCard product={product} />
+          {/* PRODUCT LISTING CONTENT AREA */}
+          <div className="col-12 col-lg-9 col-xl-9-5">
+            <div className="bg-white border rounded shadow-sm p-3">
+              {/* DESKTOP HEADER & SORT BAR */}
+              <div className="d-none d-lg-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                <div className="d-flex align-items-baseline">
+                  <h1 className="h5 fw-bold mb-0 me-2 text-dark">
+                    {selectedCategory ? selectedCategory : "All Products"}
+                  </h1>
+                  <span className="text-muted fs-7">
+                    (Showing {totalProductsCount} {totalProductsCount === 1 ? "product" : "products"})
+                  </span>
                 </div>
-              ))
-            )}
-          </div>
 
-          {/* Pagination */}
-          {!loading && !error && renderPagination()}
+                {/* Sort buttons matching Flipkart */}
+                <div className="d-flex align-items-center fs-7">
+                  <span className="fw-semibold me-3 text-muted">Sort By</span>
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      className={`btn btn-link text-decoration-none px-2 py-1 me-1 fs-7 ${
+                        currentSort === option
+                          ? "text-primary border-bottom border-primary border-2 fw-bold"
+                          : "text-dark opacity-75"
+                      }`}
+                      onClick={() => setSortOption(option)}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ACTIVE FILTER CHIPS */}
+              {activeChips.length > 0 && (
+                <div className="d-flex flex-wrap align-items-center gap-2 mb-3 pb-2 border-bottom">
+                  <span className="fs-7 fw-semibold text-muted">Active Filters:</span>
+                  {activeChips.map((chip) => (
+                    <span key={chip.key} className="ap-filter-chip badge bg-light text-dark border d-inline-flex align-items-center p-2 fs-7">
+                      {chip.label}
+                      <button
+                        type="button"
+                        onClick={chip.onRemove}
+                        className="btn-close ms-2 fs-8"
+                        aria-label="Remove"
+                      />
+                    </span>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={clearAllFilters}
+                    className="btn btn-link text-primary text-decoration-none fs-7 p-0 ms-2 fw-semibold"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              )}
+
+              {/* SEARCH QUERY BANNER */}
+              {searchQuery && (
+                <div className="alert alert-info py-2 px-3 fs-7 mb-3 d-flex justify-content-between align-items-center">
+                  <span>Results for <strong>"{searchQuery}"</strong></span>
+                </div>
+              )}
+
+              {/* PRODUCT GRID / STATES */}
+              {loading ? (
+                <div className="row g-2 g-md-3">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                    <div className="col-6 col-md-4 col-lg-3 mb-3" key={i}>
+                      <ProductCardSkeleton />
+                    </div>
+                  ))}
+                </div>
+              ) : error ? (
+                <Alert variant="danger" className="m-3">
+                  Failed to load products: {error}
+                </Alert>
+              ) : products.length === 0 ? (
+                <div className="text-center py-5">
+                  <div className="mb-3">
+                    <FaFilter size={40} className="text-muted opacity-50" />
+                  </div>
+                  <h4 className="h6 fw-bold text-dark">No products found</h4>
+                  <p className="text-muted fs-7 mb-3">Try clearing some filters or searching for something else.</p>
+                  <Button variant="primary" size="sm" onClick={clearAllFilters}>
+                    Clear All Filters
+                  </Button>
+                </div>
+              ) : (
+                <div className="row g-2 g-md-3">
+                  {products.map((p) => (
+                    <LazyProductItem key={p.id} product={p} />
+                  ))}
+                </div>
+              )}
+
+              {/* PAGINATION */}
+              {!loading && !error && totalPages > 1 && (
+                <div className="d-flex justify-content-center mt-4 mb-2">
+                  <Pagination className="ap-pagination">
+                    <Pagination.Prev
+                      disabled={currentPage === 1}
+                      onClick={() => handlePageChange(currentPage - 1)}
+                    />
+                    {Array.from({ length: totalPages }, (_, idx) => idx + 1)
+                      .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                      .map((p, idx, arr) => {
+                        const prev = arr[idx - 1];
+                        return (
+                          <React.Fragment key={p}>
+                            {prev && p - prev > 1 && <Pagination.Ellipsis disabled />}
+                            <Pagination.Item
+                              active={p === currentPage}
+                              onClick={() => handlePageChange(p)}
+                            >
+                              {p}
+                            </Pagination.Item>
+                          </React.Fragment>
+                        );
+                      })}
+                    <Pagination.Next
+                      disabled={currentPage === totalPages}
+                      onClick={() => handlePageChange(currentPage + 1)}
+                    />
+                  </Pagination>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* --- Sort Bottom Sheet (Mobile) --- */}
+      {/* MOBILE FILTER OFFCANVAS DRAWER */}
       <Offcanvas
-        show={showSort}
-        onHide={handleCloseSort}
-        placement="bottom"
-        className="d-md-none"
-        style={{ height: "max-content" }}
+        show={showMobileFilter}
+        onHide={() => setShowMobileFilter(false)}
+        placement="start"
+        className="d-lg-none ap-mobile-offcanvas"
       >
-        <Offcanvas.Header closeButton>
-          <Offcanvas.Title>Sort By</Offcanvas.Title>
+        <Offcanvas.Body className="p-0">
+          <FilterSidebar
+            facets={facets}
+            selectedCategory={selectedCategory}
+            selectedBrands={selectedBrands}
+            selectedSizes={selectedSizes}
+            priceMin={priceMin}
+            priceMax={priceMax}
+            minDiscount={minDiscount}
+            excludeOutOfStock={excludeOutOfStock}
+            onCategoryChange={setCategoryFilter}
+            onBrandToggle={toggleBrandFilter}
+            onSizeToggle={toggleSizeFilter}
+            onPriceChange={setPriceRangeFilter}
+            onDiscountChange={setMinDiscountFilter}
+            onInStockToggle={toggleInStockFilter}
+            onClearAll={clearAllFilters}
+            onCloseMobile={() => setShowMobileFilter(false)}
+          />
+        </Offcanvas.Body>
+      </Offcanvas>
+
+      {/* MOBILE SORT BOTTOM SHEET */}
+      <Offcanvas
+        show={showMobileSort}
+        onHide={() => setShowMobileSort(false)}
+        placement="bottom"
+        className="d-lg-none rounded-top"
+        style={{ height: "auto" }}
+      >
+        <Offcanvas.Header closeButton className="border-bottom py-2 px-3">
+          <Offcanvas.Title className="fs-6 fw-bold">Sort By</Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body className="p-0">
-          {[
-            "Popularity",
-            "Price -- Low to High",
-            "Price -- High to Low",
-            "Newest First",
-          ].map((sortOption) => (
-            <Button
-              key={sortOption}
-              variant="light"
-              className={`w-100 text-start border-bottom rounded-0 py-3 ${
-                sortOption === currentSort
-                  ? "text-primary fw-bold"
-                  : "text-dark"
+          {sortOptions.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              className={`w-100 text-start btn btn-light rounded-0 border-bottom py-3 px-3 fs-7 ${
+                currentSort === opt ? "text-primary fw-bold bg-light" : "text-dark"
               }`}
-              onClick={() => handleSortChange(sortOption)}
+              onClick={() => {
+                setSortOption(opt);
+                setShowMobileSort(false);
+              }}
             >
-              {sortOption}
-            </Button>
+              {opt}
+            </button>
           ))}
         </Offcanvas.Body>
       </Offcanvas>

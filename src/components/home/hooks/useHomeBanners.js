@@ -8,8 +8,30 @@ import normalizeBanner from "../utils/normalizeBanner";
  * @param {string} [basePath] Optional base path prefix for relative image URLs.
  */
 export default function useHomeBanners(apiUrl, sectionKey = "", basePath = "") {
-  const [banners, setBanners] = useState([]);
-  const [loading, setLoading] = useState(!!apiUrl);
+  const cacheKey = `home_banner_cache_${apiUrl}_${sectionKey}`;
+
+  const [banners, setBanners] = useState(() => {
+    if (apiUrl) {
+      try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return [];
+  });
+
+  const [loading, setLoading] = useState(() => {
+    if (!apiUrl) return false;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) return false;
+    } catch (e) {}
+    return true;
+  });
+
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -21,7 +43,10 @@ export default function useHomeBanners(apiUrl, sectionKey = "", basePath = "") {
     let isMounted = true;
     const fetchBanners = async () => {
       try {
-        setLoading(true);
+        // If no cache, set loading true
+        if (!sessionStorage.getItem(cacheKey)) {
+          setLoading(true);
+        }
         const response = await fetch(apiUrl);
         if (!response.ok) {
           throw new Error(`HTTP Error! Status: ${response.status}`);
@@ -61,6 +86,11 @@ export default function useHomeBanners(apiUrl, sectionKey = "", basePath = "") {
         }
 
         const normalized = bannerList.map(item => normalizeBanner(item, basePath)).filter(Boolean);
+        if (normalized.length > 0) {
+          try {
+            sessionStorage.setItem(cacheKey, JSON.stringify(normalized));
+          } catch (e) {}
+        }
         setBanners(normalized);
         setError(null);
       } catch (err) {

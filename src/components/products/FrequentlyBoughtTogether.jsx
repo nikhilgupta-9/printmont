@@ -92,7 +92,7 @@ const FBTListItem = ({ item, isSelected, onToggle }) => {
   );
 };
 
-const FrequentlyBoughtTogether = () => {
+const FrequentlyBoughtTogether = ({ addonIds }) => {
   // 1. Initialize state with IDs of all products
   const [selectedIds, setSelectedIds] = useState(products.map((p) => p.id));
 

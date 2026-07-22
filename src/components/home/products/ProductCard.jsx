@@ -88,7 +88,7 @@ export default function ProductCard({
         
         <div className="product-card-price mb-0 p-0 text-center text-dark d-flex align-items-center justify-content-center gap-1 flex-wrap">
           {product.price !== undefined && product.price !== null && product.price > 0 && (
-            <span className="fw-bold fs-6" style={{ fontSize: '0.8rem' }}>₹{product.price}</span>
+            <span className="fw-bold product-card-main-price" style={{ fontSize: '0.8rem' }}>₹{product.price}</span>
           )}
           {product.originalPrice && product.originalPrice > 0 && (
             <del className="text-muted" style={{ fontSize: "0.6rem" }}>
@@ -96,7 +96,7 @@ export default function ProductCard({
             </del>
           )}
           {product.discount && (
-            <span className="text-success fw-bold" style={{ fontSize: '0.65rem' }}>
+            <span className="text-success fw-bold product-card-discount-text" style={{ fontSize: '0.65rem' }}>
               ({product.discount.includes("off") || product.discount.includes("%") ? product.discount : `${product.discount} off`})
             </span>
           )}

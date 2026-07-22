@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Row, Col, Card, Modal, Form, Spinner, Alert } from 'react-bootstrap';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
+import { useCheckout } from '../../context/CheckoutContext';
 import PageNotFound from '../pageNotFound/PageNotFound';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
@@ -29,7 +31,8 @@ import {
   FaPercentage,
   FaSyncAlt,
   FaSearch,
-  FaQuestionCircle
+  FaQuestionCircle,
+  FaTrash
 } from 'react-icons/fa';
 
 import SliderReact from 'react-slick';
@@ -97,11 +100,19 @@ const ScallopedPercentIcon = ({ color }) => (
 );
 
 const ProductDetails = () => {
+  const navigate = useNavigate();
+  const checkoutContext = useCheckout();
+  const addToCart = checkoutContext?.addToCart;
+  const removeItem = checkoutContext?.removeItem;
+  const cartItems = checkoutContext?.cartItems || [];
+
   const { productSlug } = useParams();
   const idMatch = productSlug ? productSlug.match(/-p(\d+)$/) : null;
-  const productId = idMatch ? idMatch[1] : null;
+  const productId = idMatch ? idMatch[1] : (productSlug && /^\d+$/.test(productSlug) ? productSlug : null);
 
   const [productData, setProductData] = useState(Singleproductdata);
+  const currentProductId = productData?.id || productId || 101;
+  const isInCart = cartItems.some(item => String(item.id) === String(currentProductId));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -110,10 +121,60 @@ const ProductDetails = () => {
   const [useCarousel, setUseCarousel] = useState(window.innerWidth < 992);
   const [startIndex, setStartIndex] = useState(0);
   const maxThumbnails = 4;
+
+  // Cart Success Modal State
+  const [showCartSuccessModal, setShowCartSuccessModal] = useState(false);
+  const [addedCartDetails, setAddedCartDetails] = useState(null);
+
+  // Amazon/Flipkart Image Hover Zoom Lens States
+  const [isZooming, setIsZooming] = useState(false);
+  const [lensPos, setLensPos] = useState({ left: 0, top: 0 });
+  const [zoomBgPos, setZoomBgPos] = useState({ x: 0, y: 0 });
+  const mainImageContainerRef = useRef(null);
+
+  const handleMouseEnterZoom = () => {
+    if (window.innerWidth >= 992) setIsZooming(true);
+  };
+
+  const handleMouseLeaveZoom = () => {
+    setIsZooming(false);
+  };
+
+  const handleMouseMoveZoom = (e) => {
+    if (!mainImageContainerRef.current || window.innerWidth < 992) return;
+    const rect = mainImageContainerRef.current.getBoundingClientRect();
+    const lensWidth = 140;
+    const lensHeight = 140;
+    const zoomRatio = 3;
+    const prevWidth = 520;
+    const prevHeight = 520;
+
+    let lensX = e.clientX - rect.left - lensWidth / 2;
+    let lensY = e.clientY - rect.top - lensHeight / 2;
+
+    // Boundaries
+    if (lensX < 0) lensX = 0;
+    if (lensY < 0) lensY = 0;
+    if (lensX > rect.width - lensWidth) lensX = rect.width - lensWidth;
+    if (lensY > rect.height - lensHeight) lensY = rect.height - lensHeight;
+
+    setLensPos({ left: lensX, top: lensY });
+
+    // Exact pinpoint center of lens
+    const centerX = lensX + lensWidth / 2;
+    const centerY = lensY + lensHeight / 2;
+
+    // Position background so (centerX, centerY) aligns exactly with center of 520x520 preview window
+    const bgX = (prevWidth / 2) - (centerX * zoomRatio);
+    const bgY = (prevHeight / 2) - (centerY * zoomRatio);
+    const bgWidth = rect.width * zoomRatio;
+    const bgHeight = rect.height * zoomRatio;
+
+    setZoomBgPos({ x: bgX, y: bgY, width: bgWidth, height: bgHeight });
+  };
   
   useEffect(() => {
     if (!productId) {
-      // Do not set error here anymore since we will catch it in render
       setLoading(false);
       return;
     }
@@ -151,7 +212,7 @@ const ProductDetails = () => {
         }
 
         const price = parseFloat(p.price) || 1200;
-        const discountPrice = parseFloat(p.discount_price) || 499;
+        const discountPrice = parseFloat(p.discount_price) || price;
         const discountPercent = price > 0 && discountPrice < price 
             ? Math.round(((price - discountPrice) / price) * 100) 
             : 0;
@@ -162,20 +223,58 @@ const ProductDetails = () => {
           title: p.name || p.title || 'Unknown Product',
           images: images,
           originalPrice: price,
-          perPiecePrice: discountPrice,
-          discount: `${discountPercent}% off`,
+          perPiecePrice: discountPrice > 0 ? discountPrice : price,
+          discount: discountPercent > 0 ? `${discountPercent}% off` : 'Best Price',
           description: p.description || Singleproductdata.description,
+          long_description: p.long_description || p.description || Singleproductdata.description,
+          instructions: p.instructions,
+          delivery_info: p.delivery_info,
+          category_name: p.category_name || p.main_category_name || '',
+          brand: p.brand || '',
+          sku: p.sku || '',
+          stock_quantity: p.stock_quantity ?? 50,
+          cod_status: p.cod_status || 'yes',
+          cancel_status: p.cancel_status || 'yes',
+          cancel_type: p.cancel_type || 'hour',
+          cancel_value: p.cancel_value || 24,
+          shipping_method_status: p.shipping_method_status || false,
+          local_shipping_price: p.local_shipping_price || 0,
+          regional_shipping_price: p.regional_shipping_price || 0,
+          national_shipping_price: p.national_shipping_price || 0,
+          regional_shipping_msg: p.regional_shipping_msg || '',
+          national_shipping_msg: p.national_shipping_msg || '',
+          sizes: Array.isArray(p.sizes) ? p.sizes : [],
+          colors: Array.isArray(p.colors) ? p.colors : [],
+          materials: Array.isArray(p.materials) ? p.materials : [],
+          customization_data: Array.isArray(p.customization_data) ? p.customization_data : [],
+          customization_label_status: p.customization_label_status || false,
+          addon_product_ids: Array.isArray(p.addon_product_ids) ? p.addon_product_ids : [],
+          meta_title: p.meta_title || '',
+          meta_description: p.meta_description || '',
+          meta_keywords: p.meta_keywords || '',
         };
 
         setProductData(formatted);
         setActiveImage(images[0]);
+
+        // Dynamic SEO Update
+        document.title = formatted.meta_title || `${formatted.title} - Printmont`;
         
-        // Basic SEO Update
-        document.title = `${formatted.title} - Printmont`;
-        const metaDesc = document.querySelector('meta[name="description"]');
-        if (metaDesc) {
-            metaDesc.setAttribute("content", `Buy ${formatted.title} at Printmont.`);
+        let metaDesc = document.querySelector('meta[name="description"]');
+        if (!metaDesc) {
+          metaDesc = document.createElement('meta');
+          metaDesc.setAttribute('name', 'description');
+          document.head.appendChild(metaDesc);
         }
+        metaDesc.setAttribute('content', formatted.meta_description || `Buy ${formatted.title} at Printmont.`);
+
+        let metaKeywords = document.querySelector('meta[name="keywords"]');
+        if (!metaKeywords) {
+          metaKeywords = document.createElement('meta');
+          metaKeywords.setAttribute('name', 'keywords');
+          document.head.appendChild(metaKeywords);
+        }
+        metaKeywords.setAttribute('content', formatted.meta_keywords || '');
 
       } catch (err) {
         setError(err.message);
@@ -207,6 +306,14 @@ const ProductDetails = () => {
   const [fabricColour, setFabricColour] = useState('White');
   const [frontPrintSize, setFrontPrintSize] = useState('Pocket');
   const [printLocations, setPrintLocations] = useState(['Front']);
+
+  // Category identification helpers
+  const categoryName = (productData.category_name || '').toLowerCase();
+  const isClothing = /cloth|shirt|pant|jeans|apparel|fashion|wear|t-shirt|polo/i.test(categoryName) || (productData.sizes && productData.sizes.length > 0);
+  const isElectronics = /electronic|mobile|laptop|earbuds|headphone|gadget|phone/i.test(categoryName);
+
+  // Single Quantity state for electronics / standard products
+  const [quantity, setQuantity] = useState(1);
 
   // Sizing split up
   const [sizeSplit, setSizeSplit] = useState({
@@ -474,7 +581,14 @@ const ProductDetails = () => {
                       </div>
 
                       {/* Main Big Image */}
-                      <div className="main-image-display-container position-relative flex-grow-1 border rounded bg-light p-3">
+                      <div 
+                        ref={mainImageContainerRef}
+                        className="main-image-display-container position-relative flex-grow-1 border rounded bg-light p-1"
+                        onMouseEnter={handleMouseEnterZoom}
+                        onMouseLeave={handleMouseLeaveZoom}
+                        onMouseMove={handleMouseMoveZoom}
+                        style={{ cursor: isZooming ? 'crosshair' : 'pointer' }}
+                      >
                         <div className="bestseller-badge">Best Seller</div>
                         
                         <div className="floating-actions-wrapper">
@@ -486,12 +600,37 @@ const ProductDetails = () => {
                           </div>
                         </div>
 
-                        <div className="main-image-display d-flex justify-content-center align-items-center" style={{ height: '100%' }}>
+                        {/* Zoom Lens Overlay */}
+                        {isZooming && (
+                          <div 
+                            className="zoom-lens-overlay" 
+                            style={{ 
+                              left: `${lensPos.left}px`, 
+                              top: `${lensPos.top}px`, 
+                              width: '140px', 
+                              height: '140px' 
+                            }} 
+                          />
+                        )}
+
+                        {/* Zoom Result Window */}
+                        {isZooming && (
+                          <div 
+                            className="zoom-result-window" 
+                            style={{ 
+                              backgroundImage: `url("${activeImage}")`,
+                              backgroundPosition: `${zoomBgPos.x}px ${zoomBgPos.y}px`,
+                              backgroundSize: zoomBgPos.width ? `${zoomBgPos.width}px ${zoomBgPos.height}px` : '300% 300%'
+                            }} 
+                          />
+                        )}
+
+                        <div className="main-image-display d-flex justify-content-center align-items-center w-100 h-100">
                           <img
                             src={activeImage}
                             alt="Main Product"
                             className="img-fluid main-img-zoomable"
-                            style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }}
+                            style={{ width: "100%", height: "100%", objectFit: "contain" }}
                           />
                         </div>
                       </div>
@@ -500,12 +639,92 @@ const ProductDetails = () => {
 
                   {/* Add to Cart & Buy Now Buttons (Directly below main gallery) */}
                   <div className="action-buttons-wrapper px-2">
-                    <div className="d-flex w-100 gap-3">
-                      <button className="flex-grow-1 add-to-cart-btn py-3 rounded d-flex align-items-center justify-content-center gap-2 fw-bold">
-                        <FaShoppingCart /> ADD TO CART
-                      </button>
-                      <button className="flex-grow-1 buy-now-btn py-3 rounded d-flex align-items-center justify-content-center gap-2 fw-bold">
-                        <FaBolt /> BUY NOW
+                    <div className="d-flex w-100 gap-2 align-items-stretch">
+                      {isInCart ? (
+                        <button 
+                          className="w-50 remove-from-cart-btn rounded d-flex align-items-center justify-content-center gap-2 fw-bold text-white bg-danger border-0 shadow-sm"
+                          style={{
+                            height: '46px',
+                            fontSize: '12.5px',
+                            letterSpacing: '0.2px',
+                            flex: '1 1 50%',
+                            whiteSpace: 'nowrap'
+                          }}
+                          onClick={() => {
+                            if (removeItem) {
+                              removeItem(currentProductId);
+                              toast.error('Item removed from cart!', {
+                                duration: 2000,
+                                position: 'top-center'
+                              });
+                            }
+                          }}
+                        >
+                          <FaTrash size={13} /> REMOVE FROM CART
+                        </button>
+                      ) : (
+                        <button 
+                          className="w-50 add-to-cart-btn rounded d-flex align-items-center justify-content-center gap-2 fw-bold shadow-sm"
+                          style={{
+                            height: '46px',
+                            fontSize: '12.5px',
+                            letterSpacing: '0.2px',
+                            flex: '1 1 50%',
+                            whiteSpace: 'nowrap'
+                          }}
+                          onClick={() => {
+                            const qty = isClothing ? (totalQty > 0 ? totalQty : 1) : quantity;
+                            if (addToCart) {
+                              addToCart(productData, qty, {
+                                tshirtType,
+                                style,
+                                material,
+                                fabricColour,
+                                uploadedDesign
+                              });
+                              setAddedCartDetails({
+                                title: productData.title,
+                                price: perPiecePrice,
+                                qty: qty,
+                                image: activeImage
+                              });
+                              toast.success('Item added to cart successfully!', {
+                                duration: 2500,
+                                position: 'top-center'
+                              });
+                              setShowCartSuccessModal(true);
+                            } else {
+                              navigate('/cart');
+                            }
+                          }}
+                        >
+                          <FaShoppingCart size={13} /> ADD TO CART
+                        </button>
+                      )}
+                      <button 
+                        className="w-50 buy-now-btn rounded d-flex align-items-center justify-content-center gap-2 fw-bold shadow-sm"
+                        style={{
+                          height: '46px',
+                          fontSize: '12.5px',
+                          letterSpacing: '0.2px',
+                          flex: '1 1 50%',
+                          whiteSpace: 'nowrap'
+                        }}
+                        onClick={() => {
+                          const qty = isClothing ? (totalQty > 0 ? totalQty : 1) : quantity;
+                          if (addToCart) {
+                            addToCart(productData, qty, {
+                              tshirtType,
+                              style,
+                              material,
+                              fabricColour,
+                              uploadedDesign
+                            });
+                          }
+                          navigate('/cart');
+                        }}
+                      >
+                        <FaBolt size={13} /> BUY NOW
                       </button>
                     </div>
                   </div>
@@ -530,8 +749,8 @@ const ProductDetails = () => {
                   <span className="reviews-summary-text text-secondary text-sm">
                     {productData.reviewCount} Reviews
                   </span>
-                  <div className="pm-secured-badge d-flex align-items-center">
-                    <img src="/printmontsecured.png" alt="PM Secured" style={{ height: "22px", objectFit: "contain" }} />
+                  <div className="pm-secured-badge d-flex align-items-center ms-1">
+                    <img src="/printmontsecured.png" alt="PM Secured" style={{ height: "38px", objectFit: "contain" }} />
                   </div>
                 </div>
 
@@ -576,277 +795,263 @@ const ProductDetails = () => {
                   })}
                 </div>
 
-                {/* Filter Dropdowns Grid */}
-                <div className="filter-dropdowns-section mb-4 border-bottom pb-3">
-                  <h5 className="section-subtitle-text fw-bold text-dark mb-3">Customization Options</h5>
-                  
-                  {/* Mobile View: Aligned side-by-side */}
-                  <div className="d-block d-lg-none">
-                    <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
-                      <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Tshirt Type</span>
-                      <select className="form-select custom-dropdown" style={{ width: '65%' }} value={tshirtType} onChange={e => setTshirtType(e.target.value)}>
-                        <option>Round Neck</option>
-                        <option>Polo Collar</option>
-                        <option>V Neck</option>
-                      </select>
-                    </div>
+                {/* Category-Specific Specifications & Customization Block */}
+                {isElectronics ? (
+                  /* Technical Specifications Table for Electronics */
+                  <div className="tech-specs-section mb-4 border-bottom pb-3">
+                    <h5 className="section-subtitle-text fw-bold text-dark mb-3">Technical Specifications</h5>
+                    <table className="tech-specs-table">
+                      <tbody>
+                        <tr>
+                          <td className="spec-label">Brand</td>
+                          <td className="spec-value text-capitalize">{productData.brand || 'Premium Brand'}</td>
+                        </tr>
+                        <tr>
+                          <td className="spec-label">Model / SKU</td>
+                          <td className="spec-value">{productData.sku || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                          <td className="spec-label">Category</td>
+                          <td className="spec-value">{productData.category_name || 'Electronics'}</td>
+                        </tr>
+                        <tr>
+                          <td className="spec-label">Stock Availability</td>
+                          <td className="spec-value text-success fw-bold">
+                            {productData.stock_quantity > 0 ? `In Stock (${productData.stock_quantity} units available)` : 'Out of Stock'}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="spec-label">Cancellation Policy</td>
+                          <td className="spec-value">
+                            {productData.cancel_status === 'yes' 
+                              ? `Free cancellation within ${productData.cancel_value} ${productData.cancel_type === 'hour' ? 'hours' : 'days'} of order placement.` 
+                              : 'Non-cancellable order.'}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="spec-label">Cash on Delivery</td>
+                          <td className="spec-value text-capitalize">
+                            {productData.cod_status === 'yes' ? 'Available' : 'Not Available'}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
 
-                    <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
-                      <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Style</span>
-                      <select className="form-select custom-dropdown" style={{ width: '65%' }} value={style} onChange={e => setStyle(e.target.value)}>
-                        <option>Unisex Round Neck</option>
-                        <option>Regular Fit</option>
-                        <option>Slim Fit</option>
-                      </select>
-                    </div>
-
-                    <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
-                      <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Material / Fabric</span>
-                      <select className="form-select custom-dropdown" style={{ width: '65%' }} value={material} onChange={e => setMaterial(e.target.value)}>
-                        <option>100% Cotton 180gsm</option>
-                        <option>Cotton Blend 200gsm</option>
-                        <option>Polyester 160gsm</option>
-                      </select>
-                    </div>
-
-                    <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
-                      <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Print Type</span>
-                      <select className="form-select custom-dropdown" style={{ width: '65%' }} value={printType} onChange={e => setPrintType(e.target.value)}>
-                        <option>Full Colour Print</option>
-                        <option>Screen Print</option>
-                        <option>Embroidery</option>
-                      </select>
-                    </div>
-
-                    <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
-                      <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Fabric Colour</span>
-                      <select className="form-select custom-dropdown" style={{ width: '65%' }} value={fabricColour} onChange={e => setFabricColour(e.target.value)}>
-                        <option>White</option>
-                        <option>Rust Brown</option>
-                        <option>Black</option>
-                        <option>Navy Blue</option>
-                      </select>
-                    </div>
-
-                    <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
-                      <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Front Print Size</span>
-                      <select className="form-select custom-dropdown" style={{ width: '65%' }} value={frontPrintSize} onChange={e => setFrontPrintSize(e.target.value)}>
-                        <option>Pocket</option>
-                        <option>A4 Size</option>
-                        <option>A3 Size</option>
-                      </select>
-                    </div>
-
-                    <div className="customization-row-mobile d-flex align-items-start justify-content-between mb-3">
-                      <span className="customization-label-mobile fw-bold text-secondary pt-1" style={{ fontSize: '0.82rem', width: '35%' }}>Print Locations</span>
-                      <div style={{ width: '65%' }}>
-                        <div className="d-flex flex-wrap gap-2 mb-2">
-                          {printLocations.map((loc, i) => (
-                            <div key={i} className="location-purple-pill d-flex align-items-center gap-2 bg-purple text-white px-3 py-1 rounded-pill text-sm fw-semibold">
-                              <span>{loc}</span>
-                              <span className="remove-pill-cross" onClick={() => handleRemoveLocation(loc)} style={{ cursor: 'pointer' }}>×</span>
-                            </div>
-                          ))}
-                        </div>
-                        <select className="form-select custom-dropdown w-100" onChange={e => { handleAddLocation(e.target.value); e.target.value = ''; }}>
-                          <option value="">Add Print Location...</option>
-                          <option value="Front">Front</option>
-                          <option value="Back">Back</option>
-                          <option value="Left Sleeve">Left Sleeve</option>
-                          <option value="Right Sleeve">Right Sleeve</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Desktop View */}
-                  <div className="d-none d-lg-block">
-                    <Row className="g-3">
-                      <Col xs={12} sm={6}>
-                        <label className="form-label-text fw-bold text-secondary mb-1">Tshirt Type</label>
-                        <select className="form-select custom-dropdown" value={tshirtType} onChange={e => setTshirtType(e.target.value)}>
-                          <option>Round Neck</option>
-                          <option>Polo Collar</option>
-                          <option>V Neck</option>
-                        </select>
-                      </Col>
-                      <Col xs={12} sm={6}>
-                        <label className="form-label-text fw-bold text-secondary mb-1">Style</label>
-                        <select className="form-select custom-dropdown" value={style} onChange={e => setStyle(e.target.value)}>
-                          <option>Unisex Round Neck</option>
-                          <option>Regular Fit</option>
-                          <option>Slim Fit</option>
-                        </select>
-                      </Col>
-                      <Col xs={12} sm={6}>
-                        <label className="form-label-text fw-bold text-secondary mb-1">Material / Fabric</label>
-                        <select className="form-select custom-dropdown" value={material} onChange={e => setMaterial(e.target.value)}>
-                          <option>100% Cotton 180gsm</option>
-                          <option>Cotton Blend 200gsm</option>
-                          <option>Polyester 160gsm</option>
-                        </select>
-                      </Col>
-                      <Col xs={12} sm={6}>
-                        <label className="form-label-text fw-bold text-secondary mb-1">Print Type</label>
-                        <select className="form-select custom-dropdown" value={printType} onChange={e => setPrintType(e.target.value)}>
-                          <option>Full Colour Print</option>
-                          <option>Screen Print</option>
-                          <option>Embroidery</option>
-                        </select>
-                      </Col>
-                      <Col xs={12} sm={6}>
-                        <label className="form-label-text fw-bold text-secondary mb-1">Fabric Colour</label>
-                        <select className="form-select custom-dropdown" value={fabricColour} onChange={e => setFabricColour(e.target.value)}>
-                          <option>White</option>
-                          <option>Rust Brown</option>
-                          <option>Black</option>
-                          <option>Navy Blue</option>
-                        </select>
-                      </Col>
-                      <Col xs={12} sm={6}>
-                        <label className="form-label-text fw-bold text-secondary mb-1">Front Print Size</label>
-                        <select className="form-select custom-dropdown" value={frontPrintSize} onChange={e => setFrontPrintSize(e.target.value)}>
-                          <option>Pocket</option>
-                          <option>A4 Size</option>
-                          <option>A3 Size</option>
-                        </select>
-                      </Col>
-                      <Col xs={12}>
-                        <label className="form-label-text fw-bold text-secondary mb-1">Print Locations</label>
-                        <div className="d-flex flex-wrap gap-2 mb-2">
-                          {printLocations.map((loc, i) => (
-                            <div key={i} className="location-purple-pill d-flex align-items-center gap-2 bg-purple text-white px-3 py-1 rounded-pill text-sm fw-semibold">
-                              <span>{loc}</span>
-                              <span className="remove-pill-cross" onClick={() => handleRemoveLocation(loc)} style={{ cursor: 'pointer' }}>×</span>
-                            </div>
-                          ))}
-                        </div>
-                        <select className="form-select custom-dropdown" onChange={e => { handleAddLocation(e.target.value); e.target.value = ''; }}>
-                          <option value="">Add Print Location...</option>
-                          <option value="Front">Front</option>
-                          <option value="Back">Back</option>
-                          <option value="Left Sleeve">Left Sleeve</option>
-                          <option value="Right Sleeve">Right Sleeve</option>
-                        </select>
-                      </Col>
-                    </Row>
-                  </div>
-                </div>
-
-                {/* Sizing & Quantity split up */}
-                <div className="sizing-splitup-section mb-4 border-bottom pb-3">
-                  <h5 className="section-subtitle-text fw-bold text-dark mb-2">Size split up:</h5>
-                  <div className="d-flex gap-2 justify-content-between mb-3 text-center">
-                    {Object.keys(sizeSplit).map((size) => (
-                      <div key={size} className="size-split-item flex-fill border rounded p-2">
-                        <div className="size-label fw-bold mb-2 text-dark">{size}</div>
-                        <input
-                          type="text"
-                          className="form-control text-center size-input-box py-1 px-1"
-                          value={sizeSplit[size] === 0 || sizeSplit[size] === '' ? '' : sizeSplit[size]}
-                          placeholder="-"
-                          onChange={e => {
-                            const val = e.target.value;
-                            if (val === '' || /^[0-9]*$/.test(val)) {
-                              handleSizeChange(size, val);
-                            }
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="quantity-manual-input d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3 mb-2">
-                    <div className="d-flex align-items-center gap-3">
+                    {/* Quantity Picker for Electronics */}
+                    <div className="quantity-manual-input d-flex align-items-center gap-3 mt-4">
                       <span className="fw-bold text-dark">Quantity:</span>
-                      <input
-                        type="number"
-                        className="form-control fw-bold text-center border-primary"
-                        style={{ width: '100px' }}
-                        value={totalQty}
-                        readOnly
-                      />
+                      <div className="d-flex align-items-center border rounded">
+                        <button 
+                          className="btn btn-sm btn-light border-0 fw-bold px-3 py-1"
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        >-</button>
+                        <span className="fw-bold px-3">{quantity}</span>
+                        <button 
+                          className="btn btn-sm btn-light border-0 fw-bold px-3 py-1"
+                          onClick={() => setQuantity(quantity + 1)}
+                        >+</button>
+                      </div>
                     </div>
-                    <small className="text-secondary text-xs">
-                      Choose a quantity between 1 - 3000 for instant ordering. For higher quantities, you will be allowed to request quotations from Sales Team.
-                    </small>
                   </div>
-                </div>
+                ) : (
+                  /* Customization Options & Sizing for Clothing / Customizable items */
+                  <>
+                    <div className="filter-dropdowns-section mb-4 border-bottom pb-3">
+                      <h5 className="section-subtitle-text fw-bold text-dark mb-3">Customization Options</h5>
+                      
+                      {/* Mobile View */}
+                      <div className="d-block d-lg-none">
+                        {productData.materials.length > 0 && (
+                          <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
+                            <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Material</span>
+                            <select className="form-select custom-dropdown" style={{ width: '65%' }} value={material} onChange={e => setMaterial(e.target.value)}>
+                              {productData.materials.map((m, i) => <option key={i}>{m}</option>)}
+                            </select>
+                          </div>
+                        )}
+
+                        {productData.colors.length > 0 && (
+                          <div className="customization-row-mobile d-flex align-items-center justify-content-between mb-3">
+                            <span className="customization-label-mobile fw-bold text-secondary" style={{ fontSize: '0.82rem', width: '35%' }}>Fabric Colour</span>
+                            <select className="form-select custom-dropdown" style={{ width: '65%' }} value={fabricColour} onChange={e => setFabricColour(e.target.value)}>
+                              {productData.colors.map((c, i) => <option key={i}>{c}</option>)}
+                            </select>
+                          </div>
+                        )}
+
+                        <div className="customization-row-mobile d-flex align-items-start justify-content-between mb-3">
+                          <span className="customization-label-mobile fw-bold text-secondary pt-1" style={{ fontSize: '0.82rem', width: '35%' }}>Print Locations</span>
+                          <div style={{ width: '65%' }}>
+                            <div className="d-flex flex-wrap gap-2 mb-2">
+                              {printLocations.map((loc, i) => (
+                                <div key={i} className="location-purple-pill d-flex align-items-center gap-2 bg-purple text-white px-3 py-1 rounded-pill text-sm fw-semibold">
+                                  <span>{loc}</span>
+                                  <span className="remove-pill-cross" onClick={() => handleRemoveLocation(loc)} style={{ cursor: 'pointer' }}>×</span>
+                                </div>
+                              ))}
+                            </div>
+                            <select className="form-select custom-dropdown w-100" onChange={e => { handleAddLocation(e.target.value); e.target.value = ''; }}>
+                              <option value="">Add Print Location...</option>
+                              <option value="Front">Front</option>
+                              <option value="Back">Back</option>
+                              <option value="Left Sleeve">Left Sleeve</option>
+                              <option value="Right Sleeve">Right Sleeve</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Desktop View */}
+                      <div className="d-none d-lg-block">
+                        <Row className="g-3">
+                          {productData.materials.length > 0 && (
+                            <Col xs={12} sm={6}>
+                              <label className="form-label-text fw-bold text-secondary mb-1">Material / Fabric</label>
+                              <select className="form-select custom-dropdown" value={material} onChange={e => setMaterial(e.target.value)}>
+                                {productData.materials.map((m, i) => <option key={i}>{m}</option>)}
+                              </select>
+                            </Col>
+                          )}
+
+                          {productData.colors.length > 0 && (
+                            <Col xs={12} sm={6}>
+                              <label className="form-label-text fw-bold text-secondary mb-1">Fabric Colour</label>
+                              <select className="form-select custom-dropdown" value={fabricColour} onChange={e => setFabricColour(e.target.value)}>
+                                {productData.colors.map((c, i) => <option key={i}>{c}</option>)}
+                              </select>
+                            </Col>
+                          )}
+
+                          <Col xs={12} sm={6}>
+                            <label className="form-label-text fw-bold text-secondary mb-1">Tshirt Type</label>
+                            <select className="form-select custom-dropdown" value={tshirtType} onChange={e => setTshirtType(e.target.value)}>
+                              <option>Round Neck</option>
+                              <option>Polo Collar</option>
+                              <option>V Neck</option>
+                            </select>
+                          </Col>
+
+                          <Col xs={12} sm={6}>
+                            <label className="form-label-text fw-bold text-secondary mb-1">Style</label>
+                            <select className="form-select custom-dropdown" value={style} onChange={e => setStyle(e.target.value)}>
+                              <option>Unisex Regular Fit</option>
+                              <option>Slim Fit</option>
+                              <option>Oversized Fit</option>
+                            </select>
+                          </Col>
+
+                          <Col xs={12}>
+                            <label className="form-label-text fw-bold text-secondary mb-1">Print Locations</label>
+                            <div className="d-flex flex-wrap gap-2 mb-2">
+                              {printLocations.map((loc, i) => (
+                                <div key={i} className="location-purple-pill d-flex align-items-center gap-2 bg-purple text-white px-3 py-1 rounded-pill text-sm fw-semibold">
+                                  <span>{loc}</span>
+                                  <span className="remove-pill-cross" onClick={() => handleRemoveLocation(loc)} style={{ cursor: 'pointer' }}>×</span>
+                                </div>
+                              ))}
+                            </div>
+                            <select className="form-select custom-dropdown" onChange={e => { handleAddLocation(e.target.value); e.target.value = ''; }}>
+                              <option value="">Add Print Location...</option>
+                              <option value="Front">Front</option>
+                              <option value="Back">Back</option>
+                              <option value="Left Sleeve">Left Sleeve</option>
+                              <option value="Right Sleeve">Right Sleeve</option>
+                            </select>
+                          </Col>
+                        </Row>
+                      </div>
+                    </div>
+
+                    {/* Sizing & Quantity split up */}
+                    <div className="sizing-splitup-section mb-4 border-bottom pb-3">
+                      <h5 className="section-subtitle-text fw-bold text-dark mb-2">Size split up:</h5>
+                      <div className="d-flex gap-2 justify-content-between mb-3 text-center">
+                        {(productData.sizes.length > 0 ? productData.sizes : ['S', 'M', 'L', 'XL', 'XXL']).map((size) => (
+                          <div key={size} className="size-split-item flex-fill border rounded p-2">
+                            <div className="size-label fw-bold mb-2 text-dark">{size}</div>
+                            <input
+                              type="text"
+                              className="form-control text-center size-input-box py-1 px-1"
+                              value={sizeSplit[size] === 0 || sizeSplit[size] === undefined || sizeSplit[size] === '' ? '' : sizeSplit[size]}
+                              placeholder="-"
+                              onChange={e => {
+                                const val = e.target.value;
+                                if (val === '' || /^[0-9]*$/.test(val)) {
+                                  handleSizeChange(size, val);
+                                }
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="quantity-manual-input d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3 mb-2">
+                        <div className="d-flex align-items-center gap-3">
+                          <span className="fw-bold text-dark">Quantity:</span>
+                          <input
+                            type="number"
+                            className="form-control fw-bold text-center border-primary"
+                            style={{ width: '100px' }}
+                            value={totalQty > 0 ? totalQty : quantity}
+                            readOnly
+                          />
+                        </div>
+                        <small className="text-secondary text-xs">
+                          Instant ordering up to 3000 units. Bulk orders get discounted pricing.
+                        </small>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Total Price Calculation Summary */}
                 <div className="total-price-summary-box bg-light border p-3 rounded mb-4">
-                  {/* Mobile Layout */}
-                  <div className="d-block d-lg-none">
-                    <div className="d-flex justify-content-between mb-1 fw-bold text-secondary text-xs">
-                      <span>Per piece</span>
-                      <span className="text-dark">₹ {perPiecePrice}.</span>
-                    </div>
-                    <div className="d-flex justify-content-between mb-1 fw-bold text-secondary text-xs">
-                      <span>Quantity</span>
-                      <span className="text-dark">{totalQty}.</span>
-                    </div>
-                    <div className="text-danger fw-semibold mb-2" style={{ fontSize: '0.7rem', lineHeight: '1.2' }}>
-                      (plus qyt price per pcs drop design send you)
-                    </div>
+                  <Row className="align-items-center g-2">
+                    <Col xs={4} className="fw-bold text-secondary">Per piece</Col>
+                    <Col xs={8} className="fw-bold text-dark text-end">₹ {perPiecePrice.toFixed(2)}</Col>
+
+                    <Col xs={4} className="fw-bold text-secondary">Quantity</Col>
+                    <Col xs={8} className="text-end fw-bold text-dark">
+                      {isClothing ? (totalQty > 0 ? totalQty : 1) : quantity} units
+                    </Col>
+
                     {couponApplied && (
-                      <div className="d-flex justify-content-between mb-1 fw-bold text-success text-xs">
-                        <span>Coupon Applied</span>
-                        <span>- ₹ 50.00</span>
-                      </div>
+                      <>
+                        <Col xs={4} className="fw-bold text-success">Coupon Applied</Col>
+                        <Col xs={8} className="fw-bold text-success text-end">- ₹ 50.00</Col>
+                      </>
                     )}
-                    <hr className="my-2" />
-                    <div className="d-flex justify-content-between align-items-center fw-bold text-dark fs-6">
-                      <span>Total</span>
-                      <span className="text-success fs-5">₹ {totalPrice.toFixed(2)}</span>
-                    </div>
-                  </div>
 
-                  {/* Desktop Layout */}
-                  <div className="d-none d-lg-block">
-                    <Row className="align-items-center g-2">
-                      <Col xs={4} className="fw-bold text-secondary">Per piece</Col>
-                      <Col xs={8} className="fw-bold text-dark text-end">₹ {perPiecePrice}.</Col>
-
-                      <Col xs={4} className="fw-bold text-secondary">Quantity</Col>
-                      <Col xs={8} className="text-end">
-                        <span className="fw-bold text-dark">{totalQty}.</span>{' '}
-                        <span className="text-danger fw-semibold text-xs ms-1">(plus qyt price per pcs drop design send you)</span>
-                      </Col>
-
-                      {couponApplied && (
-                        <>
-                          <Col xs={4} className="fw-bold text-success">Coupon Applied</Col>
-                          <Col xs={8} className="fw-bold text-success text-end">- ₹ 50.00</Col>
-                        </>
-                      )}
-
-                      <Col xs={12} className="border-top my-2"></Col>
-                      
-                      <Col xs={4} className="fw-bold text-dark fs-5">Total</Col>
-                      <Col xs={8} className="fw-bold text-success text-end fs-4">₹ {totalPrice.toFixed(2)}</Col>
-                    </Row>
-                  </div>
+                    <Col xs={12} className="border-top my-2"></Col>
+                    
+                    <Col xs={4} className="fw-bold text-dark fs-5">Total</Col>
+                    <Col xs={8} className="fw-bold text-success text-end fs-4">
+                      ₹ {(perPiecePrice * (isClothing ? (totalQty > 0 ? totalQty : 1) : quantity) - (couponApplied ? 50 : 0)).toFixed(2)}
+                    </Col>
+                  </Row>
                 </div>
 
-                {/* Upload & Create Design buttons */}
-                <div className="design-action-buttons d-flex flex-column flex-sm-row gap-3 mb-3">
-                  <input
-                    type="file"
-                    id="design-file-upload"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={handleFileChange}
-                  />
-                  <button
-                    className="btn upload-design-btn flex-fill py-3 d-flex align-items-center justify-content-center gap-2 fw-bold text-white"
-                    onClick={handleUploadClick}
-                  >
-                    <FaUpload /> Upload your design
-                  </button>
-                  <button className="btn create-design-btn flex-fill py-3 d-flex align-items-center justify-content-center gap-2 fw-bold bg-white text-primary border-primary">
-                    <FaEdit /> Create your design
-                  </button>
-                </div>
+                {/* Upload & Create Design buttons for Customizable products */}
+                {isClothing && (
+                  <div className="design-action-buttons d-flex flex-column flex-sm-row gap-3 mb-3">
+                    <input
+                      type="file"
+                      id="design-file-upload"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={handleFileChange}
+                    />
+                    <button
+                      className="btn upload-design-btn flex-fill py-3 d-flex align-items-center justify-content-center gap-2 fw-bold text-white"
+                      onClick={handleUploadClick}
+                    >
+                      <FaUpload /> Upload your design
+                    </button>
+                    <button className="btn create-design-btn flex-fill py-3 d-flex align-items-center justify-content-center gap-2 fw-bold bg-white text-primary border-primary">
+                      <FaEdit /> Create your design
+                    </button>
+                  </div>
+                )}
 
                 {/* Selected design preview thumbnail */}
                 {uploadedDesign && (
@@ -872,7 +1077,7 @@ const ProductDetails = () => {
                 {/* Check Delivery Date */}
                 <div className="check-delivery-box mb-4 border p-3 rounded">
                   <h5 className="fw-bold text-dark mb-2 text-sm d-flex align-items-center gap-2">
-                    <FaMapMarkerAlt className="text-muted" /> Check Delivery Date
+                    <FaMapMarkerAlt className="text-muted" /> Check Delivery Date & Shipping Charges
                   </h5>
                   <div className="input-group">
                     <input
@@ -887,18 +1092,28 @@ const ProductDetails = () => {
                   {pincodeMessage && (
                     <div className="mt-2 text-sm text-primary fw-semibold">{pincodeMessage}</div>
                   )}
+                  {productData.shipping_method_status && (
+                    <div className="mt-2 text-xs text-secondary d-flex flex-wrap gap-3 border-top pt-2">
+                      <span>Local Shipping: <strong>₹{productData.local_shipping_price}</strong></span>
+                      <span>Regional: <strong>₹{productData.regional_shipping_price}</strong></span>
+                      <span>National: <strong>₹{productData.national_shipping_price}</strong></span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Trust Badges */}
-                {/* Desktop Trust Badges */}
+                {/* Real Dynamic Trust Badges */}
                 <div className="trust-badges-row d-none d-lg-flex justify-content-around align-items-center bg-light border py-3 px-2 rounded mb-4 text-center">
                   <div className="trust-badge-item">
                     <FaSyncAlt size="20" className="text-primary mb-1" />
-                    <div className="fw-bold text-xs text-dark">10-Day Return</div>
+                    <div className="fw-bold text-xs text-dark">
+                      {productData.cancel_status === 'yes' ? `${productData.cancel_value} ${productData.cancel_type === 'hour' ? 'Hour' : 'Day'} Cancellation` : 'Non-Refundable'}
+                    </div>
                   </div>
                   <div className="trust-badge-item">
-                    <FaCheckCircle size="20" className="text-success mb-1" />
-                    <div className="fw-bold text-xs text-dark">Cash on Delivery</div>
+                    <FaCheckCircle size="20" className={productData.cod_status === 'yes' ? "text-success mb-1" : "text-muted mb-1"} />
+                    <div className="fw-bold text-xs text-dark">
+                      {productData.cod_status === 'yes' ? 'Cash on Delivery' : 'Prepaid Only'}
+                    </div>
                   </div>
                   <div className="trust-badge-item d-flex flex-column align-items-center">
                     <img src="/Asured.png" alt="PM Assured" style={{ height: "20px", objectFit: "contain", marginBottom: "4px" }} />
@@ -906,13 +1121,15 @@ const ProductDetails = () => {
                   </div>
                 </div>
 
-                {/* Mobile Trust Badges List (matches Figma Layout) */}
+                {/* Mobile Trust Badges List */}
                 <div className="d-block d-lg-none mb-4 bg-white border-top border-bottom py-1">
                   <div className="d-flex align-items-center justify-content-between py-2 border-bottom px-2">
                     <div className="d-flex align-items-center gap-2 text-dark">
                       <FaSyncAlt size="16" className="text-secondary" style={{ transform: 'scaleX(-1)' }} />
                       <span className="fw-semibold" style={{ fontSize: '0.85rem' }}>
-                        <span className="text-success fw-bold">FREE Delivery</span> <span className="text-decoration-line-through text-muted" style={{fontSize: '0.8rem'}}>₹40</span> <span className="text-muted">• Delivery by 27 Jul, Saturday</span>
+                        <span className="text-success fw-bold">
+                          {productData.shipping_method_status ? `National Delivery ₹${productData.national_shipping_price}` : 'FREE Delivery'}
+                        </span>
                       </span>
                     </div>
                     <FaChevronRight size={12} className="text-secondary" />
@@ -920,14 +1137,18 @@ const ProductDetails = () => {
                   <div className="d-flex align-items-center justify-content-between py-2 border-bottom px-2">
                     <div className="d-flex align-items-center gap-2 text-dark">
                       <FaSyncAlt size="16" className="text-secondary" />
-                      <span className="fw-semibold" style={{ fontSize: '0.85rem' }}>10 Days Return Policy</span>
+                      <span className="fw-semibold" style={{ fontSize: '0.85rem' }}>
+                        {productData.cancel_status === 'yes' ? `${productData.cancel_value} ${productData.cancel_type === 'hour' ? 'Hour' : 'Day'} Cancellation Policy` : 'Non-refundable'}
+                      </span>
                     </div>
                     <FaChevronRight size={12} className="text-secondary" />
                   </div>
                   <div className="d-flex align-items-center justify-content-between py-2 px-2">
                     <div className="d-flex align-items-center gap-2 text-dark">
-                      <FaCheckCircle size="16" className="text-success" />
-                      <span className="fw-semibold" style={{ fontSize: '0.85rem' }}>Cash on Delivery Available</span>
+                      <FaCheckCircle size="16" className={productData.cod_status === 'yes' ? "text-success" : "text-muted"} />
+                      <span className="fw-semibold" style={{ fontSize: '0.85rem' }}>
+                        {productData.cod_status === 'yes' ? 'Cash on Delivery Available' : 'Cash on Delivery Not Available'}
+                      </span>
                     </div>
                     <FaChevronRight size={12} className="text-secondary" />
                   </div>
@@ -1035,7 +1256,7 @@ const ProductDetails = () => {
           </Col>
         </Row>
 
-        {/* SECTION 4: About the Product (Tabs) */}
+        {/* SECTION 4: About the Product (Dynamic Tabs) */}
         <Row className="p-0 mx-0 my-4 w-100 bg-white rounded border p-3 shadow-sm about-product-section-row">
           <Col xs={12} className="p-0">
             <h4 className="fw-bold text-dark mb-3 px-1" style={{ fontSize: '1.2rem' }}>About the product</h4>
@@ -1065,43 +1286,13 @@ const ProductDetails = () => {
             {/* Tabs Content */}
             <div className="about-product-tab-content py-2 px-1">
               {activeTab === 'description' && (
-                <div>
-                  <p className="text-dark leading-relaxed text-sm mb-3">
-                    Celebrate love and cherished moments with this personalised photo frame, tailored with special images, the couple's names, and a significant date. Perfect for weddings, anniversaries, or any milestone, it's a heartfelt way to honour their journey together. This frame beautifully preserves their memories, adding sentimental value to their home. A meaningful gift, it's ideal for couples who wish to relive their love story each day.
-                  </p>
-                  <h6 className="fw-bold text-dark mb-2 text-sm">Product Details:</h6>
-                  <ul className="text-muted text-sm ps-3" style={{ listStyleType: 'disc' }}>
-                    <li>Personalised photo frame: 1</li>
-                    <li>Material: MDF and wooden</li>
-                    <li>Size: 17.78 × 18.29 cms</li>
-                    <li>Frame stand: 17.78 × 7.62 cms</li>
-                    <li>For personalisation please provide us with 7 images & the couple's name & date (DD MM YYYY)</li>
-                    <li>Net quantity: 1 Unit</li>
-                    <li>Country of origin: India</li>
-                  </ul>
-                </div>
+                <div dangerouslySetInnerHTML={{ __html: productData.long_description || productData.description }} />
               )}
               {activeTab === 'instructions' && (
-                <div className="text-sm text-dark">
-                  <h6 className="fw-bold text-dark mb-2">Wash & Care Instructions:</h6>
-                  <ul className="text-muted ps-3" style={{ listStyleType: 'disc' }}>
-                    <li>Machine wash cold inside out with like colors.</li>
-                    <li>Use only non-chlorine bleach when needed.</li>
-                    <li>Tumble dry low. Do not iron directly on print.</li>
-                    <li>Do not dry clean.</li>
-                  </ul>
-                </div>
+                <div dangerouslySetInnerHTML={{ __html: productData.instructions || '<p>Follow standard product care guidelines.</p>' }} />
               )}
               {activeTab === 'delivery' && (
-                <div className="text-sm text-dark">
-                  <h6 className="fw-bold text-dark mb-2">Delivery Information:</h6>
-                  <p className="text-muted mb-2">All customized products take 2-3 business days in production before shipping.</p>
-                  <ul className="text-muted ps-3" style={{ listStyleType: 'disc' }}>
-                    <li>Metros: Delivery in 3-5 working days.</li>
-                    <li>Other Cities: Delivery in 5-7 working days.</li>
-                    <li>Tracking details will be shared via Email and SMS as soon as the package is dispatched.</li>
-                  </ul>
-                </div>
+                <div dangerouslySetInnerHTML={{ __html: productData.delivery_info || '<p>Standard delivery within 3-5 business days across India.</p>' }} />
               )}
             </div>
 
@@ -1146,6 +1337,13 @@ const ProductDetails = () => {
 
             </div>
 
+          </Col>
+        </Row>
+
+        {/* SECTION 5: Add-on Products / Frequently Bought Together (Flipkart Style) */}
+        <Row className="p-0 mx-0 my-4 w-100">
+          <Col xs={12} className="p-0">
+            <FrequentlyBoughtTogether addonIds={productData.addon_product_ids} />
           </Col>
         </Row>
 
@@ -1374,6 +1572,55 @@ const ProductDetails = () => {
         style={{ display: 'none' }}
         onChange={handleSlotFileChange}
       />
+
+      {/* Add to Cart Success Popup Modal */}
+      <Modal 
+        show={showCartSuccessModal} 
+        onHide={() => setShowCartSuccessModal(false)} 
+        centered
+        size="md"
+        className="cart-success-modal"
+      >
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="w-100 text-center text-success fw-bold fs-5 d-flex align-items-center justify-content-center gap-2">
+            <FaCheckCircle className="fs-4 text-success" /> Item Added to Cart!
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="pt-2 pb-4 px-4 text-center">
+          {addedCartDetails && (
+            <div className="d-flex align-items-center gap-3 p-3 bg-light rounded border mb-4 text-start">
+              <img 
+                src={addedCartDetails.image} 
+                alt={addedCartDetails.title} 
+                style={{ width: '75px', height: '75px', objectFit: 'contain' }}
+                className="rounded border bg-white p-1"
+              />
+              <div className="flex-grow-1 overflow-hidden">
+                <h6 className="fw-bold mb-1 text-dark text-truncate" style={{ maxWidth: '280px' }}>{addedCartDetails.title}</h6>
+                <div className="text-muted small">Quantity: <span className="fw-semibold text-dark">{addedCartDetails.qty}</span></div>
+                <div className="fw-bold text-success fs-6 mt-1">₹{(addedCartDetails.price * addedCartDetails.qty).toLocaleString('en-IN')}</div>
+              </div>
+            </div>
+          )}
+          <div className="d-flex gap-2">
+            <button 
+              className="btn btn-outline-secondary w-50 py-2.5 fw-semibold rounded"
+              onClick={() => setShowCartSuccessModal(false)}
+            >
+              Continue Shopping
+            </button>
+            <button 
+              className="btn btn-primary w-50 py-2.5 fw-bold rounded d-flex align-items-center justify-content-center gap-2"
+              onClick={() => {
+                setShowCartSuccessModal(false);
+                navigate('/cart');
+              }}
+            >
+              <FaShoppingCart /> View Cart & Checkout
+            </button>
+          </div>
+        </Modal.Body>
+      </Modal>
     </div>
   );
 };

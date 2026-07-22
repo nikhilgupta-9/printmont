@@ -3,11 +3,12 @@ import { IoSearchSharp } from "react-icons/io5";
 import { BsArrowLeft, BsXLg } from "react-icons/bs"; // BsXLg is the close icon
 import { GiShoppingCart } from "react-icons/gi";
 import { FaRegCircleUser } from "react-icons/fa6";
-import { FaHeart } from 'react-icons/fa';
+import { FaHeart, FaShoppingBag } from 'react-icons/fa';
 import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Categories from '../pages/category-list/Categories';
+import SearchBar from '../search/SearchBar';
 import { useCheckout } from '../../context/CheckoutContext';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
@@ -20,6 +21,7 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCate
     const { user, logout, getUsernamePath } = useAuth();
     const usernamePath = getUsernamePath();
     const cartItems = checkoutContext ? checkoutContext.cartItems : [];
+    const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
     
     const isProductPage = location.pathname.startsWith('/product');
     const isInfoOrPolicyPage = location.pathname.includes('policy') || 
@@ -45,7 +47,7 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCate
     const [showSearchDropdown, setShowSearchDropdown] = useState(false);
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
-    const [logo, setLogo] = useState(null);
+    const [logo, setLogo] = useState("/PrintLogo.png");
     const headerRef = React.useRef(null);
     const searchRef = React.useRef(null);
 
@@ -54,16 +56,15 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCate
             try {
                 const response = await fetch(API_ENDPOINTS.LOGO);
                 const data = await response.json();
-                if (data.success && data.data.length > 0) {
-                    let logoData = data.data.find(l => l.asset_type === "mobile_logo" && l.is_active === "1");
+                if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+                    let logoData = data.data.find(l => (l.asset_type === "desktop_logo" || l.asset_type === "header_logo") && (l.is_active == 1 || l.is_active === "1"));
                     if (!logoData) {
-                        logoData = data.data.find(l => l.asset_type === "desktop_logo" && l.is_active === "1");
+                        logoData = data.data.find(l => l.is_active == 1 || l.is_active === "1") || data.data[0];
                     }
-                    if (!logoData) {
-                        logoData = data.data.find(l => l.is_active === "1") || data.data[0];
+                    if (logoData) {
+                        const filePath = logoData.file_path.startsWith('/') ? logoData.file_path.substring(1) : logoData.file_path;
+                        setLogo(`${ASSET_URL}${filePath}${logoData.file_name}`);
                     }
-                    const filePath = logoData.file_path.startsWith('/') ? logoData.file_path.substring(1) : logoData.file_path;
-                    setLogo(`${ASSET_URL}${filePath}${logoData.file_name}`);
                 }
             } catch (error) {
                 console.error("Error fetching logo:", error);
@@ -261,21 +262,10 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCate
                         </div>
                         <div className='d-none d-lg-flex align-items-center gap-5 w-100'>
                             <Link to={'/'}>
-                                <img src="/PrintLogo.png" alt="" height={45}/>
+                                <img src={logo || "/PrintLogo.png"} alt="PrintMont Logo" height={45} style={{ objectFit: "contain" }} onError={(e) => { e.target.src = "/PrintLogo.png"; }} />
                             </Link>
-                            <div className='border w-50 rounded light-bg-theme d-flex align-items-center gap-3 px-2 position-relative' ref={searchRef}>
-                                <button className='border-0'>
-                                    <IoSearchSharp size={22} className='' />
-                                </button>
-                                <input 
-                                    type="text" 
-                                    placeholder='Search for products, Brands and more' 
-                                    className='light-bg-theme border-0  w-100 rounded p-1' 
-                                    value={searchTerm}
-                                    onFocus={() => setShowSearchDropdown(true)}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                                {showSearchDropdown && <SearchSuggestions />}
+                            <div className="flex-grow-1 mx-4" style={{ maxWidth: '650px' }}>
+                                <SearchBar />
                             </div>
                         </div>
                     </div>
@@ -306,27 +296,42 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCate
                                         </span>
                                     </Link>
 
-                                    {/* Cart Icon with Badge (count from checkoutContext or fallback to 2 to match Figma) */}
+                                    {/* Cart Icon with Badge */}
                                     <Link to="/cart" className="position-relative text-dark d-flex align-items-center">
-                                        <GiShoppingCart color='white' size={24} />
-                                        <span className="position-absolute rounded-circle bg-white text-primary fw-bold d-flex align-items-center justify-content-center" 
-                                              style={{ 
-                                                  top: '-8px', 
-                                                  right: '-8px', 
-                                                  fontSize: '9px', 
-                                                  width: '15px', 
-                                                  height: '15px', 
-                                                  border: '1px solid rgb(11, 83, 161)' 
-                                              }}>
-                                            {cartItems.length > 0 ? cartItems.length : 2}
-                                        </span>
+                                        <FaShoppingBag color='white' size={22} />
+                                        {cartCount > 0 && (
+                                            <span className="position-absolute rounded-circle bg-danger text-white fw-bold d-flex align-items-center justify-content-center" 
+                                                  style={{ 
+                                                      top: '-8px', 
+                                                      right: '-8px', 
+                                                      fontSize: '9px', 
+                                                      width: '16px', 
+                                                      height: '16px', 
+                                                      border: '1px solid white' 
+                                                  }}>
+                                                {cartCount}
+                                            </span>
+                                        )}
                                     </Link>
                                 </>
                             ) : (
                                 <>
                                     {/* Cart Icon */}
-                                    <Link to="/cart" className="position-relative text-dark">
-                                        <GiShoppingCart color='white' size={25} />
+                                    <Link to="/cart" className="position-relative text-dark d-flex align-items-center">
+                                        <FaShoppingBag color='white' size={22} />
+                                        {cartCount > 0 && (
+                                            <span className="position-absolute rounded-circle bg-danger text-white fw-bold d-flex align-items-center justify-content-center" 
+                                                  style={{ 
+                                                      top: '-8px', 
+                                                      right: '-8px', 
+                                                      fontSize: '9px', 
+                                                      width: '16px', 
+                                                      height: '16px', 
+                                                      border: '1px solid white' 
+                                                  }}>
+                                                {cartCount}
+                                            </span>
+                                        )}
                                     </Link>
 
                                     {/* Login/User Text */}

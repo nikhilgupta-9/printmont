@@ -1,28 +1,73 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GiHamburgerMenu, GiShoppingCart } from "react-icons/gi";
-import { FaRegUser, FaUser, FaBoxOpen, FaWallet, FaPaperPlane, FaStore } from 'react-icons/fa';
+import { GiHamburgerMenu } from "react-icons/gi";
+import { FaRegUser, FaUser, FaBoxOpen, FaWallet, FaPaperPlane, FaStore, FaShoppingBag } from 'react-icons/fa';
 import { CiHeart } from "react-icons/ci";
 import { IoSearchSharp } from "react-icons/io5";
 import { AiOutlineClockCircle, AiOutlineClose } from "react-icons/ai";
 import { Link, useNavigate } from 'react-router-dom';
+import SearchBar from '../search/SearchBar';
 import { API_ENDPOINTS, ASSET_URL } from '../../config/apiEndpoints';
+import { useCheckout } from '../../context/CheckoutContext';
 
 const MobileHeader = () => {
   const navigate = useNavigate();
+  const checkoutContext = useCheckout();
+  const cartItems = checkoutContext?.cartItems || [];
+  const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
   const [dropdowns, setDropdowns] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [recentSearches, setRecentSearches] = useState(["T-Shirt", "Mug", "Notebook"]);
-  const [logo, setLogo] = useState(null);
-
-  // Search API States
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-
-  const searchRef = useRef();
-  const headerRef = useRef();
+  const [logo, setLogo] = useState("/PrintLogo.png");
   const [categoriesData, setCategoriesData] = useState([]);
   const [showAllCategories, setShowAllCategories] = useState(false);
+  const [searchRef] = useState(null);
+  const headerRef = useRef();
+
+  // Measure and set --site-header-height CSS variable for mobile
+  useEffect(() => {
+    if (!headerRef.current) return;
+
+    const updateHeaderHeight = () => {
+      document.documentElement.style.setProperty(
+        "--site-header-height",
+        `${headerRef.current.offsetHeight}px`
+      );
+    };
+
+    updateHeaderHeight();
+    const resizeObserver = new ResizeObserver(updateHeaderHeight);
+    resizeObserver.observe(headerRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const response = await fetch(API_ENDPOINTS.LOGO);
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          let logoData = data.data.find(l => l.asset_type === "mobile_logo" && (l.is_active == 1 || l.is_active === "1"));
+          if (!logoData) {
+            logoData = data.data.find(l => (l.asset_type === "desktop_logo" || l.asset_type === "header_logo") && (l.is_active == 1 || l.is_active === "1"));
+          }
+          if (!logoData) {
+            logoData = data.data.find(l => l.is_active == 1 || l.is_active === "1") || data.data[0];
+          }
+          if (logoData) {
+            const filePath = logoData.file_path.startsWith('/') ? logoData.file_path.substring(1) : logoData.file_path;
+            setLogo(`${ASSET_URL}${filePath}${logoData.file_name}`);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching mobile logo:", error);
+      }
+    };
+    fetchLogo();
+  }, []);
 
   // Fetch Categories for Sidebar
   useEffect(() => {
@@ -97,7 +142,7 @@ const MobileHeader = () => {
               <GiHamburgerMenu size={24} />
             </button>
             <Link to="/">
-              <img src="/PrintLogo.png" alt="Printmont Logo" style={{ height: "30px", objectFit: "contain" }} />
+              <img src={logo || "/PrintLogo.png"} alt="Printmont Logo" style={{ height: "30px", objectFit: "contain" }} onError={(e) => { e.target.src = "/PrintLogo.png"; }} />
             </Link>
           </div>
 
@@ -106,8 +151,21 @@ const MobileHeader = () => {
               <CiHeart size={25} color="#007bff" />
             </Link>
 
-            <Link to="/cart" className="position-relative">
-              <GiShoppingCart size={25} color="#007bff" />
+            <Link to="/cart" className="position-relative d-flex align-items-center">
+              <FaShoppingBag size={22} color="#007bff" />
+              {cartCount > 0 && (
+                <span className="position-absolute rounded-circle bg-danger text-white fw-bold d-flex align-items-center justify-content-center"
+                      style={{
+                        top: '-6px',
+                        right: '-8px',
+                        fontSize: '9px',
+                        width: '16px',
+                        height: '16px',
+                        border: '1px solid white'
+                      }}>
+                  {cartCount}
+                </span>
+              )}
             </Link>
 
             <Link to="/login" className="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold">
@@ -117,47 +175,8 @@ const MobileHeader = () => {
         </div>
 
         {/* === SEARCHBAR === */}
-        <div className="navbar-search border-top px-3 py-2 position-relative d-flex align-items-center gap-2" ref={searchRef} style={{ zIndex: "4" }}>
-          <IoSearchSharp className="fs-4 text-primary" />
-          <input
-            id="mobile-all-product-search"
-            type="text"
-            className="form-control ms-2"
-            placeholder="Search..."
-            autoComplete="off"
-            value={searchQuery}
-            onFocus={() => setShowSearchDropdown(true)}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-
-          {showSearchDropdown && (
-            <div
-              className="position-absolute bg-white border rounded shadow w-100 mt-2 z-10"
-              style={{ maxHeight: '400px', overflowY: 'auto', top: '45px', left: 0 }}
-            >
-              {recentSearches.length > 0 && (
-                <div className="py-2">
-                  {recentSearches.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="d-flex align-items-center justify-content-between px-3 py-2"
-                      style={{ cursor: "pointer" }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                    >
-                      <div
-                        className="d-flex align-items-center gap-2 w-100"
-                        onClick={() => selectKeyword(item)}
-                      >
-                        <AiOutlineClockCircle className="text-secondary" />
-                        <span className="text-dark" style={{ fontSize: "14px" }}>{item}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+        <div className="navbar-search border-top px-3 py-2 position-relative" style={{ zIndex: "4" }}>
+          <SearchBar isMobileOverlay={true} />
         </div>
       </div>
       <div className="site-header-spacer" aria-hidden="true" />

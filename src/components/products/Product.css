@@ -579,8 +579,10 @@ body {
   background-color: #ffffff;
   border-radius: 8px;
   position: relative;
-  overflow: hidden;
+  overflow: visible !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  height: 500px;
+  width: 100%;
 }
 
 .bestseller-badge {
@@ -1101,16 +1103,18 @@ body {
   }
   .product-image-main-mobile {
     width: 100% !important;
-    aspect-ratio: 3 / 4 !important; /* Portrait aspect ratio matching figma */
+    aspect-ratio: 1 / 1 !important;
+    max-height: 420px !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    background-color: #f7f7f7 !important;
+    background-color: #ffffff !important;
+    padding: 6px !important;
   }
   .product-image-mobile-item {
     width: 100% !important;
     height: 100% !important;
-    object-fit: cover !important;
+    object-fit: contain !important;
   }
   .bestseller-badge {
     top: 0 !important;
@@ -1194,3 +1198,441 @@ body {
 .scrollbar-hidden::-webkit-scrollbar {
   display: none !important;  /* Chrome, Safari and Opera */
 }
+
+/* ==========================================================================
+   Amazon / Flipkart Style Image Hover Zoom Lens Styles
+   ========================================================================== */
+.main-image-zoom-container {
+  position: relative;
+  cursor: crosshair;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoom-lens-overlay {
+  position: absolute;
+  border: 1.5px solid #00539f;
+  background-color: rgba(0, 166, 243, 0.3);
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  pointer-events: none;
+  z-index: 100;
+  border-radius: 4px;
+}
+
+.zoom-result-window {
+  position: absolute;
+  top: 0;
+  left: 103%;
+  width: 520px;
+  height: 520px;
+  border: 2px solid #00539f;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+  background-color: #ffffff;
+  background-repeat: no-repeat;
+  z-index: 99999 !important;
+  border-radius: 8px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Technical Specifications Table */
+.tech-specs-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tech-specs-table th,
+.tech-specs-table td {
+  padding: 10px 14px;
+  font-size: 0.85rem;
+}
+
+.tech-specs-table tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.tech-specs-table td.spec-label {
+  color: #6c757d;
+  font-weight: 600;
+  width: 35%;
+  border-right: 1px solid #eee;
+}
+
+.tech-specs-table td.spec-value {
+  color: #212529;
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   FLIPKART STYLE ALL PRODUCTS PAGE REDESIGN (.ap-*)
+   ========================================================================== */
+
+.max-width-1400 {
+  width: 100%;
+  max-width: 100% !important;
+  margin: 0;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.fs-7 {
+  font-size: 0.8rem !important;
+}
+
+.fs-8 {
+  font-size: 0.7rem !important;
+}
+
+/* Grid & Column Custom Utilities */
+@media (min-width: 1200px) {
+  .col-xl-2-5 {
+    flex: 0 0 18%;
+    max-width: 18%;
+  }
+  .col-xl-9-5 {
+    flex: 0 0 82%;
+    max-width: 82%;
+  }
+}
+
+/* --- PRODUCT CARD STYLING (COMPACT BALANCED HEIGHT + FIXED IMAGE + SLIDE UP) --- */
+.ap-product-card-wrapper {
+  position: relative;
+  height: 100%;
+}
+
+.ap-card-container {
+  position: relative;
+  height: 100%;
+  overflow: hidden !important; /* Keeps overall card height fixed and constant */
+  background: #ffffff;
+  border: 1px solid #f0f0f0 !important;
+  border-radius: 4px !important;
+  transition: box-shadow 0.25s ease-in-out, border-color 0.25s ease-in-out;
+}
+
+.ap-product-card-wrapper:hover .ap-card-container {
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.16) !important;
+  border-color: #d6d6d6 !important;
+  z-index: 5;
+}
+
+/* Static Image Container (Slightly taller balanced proportion) */
+.ap-card-img-wrap {
+  width: 100%;
+  aspect-ratio: 3 / 3.4;
+  max-height: 220px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  flex-shrink: 0;
+  transform: none !important; /* 100% fixed position */
+}
+
+.ap-card-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transform: none !important; /* Image does NOT move or scale */
+  transition: none;
+}
+
+/* Bottom Info Section that slides UP on Desktop Hover */
+.ap-card-body-slide {
+  width: 100%;
+  transition: transform 0.28s cubic-bezier(0.25, 1, 0.5, 1);
+  z-index: 2;
+}
+
+@media (min-width: 768px) {
+  /* Slide UP the bottom section on hover over the lower part of fixed image */
+  .ap-product-card-wrapper:hover .ap-card-body-slide {
+    transform: translateY(-24px);
+  }
+}
+
+/* Flipkart Mouse Scrubber Progress Bars */
+.ap-fk-segments-bar {
+  position: absolute;
+  bottom: 4px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  gap: 3px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.ap-fk-segment-line {
+  flex: 1;
+  height: 2px;
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 1px;
+  transition: background-color 0.15s ease;
+}
+
+.ap-fk-segment-line.active {
+  background-color: #2874f0;
+}
+
+/* Flipkart Assured Badge */
+.ap-fk-assured-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-style: italic;
+  font-weight: 800;
+  font-size: 0.62rem;
+  line-height: 1;
+  user-select: none;
+}
+
+.ap-fk-assured-text {
+  color: #000000;
+  font-weight: 900;
+}
+
+.ap-fk-assured-sub {
+  background-color: #ff9f00;
+  color: #ffffff;
+  padding: 1px 3px;
+  border-radius: 2px;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+/* Badges & Overlays */
+.ap-badge-sponsored {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #878787;
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 2px;
+  z-index: 2;
+}
+
+.ap-wishlist-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: transparent;
+  border: none;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c2c2c2;
+  transition: all 0.2s ease;
+  z-index: 5;
+  cursor: pointer;
+}
+
+.ap-wishlist-btn:hover {
+  transform: scale(1.15);
+  color: #ff4343;
+}
+
+.ap-wishlist-btn.active {
+  color: #ff4343;
+}
+
+/* Title & Typography (Compact) */
+.ap-product-title {
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.25;
+  height: 2.5em;
+  color: #212121;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  transition: color 0.15s ease;
+}
+
+.ap-product-card-wrapper:hover .ap-product-title {
+  color: #2874f0 !important; /* Flipkart Official Blue */
+}
+
+.ap-brand-name {
+  font-size: 0.68rem;
+  color: #878787 !important;
+  letter-spacing: 0.2px;
+}
+
+.ap-rating-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background-color: #388e3c !important; /* Flipkart Rating Green */
+  border-radius: 3px !important;
+  padding: 1px 4px !important;
+}
+
+.ap-rating-count {
+  font-size: 0.68rem;
+  color: #878787 !important;
+}
+
+.ap-price-discounted {
+  color: #212121;
+  font-size: 0.88rem !important;
+  font-weight: 700;
+}
+
+.ap-price-original {
+  font-size: 0.72rem;
+  color: #878787 !important;
+}
+
+.ap-discount-percent {
+  font-size: 0.72rem;
+  color: #388e3c !important;
+  font-weight: 700;
+}
+
+.ap-stock-alert {
+  font-size: 0.68rem;
+  color: #e03131;
+  line-height: 1.2;
+}
+
+.ap-hot-deal-tag {
+  font-size: 0.68rem;
+  color: #388e3c;
+  line-height: 1.2;
+}
+
+/* FLIPKART SLIDE-UP REVEAL DETAILS */
+.ap-slideup-details {
+  opacity: 0;
+  transition: opacity 0.2s ease 0.05s;
+}
+
+.ap-product-card-wrapper:hover .ap-slideup-details {
+  opacity: 1;
+}
+
+.ap-fk-sizes-text {
+  font-size: 0.72rem;
+  color: #212121;
+  font-weight: 500;
+}
+
+@media (max-width: 576px) {
+  .ap-card-img-wrap {
+    max-height: 155px;
+  }
+}
+
+/* --- FILTER SIDEBAR STYLES --- */
+.ap-desktop-sidebar {
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  top: 80px;
+}
+
+.ap-filter-scroll-container {
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+}
+
+.ap-cat-item {
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.ap-count {
+  font-size: 0.7rem;
+  color: #878787;
+}
+
+.ap-size-chip {
+  font-size: 0.7rem !important;
+  padding: 2px 8px !important;
+  border-radius: 3px !important;
+}
+
+.ap-filter-chip {
+  background-color: #f1f3f6 !important;
+  border-color: #e0e0e0 !important;
+}
+
+/* --- SKELETON ANIMATIONS & SHIMMER --- */
+@keyframes apShimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.ap-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: apShimmer 1.4s infinite ease-in-out;
+  border-radius: 4px;
+}
+
+.ap-skeleton-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.ap-skeleton-img-box {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+}
+
+.ap-skeleton-line {
+  height: 12px;
+}
+
+.ap-skeleton-line.short {
+  width: 35%;
+}
+
+.ap-skeleton-line.medium {
+  width: 65%;
+}
+
+.ap-skeleton-line.long {
+  width: 90%;
+}
+
+/* --- MOBILE SPECIFIC STYLES --- */
+.ap-mobile-bar {
+  top: 60px;
+}
+
+@media (max-width: 576px) {
+  .ap-product-title {
+    font-size: 0.78rem;
+    height: 2.6em;
+  }
+  .ap-price-discounted {
+    font-size: 0.85rem !important;
+  }
+  .ap-card-img-wrap {
+    padding: 4px;
+  }
+}
+

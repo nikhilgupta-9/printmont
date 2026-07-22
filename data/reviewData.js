@@ -23,6 +23,7 @@ export const initialReviews = [
 ];
 export const productSpecs = ["Camera", "Battery", "Display", "Design"];
 export const Singleproductdata = {
+  id: 101,
   title: 'Xordox Rust Brown Half-Sleeves Knitted Mens Shirt Mens Shirt',
   rating: 5.0,
   reviewCount: '10',

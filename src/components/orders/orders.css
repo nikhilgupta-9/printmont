@@ -138,8 +138,7 @@
 
 @media (max-width: 767.98px) {
     .form-padding-bottom {
-        padding-bottom: 70px !important;
-        position: fixed;
+        padding-bottom: 80px !important;
     }
 }
 

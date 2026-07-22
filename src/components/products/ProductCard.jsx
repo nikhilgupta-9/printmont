@@ -1,248 +1,212 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from "react";
 import { GoHeartFill } from "react-icons/go";
-import { BsShieldCheck } from 'react-icons/bs';
-import { TfiAgenda } from 'react-icons/tfi';
-import './Product.css'
-import { Link } from 'react-router';
+import { FaStar } from "react-icons/fa";
+import { Link } from "react-router-dom";
+import "./Product.css";
 
-// Utility map for displaying sizes
-const SIZES = {
-    'S': 'S', 'M': 'M', 'L': 'L', 'XL': 'XL',
-    28: '28', 30: '30', 32: '32', 34: '34', 36: '36',
-    8: '8', 9: '9', 10: '10', 11: '11', 'XS': 'XS'
+const generateSlug = (name, id) => {
+  if (!name) return `product-p${id || 1}`;
+  const cleanName = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return `/${cleanName}-p${id}`;
 };
 
-const generateSlug = (name) => {
-    return name ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : 'product';
+const formatCurrency = (val) => {
+  return new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 0
+  }).format(val);
 };
 
 const ProductCard = ({ product }) => {
-    const [isWished, setIsWished] = useState(false);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [isHovering, setIsHovering] = useState(false);
-    const intervalRef = useRef(null);
+  const [isWished, setIsWished] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const imgContainerRef = useRef(null);
 
-    // Helper function to format price
-    const formatPrice = (price) => {
-        return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(price).replace('₹', '');
-    };
+  const images = Array.isArray(product.image) && product.image.length > 0
+    ? product.image
+    : Array.isArray(product.images) && product.images.length > 0
+    ? product.images
+    : ["https://placehold.co/400x550/f5f5f5/888888?text=Printmont"];
 
-    const toggleWishlist = (e) => {
-        e.stopPropagation();
-        setIsWished(!isWished);
-    };
+  const toggleWishlist = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsWished((prev) => !prev);
+  };
 
-    // --- HOVER SWIPE LOGIC ---
+  // Flipkart Interactive Mouse-Move Image Scrubber
+  const handleMouseMove = (e) => {
+    if (!imgContainerRef.current || images.length <= 1) return;
+    const rect = imgContainerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+    if (width > 0) {
+      const segmentWidth = width / images.length;
+      const index = Math.min(
+        images.length - 1,
+        Math.max(0, Math.floor(x / segmentWidth))
+      );
+      setCurrentImageIndex(index);
+    }
+  };
 
-    const startSwipe = () => {
-        // 1. Set hovering state
-        setIsHovering(true);
-        if (!product.image || product.image.length <= 1) return;
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        intervalRef.current = setInterval(() => {
-            setCurrentImageIndex(prevIndex =>
-                (prevIndex + 1) % product.image.length
-            );
-        }, 1000);
-    };
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
 
-    const stopSwipe = () => {
-        // Clear the interval
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-        }
-        setIsHovering(false);
-        setCurrentImageIndex(0);
-    };
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setCurrentImageIndex(0);
+  };
 
-    useEffect(() => {
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
-        };
-    }, []);
-    const imageSrc =
-        (product.image && product.image[currentImageIndex]) ||
-        "https://placehold.co/400x550/cccccc/000?text=Image+Missing";
+  const productUrl = generateSlug(product.title || product.name, product.id);
+  const currentImgSrc = images[currentImageIndex] || images[0];
+  const hasDiscount = product.discountPercent > 0;
+  const isAssured = product.assured || product.ourBestseller || product.topRated;
 
-    // --- YOUR ORIGINAL STYLES ---
-    const cardStyle = {
-        border: '1px solid #e0e0e0',
-        borderRadius: '8px',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-        transition: 'box-shadow 0.3s ease-in-out',
-        overflow: 'hidden',
-        position: 'relative',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        cursor: 'pointer',
-    };
+  // Determine stock alert text (like Flipkart's "Only few left")
+  const isLowStock = product.id % 2 === 0;
 
-    const heartStyle = {
-        Color: isWished ? 'red' : '#aaa',
-        fill: isWished ? 'red' : 'gray',
-        opacity: isWished ? '100%' : '50%'
-    };
+  return (
+    <div
+      className="ap-product-card-wrapper h-100"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <Link to={productUrl} className="text-decoration-none text-dark d-flex flex-column h-100">
+        <div className="ap-card-container bg-white border position-relative overflow-hidden d-flex flex-column h-100">
+          
+          {/* Top Sponsored / Ad Tag */}
+          {product.sponsored && (
+            <span className="ap-badge-sponsored">Ad</span>
+          )}
 
-    const badgeStyle = {
-        display: 'inline-block',
-        padding: '4px 6px',
-        borderRadius: '4px',
-        fontSize: '0.5rem',
-        fontWeight: '600',
-        backgroundColor: '#f1f1f1',
-        color: '#333',
-        border: '1px solid #ddd',
-        marginRight: '4px',
-        marginBottom: '4px',
-        textTransform: 'uppercase',
-    };
+          {/* Wishlist Heart Icon */}
+          <button
+            type="button"
+            onClick={toggleWishlist}
+            className={`ap-wishlist-btn ${isWished ? "active" : ""}`}
+            title={isWished ? "Remove from Wishlist" : "Add to Wishlist"}
+            aria-label="Wishlist"
+          >
+            <GoHeartFill size={16} />
+          </button>
 
-    const assuredBadgeStyle = {
-        display: 'flex',
-        alignItems: 'center',
-        padding: '4px 8px',
-        borderRadius: '12px',
-        fontSize: '0.7rem',
-        fontWeight: '600',
-        backgroundColor: '#d1fae5',
-        color: '#059669',
-    };
-    // ----------------------------
+          {/* STATIC FIXED IMAGE BOX (Does NOT move or shift on hover) */}
+          <div
+            ref={imgContainerRef}
+            onMouseMove={handleMouseMove}
+            className="ap-card-img-wrap position-relative overflow-hidden"
+          >
+            <img
+              src={currentImgSrc}
+              alt={product.title || "Product"}
+              className="ap-card-img img-fluid"
+              loading="lazy"
+              decoding="async"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "https://placehold.co/400x550/f5f5f5/888888?text=Printmont";
+              }}
+            />
 
-    const productSlug = generateSlug(product.title);
-    const productUrl = `/${productSlug}-p${product.id || '1'}`;
+            {/* Flipkart Horizontal Segment Indicators */}
+            {images.length > 1 && isHovered && (
+              <div className="ap-fk-segments-bar">
+                {images.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`ap-fk-segment-line ${idx === currentImageIndex ? "active" : ""}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
 
-    return (
-        <>
-            <Link to={productUrl}  // dynamic product link
-                 className="text-decoration-none text-dark"
-                 style={{ flexGrow: 1 }}>
-                <div
-                    className="product-card"
-                    onMouseEnter={startSwipe}
-                    onMouseLeave={stopSwipe}
-                >
-                    <div
-                        className="product-card"
-                        style={{ cardStyle }}
-                        // Apply hover handlers to the main card container
-                        onMouseEnter={startSwipe}
-                        onMouseLeave={stopSwipe}
-                    >
-
-                        {/* Product Image Container */}
-                        <div style={{ overflow: 'hidden', position: 'relative' }}>
-
-                            {/* Wishlist Heart Icon */}
-                            <button
-                                onClick={toggleWishlist}
-                                className='heart-button-style text-muted bg-muted z-1'
-                                style={{ position: 'absolute', top: '10px', right: '10px', border: 'none', background: 'none' }}
-                            >
-                                <GoHeartFill size={28} style={heartStyle} />
-                            </button>
-
-                            {/* The Image (Uses dynamic source and lazy loading) */}
-                            <img
-                                src={imageSrc}
-                                alt={product.title}
-                                style={{
-                                    width: '100%',
-                                    height: 'auto',
-                                    objectFit: 'cover',
-                                    display: 'block',
-                                    transition: 'opacity 0.3s ease-in-out',
-                                }}
-                                className='zoom-hover'
-                                onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400x550/cccccc/000?text=Image+Missing"; }}
-                                loading={'lazy'}
-                            />
-
-                            {/* Optional: Image Dots Indicator (Only shows when hovering and swiping) */}
-                            {isHovering && product.image && product.image.length > 1 && (
-                                <div style={{
-                                    position: 'absolute',
-                                    bottom: '8px',
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    zIndex: 10,
-                                    display: 'flex'
-                                }}>
-                                    {product.image.map((_, index) => (
-                                        <span
-                                            key={index}
-                                            style={{
-                                                height: '5px',
-                                                width: '5px',
-                                                backgroundColor: index === currentImageIndex ? '#333' : 'rgba(255,255,255,0.8)',
-                                                border: '1px solid #333',
-                                                borderRadius: '50%',
-                                                margin: '0 3px',
-                                            }}
-                                        ></span>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Product Details (Your original layout) */}
-                        <div style={{ padding: '12px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-
-                            {/* Sponsored Label */}
-                            {product.sponsored && (
-                                <small style={{ color: '#666', display: 'flex', alignItems: 'center', fontSize: '0.7rem', fontWeight: 500 }}>
-                                    <TfiAgenda size={12} style={{ marginRight: '4px', color: '#999' }} />
-                                    Sponsored
-                                </small>
-                            )}
-
-                            {/* Brand and Assured */}
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', }}>
-                                <span style={{ fontWeight: '700', textTransform: 'uppercase', fontSize: '0.8rem', color: '#111' }}>{product.brand}</span>
-                                {product.assured && (
-                                    <div style={assuredBadgeStyle}>
-                                        <BsShieldCheck size={14} style={{ marginRight: '3px' }} />
-                                        Assured
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Product Title */}
-                            <h4 className='pc-title'>
-                                {product.title}
-                            </h4>
-
-                            {/* Price Section */}
-                            <div className='mb-2 d-flex align-items-baseline flex-wrap'>
-                                <span style={{ fontWeight: '800', fontSize: '0.8rem', color: '#111', marginRight: '8px' }}>
-                                    ₹{formatPrice(product.discountedPrice)}
-                                </span>
-                                <small style={{ color: '#888', textDecoration: 'line-through', marginRight: '4px', fontSize: '0.70rem' }}>
-                                    ₹{formatPrice(product.originalPrice)}
-                                </small>
-                                <span style={{ color: '#ef4444', fontWeight: '700', fontSize: '0.70rem' }}>
-                                    ({product.discountPercent}% OFF)
-                                </span>
-                            </div>
-
-                            {/* Sizes */}
-                            <div className='d-flex flex-wrap align-items-center mt-auto '>
-                                <span style={{ color: '#666', fontWeight: '600', fontSize: '0.75rem', marginRight: '4px' }} className='border'>Sizes:</span>
-                                {product.sizes.map((size) => (
-                                    <span className='sizestyle' key={size}>{size}</span>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+          {/* BOTTOM SLIDE-UP INFO PANEL (Only this section slides UP on hover) */}
+          <div className="ap-card-body ap-card-body-slide p-2 d-flex flex-column flex-grow-1 bg-white">
+            {/* Brand & Flipkart-style Assured Badge */}
+            <div className="d-flex justify-content-between align-items-center mb-1">
+              <span className="ap-brand-name text-uppercase text-muted fw-bold text-truncate">
+                {product.brand}
+              </span>
+              {isAssured && (
+                <div className="ap-fk-assured-badge" title="Printmont Assured Quality">
+                  <span className="ap-fk-assured-text">Printmont</span>
+                  <span className="ap-fk-assured-sub">ASSURED</span>
                 </div>
-            </Link>
+              )}
+            </div>
 
-        </>
-    );
+            {/* Title (turns Flipkart Blue on Hover) */}
+            <h3 className="ap-product-title text-dark mb-1" title={product.title}>
+              {product.title}
+            </h3>
+
+            {/* Rating Pill */}
+            {product.rating && (
+              <div className="d-flex align-items-center mb-1">
+                <span className="ap-rating-pill text-white px-1 py-0 rounded d-inline-flex align-items-center me-2">
+                  {product.rating.toFixed(1)} <FaStar size={9} className="ms-1" />
+                </span>
+                <span className="ap-rating-count text-muted">
+                  ({product.ratingCount || 42})
+                </span>
+              </div>
+            )}
+
+            {/* Price & Offer Row */}
+            <div className="mt-auto pt-1 d-flex align-items-baseline flex-wrap gap-1">
+              <span className="ap-price-discounted fw-bold fs-6 text-dark">
+                ₹{formatCurrency(product.discountedPrice || product.price)}
+              </span>
+
+              {hasDiscount && (
+                <>
+                  <span className="ap-price-original text-muted text-decoration-line-through">
+                    ₹{formatCurrency(product.originalPrice)}
+                  </span>
+                  <span className="ap-discount-percent fw-semibold ms-auto">
+                    {product.discountPercent}% off
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Stock alert */}
+            {isLowStock ? (
+              <div className="ap-stock-alert text-danger fw-semibold mt-1">
+                Only few left
+              </div>
+            ) : product.discountPercent >= 50 ? (
+              <div className="ap-hot-deal-tag text-success fw-semibold mt-1">
+                Hot Deal
+              </div>
+            ) : null}
+
+              {/* SLIDE-UP REVEAL DETAILS (Product-specific sizes or category highlights) */}
+              {product.sizes && product.sizes.length > 0 ? (
+                <div className="ap-slideup-details mt-2 pt-1 border-top text-truncate">
+                  <span className="ap-fk-sizes-text">
+                    Size {product.sizes.join(", ")}
+                  </span>
+                </div>
+              ) : product.highlightText ? (
+                <div className="ap-slideup-details mt-2 pt-1 border-top text-truncate">
+                  <span className="ap-fk-sizes-text text-primary">
+                    {product.highlightText}
+                  </span>
+                </div>
+              ) : null}
+          </div>
+
+        </div>
+      </Link>
+    </div>
+  );
 };
 
 export default ProductCard;

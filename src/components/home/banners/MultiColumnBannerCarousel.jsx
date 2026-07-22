@@ -17,6 +17,8 @@ const PrevArrow = ({ className, style, onClick }) => (
   </div>
 );
 
+import normalizeBanner from "../utils/normalizeBanner";
+
 /**
  * A responsive carousel that displays multiple banners per row.
  * @param {string} [apiUrl] API endpoint to fetch banner list from.
@@ -31,7 +33,8 @@ export default function MultiColumnBannerCarousel({
   sectionKey = ""
 }) {
   const { banners: fetchedBanners, loading, error } = useHomeBanners(apiUrl, sectionKey);
-  const banners = propBanners || fetchedBanners || [];
+  const rawBanners = (fetchedBanners && fetchedBanners.length > 0) ? fetchedBanners : (propBanners || []);
+  const banners = rawBanners.map(b => normalizeBanner(b)).filter(Boolean);
 
   const settings = {
     dots: true,
