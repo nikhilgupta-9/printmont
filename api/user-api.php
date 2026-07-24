@@ -196,6 +196,89 @@ try {
                 }
                 break;
 
+            case 'logout':
+                if ($method == 'POST') {
+                    echo json_encode($authController->logout());
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
+            case 'refresh_token':
+                if ($method == 'POST') {
+                    $refreshToken = $input['refresh_token'] ?? getBearerToken();
+                    echo json_encode($authController->refreshToken($refreshToken));
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
+            case 'forgot_password':
+                if ($method == 'POST') {
+                    echo json_encode($authController->forgotPassword($input));
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
+            case 'reset_password':
+                if ($method == 'POST') {
+                    echo json_encode($authController->resetPassword($input));
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
+            case 'delete_account':
+                if ($method == 'DELETE' || $method == 'POST') {
+                    $token = getBearerToken();
+
+                    if (empty($token)) {
+                        http_response_code(401);
+                        echo json_encode(['success' => false, 'error' => 'No token provided']);
+                        break;
+                    }
+
+                    $result = $authController->verifyToken($token);
+                    if ($result['success']) {
+                        echo json_encode($authController->deleteAccount($result['user']['id'], $input));
+                    } else {
+                        http_response_code(401);
+                        echo json_encode($result);
+                    }
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
+            case 'soft_delete_account':
+                if ($method == 'PUT' || $method == 'POST') {
+                    $token = getBearerToken();
+
+                    if (empty($token)) {
+                        http_response_code(401);
+                        echo json_encode(['success' => false, 'error' => 'No token provided']);
+                        break;
+                    }
+
+                    $result = $authController->verifyToken($token);
+                    if ($result['success']) {
+                        echo json_encode($authController->softDeleteAccount($result['user']['id']));
+                    } else {
+                        http_response_code(401);
+                        echo json_encode($result);
+                    }
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
             case 'get_addresses':
                 if ($method == 'GET') {
                     $token = getBearerToken();
@@ -343,7 +426,7 @@ try {
                 http_response_code(404);
                 echo json_encode([
                     'success' => false,
-                    'error' => 'Action not found. Available actions: register, login, profile, update_profile, get_orders, get_order, create_order, ...'
+                    'error' => 'Action not found. Available actions: register, login, logout, refresh_token, forgot_password, reset_password, profile, update_profile, delete_account, soft_delete_account, get_orders, get_order, create_order, ...'
                 ]);
         }
 

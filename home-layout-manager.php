@@ -190,7 +190,8 @@ $mobileSections = $layoutController->getSections('mobile');
                                                             <div class="drag-handle"><i class="fas fa-bars fa-lg"></i></div>
                                                             <div class="ms-3">
                                                                 <div class="fw-bold fs-5 text-dark">
-                                                                    <?php echo htmlspecialchars($sec['label']); ?></div>
+                                                                    <?php echo htmlspecialchars($sec['label']); ?>
+                                                                </div>
                                                                 <div
                                                                     class="text-muted small d-flex align-items-center gap-2 mt-1">
                                                                     <span
@@ -255,7 +256,8 @@ $mobileSections = $layoutController->getSections('mobile');
                                                             <div class="drag-handle"><i class="fas fa-bars fa-lg"></i></div>
                                                             <div class="ms-3">
                                                                 <div class="fw-bold fs-5 text-dark">
-                                                                    <?php echo htmlspecialchars($sec['label']); ?></div>
+                                                                    <?php echo htmlspecialchars($sec['label']); ?>
+                                                                </div>
                                                                 <div
                                                                     class="text-muted small d-flex align-items-center gap-2 mt-1">
                                                                     <span

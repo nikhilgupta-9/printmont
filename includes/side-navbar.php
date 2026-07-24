@@ -1470,24 +1470,6 @@ function shouldExpand($group_name, $current_page, $page_groups)
 			<?php endif; ?>
 		</ul>
 
-		<!-- Quick Stats -->
-		<div class="sidebar-cta">
-			<div class="sidebar-cta-content">
-				<strong class="d-inline-block mb-2">Today's Stats</strong>
-				<div class="mb-2 text-sm">
-					<small>Orders: <strong class="text-success">15</strong></small>
-				</div>
-				<div class="mb-2 text-sm">
-					<small>Revenue: <strong class="text-success">₹25,430</strong></small>
-				</div>
-				<div class="mb-3 text-sm">
-					<small>Visitors: <strong class="text-success">1,234</strong></small>
-				</div>
-				<div class="d-grid">
-					<a href="dashboard.php" class="btn btn-outline-primary btn-sm">View Dashboard</a>
-				</div>
-			</div>
-		</div>
 	</div>
 </nav>
 

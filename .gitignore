@@ -20,4 +20,4 @@ Desktop.ini
 # Node modules (Agar npx ya node use ho raha ho)
 node_modules/
 
-config/database.php
+.config/

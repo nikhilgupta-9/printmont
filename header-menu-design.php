@@ -70,7 +70,7 @@ $currentDesign = readHeaderDesign($configFile);
                     <div class="alert alert-success alert-dismissible p-2"><button class="btn-close" data-bs-dismiss="alert"></button><?php echo htmlspecialchars($success); ?></div>
                 <?php endif; ?>
 
-                <form method="POST">
+                <form method="POST">    
                     <div class="card mb-4">
                         <div class="card-header"><h5 class="mb-0">Overall Header Menu Layout</h5></div>
                         <div class="card-body">

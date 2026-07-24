@@ -1,14 +1,23 @@
 <?php
 require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../models/AddressModel.php';
+require_once __DIR__ . '/../middleware/JWTHandler.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception as PHPMailerException;
+
 class AuthController {
+    private $db;
     private $userModel;
     private $addressModel; // Add this property
+    private $jwt;
 
     public function __construct($db) {
+        $this->db = $db;
         $this->userModel = new UserModel($db);
           $this->addressModel = new AddressModel($db); // Initialize AddressModel
         $this->addressModel->createTable(); // Ensure table exists
+        $this->jwt = new JWTHandler();
     }
 
     // User Registration
@@ -72,11 +81,14 @@ class AuthController {
 
             // Create user
             $userId = $this->userModel->createUser($userData, $customerData);
+            $user = $this->userModel->getUserById($userId);
 
             return [
                 'success' => true,
                 'message' => 'Registration successful',
-                'user_id' => $userId
+                'user_id' => $userId,
+                'user' => $this->sanitizeUser($user),
+                'tokens' => $this->jwt->generateTokenPair(['id' => $userId, 'email' => $email]),
             ];
 
         } catch (Exception $e) {
@@ -112,14 +124,11 @@ class AuthController {
             // Update last login
             $this->userModel->updateLastLogin($user['id']);
 
-            // Remove password from response
-            unset($user['password']);
-
             return [
                 'success' => true,
                 'message' => 'Login successful',
-                'user' => $user,
-                'token' => $this->generateToken($user['id'])
+                'user' => $this->sanitizeUser($user),
+                'tokens' => $this->jwt->generateTokenPair(['id' => $user['id'], 'email' => $user['email']]),
             ];
 
         } catch (Exception $e) {
@@ -128,6 +137,15 @@ class AuthController {
                 'error' => $e->getMessage()
             ];
         }
+    }
+
+    // Strips password/reset/lockout fields that should never leave the API.
+    private function sanitizeUser($user) {
+        foreach (['password', 'reset_token', 'reset_token_expiry', 'reset_otp', 'reset_otp_expiry',
+                  'login_attempts', 'last_login_attempt', 'lock_until'] as $field) {
+            unset($user[$field]);
+        }
+        return $user;
     }
 
     // Get User Profile
@@ -139,19 +157,9 @@ class AuthController {
                 throw new Exception("User not found");
             }
 
-            // Remove sensitive data from response
-            unset($user['password']);
-            unset($user['reset_token']);
-            unset($user['reset_token_expiry']);
-            unset($user['reset_otp']);
-            unset($user['reset_otp_expiry']);
-            unset($user['login_attempts']);
-            unset($user['last_login_attempt']);
-            unset($user['lock_until']);
-
             return [
                 'success' => true,
-                'user' => $user
+                'user' => $this->sanitizeUser($user)
             ];
 
         } catch (Exception $e) {
@@ -192,14 +200,18 @@ class AuthController {
 
             $success = $this->userModel->updateProfile($userId, $userData, $customerData);
 
-            if ($success) {
-                return [
-                    'success' => true,
-                    'message' => 'Profile updated successfully'
-                ];
-            } else {
+            if (!$success) {
                 throw new Exception("Failed to update profile");
             }
+
+            // Optional extended fields (bio, socials, notifications, etc.) — only
+            // touched if actually present in the request, everything else is untouched.
+            $this->userModel->updateExtendedProfile($userId, $data);
+
+            return [
+                'success' => true,
+                'message' => 'Profile updated successfully'
+            ];
 
         } catch (Exception $e) {
             return [
@@ -253,16 +265,7 @@ class AuthController {
         }
     }
 
-    // Simple token generation
-    // Enhanced token generation with timestamp
-    private function generateToken($userId) {
-        $timestamp = time();
-        $random = bin2hex(random_bytes(16));
-        return base64_encode($userId . ':' . $timestamp . ':' . $random);
-    }
-    
-
-    // Verify token
+    // Verify an access token (used to authenticate every protected request)
     public function verifyToken($token) {
         try {
             if (empty($token)) {
@@ -274,42 +277,242 @@ class AuthController {
                 $token = substr($token, 7);
             }
 
-            $decoded = base64_decode($token);
-            $parts = explode(':', $decoded);
-            
-            if (count($parts) === 3) {
-                $userId = $parts[0];
-                $timestamp = $parts[1];
-                
-                // Check if token is expired (24 hours)
-                if (time() - $timestamp > 86400) {
-                    throw new Exception("Token expired");
-                }
-
-                $user = $this->userModel->getUserById($userId);
-                
-                if ($user && $user['status'] === 'active') {
-                    // Remove sensitive data
-                    unset($user['password']);
-                    unset($user['reset_token']);
-                    unset($user['reset_token_expiry']);
-                    unset($user['reset_otp']);
-                    unset($user['reset_otp_expiry']);
-                    
-                    return [
-                        'success' => true,
-                        'user' => $user
-                    ];
-                }
+            $data = $this->jwt->validateToken($token, 'access');
+            if ($data === false) {
+                throw new Exception("Invalid or expired token");
             }
-            
+
+            $user = $this->userModel->getUserById($data->id);
+
+            if ($user && $user['status'] === 'active') {
+                return [
+                    'success' => true,
+                    'user' => $this->sanitizeUser($user)
+                ];
+            }
+
             throw new Exception("Invalid token");
-            
+
         } catch (Exception $e) {
             return [
                 'success' => false,
                 'error' => $e->getMessage()
             ];
+        }
+    }
+
+    // Stateless JWT: nothing to invalidate server-side, this exists so
+    // clients have a formal endpoint to call when discarding their tokens.
+    public function logout() {
+        return [
+            'success' => true,
+            'message' => 'Logged out successfully'
+        ];
+    }
+
+    // Exchange a refresh token for a fresh access + refresh token pair (rotation).
+    public function refreshToken($refreshToken) {
+        try {
+            if (empty($refreshToken)) {
+                throw new Exception("No refresh token provided");
+            }
+            if (strpos($refreshToken, 'Bearer ') === 0) {
+                $refreshToken = substr($refreshToken, 7);
+            }
+
+            $data = $this->jwt->validateToken($refreshToken, 'refresh');
+            if ($data === false) {
+                throw new Exception("Invalid or expired refresh token");
+            }
+
+            $user = $this->userModel->getUserById($data->id);
+            if (!$user || $user['status'] !== 'active') {
+                throw new Exception("Account not found or inactive");
+            }
+
+            return [
+                'success' => true,
+                'tokens' => $this->jwt->generateTokenPair(['id' => $user['id'], 'email' => $user['email']]),
+            ];
+
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    // Request a password reset OTP by email. Always returns a generic
+    // success message regardless of whether the email exists, to avoid
+    // leaking which addresses are registered.
+    public function forgotPassword($data) {
+        try {
+            $email = trim($data['email'] ?? '');
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception("A valid email is required");
+            }
+
+            $genericResponse = [
+                'success' => true,
+                'message' => 'If that email is registered, a reset code has been sent.'
+            ];
+
+            $user = $this->userModel->getUserByEmail($email);
+            if (!$user) {
+                usleep(random_int(100000, 400000)); // timing-attack mitigation
+                return $genericResponse;
+            }
+
+            $otp = sprintf('%06d', random_int(0, 999999));
+            $expiry = date('Y-m-d H:i:s', time() + 900); // 15 minutes
+            $this->userModel->setResetOTP($user['id'], $otp, $expiry);
+
+            $this->sendOtpEmail($user['email'], trim($user['first_name'] . ' ' . $user['last_name']), $otp);
+
+            return $genericResponse;
+
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    // Verify the OTP and set a new password in one call.
+    public function resetPassword($data) {
+        try {
+            $email = trim($data['email'] ?? '');
+            $otp = trim($data['otp'] ?? '');
+            $newPassword = $data['new_password'] ?? '';
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception("A valid email is required");
+            }
+            if (empty($otp) || !preg_match('/^[0-9]{6}$/', $otp)) {
+                throw new Exception("Invalid OTP format");
+            }
+            if (strlen($newPassword) < 6) {
+                throw new Exception("New password must be at least 6 characters long");
+            }
+
+            $user = $this->userModel->getUserByEmail($email);
+            if (!$user || !$this->userModel->isOTPValid($user['id'], $otp)) {
+                throw new Exception("Invalid or expired OTP");
+            }
+
+            $this->userModel->changePassword($user['id'], $newPassword);
+            $this->userModel->clearResetData($user['id']);
+
+            return [
+                'success' => true,
+                'message' => 'Password has been reset successfully. You can now log in with your new password.'
+            ];
+
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    // Permanently delete the account (hard delete). Requires the current
+    // password as confirmation since this cannot be undone.
+    public function deleteAccount($userId, $data) {
+        try {
+            $password = $data['password'] ?? '';
+            if (empty($password)) {
+                throw new Exception("Password confirmation is required to delete your account");
+            }
+
+            $user = $this->userModel->getUserById($userId);
+            if (!$user || !password_verify($password, $user['password'])) {
+                throw new Exception("Incorrect password");
+            }
+
+            if (!$this->userModel->deleteUser($userId)) {
+                throw new Exception("Failed to delete account");
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Account permanently deleted'
+            ];
+
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    // Deactivate the account (status = inactive) without deleting data.
+    public function softDeleteAccount($userId) {
+        try {
+            if (!$this->userModel->softDeleteUser($userId)) {
+                throw new Exception("Failed to deactivate account");
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Account deactivated'
+            ];
+
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    // Send the OTP email using the active "Password Reset" SMTP config
+    // stored in email_configurations. Returns false (logged) on failure
+    // rather than throwing, so forgotPassword() can still return its
+    // generic success response either way.
+    private function sendOtpEmail($toEmail, $toName, $otp) {
+        $config = $this->db->query(
+            "SELECT * FROM email_configurations WHERE purpose = 'Password Reset' AND status = 'active' LIMIT 1"
+        )->fetch_assoc();
+
+        if (!$config) {
+            error_log("sendOtpEmail: no active 'Password Reset' email configuration found");
+            return false;
+        }
+
+        $mail = new PHPMailer(true);
+        try {
+            $mail->isSMTP();
+            $mail->Host = $config['smtp_host'] ?: $config['mail_host'];
+            $mail->SMTPAuth = true;
+            $mail->Username = $config['smtp_user'] ?: $config['mail_username'];
+            $mail->Password = $config['smtp_pass'] ?: $config['mail_password'];
+            $encryption = $config['encryption'] ?: $config['mail_encryption'];
+            $mail->SMTPSecure = $encryption === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = (int) ($config['smtp_port'] ?: $config['mail_port'] ?: 587);
+
+            $mail->setFrom(
+                $config['from_email'] ?: $config['mail_from_address'],
+                $config['from_name'] ?: $config['mail_from_name']
+            );
+            $mail->addAddress($toEmail, $toName);
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Your Password Reset Code';
+            $mail->Body = '<p>Hi ' . htmlspecialchars($toName) . ',</p>'
+                . '<p>Your password reset code is:</p>'
+                . '<h2 style="letter-spacing:4px">' . htmlspecialchars($otp) . '</h2>'
+                . '<p>This code expires in 15 minutes. If you did not request this, you can safely ignore this email.</p>';
+            $mail->AltBody = "Your password reset code is: $otp (expires in 15 minutes)";
+
+            $mail->send();
+            return true;
+        } catch (PHPMailerException $e) {
+            error_log('sendOtpEmail failed: ' . $mail->ErrorInfo);
+            return false;
         }
     }
 

@@ -25,10 +25,11 @@ class UserModel extends BaseModel {
             $phone = $this->db->real_escape_string(trim($userData['mobile']));
             $gender = $this->db->real_escape_string(trim($userData['gender']));
             $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
-            
+            $username = $this->db->real_escape_string($this->generateUsername($userData['email']));
+
             // Insert into users table
-            $userQuery = "INSERT INTO users (first_name, last_name, email, phone, gender, password, role, status, created_at) 
-                         VALUES ('$firstName', '$lastName', '$email', '$phone', '$gender', '$hashedPassword', 'customer', 'active', NOW())";
+            $userQuery = "INSERT INTO users (username, first_name, last_name, email, phone, gender, password, role, status, created_at)
+                         VALUES ('$username', '$firstName', '$lastName', '$email', '$phone', '$gender', '$hashedPassword', 'customer', 'active', NOW())";
             
             if (!$this->db->query($userQuery)) {
                 throw new Exception("User insertion failed: " . $this->db->error);
@@ -190,6 +191,88 @@ class UserModel extends BaseModel {
         $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
         $query = "UPDATE users SET password = '$hashedPassword', updated_at = NOW() WHERE id = $userId";
         return $this->db->query($query);
+    }
+
+    // Extended profile fields not covered by updateProfile() (bio, socials, notifications, etc.)
+    // Only touches fields actually present in $data, so partial updates are safe.
+    public function updateExtendedProfile($userId, array $data) {
+        $stringFields = [
+            'bio', 'location', 'website', 'twitter_url', 'facebook_url',
+            'linkedin_url', 'instagram_url', 'profile_picture', 'date_of_birth',
+        ];
+        $boolFields = ['email_notifications', 'sms_notifications'];
+
+        $setParts = [];
+        $types = '';
+        $values = [];
+
+        foreach ($stringFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $setParts[] = "$field = ?";
+                $types .= 's';
+                $values[] = $data[$field];
+            }
+        }
+        foreach ($boolFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $setParts[] = "$field = ?";
+                $types .= 'i';
+                $values[] = (int) $data[$field];
+            }
+        }
+
+        if (empty($setParts)) {
+            return true; // nothing to update
+        }
+
+        $setParts[] = "updated_at = NOW()";
+        $query = "UPDATE users SET " . implode(', ', $setParts) . " WHERE id = ?";
+        $stmt = $this->db->prepare($query);
+        $types .= 'i';
+        $values[] = $userId;
+        $stmt->bind_param($types, ...$values);
+        return $stmt->execute();
+    }
+
+    // ---------------- Password reset (OTP-based) ----------------
+
+    public function setResetOTP($userId, $otp, $expiry) {
+        $stmt = $this->db->prepare("UPDATE users SET reset_otp = ?, reset_otp_expiry = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->bind_param("ssi", $otp, $expiry, $userId);
+        return $stmt->execute();
+    }
+
+    public function isOTPValid($userId, $otp) {
+        $stmt = $this->db->prepare("SELECT reset_otp, reset_otp_expiry FROM users WHERE id = ?");
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        if (!$row || $row['reset_otp'] === null) {
+            return false;
+        }
+        return $row['reset_otp'] === $otp
+            && $row['reset_otp_expiry']
+            && strtotime($row['reset_otp_expiry']) > time();
+    }
+
+    public function clearResetData($userId) {
+        $stmt = $this->db->prepare("UPDATE users SET reset_otp = NULL, reset_otp_expiry = NULL, updated_at = NOW() WHERE id = ?");
+        $stmt->bind_param("i", $userId);
+        return $stmt->execute();
+    }
+
+    // ---------------- Account deletion ----------------
+
+    public function deleteUser($userId) {
+        $stmt = $this->db->prepare("DELETE FROM users WHERE id = ?");
+        $stmt->bind_param("i", $userId);
+        return $stmt->execute();
+    }
+
+    public function softDeleteUser($userId) {
+        $stmt = $this->db->prepare("UPDATE users SET status = 'inactive', updated_at = NOW() WHERE id = ?");
+        $stmt->bind_param("i", $userId);
+        return $stmt->execute();
     }
 }
 ?>
