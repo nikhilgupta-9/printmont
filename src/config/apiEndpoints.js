@@ -5,7 +5,7 @@ const isLocalhost = typeof window !== 'undefined' && (
 );
 
 const LOCAL_API_URL = '/api';
-const LIVE_API_URL = 'https://mediumvioletred-pelican-783174.hostingersite.com/api';
+const LIVE_API_URL = '/api';
 const LOCAL_ASSET_URL = 'http://localhost/printmont/printmont-backend/';
 const LIVE_ASSET_URL = 'https://mediumvioletred-pelican-783174.hostingersite.com/';
 
