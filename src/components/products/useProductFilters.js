@@ -252,7 +252,6 @@ export default function useProductFilters() {
     }
 
     const rawQ = searchQuery.trim().toLowerCase();
-    // Normalize variations: "t-shirt" -> "tshirt", remove trailing "s" for basic plural handling
     const normalizedQ = rawQ.replace(/-/g, " ");
     const collapsedQ = rawQ.replace(/[- ]/g, "");
     const tokens = normalizedQ.split(/\s+/).filter(Boolean);
@@ -268,30 +267,39 @@ export default function useProductFilters() {
         const combinedText = `${titleLower} ${brandLower} ${categoryLower} ${highlightLower} ${slugLower}`;
         const combinedCollapsed = combinedText.replace(/[- ]/g, "");
 
-        // Token match checking
-        const matchesAllTokens = tokens.every((token) => {
+        // Count how many tokens match
+        let matchedTokensCount = 0;
+        tokens.forEach((token) => {
           const singular = token.length > 3 && token.endsWith("s") ? token.slice(0, -1) : token;
-          return (
+          if (
             combinedText.includes(token) ||
             combinedText.includes(singular) ||
             combinedCollapsed.includes(token.replace(/[- ]/g, ""))
-          );
+          ) {
+            matchedTokensCount++;
+          }
         });
 
-        if (!matchesAllTokens) return null;
+        // Require at least one token match when query is present
+        if (matchedTokensCount === 0) return null;
 
-        // Category / Brand / Options filter checks
-        if (selectedCategory && categoryLower !== selectedCategory.toLowerCase()) return null;
+        // If specific category was explicitly selected in URL, check if product category matches
+        // But if user searches a global query, allow matching across categories if score is high
+        if (selectedCategory && categoryLower !== selectedCategory.toLowerCase() && !titleLower.includes(rawQ) && !titleLower.includes(normalizedQ)) {
+          return null;
+        }
+
         if (selectedBrands.length > 0 && !selectedBrands.some((b) => b.toLowerCase() === brandLower)) return null;
         if (selectedSizes.length > 0 && !product.sizes.some((s) => selectedSizes.includes(s))) return null;
         if (selectedColors.length > 0 && !product.colors.some((c) => selectedColors.includes(c))) return null;
         const effPrice = product.discountedPrice || product.price;
-        if (effPrice < priceMin || effPrice > priceMax) return null;
+        if (priceMinParam !== null && effPrice < priceMin) return null;
+        if (priceMaxParam !== null && effPrice > priceMax) return null;
         if (minDiscount > 0 && product.discountPercent < minDiscount) return null;
         if (excludeOutOfStock && !product.inStock) return null;
 
         // Calculate relevance score
-        let score = 0;
+        let score = matchedTokensCount * 30;
         if (titleLower === rawQ || titleLower === normalizedQ) score += 200;
         else if (titleLower.startsWith(rawQ) || titleLower.startsWith(normalizedQ)) score += 100;
         else if (titleLower.includes(rawQ) || titleLower.includes(normalizedQ) || combinedCollapsed.includes(collapsedQ)) score += 60;
