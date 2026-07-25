@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
 import { useAuth } from '../../context/AuthContext';
@@ -23,6 +24,7 @@ const Login = () => {
   const [step, setStep] = useState(1);
   const [identifierType, setIdentifierType] = useState('email'); // 'email' or 'mobile'
   const [loginMethod, setLoginMethod] = useState('password'); // 'password' or 'otp'
+  const [showPassword, setShowPassword] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -95,9 +97,20 @@ const Login = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
-      const data = await response.json();
-      
+
+      // The auth endpoints must return JSON. If they return HTML (a PHP error page or a
+      // redirect to an admin login screen) parsing would throw and get reported as a
+      // network failure, which hides the real cause — so surface it explicitly instead.
+      const raw = await response.text();
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        console.error('Auth API returned non-JSON response:', response.status, raw.slice(0, 300));
+        setError(`Server error (${response.status}). The login service returned an unexpected response.`);
+        return;
+      }
+
       if (data.success || data.status === "success" || data.id || data.token) {
         // Use authLogin to set global context and local storage
         if (data.token || data.id) {
@@ -121,7 +134,7 @@ const Login = () => {
       }
     } catch (err) {
       console.error("Auth API Error:", err);
-      setError('Network error. Please try again later.');
+      setError('Could not reach the server. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -131,6 +144,7 @@ const Login = () => {
     setIsSignup(!isSignup);
     setError(null);
     setStep(1);
+    setShowPassword(false);
     setFormData({
       identifier: '', otp: '', firstName: '', lastName: '', email: '', mobile: '', gender: '', password: ''
     });
@@ -184,19 +198,30 @@ const Login = () => {
 
           {loginMethod === 'password' ? (
             <>
-              <div className="form-floating mb-3">
-                <input 
-                  type="password" 
-                  name="password" 
-                  className="form-control login-form-input" 
-                  id="password" 
-                  placeholder="Enter Password" 
-                  value={formData.password} 
-                  onChange={handleInputChange} 
+              <div className="form-floating mb-3 position-relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  className="form-control login-form-input"
+                  id="password"
+                  placeholder="Enter Password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  style={{ paddingRight: '3rem' }}
                   autoFocus
-                  required 
+                  required
                 />
                 <label htmlFor="password">Enter Password</label>
+                <button
+                  type="button"
+                  className="btn btn-link p-0 text-muted position-absolute top-50 end-0 translate-middle-y me-3"
+                  style={{ zIndex: 5, lineHeight: 0 }}
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                </button>
               </div>
               <div className="d-flex justify-content-between align-items-center mb-4">
                 <Link to="/forgot-password" className="text-primary text-decoration-none small fw-medium">
@@ -312,9 +337,29 @@ const Login = () => {
                   </div>
                 </div>
 
-                <div className="form-floating mb-4">
-                  <input type="password" name="password" className="form-control login-form-input" id="password" placeholder="Password" value={formData.password} onChange={handleInputChange} required />
+                <div className="form-floating mb-4 position-relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    className="form-control login-form-input"
+                    id="password"
+                    placeholder="Password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    style={{ paddingRight: '3rem' }}
+                    required
+                  />
                   <label htmlFor="password">Password</label>
+                  <button
+                    type="button"
+                    className="btn btn-link p-0 text-muted position-absolute top-50 end-0 translate-middle-y me-3"
+                    style={{ zIndex: 5, lineHeight: 0 }}
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                  </button>
                 </div>
 
                 <p className="text-muted small mb-4">

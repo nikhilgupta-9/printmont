@@ -12,11 +12,13 @@ import {
 } from "react-icons/fa";
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, NavLink, Outlet } from 'react-router-dom';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { ASSET_URL } from '../../config/apiEndpoints';
 
 const User = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [avatarError, setAvatarError] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -29,6 +31,38 @@ const User = () => {
     logout();
   };
 
+  const displayName = user
+    ? (user.firstName || user.first_name
+        ? `${user.firstName || user.first_name} ${user.lastName || user.last_name || ''}`.trim()
+        : user.name || (user.email ? user.email.split('@')[0] : 'User'))
+    : 'Guest';
+
+  // First + last initial, falling back to the first letters of the name/email.
+  const getInitials = () => {
+    if (!user) return 'G';
+    const first = (user.firstName || user.first_name || '').trim();
+    const last = (user.lastName || user.last_name || '').trim();
+    if (first || last) {
+      return ((first[0] || '') + (last[0] || '')).toUpperCase();
+    }
+    // Fall back to the display name, or the email's local part only — never the
+    // domain, or "amitsingh@example.com" would initial as "AE".
+    const raw = (user.name || user.email || '').trim();
+    const source = raw.includes('@') ? raw.split('@')[0] : raw;
+    if (!source) return 'U';
+    const parts = source.split(/[\s._-]+/).filter(Boolean);
+    return parts.length > 1
+      ? (parts[0][0] + parts[1][0]).toUpperCase()
+      : source.slice(0, 2).toUpperCase();
+  };
+
+  const storedAvatar = user?.profile_picture || user?.profilePicture || user?.avatar || '';
+  const avatarUrl = storedAvatar
+    ? (storedAvatar.startsWith('http') ? storedAvatar : `${ASSET_URL}${storedAvatar.replace(/^\//, '')}`)
+    : '';
+  // Show initials when no picture is set, or when the stored one fails to load.
+  const showAvatarImage = Boolean(avatarUrl) && !avatarError;
+
   return (
     <div className="container bg-transparent p-0">
       <div className="row p-0 m-0">
@@ -37,17 +71,30 @@ const User = () => {
           {/* User Info */}
           <div className=' bg-white shadow-sm rounded p-2'>
             <div className="card-body d-flex align-items-center">
-            <img
-              src="/default-img.jpg"
-              alt="avatar"
-              className="rounded-circle me-3"
-              width="50"
-              height="50"
-            />
-            <div className="d-flex gap-1 flex-column">
+            {showAvatarImage ? (
+              <img
+                src={avatarUrl}
+                alt={displayName}
+                className="rounded-circle me-3 flex-shrink-0"
+                width="50"
+                height="50"
+                style={{ objectFit: 'cover' }}
+                onError={() => setAvatarError(true)}
+              />
+            ) : (
+              <div
+                className="rounded-circle me-3 flex-shrink-0 d-flex align-items-center justify-content-center text-white fw-bold"
+                style={{ width: 50, height: 50, backgroundColor: '#0b53a1', fontSize: '1.05rem', letterSpacing: '0.5px' }}
+                title={displayName}
+                aria-label={displayName}
+              >
+                {getInitials()}
+              </div>
+            )}
+            <div className="d-flex gap-1 flex-column min-width-0">
               <p className="mb-0 text-muted small">Hello,</p>
-              <h6 className="mb-0 fw-bold">
-                {user ? (user.firstName || user.first_name ? `${user.firstName || user.first_name} ${user.lastName || user.last_name || ''}`.trim() : user.name || (user.email ? user.email.split('@')[0] : 'User')) : 'Guest'}
+              <h6 className="mb-0 fw-bold text-truncate">
+                {displayName}
               </h6>
             </div>
           

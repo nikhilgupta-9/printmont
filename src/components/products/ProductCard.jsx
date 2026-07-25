@@ -92,7 +92,7 @@ const ProductCard = ({ product }) => {
             title={isWished ? "Remove from Wishlist" : "Add to Wishlist"}
             aria-label="Wishlist"
           >
-            <GoHeartFill size={16} />
+            <GoHeartFill size={22} />
           </button>
 
           {/* STATIC FIXED IMAGE BOX (Does NOT move or shift on hover) */}

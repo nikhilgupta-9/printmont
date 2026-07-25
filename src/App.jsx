@@ -98,6 +98,7 @@ function App() {
           <Route path="/manage-address" element={<ManageAddress />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/printmont-coin" element={<PrintmontCoin />} />
+          <Route path="/wallet" element={<PrintmontCoin />} />
           <Route path="/business-solutions" element={<BusinessSolutions />} />
           <Route path="/become-a-seller" element={<BecomeASeller />} />
           <Route path="/bulk-orders" element={<BulkOrderPage />} />
@@ -119,8 +120,21 @@ function App() {
             <Route index element={<Profile />} />
             <Route path="profile" element={<Profile />} />
             <Route path="wishlist" element={<Wishlist />} />
+            <Route path="wallet" element={<PrintmontCoin />} />
             <Route path="giftcard" element={<GiftCard />} />
             <Route path="manage-address" element={<ManageAddress  />} />
+          </Route>
+
+          {/* Account pages are linked as /<username>/profile (see getUsernamePath in
+              AuthContext). Without this block those links fell through to PageNotFound
+              whenever a user was logged in. No index route here on purpose, so a bare
+              /<something> keeps resolving to the product-slug route above. */}
+          <Route path="/:username" element={<User />}>
+            <Route path="profile" element={<Profile />} />
+            <Route path="wishlist" element={<Wishlist />} />
+            <Route path="wallet" element={<PrintmontCoin />} />
+            <Route path="giftcard" element={<GiftCard />} />
+            <Route path="manage-address" element={<ManageAddress />} />
           </Route>
 
           <Route path="*" element={<PageNotFound />} />

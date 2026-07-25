@@ -37,7 +37,9 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCate
                                location.pathname.includes('about') ||
                                location.pathname.includes('careers') ||
                                location.pathname.includes('faq') ||
-                               location.pathname.includes('security');
+                               location.pathname.includes('security') ||
+                               location.pathname.includes('wallet') ||
+                               location.pathname.includes('printmont-coin');
 
     const shouldShowCategories = showCategories && !isInfoOrPolicyPage;
 

@@ -1,25 +1,36 @@
-export const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const isLocalhost = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname.endsWith('.local')
+);
+
+const LOCAL_API_URL = '/api';
+const LIVE_API_URL = 'https://mediumvioletred-pelican-783174.hostingersite.com/api';
+const LOCAL_ASSET_URL = 'http://localhost/printmont/printmont-backend/';
+const LIVE_ASSET_URL = 'https://mediumvioletred-pelican-783174.hostingersite.com/';
+
+export const BASE_URL = (import.meta.env.VITE_API_URL || (isLocalhost ? LOCAL_API_URL : LIVE_API_URL)).replace(/\/+$/, '');
 
 // printmont-backend serves the homepage layout (printmont_db.home_sections) — the same
-// data home-layout-manager.php edits. Separate from BASE_URL because the two backends
-// are still different hosts/databases during the merge.
-export const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || '/backend-api';
-export const ASSET_URL = import.meta.env.VITE_ASSET_URL || 'https://mediumvioletred-pelican-783174.hostingersite.com/';
+// data home-layout-manager.php edits.
+export const BACKEND_URL = (import.meta.env.VITE_BACKEND_API_URL || (isLocalhost ? '/backend-api' : LIVE_API_URL)).replace(/\/+$/, '');
+export const ASSET_URL = (import.meta.env.VITE_ASSET_URL || (isLocalhost ? LOCAL_ASSET_URL : LIVE_ASSET_URL)).replace(/\/+$/, '') + '/';
 
 export const API_ENDPOINTS = {
   // Authentication
-  REGISTER: `${BASE_URL}/auth/register.php`,
-  LOGIN: `${BASE_URL}/auth/login.php`,
-  PROFILE: `${BASE_URL}/auth/profile.php`,
-  UPDATE_PROFILE: `${BASE_URL}/auth/profile.php`,
+  REGISTER: `${BASE_URL}/user-api.php?action=register`,
+  LOGIN: `${BASE_URL}/user-api.php?action=login`,
+  PROFILE: `${BASE_URL}/user-api.php?action=profile`,
+  UPDATE_PROFILE: `${BASE_URL}/user-api.php?action=update_profile`,
   CHANGE_PASSWORD: `${BASE_URL}/auth/change_password.php`,
+  FORGOT_PASSWORD: `${BASE_URL}/user-api.php?action=forgot_password`,
 
   // User Addresses
-  GET_ADDRESSES: `${BASE_URL}/auth/addresses.php?action=get`,
-  ADD_ADDRESS: `${BASE_URL}/auth/addresses.php?action=add`,
-  UPDATE_ADDRESS: `${BASE_URL}/auth/addresses.php?action=update`,
-  DELETE_ADDRESS: `${BASE_URL}/auth/addresses.php?action=delete`,
-  SET_DEFAULT_ADDRESS: `${BASE_URL}/auth/addresses.php?action=set_default`,
+  GET_ADDRESSES: `${BASE_URL}/user-api.php?action=get_addresses`,
+  ADD_ADDRESS: `${BASE_URL}/user-api.php?action=add_address`,
+  UPDATE_ADDRESS: `${BASE_URL}/user-api.php?action=update_address`,
+  DELETE_ADDRESS: `${BASE_URL}/user-api.php?action=delete_address`,
+  SET_DEFAULT_ADDRESS: `${BASE_URL}/user-api.php?action=set_default_address`,
 
   // Orders
   GET_ORDERS: `${BASE_URL}/orders/orders.php?action=list`,

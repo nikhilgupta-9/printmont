@@ -26,6 +26,12 @@ a:hover {
     height: 40px;
   }
 
+@media (min-width: 992px) {
+  .border-end-lg {
+    border-right: 1px solid #e9ecef;
+  }
+}
+
 @media (max-width: 767px) {
   .contact-icon{
     width: 50px;

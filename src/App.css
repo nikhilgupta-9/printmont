@@ -1334,6 +1334,35 @@ input:focus {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   animation: slideIn 0.3s ease-in-out;
 }
+/* --- Manage Address page --- */
+
+/* react-bootstrap's Dropdown.Toggle always adds .dropdown-toggle, which draws a
+   caret triangle via ::after. On the icon-only "..." button that caret is a stray
+   artifact sitting next to the icon, so hide it for this control only. */
+.address-actions.dropdown-toggle::after {
+  display: none;
+}
+
+.address-actions {
+  line-height: 1;
+}
+
+/* Lets long, unbroken address text wrap instead of forcing the flex row wider
+   (flex items default to min-width:auto). */
+.min-width-0 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.address-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.address-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08) !important;
+}
+
 .hover-bg-light {
   color: black;
   font-weight: lighter;

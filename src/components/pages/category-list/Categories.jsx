@@ -88,7 +88,11 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
     if (!isSticky || !categoryRef.current) return;
 
     const updateCategoryHeight = () => {
-      setCategoryHeight(categoryRef.current.offsetHeight);
+      const h = categoryRef.current.offsetHeight;
+      setCategoryHeight(h);
+      if (show) {
+        document.documentElement.style.setProperty("--category-bar-offset", `${h}px`);
+      }
     };
 
     updateCategoryHeight();
@@ -96,7 +100,15 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
     resizeObserver.observe(categoryRef.current);
 
     return () => resizeObserver.disconnect();
-  }, [isSticky, showImages, space, categoriesData]);
+  }, [isSticky, showImages, space, categoriesData, show]);
+
+  useEffect(() => {
+    if (!isSticky) return;
+    document.documentElement.style.setProperty(
+      "--category-bar-offset",
+      show ? `${categoryHeight || 45}px` : "0px"
+    );
+  }, [isSticky, show, categoryHeight]);
 
   const getImageUrl = (imagePath) => {
     if (!imagePath) return '/default-img.jpg';
@@ -189,7 +201,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
       </div>
 
       {/* LARGE SCREENS */}
-      <div className="d-none d-lg-flex justify-content-center w-100 position-relative text-nowrap small border-2 border border-white" style={{padding:`${space}`, backgroundColor:`${bg}`}} >
+      <div className="d-none d-lg-flex justify-content-center w-100 position-relative text-nowrap small" style={{padding:`${space}`, backgroundColor:`${bg}`}} >
         <div className="d-flex justify-content-between w-100 mx-auto px-lg-4 position-relative" style={{ maxWidth: showImages ? '1440px' : '100%' }}>
           {displayCategories.map((item, index) => {
             const itemChildren = getArray(item.children);

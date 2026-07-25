@@ -63,7 +63,7 @@ const HeaderManager = () => {
     if (currentPath.startsWith('/faq')) return 'FAQs';
     if (currentPath.startsWith('/security')) return 'Security';
     if (currentPath.startsWith('/blog')) return 'Blog';
-    if (currentPath.startsWith('/printmont-coin')) return 'Printmont Coin';
+    if (currentPath.startsWith('/printmont-coin') || currentPath.includes('wallet')) return 'Printmont Coins & Wallet';
     return 'Shop';
   };
 

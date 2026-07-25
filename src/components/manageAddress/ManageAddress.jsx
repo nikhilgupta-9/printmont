@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Form, Button, Card, Dropdown, Spinner, Badge } from 'react-bootstrap';
+import { Row, Col, Form, Button, Card, Dropdown, Spinner, Badge } from 'react-bootstrap';
 import { 
   FaHome, 
   FaBriefcase, 
@@ -10,16 +10,10 @@ import {
   FaPhoneAlt, 
   FaMapPin, 
   FaEllipsisV,
-  FaArrowLeft,
-  FaCheck,
-  FaSignOutAlt,
-  FaBoxOpen,
-  FaWallet,
-  FaUser
+  FaArrowLeft
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
-import { Link, useNavigate } from 'react-router-dom';
 
 const statesList = [
   "Delhi", 
@@ -52,53 +46,61 @@ const emptyAddress = {
 // --- SAVED ADDRESS CARD COMPONENT ---
 const SavedAddressCard = ({ data, onEdit, onDelete }) => {
   return (
-    <Card 
-      className="border-0 shadow-sm rounded-4 p-4 mb-3 position-relative overflow-hidden bg-white border-start border-4 transition-all" 
-      style={{ 
-        borderColor: data.type === 'Home' ? '#0b53a1' : '#f59e0b',
+    <Card
+      className="address-card border-0 shadow-sm rounded-4 p-4 mb-3 position-relative bg-white border-start border-4"
+      style={{
+        borderLeftColor: data.type === 'Home' ? '#0b53a1' : '#f59e0b',
         boxShadow: "0 10px 30px rgba(0, 0, 0, 0.04)"
       }}
     >
-      <div className="d-flex justify-content-between align-items-start">
-        <div className="flex-grow-1">
+      <div className="d-flex justify-content-between align-items-start gap-3">
+        <div className="flex-grow-1 min-width-0">
           {/* Header row with Name and Type Badge */}
           <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
             <h5 className="fw-bold text-dark mb-0 fs-6">{data.name}</h5>
-            <Badge 
-              bg={data.type === 'Home' ? 'primary-subtle' : 'warning-subtle'} 
-              className={`text-uppercase px-2.5 py-1 rounded-pill fw-bold text-xs d-flex align-items-center gap-1 ${data.type === 'Home' ? 'text-primary' : 'text-warning-emphasis'}`}
+            <Badge
+              bg={data.type === 'Home' ? 'primary-subtle' : 'warning-subtle'}
+              className={`text-uppercase px-2 py-1 rounded-pill fw-bold d-inline-flex align-items-center gap-1 ${data.type === 'Home' ? 'text-primary' : 'text-warning-emphasis'}`}
+              style={{ fontSize: '0.7rem', letterSpacing: '0.03em' }}
             >
-              {data.type === 'Home' ? <FaHome size={12} /> : <FaBriefcase size={12} />}
+              {data.type === 'Home' ? <FaHome size={11} /> : <FaBriefcase size={11} />}
               {data.type}
             </Badge>
           </div>
 
           {/* Contact Details */}
-          <div className="d-flex align-items-center gap-3 text-secondary mb-3 small">
-            <span className="d-flex align-items-center gap-1">
+          <div className="d-flex flex-wrap align-items-center gap-2 text-secondary mb-3 small">
+            <span className="d-inline-flex align-items-center gap-1">
               <FaPhoneAlt size={12} className="text-muted" /> {data.phone}
             </span>
             {data.altPhone && (
-              <span className="d-flex align-items-center gap-1 border-start ps-3">
+              <span className="d-inline-flex align-items-center gap-1 border-start ps-2">
                 Alt: {data.altPhone}
               </span>
             )}
           </div>
 
-          {/* Detailed Address Block */}
-          <p className="text-dark-emphasis mb-2 small" style={{ lineHeight: "1.6" }}>
-            <FaMapPin className="text-danger me-1 flex-shrink-0" size={14} />
-            <strong>{data.address}</strong>
-          </p>
-          <div className="text-muted small ps-3">
-            {data.locality}, {data.city}, {data.state} — <strong>{data.pincode}</strong>
-            {data.landmark && <div className="mt-1 text-xs text-secondary-emphasis">Landmark: <em>{data.landmark}</em></div>}
+          {/* Detailed Address Block — icon in its own column so wrapped lines
+              stay aligned with the first line instead of sliding under the icon. */}
+          <div className="d-flex gap-2 small" style={{ lineHeight: "1.6" }}>
+            <FaMapPin className="text-danger flex-shrink-0 mt-1" size={14} />
+            <div className="min-width-0">
+              <div className="text-dark-emphasis fw-semibold">{data.address}</div>
+              <div className="text-muted">
+                {data.locality}, {data.city}, {data.state} — <strong>{data.pincode}</strong>
+              </div>
+              {data.landmark && (
+                <div className="mt-1 text-secondary-emphasis" style={{ fontSize: '0.8rem' }}>
+                  Landmark: <em>{data.landmark}</em>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Action Controls */}
-        <Dropdown align="end">
-          <Dropdown.Toggle variant="light" className="bg-transparent border-0 p-1.5 rounded-circle shadow-none">
+        <Dropdown align="end" className="flex-shrink-0">
+          <Dropdown.Toggle variant="light" className="address-actions bg-transparent border-0 p-2 rounded-circle shadow-none">
             <FaEllipsisV className="text-muted" size={16} />
           </Dropdown.Toggle>
 
@@ -176,7 +178,7 @@ const AddressForm = ({ formData, handleInputChange, setFormData, handleSave, han
           variant="primary"
           onClick={handleGeoLocation}
           disabled={locating}
-          className="d-flex align-items-center gap-2 rounded-pill px-4 py-2.5 shadow-sm fw-bold border-0"
+          className="d-flex align-items-center gap-2 rounded-pill px-4 py-2 shadow-sm fw-bold border-0"
           style={{ backgroundColor: '#0b53a1' }}
         >
           {locating ? (
@@ -202,7 +204,7 @@ const AddressForm = ({ formData, handleInputChange, setFormData, handleSave, han
                 placeholder="Full Name" 
                 value={formData.name} 
                 onChange={handleInputChange} 
-                className="py-2.5 rounded-3 shadow-none border"
+                className="py-2 rounded-3 shadow-none border"
                 required 
               />
             </Form.Group>
@@ -217,7 +219,7 @@ const AddressForm = ({ formData, handleInputChange, setFormData, handleSave, han
                 placeholder="Mobile number" 
                 value={formData.phone} 
                 onChange={handleInputChange} 
-                className="py-2.5 rounded-3 shadow-none border"
+                className="py-2 rounded-3 shadow-none border"
                 required 
               />
             </Form.Group>
@@ -234,7 +236,7 @@ const AddressForm = ({ formData, handleInputChange, setFormData, handleSave, han
                 placeholder="6-digit Pincode" 
                 value={formData.pincode} 
                 onChange={handleInputChange} 
-                className="py-2.5 rounded-3 shadow-none border"
+                className="py-2 rounded-3 shadow-none border"
                 required 
               />
             </Form.Group>
@@ -248,7 +250,7 @@ const AddressForm = ({ formData, handleInputChange, setFormData, handleSave, han
                 placeholder="Locality" 
                 value={formData.locality} 
                 onChange={handleInputChange} 
-                className="py-2.5 rounded-3 shadow-none border"
+                className="py-2 rounded-3 shadow-none border"
                 required 
               />
             </Form.Group>
@@ -279,7 +281,7 @@ const AddressForm = ({ formData, handleInputChange, setFormData, handleSave, han
                 placeholder="City/District/Town" 
                 value={formData.city} 
                 onChange={handleInputChange} 
-                className="py-2.5 rounded-3 shadow-none border"
+                className="py-2 rounded-3 shadow-none border"
                 required 
               />
             </Form.Group>
@@ -291,7 +293,7 @@ const AddressForm = ({ formData, handleInputChange, setFormData, handleSave, han
                 name="state" 
                 value={formData.state} 
                 onChange={handleInputChange} 
-                className="py-2.5 rounded-3 shadow-none border"
+                className="py-2 rounded-3 shadow-none border"
                 required
               >
                 {statesList.map(st => <option key={st} value={st}>{st}</option>)}
@@ -310,7 +312,7 @@ const AddressForm = ({ formData, handleInputChange, setFormData, handleSave, han
                 placeholder="E.g. Near metro station" 
                 value={formData.landmark} 
                 onChange={handleInputChange} 
-                className="py-2.5 rounded-3 shadow-none border"
+                className="py-2 rounded-3 shadow-none border"
               />
             </Form.Group>
           </Col>
@@ -323,7 +325,7 @@ const AddressForm = ({ formData, handleInputChange, setFormData, handleSave, han
                 placeholder="Alternate phone number" 
                 value={formData.altPhone} 
                 onChange={handleInputChange} 
-                className="py-2.5 rounded-3 shadow-none border"
+                className="py-2 rounded-3 shadow-none border"
               />
             </Form.Group>
           </Col>
@@ -357,12 +359,12 @@ const AddressForm = ({ formData, handleInputChange, setFormData, handleSave, han
           <Button
             type="submit"
             variant="primary"
-            className="px-5 py-2.5 rounded-pill fw-bold border-0 shadow-sm"
+            className="px-5 py-2 rounded-pill fw-bold border-0 shadow-sm"
             style={{ backgroundColor: '#0b53a1' }}
           >
             Save Address
           </Button>
-          <Button type="button" variant="light" onClick={handleCancel} className="px-4 py-2.5 rounded-pill fw-bold text-secondary border">
+          <Button type="button" variant="light" onClick={handleCancel} className="px-4 py-2 rounded-pill fw-bold text-secondary border">
             Cancel
           </Button>
         </div>
@@ -373,8 +375,7 @@ const AddressForm = ({ formData, handleInputChange, setFormData, handleSave, han
 
 // --- MAIN MANAGE ADDRESS COMPONENT ---
 const ManageAddress = () => {
-  const navigate = useNavigate();
-  const { user, token, logout } = useAuth();
+  const { user, token } = useAuth();
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -479,147 +480,79 @@ const ManageAddress = () => {
     setShowForm(true);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
-  // Helper to get initials
-  const getUserInitials = () => {
-    if (!user) return "U";
-    const first = user.firstName || user.first_name || user.name || "U";
-    const last = user.lastName || user.last_name || "";
-    return (first[0] + (last ? last[0] : "")).toUpperCase();
-  };
-
-  // Helper to get display name
-  const getUserDisplayName = () => {
-    if (!user) return "Store Guest";
-    if (user.firstName || user.first_name) {
-      return `${user.firstName || user.first_name} ${user.lastName || user.last_name || ""}`.trim();
-    }
-    return user.name || (user.email ? user.email.split("@")[0] : "User");
-  };
-
   return (
-    <div className="bg-light py-4 py-md-5" style={{ minHeight: "85vh" }}>
-      <Container>
-        <Row className="g-4">
-          {/* LEFT USER SIDEBAR NAVIGATION (Desktop Only, matches Flipkart/Amazon account experience) */}
-          <Col lg={3} md={4} className="d-none d-md-block">
-            {/* User Profile Card */}
-            <Card className="border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
-              <div className="d-flex align-items-center gap-3">
-                <div className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold fs-5" style={{ width: "50px", height: "50px", backgroundColor: "#0b53a1" }}>
-                  {getUserInitials()}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-secondary small">Hello,</div>
-                  <h6 className="fw-bold text-dark text-truncate mb-0" style={{ fontSize: "0.95rem" }}>{getUserDisplayName()}</h6>
-                </div>
-              </div>
-            </Card>
+    /* No <Container> / bg wrapper here on purpose: this page renders inside the
+       <User /> layout route, which already provides the container, the account
+       sidebar and the content column. Nesting another container double-padded the
+       content and pushed it out of line with the sibling account pages. */
+    <div className="pb-4">
+      {/* Header info bar */}
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div className="min-width-0">
+          <h4 className="fw-bold text-dark mb-1">Manage Delivery Addresses</h4>
+          <p className="text-secondary small mb-0">Configure, add, or delete shipping destinations for your orders.</p>
+        </div>
+        {!showForm && (
+          <Button
+            variant="primary"
+            onClick={handleAddAddressClick}
+            className="d-inline-flex align-items-center gap-2 rounded-pill px-4 py-2 fw-bold border-0 shadow-sm flex-shrink-0"
+            style={{ backgroundColor: '#0b53a1' }}
+          >
+            <FaPlus /> Add New Address
+          </Button>
+        )}
+      </div>
 
-            {/* Sidebar Navigation */}
-            <Card className="border-0 shadow-sm rounded-4 p-3 bg-white">
-              <div className="d-flex flex-column gap-1">
-                <Link to="/orders" className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-secondary text-decoration-none hover-bg-light">
-                  <FaBoxOpen className="text-primary" size={18} />
-                  <span>My Orders</span>
-                </Link>
-                <Link to="/user/manage-address" className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-primary text-decoration-none bg-primary-subtle shadow-sm">
-                  <FaMapMarkerAlt className="text-primary" size={18} />
-                  <span>Saved Addresses</span>
-                </Link>
-                <Link to="/printmont-coin" className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-secondary text-decoration-none hover-bg-light">
-                  <FaWallet className="text-primary" size={18} />
-                  <span>PrintCoins Wallet</span>
-                </Link>
-                <Link to="/become-a-seller" className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-secondary text-decoration-none hover-bg-light">
-                  <FaStore className="text-primary" size={18} />
-                  <span>Sell on PrintMont</span>
-                </Link>
-                <hr className="my-2 border-secondary border-opacity-25" />
-                <Button variant="link" onClick={handleLogout} className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-danger text-decoration-none hover-bg-light border-0 text-start">
-                  <FaSignOutAlt size={18} />
-                  <span>Logout Account</span>
-                </Button>
-              </div>
-            </Card>
-          </Col>
+      {/* Form Section */}
+      {showForm && (
+        <AddressForm
+          formData={formData}
+          handleInputChange={handleInputChange}
+          setFormData={setFormData}
+          handleSave={handleSave}
+          handleCancel={handleCancel}
+        />
+      )}
 
-          {/* MAIN MANAGE ADDRESS PORTLET */}
-          <Col lg={9} md={8} xs={12}>
-            {/* Header info bar */}
-            <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-              <div>
-                <h4 className="fw-bold text-dark mb-1">Manage Delivery Addresses</h4>
-                <p className="text-secondary small mb-0">Configure, add, or delete shipping destinations for your orders.</p>
-              </div>
-              {!showForm && (
-                <Button 
-                  variant="primary" 
-                  onClick={handleAddAddressClick}
-                  className="d-flex align-items-center gap-2 rounded-pill px-4 py-2.5 fw-bold border-0 shadow-sm transition-all"
-                  style={{ backgroundColor: '#0b53a1' }}
-                >
-                  <FaPlus /> Add New Address
-                </Button>
-              )}
+      {/* Addresses list */}
+      {!showForm && (
+        <>
+          {loading ? (
+            <div className="text-center py-5">
+              <Spinner animation="border" variant="primary" />
+              <p className="text-muted small mt-3 mb-0">Loading addresses...</p>
             </div>
-
-            {/* Form Section */}
-            {showForm && (
-              <AddressForm
-                formData={formData}
-                handleInputChange={handleInputChange}
-                setFormData={setFormData}
-                handleSave={handleSave}
-                handleCancel={handleCancel}
-              />
-            )}
-
-            {/* Addresses list */}
-            {!showForm && (
-              <div>
-                {loading ? (
-                  <div className="text-center py-5">
-                    <Spinner animation="border" variant="primary" />
-                    <p className="text-muted small mt-2">Loading addresses...</p>
-                  </div>
-                ) : addresses.length === 0 ? (
-                  <Card className="border-0 shadow-sm rounded-4 p-5 text-center bg-white">
-                    <FaMapMarkerAlt size={48} className="text-muted opacity-50 mb-3 mx-auto" />
-                    <h5 className="fw-bold text-dark mb-2">No Saved Addresses</h5>
-                    <p className="text-secondary small mx-auto mb-4" style={{ maxWidth: "320px" }}>
-                      Add your shipping address details to place orders and receive quick delivery estimates.
-                    </p>
-                    <Button 
-                      variant="primary" 
-                      onClick={handleAddAddressClick}
-                      className="d-inline-flex align-items-center gap-2 rounded-pill px-4 py-2.5 fw-bold mx-auto border-0"
-                      style={{ backgroundColor: '#0b53a1' }}
-                    >
-                      <FaPlus /> Create Address
-                    </Button>
-                  </Card>
-                ) : (
-                  <div className="d-flex flex-column gap-1">
-                    {addresses.map((address) => (
-                      <SavedAddressCard
-                        key={address.id}
-                        data={address}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </Col>
-        </Row>
-      </Container>
+          ) : addresses.length === 0 ? (
+            <Card className="border-0 shadow-sm rounded-4 p-5 bg-white align-items-center text-center">
+              <FaMapMarkerAlt size={48} className="text-muted opacity-50 mb-3" />
+              <h5 className="fw-bold text-dark mb-2">No Saved Addresses</h5>
+              <p className="text-secondary small mb-4" style={{ maxWidth: "320px" }}>
+                Add your shipping address details to place orders and receive quick delivery estimates.
+              </p>
+              <Button
+                variant="primary"
+                onClick={handleAddAddressClick}
+                className="d-inline-flex align-items-center gap-2 rounded-pill px-4 py-2 fw-bold border-0"
+                style={{ backgroundColor: '#0b53a1' }}
+              >
+                <FaPlus /> Create Address
+              </Button>
+            </Card>
+          ) : (
+            <div className="d-flex flex-column">
+              {addresses.map((address) => (
+                <SavedAddressCard
+                  key={address.id}
+                  data={address}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

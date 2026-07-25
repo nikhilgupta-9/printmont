@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useMemo, useContext } from 'react';
+import { BASE_URL } from '../config/apiEndpoints';
 
 export const CheckoutContext = createContext();
 
@@ -31,8 +32,8 @@ export const CheckoutProvider = ({ children }) => {
   const [useCashCoins, setUseCashCoins] = useState(false);
   const [couponApplied, setCouponApplied] = useState(false);
   
-  // Static backend config (change to your actual dev server if needed)
-  const API_URL = import.meta.env.VITE_API_URL || 'https://mediumvioletred-pelican-783174.hostingersite.com/api';
+  // Static backend config
+  const API_URL = BASE_URL;
   const PRINTMONT_COINS_BALANCE = 36;
   const COUPON_DISCOUNT = 450;
   const CASH_COINS_DISCOUNT = 20;

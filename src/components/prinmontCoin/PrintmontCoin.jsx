@@ -1,17 +1,13 @@
 import React from "react";
 import { Container, Row, Col, Card, Button, Badge, ProgressBar, ListGroup } from "react-bootstrap";
-import { 
-  FaCoins, 
-  FaCrown, 
-  FaHistory, 
-  FaGift, 
-  FaExchangeAlt, 
-  FaInfoCircle, 
-  FaBoxOpen, 
-  FaMapMarkerAlt, 
-  FaWallet, 
-  FaStore, 
-  FaSignOutAlt 
+import {
+  FaCoins,
+  FaCrown,
+  FaHistory,
+  FaGift,
+  FaExchangeAlt,
+  FaInfoCircle,
+  FaWallet
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
@@ -56,58 +52,15 @@ const PrintmontCoin = () => {
   };
 
   return (
-    <div className="bg-light py-4 py-md-5" style={{ minHeight: "85vh" }}>
+    <div className="bg-light pt-2 pb-4 pt-md-2 pb-md-5" style={{ minHeight: "85vh" }}>
       <Container>
         <Row className="g-4">
-          {/* LEFT USER SIDEBAR NAVIGATION (Cohesive Account Layout) */}
-          <Col lg={3} md={4} className="d-none d-md-block">
-            {/* User Profile Card */}
-            <Card className="border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
-              <div className="d-flex align-items-center gap-3">
-                <div className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold fs-5" style={{ width: "50px", height: "50px", backgroundColor: "#0b53a1" }}>
-                  {getUserInitials()}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-secondary small">Hello,</div>
-                  <h6 className="fw-bold text-dark text-truncate mb-0" style={{ fontSize: "0.95rem" }}>{getUserDisplayName()}</h6>
-                </div>
-              </div>
-            </Card>
-
-            {/* Sidebar Navigation */}
-            <Card className="border-0 shadow-sm rounded-4 p-3 bg-white">
-              <div className="d-flex flex-column gap-1">
-                <Link to="/orders" className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-secondary text-decoration-none hover-bg-light">
-                  <FaBoxOpen className="text-primary" size={18} />
-                  <span>My Orders</span>
-                </Link>
-                <Link to="/user/manage-address" className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-secondary text-decoration-none hover-bg-light">
-                  <FaMapMarkerAlt className="text-primary" size={18} />
-                  <span>Saved Addresses</span>
-                </Link>
-                <Link to="/printmont-coin" className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-primary text-decoration-none bg-primary-subtle shadow-sm">
-                  <FaWallet className="text-primary" size={18} />
-                  <span>PrintCoins Wallet</span>
-                </Link>
-                <Link to="/become-a-seller" className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-secondary text-decoration-none hover-bg-light">
-                  <FaStore className="text-primary" size={18} />
-                  <span>Sell on PrintMont</span>
-                </Link>
-                <hr className="my-2 border-secondary border-opacity-25" />
-                <Button variant="link" onClick={handleLogout} className="d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 fw-semibold text-danger text-decoration-none hover-bg-light border-0 text-start">
-                  <FaSignOutAlt size={18} />
-                  <span>Logout Account</span>
-                </Button>
-              </div>
-            </Card>
-          </Col>
-
           {/* MAIN WALLET PORTLET */}
-          <Col lg={9} md={8} xs={12}>
+          <Col xs={12}>
             {/* HERO WALLET CARD */}
-            <Card 
-              className="border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4 text-white position-relative overflow-hidden" 
-              style={{ 
+            <Card
+              className="border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4 text-white position-relative overflow-hidden"
+              style={{
                 background: "linear-gradient(135deg, #0b53a1 0%, #002b66 100%)",
                 boxShadow: "0 15px 30px rgba(11, 83, 161, 0.15)"
               }}

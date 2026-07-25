@@ -1,28 +1,41 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal, Button } from 'react-bootstrap';
 
 const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Check local storage on initial load
+/**
+ * Read the persisted session synchronously.
+ *
+ * This must NOT happen in an effect: route guards (User.jsx) run their effects
+ * before the provider's, so restoring later left `user` null on first render and
+ * a refresh on any logged-in page bounced profile -> /login -> / (homepage).
+ * Reading during useState initialization means `user` is already correct on the
+ * very first render, so there is no window for a guard to misfire.
+ */
+const readStoredAuth = () => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return { user: null, token: null };
+  }
+  try {
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
     if (storedUser && storedToken) {
-      try {
-        setUser(JSON.parse(storedUser));
-        setToken(storedToken);
-      } catch (e) {
-        console.error("Failed to parse stored user", e);
-      }
+      return { user: JSON.parse(storedUser), token: storedToken };
     }
-  }, []);
+  } catch (e) {
+    console.error("Failed to parse stored user", e);
+  }
+  return { user: null, token: null };
+};
+
+export const AuthProvider = ({ children }) => {
+  // Lazy initializer: evaluated once on mount, so localStorage is read a single time.
+  const [initialAuth] = useState(readStoredAuth);
+  const [user, setUser] = useState(initialAuth.user);
+  const [token, setToken] = useState(initialAuth.token);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const navigate = useNavigate();
 
   const login = (userData, authToken) => {
     localStorage.setItem('user', JSON.stringify(userData));
