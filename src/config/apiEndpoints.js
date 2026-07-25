@@ -15,7 +15,6 @@ export const BASE_URL = (import.meta.env.VITE_API_URL || (isLocalhost ? LOCAL_AP
 // data home-layout-manager.php edits.
 export const BACKEND_URL = (import.meta.env.VITE_BACKEND_API_URL || (isLocalhost ? '/backend-api' : LIVE_API_URL)).replace(/\/+$/, '');
 export const ASSET_URL = (import.meta.env.VITE_ASSET_URL || (isLocalhost ? LOCAL_ASSET_URL : LIVE_ASSET_URL)).replace(/\/+$/, '') + '/';
-
 export const API_ENDPOINTS = {
   // Authentication
   REGISTER: `${BASE_URL}/user-api.php?action=register`,
@@ -59,12 +58,12 @@ export const API_ENDPOINTS = {
   HOME_LAYOUT: (target = 'desktop') => `${BACKEND_URL}/home-layout-api.php?target=${target}`,
 
   // Cart
-  CART: `${BASE_URL}/settings/cart.php`,
-  CART_DELETE: (id) => `${BASE_URL}/settings/cart.php?item_id=${id}`,
+  CART: `${BASE_URL}/cart-api.php`,
+  CART_DELETE: (id) => `${BASE_URL}/cart-api.php?item_id=${id}`,
 
   // Wishlist
-  WISHLIST: `${BASE_URL}/settings/wishlist.php`,
-  WISHLIST_DELETE: (id) => `${BASE_URL}/settings/wishlist.php?product_id=${id}`,
+  WISHLIST: `${BASE_URL}/wishlist-api.php`,
+  WISHLIST_DELETE: (id) => `${BASE_URL}/wishlist-api.php?product_id=${id}`,
 
   // Banners
   BANNERS: `${BASE_URL}/banners/banners.php`,
