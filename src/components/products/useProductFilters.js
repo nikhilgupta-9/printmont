@@ -235,62 +235,78 @@ export default function useProductFilters() {
   const priceMax = maxPriceParam !== null ? parseFloat(maxPriceParam) : facets.maxPrice;
   const minDiscount = minDiscountParam !== null ? parseInt(minDiscountParam, 10) : 0;
 
-  // Filter & Search Logic
+  // Filter & Search Logic with Relevance Scoring
   const filteredProducts = useMemo(() => {
-    return rawProducts.filter((product) => {
-      // Search Query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchTitle = product.title.toLowerCase().includes(q);
-        const matchBrand = product.brand.toLowerCase().includes(q);
-        const matchCategory = product.category.toLowerCase().includes(q);
-        if (!matchTitle && !matchBrand && !matchCategory) return false;
-      }
+    if (!searchQuery.trim()) {
+      return rawProducts.filter((product) => {
+        if (selectedCategory && product.category.toLowerCase() !== selectedCategory.toLowerCase()) return false;
+        if (selectedBrands.length > 0 && !selectedBrands.some((b) => b.toLowerCase() === product.brand.toLowerCase())) return false;
+        if (selectedSizes.length > 0 && !product.sizes.some((s) => selectedSizes.includes(s))) return false;
+        if (selectedColors.length > 0 && !product.colors.some((c) => selectedColors.includes(c))) return false;
+        const effPrice = product.discountedPrice || product.price;
+        if (effPrice < priceMin || effPrice > priceMax) return false;
+        if (minDiscount > 0 && product.discountPercent < minDiscount) return false;
+        if (excludeOutOfStock && !product.inStock) return false;
+        return true;
+      }).map((p) => ({ ...p, relevanceScore: 0 }));
+    }
 
-      // Category
-      if (selectedCategory && product.category.toLowerCase() !== selectedCategory.toLowerCase()) {
-        return false;
-      }
+    const rawQ = searchQuery.trim().toLowerCase();
+    // Normalize variations: "t-shirt" -> "tshirt", remove trailing "s" for basic plural handling
+    const normalizedQ = rawQ.replace(/-/g, " ");
+    const collapsedQ = rawQ.replace(/[- ]/g, "");
+    const tokens = normalizedQ.split(/\s+/).filter(Boolean);
 
-      // Brands
-      if (selectedBrands.length > 0) {
-        if (!selectedBrands.some((b) => b.toLowerCase() === product.brand.toLowerCase())) {
-          return false;
-        }
-      }
+    return rawProducts
+      .map((product) => {
+        const titleLower = (product.title || "").toLowerCase();
+        const brandLower = (product.brand || "").toLowerCase();
+        const categoryLower = (product.category || "").toLowerCase();
+        const highlightLower = (product.highlightText || "").toLowerCase();
+        const slugLower = (product.slug || "").toLowerCase();
 
-      // Sizes
-      if (selectedSizes.length > 0) {
-        if (!product.sizes.some((s) => selectedSizes.includes(s))) {
-          return false;
-        }
-      }
+        const combinedText = `${titleLower} ${brandLower} ${categoryLower} ${highlightLower} ${slugLower}`;
+        const combinedCollapsed = combinedText.replace(/[- ]/g, "");
 
-      // Colors
-      if (selectedColors.length > 0) {
-        if (!product.colors.some((c) => selectedColors.includes(c))) {
-          return false;
-        }
-      }
+        // Token match checking
+        const matchesAllTokens = tokens.every((token) => {
+          const singular = token.length > 3 && token.endsWith("s") ? token.slice(0, -1) : token;
+          return (
+            combinedText.includes(token) ||
+            combinedText.includes(singular) ||
+            combinedCollapsed.includes(token.replace(/[- ]/g, ""))
+          );
+        });
 
-      // Price
-      const effPrice = product.discountedPrice || product.price;
-      if (effPrice < priceMin || effPrice > priceMax) {
-        return false;
-      }
+        if (!matchesAllTokens) return null;
 
-      // Discount
-      if (minDiscount > 0 && product.discountPercent < minDiscount) {
-        return false;
-      }
+        // Category / Brand / Options filter checks
+        if (selectedCategory && categoryLower !== selectedCategory.toLowerCase()) return null;
+        if (selectedBrands.length > 0 && !selectedBrands.some((b) => b.toLowerCase() === brandLower)) return null;
+        if (selectedSizes.length > 0 && !product.sizes.some((s) => selectedSizes.includes(s))) return null;
+        if (selectedColors.length > 0 && !product.colors.some((c) => selectedColors.includes(c))) return null;
+        const effPrice = product.discountedPrice || product.price;
+        if (effPrice < priceMin || effPrice > priceMax) return null;
+        if (minDiscount > 0 && product.discountPercent < minDiscount) return null;
+        if (excludeOutOfStock && !product.inStock) return null;
 
-      // Stock
-      if (excludeOutOfStock && !product.inStock) {
-        return false;
-      }
+        // Calculate relevance score
+        let score = 0;
+        if (titleLower === rawQ || titleLower === normalizedQ) score += 200;
+        else if (titleLower.startsWith(rawQ) || titleLower.startsWith(normalizedQ)) score += 100;
+        else if (titleLower.includes(rawQ) || titleLower.includes(normalizedQ) || combinedCollapsed.includes(collapsedQ)) score += 60;
 
-      return true;
-    });
+        if (categoryLower.includes(rawQ) || categoryLower.includes(normalizedQ)) score += 40;
+        if (brandLower.includes(rawQ)) score += 25;
+
+        tokens.forEach((t) => {
+          if (titleLower.includes(t)) score += 15;
+          if (categoryLower.includes(t)) score += 10;
+        });
+
+        return { ...product, relevanceScore: score };
+      })
+      .filter(Boolean);
   }, [
     rawProducts,
     searchQuery,
@@ -307,6 +323,8 @@ export default function useProductFilters() {
   // Sorted Products
   const sortedProducts = useMemo(() => {
     const list = [...filteredProducts];
+    const hasSearch = !!searchQuery.trim();
+
     switch (currentSort) {
       case "Price -- Low to High":
         return list.sort((a, b) => a.discountedPrice - b.discountedPrice);
@@ -318,9 +336,12 @@ export default function useProductFilters() {
         return list.sort((a, b) => b.discountPercent - a.discountPercent);
       case "Popularity":
       default:
+        if (hasSearch) {
+          return list.sort((a, b) => b.relevanceScore - a.relevanceScore || b.rating - a.rating);
+        }
         return list.sort((a, b) => b.rating - a.rating || b.discountPercent - a.discountPercent);
     }
-  }, [filteredProducts, currentSort]);
+  }, [filteredProducts, currentSort, searchQuery]);
 
   // Pagination
   const totalItems = sortedProducts.length;
