@@ -20,6 +20,7 @@ export default function useHomeProducts(apiUrl, initialProducts = [], limit) {
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         }
       } catch (e) {}
+      return [];
     }
     try {
       const parsed = JSON.parse(serializedInitial);

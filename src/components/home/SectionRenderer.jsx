@@ -226,20 +226,10 @@ function renderSectionContent({
       );
 
     case "product_carousel":
-      // Fallback static products for bestseller/top_selection/recently_viewed if loading fails
-      let initialProducts = [];
-      if (section_key.includes("bestsellers")) {
-        initialProducts = bestsellerProducts;
-      } else if (section_key.includes("top_selection")) {
-        initialProducts = sampleItems;
-      } else if (section_key.includes("flash_sale")) {
-        initialProducts = specialoffer;
-      }
-
       return (
         <ProductCarousel
           apiUrl={productApiUrl}
-          products={initialProducts}
+          products={[]}
           title={label}
           badgeText={badge_text || ""}
           backgroundImageUrl={background_image_url}

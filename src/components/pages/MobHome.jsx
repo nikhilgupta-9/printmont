@@ -253,11 +253,11 @@ const MobHome = () => {
           <ResponsiveBannerSet banners={bannerImages} />
         </LazySection>
 
-        {/* 8. New Arivel (Carousel) */}
+        {/* 8. New Arrival (Carousel) */}
         <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
           <ProductCarousel
-            products={dummyProducts}
-            title="New Arivel"
+            apiUrl={`${baseURL}api/products/products.php?action=bestseller`}
+            title="New Arrival"
             badgeText="CUSTOMIZABLE"
             cardsToShowMobile={1.65}
           />
@@ -278,24 +278,24 @@ const MobHome = () => {
 
         {/* 12. Banner and slider Square size */}
         <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
         </LazySection>
 
         {/* 13. Banner and slider */}
         <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
         </LazySection>
 
         {/* 15. Banner and slider */}
         <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
         </LazySection>
 
         {/* 16. Bestseller (2 Column Grid) */}
         <LazySection skeleton={<ProductListSkeleton items={4} />}>
           <CompactProductGrid
+            apiUrl={`${baseURL}api/products/products.php?action=bestseller`}
             title="Bestseller"
-            products={dummyProducts.concat(dummyProducts.slice(0, 2))}
             columns={2}
             limit={8}
             showViewAll={true}
@@ -304,13 +304,13 @@ const MobHome = () => {
 
         {/* 17. Banner and slider */}
         <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
         </LazySection>
 
         {/* 18. Top Selection (Carousel) */}
         <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
           <ProductCarousel
-            products={dummyProducts}
+            apiUrl={`${baseURL}api/products/products.php?action=top_selection`}
             title="Top Selection"
             badgeText="CUSTOMIZABLE"
           />
@@ -318,13 +318,13 @@ const MobHome = () => {
 
         {/* 19. Square size Banner and Slider (2 Column Grid) */}
         <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
-          <BannerGrid banners={bannerImages} columns={2} mobileColumns={2} />
+          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={2} mobileColumns={2} />
         </LazySection>
 
         {/* 20. Discount For You (Carousel) */}
         <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
           <ProductCarousel
-            products={dummyProducts}
+            apiUrl={`${baseURL}api/products/products.php?action=discount_for_you`}
             title="Discount For You"
             badgeText="CUSTOMIZABLE"
           />
@@ -332,18 +332,18 @@ const MobHome = () => {
 
         {/* 21. Product List (2 Column Grid) */}
         <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
+          <MobileProductList apiUrl={`${baseURL}api/products/products.php?action=discount_for_you`} />
         </LazySection>
 
         {/* 22. Square size Banner and Slider (2 Column Grid) */}
         <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
-          <BannerGrid banners={bannerImages} columns={2} mobileColumns={2} />
+          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={2} mobileColumns={2} />
         </LazySection>
 
         {/* 23. Top Rated (Carousel - Single Card) */}
         <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
           <ProductCarousel
-            products={dummyProducts}
+            apiUrl={`${baseURL}api/products/products.php?action=top_rated`}
             title="Top Rated"
             badgeText="CUSTOMIZABLE"
             cardsToShowMobile={1.1}
@@ -352,18 +352,18 @@ const MobHome = () => {
 
         {/* 24. Product List (2 Column Grid) */}
         <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
+          <MobileProductList apiUrl={`${baseURL}api/products/products.php?action=top_rated`} />
         </LazySection>
 
         {/* 25. Square size Banner and Slider (1 Column Grid) */}
         <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
         </LazySection>
 
         {/* 26. Top Deal and Categories (Carousel) */}
         <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
           <ProductCarousel
-            products={dummyProducts}
+            apiUrl={`${baseURL}api/products/products.php?action=top_deal`}
             title="Top Deal and Categories"
             badgeText="CUSTOMIZABLE"
           />
@@ -371,13 +371,13 @@ const MobHome = () => {
 
         {/* 27. Product List (2 Column Grid) */}
         <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
+          <MobileProductList apiUrl={`${baseURL}api/products/products.php?action=top_deal`} />
         </LazySection>
 
         {/* 28. Banner and Slider (Widescreen 70/30 Slider) */}
         <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 9" />}>
           <MobileHeroSlider
-            banners={bannerImages}
+            apiUrl={`${baseURL}api/banners/banners.php`}
             slidesPerView={1.3}
             spaceBetween={8}
           />
@@ -386,7 +386,7 @@ const MobHome = () => {
         {/* 29. Women's Outfits (Carousel) */}
         <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
           <ProductCarousel
-            products={womensOutfitsProducts}
+            apiUrl={`${baseURL}api/products/products.php?action=top_selection`}
             title="Women's Outfits"
           />
         </LazySection>
