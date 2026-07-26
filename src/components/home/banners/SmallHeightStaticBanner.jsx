@@ -58,6 +58,7 @@ export default function SmallHeightStaticBanner({
             target={banner.target}
             alt={banner.alt || "Small Offer Banner Strip"}
             className="w-100 h-100 object-fit-cover"
+            borderRadius="4px"
           />
         </div>
       </div>

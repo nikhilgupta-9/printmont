@@ -76,6 +76,7 @@ export default function SmallHeightCarouselSlider({
                   target={banner.target}
                   alt={banner.alt || `Small Height Banner ${index + 1}`}
                   className="w-100 h-100 object-fit-cover"
+                  borderRadius="4px"
                 />
               </div>
             </SwiperSlide>
