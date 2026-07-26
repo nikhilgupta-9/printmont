@@ -6,9 +6,8 @@
 header('Content-Type: application/json');
 
 // CORS setup for local & production React frontend
-$allowed_origins = ['https://printmont.me', 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000'];
 $http_origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if (in_array($http_origin, $allowed_origins)) {
+if (!empty($http_origin)) {
     header("Access-Control-Allow-Origin: $http_origin");
 } else {
     header("Access-Control-Allow-Origin: *");

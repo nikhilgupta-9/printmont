@@ -25,7 +25,9 @@ class UserModel extends BaseModel {
             $phone = $this->db->real_escape_string(trim($userData['mobile']));
             $gender = $this->db->real_escape_string(trim($userData['gender']));
             $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
-            $username = $this->db->real_escape_string($this->generateUsername($userData['email']));
+            // `users.username` is UNIQUE. Leaving it out defaults it to '', so the second
+            // registration onwards collided with "Duplicate entry '' for key 'username'".
+            $username = $this->db->real_escape_string($this->generateUsername(trim($userData['email'])));
 
             // Insert into users table
             $userQuery = "INSERT INTO users (username, first_name, last_name, email, phone, gender, password, role, status, created_at)

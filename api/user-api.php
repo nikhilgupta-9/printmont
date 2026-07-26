@@ -2,24 +2,11 @@
 header('Content-Type: application/json');
 
 // CORS Configuration - Allow multiple origins
-$allowed_origins = [
-    'https://printmont.me',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000'
-];
-
 $http_origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-
-// Check if the origin is in allowed list
-if (in_array($http_origin, $allowed_origins)) {
+if (!empty($http_origin)) {
     header("Access-Control-Allow-Origin: $http_origin");
 } else {
-    // For development, you can allow any origin (remove in production)
-    // header("Access-Control-Allow-Origin: *");
-    // Or be more restrictive in production
-    header("Access-Control-Allow-Origin: https://printmont.me");
+    header("Access-Control-Allow-Origin: *");
 }
 
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');

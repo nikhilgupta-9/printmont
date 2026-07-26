@@ -78,7 +78,7 @@ try {
 
     $products = $productController->getAllProductsApi();
     foreach ($products as &$p) attachImages($database, $p);
-    echo json_encode(["success" => true, "products" => $products]);
+    echo json_encode(["success" => true, "products" => $products, "data" => $products]);
 
 } catch (Exception $e) {
     echo json_encode(["success" => false, "message" => $e->getMessage()]);

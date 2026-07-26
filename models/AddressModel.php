@@ -1,4 +1,13 @@
 <?php
+/**
+ * Address Model
+ *
+ * NOTE: this model receives the shared mysqli connection (config/database.php).
+ * It was originally written against PDO (bindParam / fetch(PDO::FETCH_ASSOC) /
+ * lastInsertId), which fatals on mysqli — every address call died with
+ * "Call to undefined method mysqli_stmt::bindParam()". All queries below use the
+ * mysqli API: bind_param() with a type string, get_result(), and insert_id.
+ */
 class AddressModel {
     private $conn;
     private $table_name = "addresses";
@@ -29,28 +38,31 @@ class AddressModel {
             INDEX user_id_index (user_id)
         )";
 
-        $stmt = $this->conn->prepare($query);
-        return $stmt->execute();
+        return $this->conn->query($query);
     }
 
     // Get all addresses for a user
     public function getAddressesByUserId($user_id) {
         try {
-            $query = "SELECT * FROM " . $this->table_name . " 
-                      WHERE user_id = ? 
+            $user_id = (int)$user_id;
+            $query = "SELECT * FROM " . $this->table_name . "
+                      WHERE user_id = ?
                       ORDER BY is_default DESC, created_at DESC";
-            
+
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $user_id);
+            if (!$stmt) return [];
+            $stmt->bind_param("i", $user_id);
             $stmt->execute();
-            
+            $result = $stmt->get_result();
+
             $addresses = [];
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            while ($row = $result->fetch_assoc()) {
                 $addresses[] = $row;
             }
-            
+            $stmt->close();
+
             return $addresses;
-            
+
         } catch (Exception $e) {
             error_log("Error getting addresses: " . $e->getMessage());
             return [];
@@ -60,16 +72,20 @@ class AddressModel {
     // Get single address by ID
     public function getAddressById($id, $user_id) {
         try {
-            $query = "SELECT * FROM " . $this->table_name . " 
+            $id = (int)$id;
+            $user_id = (int)$user_id;
+            $query = "SELECT * FROM " . $this->table_name . "
                       WHERE id = ? AND user_id = ?";
-            
+
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $id);
-            $stmt->bindParam(2, $user_id);
+            if (!$stmt) return false;
+            $stmt->bind_param("ii", $id, $user_id);
             $stmt->execute();
-            
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-            
+            $row = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+
+            return $row;
+
         } catch (Exception $e) {
             error_log("Error getting address: " . $e->getMessage());
             return false;
@@ -83,31 +99,41 @@ class AddressModel {
             $existingAddresses = $this->getAddressesByUserId($user_id);
             $is_default = empty($existingAddresses) ? 1 : 0;
 
-            $query = "INSERT INTO " . $this->table_name . " 
-                     (user_id, name, phone, pincode, locality, address, city, state, landmark, alt_phone, type, is_default) 
+            $query = "INSERT INTO " . $this->table_name . "
+                     (user_id, name, phone, pincode, locality, address, city, state, landmark, alt_phone, type, is_default)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            
+
             $stmt = $this->conn->prepare($query);
-            
-            $stmt->bindParam(1, $user_id);
-            $stmt->bindParam(2, $data['name']);
-            $stmt->bindParam(3, $data['phone']);
-            $stmt->bindParam(4, $data['pincode']);
-            $stmt->bindParam(5, $data['locality']);
-            $stmt->bindParam(6, $data['address']);
-            $stmt->bindParam(7, $data['city']);
-            $stmt->bindParam(8, $data['state']);
-            $stmt->bindParam(9, $data['landmark']);
-            $stmt->bindParam(10, $data['altPhone']);
-            $stmt->bindParam(11, $data['type']);
-            $stmt->bindParam(12, $is_default);
-            
+            if (!$stmt) return false;
+
+            // bind_param() takes variables by reference, so normalise into locals first.
+            $user_id  = (int)$user_id;
+            $name     = (string)($data['name'] ?? '');
+            $phone    = (string)($data['phone'] ?? '');
+            $pincode  = (string)($data['pincode'] ?? '');
+            $locality = (string)($data['locality'] ?? '');
+            $address  = (string)($data['address'] ?? '');
+            $city     = (string)($data['city'] ?? '');
+            $state    = (string)($data['state'] ?? '');
+            $landmark = (string)($data['landmark'] ?? '');
+            $altPhone = (string)($data['altPhone'] ?? $data['alt_phone'] ?? '');
+            $type     = (string)($data['type'] ?? 'Home');
+
+            $stmt->bind_param(
+                "issssssssssi",
+                $user_id, $name, $phone, $pincode, $locality, $address,
+                $city, $state, $landmark, $altPhone, $type, $is_default
+            );
+
             if ($stmt->execute()) {
-                return $this->conn->lastInsertId();
+                $insertId = $this->conn->insert_id;
+                $stmt->close();
+                return $insertId;
             }
-            
+
+            $stmt->close();
             return false;
-            
+
         } catch (Exception $e) {
             error_log("Error adding address: " . $e->getMessage());
             return false;
@@ -117,29 +143,38 @@ class AddressModel {
     // Update address
     public function updateAddress($id, $user_id, $data) {
         try {
-            $query = "UPDATE " . $this->table_name . " 
-                     SET name = ?, phone = ?, pincode = ?, locality = ?, address = ?, 
-                         city = ?, state = ?, landmark = ?, alt_phone = ?, type = ?, 
-                         updated_at = CURRENT_TIMESTAMP 
+            $query = "UPDATE " . $this->table_name . "
+                     SET name = ?, phone = ?, pincode = ?, locality = ?, address = ?,
+                         city = ?, state = ?, landmark = ?, alt_phone = ?, type = ?,
+                         updated_at = CURRENT_TIMESTAMP
                      WHERE id = ? AND user_id = ?";
-            
+
             $stmt = $this->conn->prepare($query);
-            
-            $stmt->bindParam(1, $data['name']);
-            $stmt->bindParam(2, $data['phone']);
-            $stmt->bindParam(3, $data['pincode']);
-            $stmt->bindParam(4, $data['locality']);
-            $stmt->bindParam(5, $data['address']);
-            $stmt->bindParam(6, $data['city']);
-            $stmt->bindParam(7, $data['state']);
-            $stmt->bindParam(8, $data['landmark']);
-            $stmt->bindParam(9, $data['altPhone']);
-            $stmt->bindParam(10, $data['type']);
-            $stmt->bindParam(11, $id);
-            $stmt->bindParam(12, $user_id);
-            
-            return $stmt->execute();
-            
+            if (!$stmt) return false;
+
+            $name     = (string)($data['name'] ?? '');
+            $phone    = (string)($data['phone'] ?? '');
+            $pincode  = (string)($data['pincode'] ?? '');
+            $locality = (string)($data['locality'] ?? '');
+            $address  = (string)($data['address'] ?? '');
+            $city     = (string)($data['city'] ?? '');
+            $state    = (string)($data['state'] ?? '');
+            $landmark = (string)($data['landmark'] ?? '');
+            $altPhone = (string)($data['altPhone'] ?? $data['alt_phone'] ?? '');
+            $type     = (string)($data['type'] ?? 'Home');
+            $id       = (int)$id;
+            $user_id  = (int)$user_id;
+
+            $stmt->bind_param(
+                "ssssssssssii",
+                $name, $phone, $pincode, $locality, $address,
+                $city, $state, $landmark, $altPhone, $type, $id, $user_id
+            );
+
+            $result = $stmt->execute();
+            $stmt->close();
+            return $result;
+
         } catch (Exception $e) {
             error_log("Error updating address: " . $e->getMessage());
             return false;
@@ -153,13 +188,16 @@ class AddressModel {
             $address = $this->getAddressById($id, $user_id);
             $was_default = $address && $address['is_default'] == 1;
 
-            $query = "DELETE FROM " . $this->table_name . " 
+            $id = (int)$id;
+            $user_id = (int)$user_id;
+            $query = "DELETE FROM " . $this->table_name . "
                      WHERE id = ? AND user_id = ?";
-            
+
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $id);
-            $stmt->bindParam(2, $user_id);
+            if (!$stmt) return false;
+            $stmt->bind_param("ii", $id, $user_id);
             $result = $stmt->execute();
+            $stmt->close();
 
             // If we deleted the default address, set a new default
             if ($result && $was_default) {
@@ -167,7 +205,7 @@ class AddressModel {
             }
 
             return $result;
-            
+
         } catch (Exception $e) {
             error_log("Error deleting address: " . $e->getMessage());
             return false;
@@ -177,26 +215,29 @@ class AddressModel {
     // Set address as default
     public function setDefaultAddress($id, $user_id) {
         try {
+            $id = (int)$id;
+            $user_id = (int)$user_id;
+
             // First reset all addresses to non-default
-            $query = "UPDATE " . $this->table_name . " 
-                     SET is_default = 0 
-                     WHERE user_id = ?";
-            
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $user_id);
+            $stmt = $this->conn->prepare(
+                "UPDATE " . $this->table_name . " SET is_default = 0 WHERE user_id = ?"
+            );
+            if (!$stmt) return false;
+            $stmt->bind_param("i", $user_id);
             $stmt->execute();
+            $stmt->close();
 
             // Then set the specified address as default
-            $query = "UPDATE " . $this->table_name . " 
-                     SET is_default = 1 
-                     WHERE id = ? AND user_id = ?";
-            
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $id);
-            $stmt->bindParam(2, $user_id);
-            
-            return $stmt->execute();
-            
+            $stmt = $this->conn->prepare(
+                "UPDATE " . $this->table_name . " SET is_default = 1 WHERE id = ? AND user_id = ?"
+            );
+            if (!$stmt) return false;
+            $stmt->bind_param("ii", $id, $user_id);
+            $result = $stmt->execute();
+            $stmt->close();
+
+            return $result;
+
         } catch (Exception $e) {
             error_log("Error setting default address: " . $e->getMessage());
             return false;
@@ -206,16 +247,20 @@ class AddressModel {
     // Set new default address after deletion
     private function setNewDefaultAddress($user_id) {
         try {
-            $query = "UPDATE " . $this->table_name . " 
-                     SET is_default = 1 
-                     WHERE user_id = ? 
-                     ORDER BY created_at DESC 
+            $user_id = (int)$user_id;
+            $query = "UPDATE " . $this->table_name . "
+                     SET is_default = 1
+                     WHERE user_id = ?
+                     ORDER BY created_at DESC
                      LIMIT 1";
-            
+
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $user_id);
-            return $stmt->execute();
-            
+            if (!$stmt) return false;
+            $stmt->bind_param("i", $user_id);
+            $result = $stmt->execute();
+            $stmt->close();
+            return $result;
+
         } catch (Exception $e) {
             error_log("Error setting new default address: " . $e->getMessage());
             return false;
@@ -226,35 +271,35 @@ class AddressModel {
     public function validateAddress($data) {
         $errors = [];
 
-        if (empty(trim($data['name']))) {
+        if (empty(trim($data['name'] ?? ''))) {
             $errors[] = "Name is required";
         }
 
-        if (empty(trim($data['phone']))) {
+        if (empty(trim($data['phone'] ?? ''))) {
             $errors[] = "Phone number is required";
         } elseif (!preg_match('/^[0-9]{10}$/', $data['phone'])) {
             $errors[] = "Phone number must be 10 digits";
         }
 
-        if (empty(trim($data['pincode']))) {
+        if (empty(trim($data['pincode'] ?? ''))) {
             $errors[] = "Pincode is required";
         } elseif (!preg_match('/^[0-9]{6}$/', $data['pincode'])) {
             $errors[] = "Pincode must be 6 digits";
         }
 
-        if (empty(trim($data['locality']))) {
+        if (empty(trim($data['locality'] ?? ''))) {
             $errors[] = "Locality is required";
         }
 
-        if (empty(trim($data['address']))) {
+        if (empty(trim($data['address'] ?? ''))) {
             $errors[] = "Address is required";
         }
 
-        if (empty(trim($data['city']))) {
+        if (empty(trim($data['city'] ?? ''))) {
             $errors[] = "City is required";
         }
 
-        if (empty(trim($data['state'])) || $data['state'] === '--Select State--') {
+        if (empty(trim($data['state'] ?? '')) || $data['state'] === '--Select State--') {
             $errors[] = "State is required";
         }
 
