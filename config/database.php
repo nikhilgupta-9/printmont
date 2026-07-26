@@ -3,18 +3,34 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+require_once dirname(__DIR__) . '/vendor/autoload.php'; // go up from config/ to project root
+
+use Dotenv\Dotenv;
+
+// Load .env from project root
+$dotenv = Dotenv::createImmutable(dirname(__DIR__));
+$dotenv->load();
+
 // Define BASE_URL outside the class
 // define("BASE_URL", "https://mediumvioletred-pelican-783174.hostingersite.com/");
-if (!defined('BASE_URL')) define("BASE_URL", "http://localhost/printmont/");
+if (!defined('BASE_URL')) define("BASE_URL", $_ENV['SITE'] ?? 'https://printmont.com/');
 
 if (!class_exists('Database')) {
 class Database {
-    private $host = "localhost";
-    private $db_name = "printmont_db";
-    private $username = "root";
-    private $password = "";
+    private $host;
+        private $db_name;
+        private $username;
+        private $password;
 
-    public $conn;
+        public $conn;
+
+        public function __construct()
+        {
+            $this->host     = $_ENV['DB_HOST'] ?? 'localhost';
+            $this->db_name  = $_ENV['DB_NAME'] ?? '';
+            $this->username = $_ENV['DB_USERNAME'] ?? 'root';
+            $this->password = $_ENV['DB_PASSWORD'] ?? '';
+        }
 
     public function getConnection() {
         $this->conn = null;
