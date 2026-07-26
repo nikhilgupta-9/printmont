@@ -8,6 +8,7 @@ import {
   MobileHeroSlider,
   StaticResponsiveBanner,
   OneAndHalfCarousel,
+  SquareSingleImageMobileSlider,
 } from '../home';
 
 const sampleBanners = [
@@ -152,8 +153,8 @@ export default function BannerPreview() {
           <h4 className="fw-bold text-dark border-bottom pb-2">
             8. Square Size Offer Banner Slider (Single Square Touch Slider)
           </h4>
-          <p className="text-muted small">Component: <code>MobileHeroSlider (slidesPerView=1)</code></p>
-          <MobileHeroSlider banners={sampleBanners} slidesPerView={1} isMobileOnly={false} />
+          <p className="text-muted small">Component: <code>SquareSingleImageMobileSlider</code></p>
+          <SquareSingleImageMobileSlider banners={sampleBanners} isMobileOnly={false} />
         </div>
 
         {/* 9. Banner Slider Carousel (Full Width Slider) */}
