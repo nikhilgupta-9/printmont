@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ASSET_URL } from '../../config/apiEndpoints';
+import { ASSET_URL, resolveImageUrl } from '../../config/apiEndpoints';
 import { SearchGridSkeleton } from './SearchSkeleton';
 import { FiFilter, FiRefreshCw, FiShoppingBag } from 'react-icons/fi';
 
@@ -184,11 +184,7 @@ const SearchResults = ({
             <div>
               <div className="row g-4 mb-4">
                 {items.map((prod) => {
-                  const imgUrl = prod.image
-                    ? prod.image.startsWith('http')
-                      ? prod.image
-                      : `${ASSET_URL}${prod.image}`
-                    : 'https://via.placeholder.com/300x300?text=No+Image';
+                  const imgUrl = resolveImageUrl(prod.image);
 
                   return (
                     <div key={prod.id} className="col-12 col-sm-6 col-md-4 col-xl-3">

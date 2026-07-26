@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { TbCategory2 } from "react-icons/tb";
 import { IoIosArrowDown, IoIosArrowForward } from "react-icons/io";
 import { Link } from "react-router-dom";
-import { API_ENDPOINTS, ASSET_URL } from "../../../config/apiEndpoints";
+import { API_ENDPOINTS, ASSET_URL, resolveImageUrl } from "../../../config/apiEndpoints";
 
 const fallbackCategories = [
   { id: 1, name: "Electronics", slug: "electronics", image: "/electro/mobile-1.jpeg" },
@@ -111,10 +111,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
   }, [isSticky, show, categoryHeight]);
 
   const getImageUrl = (imagePath) => {
-    if (!imagePath) return '/default-img.jpg';
-    if (imagePath.startsWith('http')) return imagePath;
-    const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
-    return `${ASSET_URL}${cleanPath}`;
+    return resolveImageUrl(imagePath);
   };
 
   const getArray = (data) => {

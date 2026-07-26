@@ -20,7 +20,7 @@ import LazySection from "./LazySection";
 import { getSkeletonForType } from "./HomeSkeleton";
 
 import SectionNine from "../pages/sections/SectionNine";
-import { ASSET_URL } from "../../config/apiEndpoints";
+import { ASSET_URL, resolveImageUrl } from "../../config/apiEndpoints";
 
 // Static data fallbacks to match original hardcoded layouts
 import {
@@ -74,11 +74,11 @@ export default function SectionRenderer({ section, baseURL, lazyLoad = true, isM
     }
   }
 
-  // Prepend ASSET_URL to banner image URLs if they are relative
+  // Prepend ASSET_URL or resolve local public paths for banner image URLs
   const formattedBanners = (banners || []).map(b => ({
     ...b,
-    large: b.large && !b.large.startsWith("http") ? `${ASSET_URL}${b.large}` : b.large,
-    small: b.small && !b.small.startsWith("http") ? `${ASSET_URL}${b.small}` : b.small,
+    large: b.large ? resolveImageUrl(b.large) : b.large,
+    small: b.small ? resolveImageUrl(b.small) : b.small,
   }));
 
   // Resolve the actual section content

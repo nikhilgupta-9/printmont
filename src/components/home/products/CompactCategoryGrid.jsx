@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { MdKeyboardArrowRight } from "react-icons/md";
-import { API_ENDPOINTS, ASSET_URL } from "../../../config/apiEndpoints";
+import { API_ENDPOINTS, ASSET_URL, resolveImageUrl } from "../../../config/apiEndpoints";
 
 // Fallback dummy categories in case the API has no categories or fails
 const fallbackCategories = [
@@ -68,11 +68,7 @@ export default function CompactCategoryGrid({
   const colClass = columns === 2 ? "card-grid-item-2col" : "card-grid-item-3col";
 
   const getImageUrl = (img) => {
-    if (!img) return "/default-img.jpg";
-    if (img.startsWith("http") || img.startsWith("./") || img.startsWith("/")) {
-      return img;
-    }
-    return `${ASSET_URL}${img}`;
+    return resolveImageUrl(img);
   };
 
   if (loading) {

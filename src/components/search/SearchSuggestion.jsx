@@ -1,5 +1,5 @@
 import React from 'react';
-import { ASSET_URL } from '../../config/apiEndpoints';
+import { ASSET_URL, resolveImageUrl } from '../../config/apiEndpoints';
 import { BiCategory } from 'react-icons/bi';
 import { FiPackage } from 'react-icons/fi';
 
@@ -7,12 +7,7 @@ const SearchSuggestion = ({ item, isSelected, onClick, onMouseEnter }) => {
   const isProduct = item.itemType === 'product';
   
   // Format Image URL
-  let imageUrl = null;
-  if (isProduct && item.image) {
-    imageUrl = item.image.startsWith('http') ? item.image : `${ASSET_URL}${item.image}`;
-  } else if (!isProduct && item.image) {
-    imageUrl = item.image.startsWith('http') ? item.image : `${ASSET_URL}${item.image}`;
-  }
+  let imageUrl = item.image ? resolveImageUrl(item.image) : null;
 
   // Type Badge Color styling
   const getTypeBadgeClass = (type) => {

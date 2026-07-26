@@ -91,3 +91,25 @@ export const API_ENDPOINTS = {
   POLICIES: `${BASE_URL}/pages/policies.php`,
   LOGO: `${BASE_URL}/settings/settings.php`,
 };
+
+export const resolveImageUrl = (imagePath) => {
+  if (!imagePath) return '/default-img.jpg';
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+
+  const normPath = imagePath.startsWith('/') ? imagePath : '/' + imagePath;
+  const localAssetPrefixes = [
+    '/electro/', '/men_shirt/', '/women-dress/', '/girl-product-img/',
+    '/banners/', '/card/', '/crouselimages/', '/first-carousel-img/',
+    '/kid-dress/', '/section-img/', '/sq/', '/sqtopdeals/', '/top-deals/',
+    '/bg/', '/blog/', '/icons/', '/default-img.jpg', '/Asured.png', '/PrintLogo.png'
+  ];
+
+  if (localAssetPrefixes.some(prefix => normPath.startsWith(prefix))) {
+    return normPath;
+  }
+
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  return `${ASSET_URL}${cleanPath}`;
+};
