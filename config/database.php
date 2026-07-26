@@ -3,57 +3,33 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-if (file_exists(dirname(__DIR__) . '/vendor/autoload.php')) {
-    require_once dirname(__DIR__) . '/vendor/autoload.php';
-}
-
-if (class_exists('Dotenv\Dotenv')) {
-    try {
-        $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
-        $dotenv->safeLoad();
-    } catch (\Throwable $t) {
-        // Safe load if .env is missing on production
-    }
-}
-
 // Define BASE_URL outside the class
-if (!defined('BASE_URL')) define("BASE_URL", $_ENV['SITE'] ?? ($_SERVER['SITE'] ?? 'https://printmont.com/'));
+// define("BASE_URL", "https://mediumvioletred-pelican-783174.hostingersite.com/");
+if (!defined('BASE_URL')) define("BASE_URL", "http://localhost/printmont/");
 
 if (!class_exists('Database')) {
 class Database {
-    private $host;
-    private $db_name;
-    private $username;
-    private $password;
+    private $host = "localhost";
+    private $db_name = "printmont_db";
+    private $username = "root";
+    private $password = "";
 
     public $conn;
 
-    public function __construct()
-    {
-        $this->host     = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? (defined('DB_HOST') ? DB_HOST : 'localhost'));
-        $this->db_name  = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? (defined('DB_NAME') ? DB_NAME : 'printmont_db'));
-        $this->username = getenv('DB_USER') ?: (getenv('DB_USERNAME') ?: ($_ENV['DB_USERNAME'] ?? ($_ENV['DB_USER'] ?? (defined('DB_USER') ? DB_USER : 'root'))));
-        $this->password = getenv('DB_PASS') !== false ? getenv('DB_PASS') : (getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : ($_ENV['DB_PASSWORD'] ?? ($_ENV['DB_PASS'] ?? (defined('DB_PASS') ? DB_PASS : ''))));
-    }
-
     public function getConnection() {
-        if ($this->conn && !$this->conn->connect_error) {
-            return $this->conn;
-        }
-
+        $this->conn = null;
         $attempts = [
             ['host' => $this->host, 'username' => $this->username, 'password' => $this->password, 'db_name' => $this->db_name],
             ['host' => 'localhost', 'username' => $this->username, 'password' => $this->password, 'db_name' => $this->db_name],
-            ['host' => '127.0.0.1', 'username' => 'root', 'password' => '', 'db_name' => 'printmont_db'],
-            ['host' => 'localhost', 'username' => 'root', 'password' => '', 'db_name' => 'printmont_db'],
+            ['host' => '127.0.0.1', 'username' => 'root', 'password' => '', 'db_name' => $this->db_name],
+            ['host' => 'localhost', 'username' => 'root', 'password' => '', 'db_name' => $this->db_name],
         ];
 
         $last_error = null;
 
         foreach ($attempts as $attempt) {
-            if (empty($attempt['host']) || empty($attempt['db_name'])) continue;
             try {
-                $conn = @new mysqli($attempt['host'], $attempt['username'], $attempt['password'], $attempt['db_name']);
+                $conn = new mysqli($attempt['host'], $attempt['username'], $attempt['password'], $attempt['db_name']);
                 if ($conn->connect_error) {
                     $last_error = "Connection failed: " . $conn->connect_error;
                     continue;
@@ -67,7 +43,7 @@ class Database {
             }
         }
 
-        throw new Exception("Database connection failed. Please verify MySQL is running and database credentials are correct. Last error: " . $last_error);
+        throw new Exception("Database connection failed. Please verify MySQL is running and the database credentials are correct. Last error: " . $last_error);
     }
 
     public function execute($query, $params = []) {

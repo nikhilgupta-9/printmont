@@ -1,10 +1,8 @@
 <?php
-require_once __DIR__ . '/../vendor/autoload.php'; // If using composer
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
 
-// Safe fallbacks so this class works even if config/constants.php (which has
-// side-effecting CORS headers) hasn't been loaded in the current request.
 if (!defined('JWT_SECRET')) define('JWT_SECRET', '609a34ea43dcbe481fd8b3b3df7f59c4d3ef4148cc84cfb47150ed958a050d24');
 if (!defined('JWT_ALGORITHM')) define('JWT_ALGORITHM', 'HS256');
 
@@ -20,8 +18,40 @@ class JWTHandler {
         $this->algorithm = JWT_ALGORITHM;
     }
 
-    // $type is embedded in the token so an access token can't be replayed
-    // as a refresh token and vice versa.
+    private function base64UrlEncode($data) {
+        return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($data));
+    }
+
+    private function base64UrlDecode($data) {
+        $b64 = str_replace(['-', '_'], ['+', '/'], $data);
+        $remainder = strlen($b64) % 4;
+        if ($remainder) {
+            $b64 .= str_repeat('=', 4 - $remainder);
+        }
+        return base64_decode($b64);
+    }
+
+    private function nativeEncode($payload) {
+        $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
+        $base64UrlHeader = $this->base64UrlEncode($header);
+        $base64UrlPayload = $this->base64UrlEncode(json_encode($payload));
+        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, $this->secret, true);
+        $base64UrlSignature = $this->base64UrlEncode($signature);
+        return $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
+    }
+
+    private function nativeDecode($token) {
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) return false;
+        list($base64UrlHeader, $base64UrlPayload, $base64UrlSignature) = $parts;
+        $signature = $this->base64UrlDecode($base64UrlSignature);
+        $expectedSignature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, $this->secret, true);
+        if (!hash_equals($expectedSignature, $signature)) return false;
+        $payload = json_decode($this->base64UrlDecode($base64UrlPayload), true);
+        if (isset($payload['exp']) && $payload['exp'] < time()) return false;
+        return $payload;
+    }
+
     public function generateToken($payload, string $type = 'access', ?int $ttl = null) {
         $issuedAt = time();
         $ttl = $ttl ?? ($type === 'refresh' ? self::REFRESH_TOKEN_TTL : self::ACCESS_TOKEN_TTL);
@@ -35,10 +65,17 @@ class JWTHandler {
             "data" => $payload,
         ];
 
-        return JWT::encode($tokenPayload, $this->secret, $this->algorithm);
+        if (class_exists('Firebase\JWT\JWT')) {
+            try {
+                return \Firebase\JWT\JWT::encode($tokenPayload, $this->secret, $this->algorithm);
+            } catch (\Throwable $e) {
+                return $this->nativeEncode($tokenPayload);
+            }
+        }
+
+        return $this->nativeEncode($tokenPayload);
     }
 
-    // Issues a matched access + refresh token pair for a login/register/refresh response.
     public function generateTokenPair($payload): array {
         return [
             'access_token'  => $this->generateToken($payload, 'access'),
@@ -49,24 +86,32 @@ class JWTHandler {
     }
 
     public function validateToken($token, string $expectedType = 'access') {
-        try {
-            $decoded = JWT::decode($token, new Key($this->secret, $this->algorithm));
-            if (($decoded->type ?? 'access') !== $expectedType) {
-                return false;
+        if (empty($token)) return false;
+
+        if (class_exists('Firebase\JWT\JWT') && class_exists('Firebase\JWT\Key')) {
+            try {
+                $decoded = \Firebase\JWT\JWT::decode($token, new \Firebase\JWT\Key($this->secret, $this->algorithm));
+                if (($decoded->type ?? 'access') !== $expectedType) {
+                    return false;
+                }
+                return json_decode(json_encode($decoded->data), true);
+            } catch (\Throwable $e) {
+                // Fallback to native decode
             }
-            return $decoded->data;
-        } catch (Exception $e) {
+        }
+
+        $decoded = $this->nativeDecode($token);
+        if (!$decoded || ($decoded['type'] ?? 'access') !== $expectedType) {
             return false;
         }
+        return $decoded['data'] ?? false;
     }
 
     public function getTokenFromHeader() {
-        $headers = getallheaders();
-        if (isset($headers['Authorization'])) {
-            $authHeader = $headers['Authorization'];
-            if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-                return $matches[1];
-            }
+        $headers = function_exists('getallheaders') ? getallheaders() : [];
+        $authHeader = $headers['Authorization'] ?? $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null;
+        if ($authHeader && preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+            return $matches[1];
         }
         return null;
     }
