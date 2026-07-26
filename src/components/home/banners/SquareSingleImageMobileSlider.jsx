@@ -57,7 +57,10 @@ export default function SquareSingleImageMobileSlider({
       className={`${isMobileOnly ? "d-block d-lg-none" : "d-block"} w-100 home-banner-section p-2`}
       style={{ maxWidth: "500px", margin: "0 auto" }}
     >
-      <div className="square-banner-slider-box rounded border overflow-hidden shadow-sm bg-white">
+      <div 
+        className="square-banner-slider-box border overflow-hidden shadow-sm bg-white"
+        style={{ borderRadius: "4px" }}
+      >
         <Swiper
           slidesPerView={1}
           spaceBetween={0}
@@ -71,7 +74,7 @@ export default function SquareSingleImageMobileSlider({
             <SwiperSlide key={index}>
               <div 
                 className="w-100 position-relative" 
-                style={{ aspectRatio: "1 / 1", overflow: "hidden" }}
+                style={{ aspectRatio: "1 / 1", overflow: "hidden", borderRadius: "4px" }}
               >
                 <BannerImage
                   large={banner.large}
@@ -79,6 +82,7 @@ export default function SquareSingleImageMobileSlider({
                   target={banner.target}
                   alt={banner.alt || `Square Offer Banner ${index + 1}`}
                   className="w-100 h-100 object-fit-cover aspect-square"
+                  borderRadius="4px"
                 />
               </div>
             </SwiperSlide>
