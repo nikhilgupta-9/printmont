@@ -74,37 +74,33 @@
 .home-banner-img,
 .home-banner-picture {
   width: 100%;
-  height: var(--home-banner-height-desktop);
+  height: auto;
+  max-width: 100%;
   object-fit: cover;
   display: block;
-  border-radius: 10px;
+  border-radius: 4px;
   transition: transform 0.3s ease;
 }
 
 .home-banner-img:hover {
-  transform: scale(1.03);
+  transform: scale(1.02);
 }
 
-/* Responsive Banner Height Rules */
-@media (min-width: 1200px) {
-  .home-banner-img,
-  .home-banner-picture {
-    height: var(--home-banner-height-xl);
-  }
+/* Aspect ratio shape helpers for exact banner layout shapes */
+.aspect-square,
+.aspect-square img,
+.aspect-square picture {
+  aspect-ratio: 1 / 1 !important;
+  height: 100% !important;
+  object-fit: cover !important;
 }
 
-@media (max-width: 991.98px) {
-  .home-banner-img,
-  .home-banner-picture {
-    height: var(--home-banner-height-tablet);
-  }
-}
-
-@media (max-width: 767.98px) {
-  .home-banner-img,
-  .home-banner-picture {
-    height: var(--home-banner-height-mobile);
-  }
+.aspect-small-strip,
+.aspect-small-strip img,
+.aspect-small-strip picture {
+  aspect-ratio: 16 / 3 !important;
+  max-height: 130px !important;
+  object-fit: cover !important;
 }
 
 /* Shimmer Skeletal Loaders */

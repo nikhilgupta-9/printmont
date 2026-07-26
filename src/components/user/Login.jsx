@@ -82,7 +82,14 @@ const Login = () => {
     // Construct payload based on login method
     let payload;
     if (isSignup) {
-      payload = formData;
+      payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        mobile: formData.mobile,
+        email: formData.email,
+        gender: formData.gender,
+        password: formData.password
+      };
     } else {
       if (loginMethod === 'password') {
         payload = { email: formData.identifier, password: formData.password };

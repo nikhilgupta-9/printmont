@@ -23,7 +23,7 @@ export default function SmallHeightCarouselSlider({
   banners: propBanners,
   basePath = "",
   sectionKey = "small_height_carousel",
-  maxHeight = "140px",
+  maxHeight = "85px",
   autoPlay = true
 }) {
   const { banners: fetchedBanners, loading, error } = useHomeBanners(apiUrl, sectionKey, basePath);

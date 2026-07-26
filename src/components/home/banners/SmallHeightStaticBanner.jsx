@@ -18,7 +18,7 @@ export default function SmallHeightStaticBanner({
   banners: propBanners,
   basePath = "",
   sectionKey = "small_height_banner",
-  maxHeight = "140px"
+  maxHeight = "85px"
 }) {
   const { banners: fetchedBanners, loading, error } = useHomeBanners(apiUrl, sectionKey, basePath);
   const rawBanners = (fetchedBanners && fetchedBanners.length > 0) ? fetchedBanners : (propBanners || []);

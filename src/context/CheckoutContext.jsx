@@ -54,7 +54,12 @@ export const CheckoutProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch(`${API_URL}/cart-api.php`);
+      const token = localStorage.getItem('token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${API_URL}/cart-api.php`, { headers });
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
