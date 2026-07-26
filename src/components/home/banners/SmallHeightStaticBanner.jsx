@@ -46,10 +46,10 @@ export default function SmallHeightStaticBanner({
   const banner = banners[0];
 
   return (
-    <div className="w-100 home-banner-section p-1 p-md-2">
+    <div className="w-100 home-banner-section p-0 m-0">
       <div 
-        className="small-height-banner-container rounded border overflow-hidden shadow-sm bg-white"
-        style={{ width: "100%", maxHeight: maxHeight }}
+        className="small-height-banner-container overflow-hidden bg-white"
+        style={{ width: "100%", maxHeight: maxHeight, borderRadius: "4px" }}
       >
         <div className="w-100 position-relative" style={{ height: maxHeight, overflow: "hidden" }}>
           <BannerImage

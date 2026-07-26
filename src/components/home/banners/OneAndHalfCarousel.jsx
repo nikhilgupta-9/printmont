@@ -36,7 +36,7 @@ export default function OneAndHalfCarousel({
   }
 
   return (
-    <div className={`${isMobileOnly ? "d-block d-md-none" : "d-block"} w-100 home-banner-section px-2`}>
+    <div className={`${isMobileOnly ? "d-block d-md-none" : "d-block"} w-100 home-banner-section p-0 m-0`}>
       <Swiper
         slidesPerView={1.25}
         spaceBetween={12}

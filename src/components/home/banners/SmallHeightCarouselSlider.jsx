@@ -53,8 +53,8 @@ export default function SmallHeightCarouselSlider({
   if (autoPlay) modules.push(Autoplay);
 
   return (
-    <div className="w-100 home-banner-section p-1 p-md-2">
-      <div className="small-height-carousel-box rounded border overflow-hidden shadow-sm bg-white">
+    <div className="w-100 home-banner-section p-0 m-0">
+      <div className="small-height-carousel-box overflow-hidden bg-white" style={{ borderRadius: "4px" }}>
         <Swiper
           slidesPerView={1}
           spaceBetween={0}

@@ -54,11 +54,10 @@ export default function SquareSingleImageMobileSlider({
 
   return (
     <div 
-      className={`${isMobileOnly ? "d-block d-lg-none" : "d-block"} w-100 home-banner-section p-2`}
-      style={{ maxWidth: "500px", margin: "0 auto" }}
+      className={`${isMobileOnly ? "d-block d-lg-none" : "d-block"} w-100 home-banner-section p-0 m-0`}
     >
       <div 
-        className="square-banner-slider-box border overflow-hidden shadow-sm bg-white"
+        className="square-banner-slider-box overflow-hidden bg-white"
         style={{ borderRadius: "4px" }}
       >
         <Swiper
