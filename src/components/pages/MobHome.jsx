@@ -23,6 +23,10 @@ import {
   GridSkeleton,
   MosaicSkeleton,
   ProductListSkeleton,
+  SmallHeightCarouselSlider,
+  SquareSingleImageMobileSlider,
+  SmallHeightStaticBanner,
+  OneAndHalfCarousel,
 } from '../home'
 import SectionNine from './sections/SectionNine'
 import {
@@ -61,6 +65,54 @@ const dummyBanners = [
   { small: './section-img/banner-5-mob.png', large: './section-img/banner-5.png', alt: "Slide 1" },
   { small: './section-img/banner-5-mob.png', large: './section-img/banner-5.png', alt: "Slide 2" },
   { small: './section-img/banner-5-mob.png', large: './section-img/banner-5.png', alt: "Slide 3" }
+];
+
+const staticWidescreenBanners = [
+  {
+    large: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=1200&h=450&q=80',
+    small: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=800&h=300&q=80',
+    title: 'Offer Banner 1',
+    alt: 'Offer Banner 1',
+    target: '/allproducts?q=shirt',
+  },
+  {
+    large: 'https://images.unsplash.com/photo-1607082349566-187342175e2f?auto=format&fit=crop&w=1200&h=450&q=80',
+    small: 'https://images.unsplash.com/photo-1607082349566-187342175e2f?auto=format&fit=crop&w=800&h=300&q=80',
+    title: 'Offer Banner 2',
+    alt: 'Offer Banner 2',
+    target: '/allproducts?category=Fashion',
+  },
+  {
+    large: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&h=450&q=80',
+    small: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&h=300&q=80',
+    title: 'Offer Banner 3',
+    alt: 'Offer Banner 3',
+    target: '/allproducts?category=Electronics',
+  },
+];
+
+const staticSquareBanners = [
+  {
+    large: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=600&h=600&q=80',
+    small: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=600&h=600&q=80',
+    title: 'Square Banner 1',
+    alt: 'Square Banner 1',
+    target: '/allproducts',
+  },
+  {
+    large: 'https://images.unsplash.com/photo-1607082349566-187342175e2f?auto=format&fit=crop&w=600&h=600&q=80',
+    small: 'https://images.unsplash.com/photo-1607082349566-187342175e2f?auto=format&fit=crop&w=600&h=600&q=80',
+    title: 'Square Banner 2',
+    alt: 'Square Banner 2',
+    target: '/allproducts',
+  },
+  {
+    large: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&h=600&q=80',
+    small: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&h=600&q=80',
+    title: 'Square Banner 3',
+    alt: 'Square Banner 3',
+    target: '/allproducts',
+  },
 ];
 
 // Static dummy 4-image grid banners (2x2)
@@ -208,6 +260,13 @@ const MobHome = () => {
 
         {/* 1. Categories Circles — Sticky below header */}
         <Categories isSticky={true} />
+
+        {/* Top Mobile Banners Sequence with Static Images (No API) */}
+        <SmallHeightCarouselSlider banners={staticWidescreenBanners} maxHeight="85px" isMobileOnly={true} />
+        <SquareSingleImageMobileSlider banners={staticSquareBanners} isMobileOnly={true} />
+        <SmallHeightStaticBanner banners={staticWidescreenBanners.slice(0, 1)} maxHeight="85px" />
+        <OneAndHalfCarousel banners={staticWidescreenBanners} isMobileOnly={true} />
+        <SmallHeightCarouselSlider banners={staticWidescreenBanners} maxHeight="85px" isMobileOnly={true} />
 
         {loading ? (
           <div className="shimmer-bg skeleton-banner-hero w-100" />
