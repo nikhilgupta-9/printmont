@@ -38,6 +38,7 @@ import NotificationPreference from "./components/notificationPre/NotificationPre
 import ManageAddress from "./components/manageAddress/ManageAddress";
 import SupportPage from "./components/supportpage/SupportPage";
 import PrintmontCoin from "./components/prinmontCoin/PrintmontCoin";
+import BannerPreview from "./components/pages/BannerPreview";
 import CategoryPage from "./components/pages/category-list/CategoryPage";
 import BusinessSolutions from "./components/businessSolutions/BusinessSolutions";
 import BecomeASeller from "./components/becomeSeller/BecomeASeller";
@@ -80,6 +81,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/allproducts" element={<AllProducts />} />
+          <Route path="/banner-preview" element={<BannerPreview />} />
           <Route path="/:productSlug" element={<ProductDetails />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
