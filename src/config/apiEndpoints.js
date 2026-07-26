@@ -89,7 +89,8 @@ export const API_ENDPOINTS = {
   FAQ: `${BASE_URL}/pages/faq.php`,
   HELP_CENTER: `${BASE_URL}/pages/help-center.php`,
   POLICIES: `${BASE_URL}/pages/policies.php`,
-  LOGO: `${BASE_URL}/settings/settings.php`,
+  // The backend exposes the public logo endpoint directly under /api.
+  LOGO: `${BASE_URL}/logo-api.php`,
 };
 
 export const resolveImageUrl = (imagePath) => {
