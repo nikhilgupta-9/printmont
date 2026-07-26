@@ -9,6 +9,8 @@ import {
   StaticResponsiveBanner,
   OneAndHalfCarousel,
   SquareSingleImageMobileSlider,
+  SmallHeightStaticBanner,
+  SmallHeightCarouselSlider,
 } from '../home';
 
 const sampleBanners = [
@@ -126,8 +128,8 @@ export default function BannerPreview() {
           <h4 className="fw-bold text-dark border-bottom pb-2">
             6. Small Offer Banner Strip (Slim Widescreen Offer Strip)
           </h4>
-          <p className="text-muted small">Component: <code>FormatDesignBanner (desktop_format_5)</code></p>
-          <FormatDesignBanner format="desktop_format_5" banners={sampleBanners.slice(0, 1)} />
+          <p className="text-muted small">Component: <code>SmallHeightStaticBanner</code></p>
+          <SmallHeightStaticBanner banners={sampleBanners.slice(0, 1)} maxHeight="130px" />
         </div>
       </div>
 
@@ -180,8 +182,8 @@ export default function BannerPreview() {
           <h4 className="fw-bold text-dark border-bottom pb-2">
             11. 5 Format Design: Small Banner Carousel (Slim Widescreen Slider)
           </h4>
-          <p className="text-muted small">Component: <code>MobileHeroSlider (slidesPerView=1.3)</code></p>
-          <MobileHeroSlider banners={sampleBanners} slidesPerView={1.3} spaceBetween={8} isMobileOnly={false} />
+          <p className="text-muted small">Component: <code>SmallHeightCarouselSlider</code></p>
+          <SmallHeightCarouselSlider banners={sampleBanners} maxHeight="130px" />
         </div>
       </div>
     </div>

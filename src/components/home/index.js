@@ -8,6 +8,8 @@ export { default as BannerImage } from "./banners/BannerImage";
 export { default as OneAndHalfCarousel } from "./banners/OneAndHalfCarousel";
 export { default as FormatDesignBanner } from "./banners/FormatDesignBanner";
 export { default as SquareSingleImageMobileSlider } from "./banners/SquareSingleImageMobileSlider";
+export { default as SmallHeightStaticBanner } from "./banners/SmallHeightStaticBanner";
+export { default as SmallHeightCarouselSlider } from "./banners/SmallHeightCarouselSlider";
 
 export { default as ProductCard } from "./products/ProductCard";
 export { default as ProductCarousel } from "./products/ProductCarousel";
