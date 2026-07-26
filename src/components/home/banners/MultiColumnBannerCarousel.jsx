@@ -86,12 +86,13 @@ export default function MultiColumnBannerCarousel({
     <div className="home-banner-carousel-container w-100" data-columns={columns}>
       <Slider {...settings}>
         {banners.map((banner, index) => (
-          <div key={index} className="home-banner-carousel-slide">
+          <div key={index} className="home-banner-carousel-slide p-1">
             <BannerImage
               large={banner.large}
               small={banner.small}
               target={banner.target}
               alt={banner.alt}
+              aspectRatio={columns === 2 ? "1 / 1" : undefined}
             />
           </div>
         ))}
