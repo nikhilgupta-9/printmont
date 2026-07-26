@@ -14,7 +14,7 @@ export default function useProductFilters() {
   // URL state sync
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
   const currentSort = searchParams.get("sort") || "Popularity";
-  const searchQuery = searchParams.get("q") || "";
+  const searchQuery = searchParams.get("q") || searchParams.get("search") || searchParams.get("query") || "";
 
   // Filter selections from URL or state
   const selectedCategory = searchParams.get("category") || "";
@@ -271,9 +271,11 @@ export default function useProductFilters() {
         let matchedTokensCount = 0;
         tokens.forEach((token) => {
           const singular = token.length > 3 && token.endsWith("s") ? token.slice(0, -1) : token;
+          const plural = !token.endsWith("s") ? token + "s" : token;
           if (
             combinedText.includes(token) ||
             combinedText.includes(singular) ||
+            combinedText.includes(plural) ||
             combinedCollapsed.includes(token.replace(/[- ]/g, ""))
           ) {
             matchedTokensCount++;
