@@ -430,11 +430,9 @@
 }
 
 @media (max-width: 767.98px) {
-  .banner-format-2,
-  .banner-grid-2col-3row {
-    grid-template-columns: 1fr;
-  }
-  .banner-grid-3col-2row {
-    grid-template-columns: repeat(2, 1fr);
+  .banner-grid-2col-3row,
+  .banner-grid-3col-2row,
+  .banner-format-2 {
+    gap: 4px !important;
   }
 }
