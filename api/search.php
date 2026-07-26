@@ -4,22 +4,7 @@
  * Handles both live suggestions and search results page queries.
  */
 header('Content-Type: application/json');
-
-// CORS setup for local & production React frontend
-$http_origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if (!empty($http_origin)) {
-    header("Access-Control-Allow-Origin: $http_origin");
-} else {
-    header("Access-Control-Allow-Origin: *");
-}
-
-header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
-
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+require_once(__DIR__ . '/cors.php');
 
 try {
     require_once __DIR__ . '/../services/SearchService.php';
