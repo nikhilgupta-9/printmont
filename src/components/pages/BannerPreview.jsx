@@ -153,7 +153,7 @@ export default function BannerPreview() {
             8. Square Size Offer Banner Slider (Single Square Touch Slider)
           </h4>
           <p className="text-muted small">Component: <code>MobileHeroSlider (slidesPerView=1)</code></p>
-          <MobileHeroSlider banners={sampleBanners} slidesPerView={1} />
+          <MobileHeroSlider banners={sampleBanners} slidesPerView={1} isMobileOnly={false} />
         </div>
 
         {/* 9. Banner Slider Carousel (Full Width Slider) */}
@@ -171,7 +171,7 @@ export default function BannerPreview() {
             10. 4 Format Design: Banner Slider Carousel + Partial Next Card Preview (70/30 Slider)
           </h4>
           <p className="text-muted small">Component: <code>OneAndHalfCarousel</code></p>
-          <OneAndHalfCarousel banners={sampleBanners} />
+          <OneAndHalfCarousel banners={sampleBanners} isMobileOnly={false} />
         </div>
 
         {/* 11. 5 Format Design: Small Banner Carousel */}
@@ -180,7 +180,7 @@ export default function BannerPreview() {
             11. 5 Format Design: Small Banner Carousel (Slim Widescreen Slider)
           </h4>
           <p className="text-muted small">Component: <code>MobileHeroSlider (slidesPerView=1.3)</code></p>
-          <MobileHeroSlider banners={sampleBanners} slidesPerView={1.3} spaceBetween={8} />
+          <MobileHeroSlider banners={sampleBanners} slidesPerView={1.3} spaceBetween={8} isMobileOnly={false} />
         </div>
       </div>
     </div>

@@ -13,14 +13,15 @@ import "swiper/css";
 export default function OneAndHalfCarousel({
   apiUrl,
   banners: propBanners,
-  sectionKey = ""
+  sectionKey = "",
+  isMobileOnly = true
 }) {
   const { banners: fetchedBanners, loading, error } = useHomeBanners(apiUrl, sectionKey);
   const banners = propBanners || fetchedBanners || [];
 
   if (loading && !propBanners) {
     return (
-      <div className="d-block d-md-none w-100 px-2">
+      <div className={`${isMobileOnly ? "d-block d-md-none" : "d-block"} w-100 px-2`}>
         <div className="shimmer-bg skeleton-slider-mobile w-100" />
       </div>
     );
@@ -35,7 +36,7 @@ export default function OneAndHalfCarousel({
   }
 
   return (
-    <div className="d-block d-md-none w-100 home-banner-section px-2">
+    <div className={`${isMobileOnly ? "d-block d-md-none" : "d-block"} w-100 home-banner-section px-2`}>
       <Swiper
         slidesPerView={1.25}
         spaceBetween={12}

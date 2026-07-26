@@ -19,7 +19,8 @@ export default function MobileHeroSlider({
   banners: propBanners,
   basePath = "",
   slidesPerView = 1,
-  spaceBetween = 0
+  spaceBetween = 0,
+  isMobileOnly = true
 }) {
   const { banners: fetchedBanners, loading, error } = useHomeBanners(apiUrl, "home_hero", basePath);
   const rawBanners = (fetchedBanners && fetchedBanners.length > 0) ? fetchedBanners : (propBanners || []);
@@ -27,7 +28,7 @@ export default function MobileHeroSlider({
 
   if (loading && !propBanners) {
     return (
-      <div className="d-block d-lg-none w-100">
+      <div className={`${isMobileOnly ? "d-block d-lg-none" : "d-block"} w-100`}>
         <div className="shimmer-bg skeleton-slider-mobile w-100" />
       </div>
     );
@@ -44,7 +45,7 @@ export default function MobileHeroSlider({
   const showPagination = slidesPerView === 1;
 
   return (
-    <div className="d-block d-lg-none w-100 home-banner-section">
+    <div className={`${isMobileOnly ? "d-block d-lg-none" : "d-block"} w-100 home-banner-section`}>
       <Swiper
         slidesPerView={slidesPerView}
         spaceBetween={spaceBetween}
