@@ -118,10 +118,10 @@ const Login = () => {
         return;
       }
 
-      if (data.success || data.status === "success" || data.id || data.token) {
-        // Use authLogin to set global context and local storage
-        if (data.token || data.id) {
-            authLogin(data.user || { firstName: formData.firstName || formData.identifier.split('@')[0] }, data.token || "dummy-token");
+      if (data.success || data.status === "success" || data.id || data.token || data.tokens) {
+        const authToken = data.tokens?.access_token || data.token || data.access_token || "dummy-token";
+        if (data.tokens || data.token || data.id || data.user) {
+            authLogin(data.user || { firstName: formData.firstName || formData.identifier?.split('@')[0] }, authToken);
         }
 
         if (isSignup) {
@@ -129,6 +129,7 @@ const Login = () => {
           setIsSignup(false);
           setStep(1);
         } else {
+          toast.success('Login successful!');
           navigate('/'); 
         }
       } else {
