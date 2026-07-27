@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { ROOT_URL } from "../../../config/apiEndpoints";
 
 // ── Migrated homepage components ──────────
 import {
@@ -105,7 +106,7 @@ const MobileOfferZone = ({ badge = "🔥 Offer Zone Activated", title = "Top Dis
   );
 };
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+const BASE_URL = ROOT_URL;
 
 /* ── Mobile quick-link grid ──────────────────────────────────────── */
 const MobileQuickLinks = ({ links }) => (

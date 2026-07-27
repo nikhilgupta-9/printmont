@@ -48,6 +48,7 @@ import {
   imageColumn
 } from '../../../data/data'
 import useHomeLayout from '../home/hooks/useHomeLayout'
+import { ROOT_URL } from '../../config/apiEndpoints'
 
 // Static dummy categories matching the Figma category circles
 const dummyCategories = [
@@ -289,7 +290,7 @@ const womensOutfitsProducts = [
 ];
 
 const MobHome = () => {
-  const baseURL = import.meta.env.VITE_BASE_URL;
+  const baseURL = ROOT_URL;
 
   // Mobile layout is managed from the admin panel (home-layout-manager.php -> Mobile tab).
   // Mirrors the desktop behaviour in Home.jsx: when the API returns sections we render

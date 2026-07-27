@@ -35,8 +35,20 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
         const fetchUrl = limit ? `${API_ENDPOINTS.CATEGORIES}?limit=${limit}` : API_ENDPOINTS.CATEGORIES;
         const response = await fetch(fetchUrl);
         const data = await response.json();
-        if (data.success && data.data && data.data.length > 0) {
-          setCategoriesData(data.data);
+        
+        let catList = [];
+        if (data && data.success && data.data) {
+          catList = Array.isArray(data.data) ? data.data : (typeof data.data === 'object' ? Object.values(data.data) : []);
+        } else if (Array.isArray(data)) {
+          catList = data;
+        } else if (data && data.categories) {
+          catList = Array.isArray(data.categories) ? data.categories : (typeof data.categories === 'object' ? Object.values(data.categories) : []);
+        } else if (data && typeof data === 'object' && !data.error) {
+          catList = Object.values(data);
+        }
+
+        if (catList.length > 0) {
+          setCategoriesData(catList);
         } else {
           setCategoriesData(fallbackCategories);
         }
@@ -122,7 +134,12 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
   };
 
   const safeCategories = getArray(categoriesData);
-  const headerVisibleCategories = safeCategories.filter(cat => cat.desktop_menu_status !== 'hide');
+  const headerVisibleCategories = safeCategories.filter(cat => {
+    if (!cat) return false;
+    if (cat.status && (cat.status === 'inactive' || cat.status === 'deactive')) return false;
+    if (cat.desktop_menu_status === 'hide' && cat.mobile_topbar_status === 'hide') return false;
+    return true;
+  });
   const displayCategories = limit ? headerVisibleCategories.slice(0, limit) : headerVisibleCategories;
 
   const mobileCategories = displayCategories.slice(0, 12);

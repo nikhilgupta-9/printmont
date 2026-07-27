@@ -38,8 +38,19 @@ export default function CompactCategoryGrid({
         setLoading(true);
         const response = await fetch(API_ENDPOINTS.CATEGORIES);
         const data = await response.json();
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          setCategories(data.data.slice(0, limit));
+        let catList = [];
+        if (data && data.success && data.data) {
+          catList = Array.isArray(data.data) ? data.data : (typeof data.data === 'object' ? Object.values(data.data) : []);
+        } else if (Array.isArray(data)) {
+          catList = data;
+        } else if (data && data.categories) {
+          catList = Array.isArray(data.categories) ? data.categories : (typeof data.categories === 'object' ? Object.values(data.categories) : []);
+        } else if (data && typeof data === 'object' && !data.error) {
+          catList = Object.values(data);
+        }
+
+        if (catList.length > 0) {
+          setCategories(catList.slice(0, limit));
         } else {
           setCategories(fallbackCategories.slice(0, limit));
         }

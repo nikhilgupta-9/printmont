@@ -34,9 +34,10 @@ import {
 } from '../../../data/data'
 import useHomeLayout from '../home/hooks/useHomeLayout'
 import MobHome from './MobHome.jsx'
+import { ROOT_URL } from '../../config/apiEndpoints'
 
 const Home = () => {
-  const baseURL = import.meta.env.VITE_BASE_URL;
+  const baseURL = ROOT_URL;
   const { sections, loading } = useHomeLayout('desktop', baseURL);
 
   return (

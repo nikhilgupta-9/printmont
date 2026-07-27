@@ -10,11 +10,13 @@ const LOCAL_ASSET_URL = 'http://localhost/printmont/printmont-backend/';
 const LIVE_ASSET_URL = 'https://mediumvioletred-pelican-783174.hostingersite.com/';
 
 export const BASE_URL = (import.meta.env.VITE_API_URL || (isLocalhost ? LOCAL_API_URL : LIVE_API_URL)).replace(/\/+$/, '');
+export const ROOT_URL = (import.meta.env.VITE_BASE_URL || (isLocalhost ? '/' : LIVE_ASSET_URL)).replace(/\/+$/, '') + '/';
 
 // printmont-backend serves the homepage layout (printmont_db.home_sections) — the same
 // data home-layout-manager.php edits.
 export const BACKEND_URL = (import.meta.env.VITE_BACKEND_API_URL || (isLocalhost ? '/backend-api' : LIVE_API_URL)).replace(/\/+$/, '');
 export const ASSET_URL = (import.meta.env.VITE_ASSET_URL || (isLocalhost ? LOCAL_ASSET_URL : LIVE_ASSET_URL)).replace(/\/+$/, '') + '/';
+
 export const API_ENDPOINTS = {
   // Authentication
   REGISTER: `${BASE_URL}/user-api.php?action=register`,
