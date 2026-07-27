@@ -302,8 +302,8 @@ const MobHome = () => {
       <div className='bg-white w-100 home-mobile-content home-layout-gap'>
         {/* Image 1 Layout Elements */}
 
-        {/* 1. Categories Circles — Sticky below header */}
-        <Categories isSticky={true} />
+        {/* 1. Categories Circles — Normal flow below header */}
+        <Categories isSticky={false} />
 
         {/* Top Mobile Banners Sequence with Unique Static Images */}
         <SmallHeightCarouselSlider banners={staticWidescreenBanners} maxHeight="85px" isMobileOnly={true} />
