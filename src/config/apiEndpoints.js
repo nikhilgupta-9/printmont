@@ -17,13 +17,19 @@ export const ROOT_URL = (import.meta.env.VITE_BASE_URL || (isLocalhost ? '/' : L
 export const BACKEND_URL = (import.meta.env.VITE_BACKEND_API_URL || (isLocalhost ? '/backend-api' : LIVE_API_URL)).replace(/\/+$/, '');
 export const ASSET_URL = (import.meta.env.VITE_ASSET_URL || (isLocalhost ? LOCAL_ASSET_URL : LIVE_ASSET_URL)).replace(/\/+$/, '') + '/';
 
+// NOTE: every path below must name a file that exists in printmont-backend/api.
+// The backend's .htaccess rewrites unknown paths to index.php, so a wrong path
+// returns the admin login page as HTTP 200 text/html — which then blows up in
+// res.json() as "Unexpected token '<'" rather than surfacing as a 404.
 export const API_ENDPOINTS = {
   // Authentication
   REGISTER: `${BASE_URL}/user-api.php?action=register`,
   LOGIN: `${BASE_URL}/user-api.php?action=login`,
   PROFILE: `${BASE_URL}/user-api.php?action=profile`,
   UPDATE_PROFILE: `${BASE_URL}/user-api.php?action=update_profile`,
-  CHANGE_PASSWORD: `${BASE_URL}/auth/change_password.php`,
+  // No "change password with current password" flow exists yet; this is the
+  // token-based reset used after forgot_password.
+  CHANGE_PASSWORD: `${BASE_URL}/user-api.php?action=reset_password`,
   FORGOT_PASSWORD: `${BASE_URL}/user-api.php?action=forgot_password`,
 
   // User Addresses
@@ -33,21 +39,25 @@ export const API_ENDPOINTS = {
   DELETE_ADDRESS: `${BASE_URL}/user-api.php?action=delete_address`,
   SET_DEFAULT_ADDRESS: `${BASE_URL}/user-api.php?action=set_default_address`,
 
-  // Orders
-  GET_ORDERS: `${BASE_URL}/orders/orders.php?action=list`,
-  GET_ORDER: (id) => `${BASE_URL}/orders/orders.php?action=detail&id=${id}`,
-  CREATE_ORDER: `${BASE_URL}/orders/orders.php?action=create`,
-  GET_CUSTOMER_ORDERS: (id) => `${BASE_URL}/orders/orders.php?action=customer_orders&user_id=${id}`,
-  UPDATE_ORDER_STATUS: (id) => `${BASE_URL}/orders/orders.php?action=update_status&id=${id}`,
-  UPDATE_PAYMENT_STATUS: (id) => `${BASE_URL}/orders/orders.php?action=update_payment&id=${id}`,
-  GET_DASHBOARD_STATS: `${BASE_URL}/orders/dashboard.php`,
+  // Orders — served by user-api.php, scoped to the bearer token's user.
+  // Requires an Authorization: Bearer <token> header.
+  GET_ORDERS: `${BASE_URL}/user-api.php?action=get_orders`,
+  GET_ORDER: (id) => `${BASE_URL}/user-api.php?action=get_order&id=${id}`,
+  CREATE_ORDER: `${BASE_URL}/user-api.php?action=create_order`,
+  // The id is ignored server-side — orders come from the verified token, so a
+  // customer cannot read another customer's orders by changing it.
+  GET_CUSTOMER_ORDERS: () => `${BASE_URL}/user-api.php?action=get_orders`,
+  // Admin-only actions; not exposed through the public API yet.
+  // UPDATE_ORDER_STATUS, UPDATE_PAYMENT_STATUS, GET_DASHBOARD_STATS
 
   // Products
   PRODUCTS: `${BASE_URL}/product-api.php`,
   PRODUCT_BY_ID: (id) => `${BASE_URL}/product-api.php?id=${id}`,
   PRODUCTS_DEACTIVE: `${BASE_URL}/product-api.php?status=deactive`,
   RELATED_PRODUCTS: (id) => `${BASE_URL}/product-api.php?id=${id}`,
-  SEARCH: `${BASE_URL}/product-api.php?action=search`,
+  // product-api.php has no search handler. Callers append "?q=...", so this
+  // must stay free of a query string.
+  SEARCH: `${BASE_URL}/search-api.php`,
 
   // Home Product Sections
   HOME_PRODUCT_SECTIONS: (action) => `${BASE_URL}/products/products.php?action=${action}`,
@@ -68,29 +78,29 @@ export const API_ENDPOINTS = {
   WISHLIST_DELETE: (id) => `${BASE_URL}/wishlist-api.php?product_id=${id}`,
 
   // Banners
-  BANNERS: `${BASE_URL}/banners/banners.php`,
-  BLOG_BANNER: `${BASE_URL}/banners/banners.php?page=blog`,
+  BANNERS: `${BASE_URL}/banner_api.php`,
+  BLOG_BANNER: `${BASE_URL}/banner_api.php?page=blog`,
 
-  // Blog
-  BLOG_POSTS: `${BASE_URL}/blog/posts.php/posts`,
-  BLOG_POST_DETAIL: (idOrSlug) => `${BASE_URL}/blog/posts.php/posts/${idOrSlug}`,
-  BLOG_SINGLE: (slug) => `${BASE_URL}/blog/posts.php/posts/${slug}`,
-  BLOG_CATEGORIES: `${BASE_URL}/blog/categories.php`,
-  BLOG_CATEGORY_DETAIL: (id) => `${BASE_URL}/blog/posts.php/categories/${id}`,
-  BLOG_RECENT: `${BASE_URL}/blog/posts.php/recent`,
-  BLOG_POPULAR: `${BASE_URL}/blog/posts.php/popular`,
+  // Blog — blog-api.php routes on the trailing path segment.
+  BLOG_POSTS: `${BASE_URL}/blog-api.php/posts`,
+  BLOG_POST_DETAIL: (idOrSlug) => `${BASE_URL}/blog-api.php/posts/${idOrSlug}`,
+  BLOG_SINGLE: (slug) => `${BASE_URL}/blog-api.php/posts/${slug}`,
+  BLOG_CATEGORIES: `${BASE_URL}/blog-api.php/categories`,
+  BLOG_CATEGORY_DETAIL: (id) => `${BASE_URL}/blog-api.php/categories/${id}`,
+  BLOG_RECENT: `${BASE_URL}/blog-api.php/recent`,
+  BLOG_POPULAR: `${BASE_URL}/blog-api.php/popular`,
 
-  // Careers
-  CAREER_GET: `${BASE_URL}/pages/careers.php?action=list`,
-  CAREER_DETAIL: (id) => `${BASE_URL}/pages/careers.php?action=detail&id=${id}`,
-  CAREER_POST: `${BASE_URL}/pages/careers.php?action=apply`,
+  // Careers — career-get-api.php returns a list, or one job when ?id= is set.
+  CAREER_GET: `${BASE_URL}/career-get-api.php`,
+  CAREER_DETAIL: (id) => `${BASE_URL}/career-get-api.php?id=${id}`,
+  CAREER_POST: `${BASE_URL}/career-post-api.php`,
 
   // CMS & Content (Logo, Header, Footer, etc.)
-  ABOUT: `${BASE_URL}/pages/about.php`,
-  CONTACT: `${BASE_URL}/pages/contact.php`,
-  FAQ: `${BASE_URL}/pages/faq.php`,
-  HELP_CENTER: `${BASE_URL}/pages/help-center.php`,
-  POLICIES: `${BASE_URL}/pages/policies.php`,
+  ABOUT: `${BASE_URL}/about-api.php`,
+  CONTACT: `${BASE_URL}/contact-api.php`,
+  FAQ: `${BASE_URL}/faq-api.php`,
+  HELP_CENTER: `${BASE_URL}/help-center-api.php`,
+  POLICIES: `${BASE_URL}/policies-api.php`,
   // The backend exposes the public logo endpoint directly under /api.
   LOGO: `${BASE_URL}/logo-api.php`,
 };

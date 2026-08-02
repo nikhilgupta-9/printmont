@@ -95,10 +95,11 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCate
         const timer = setTimeout(async () => {
             setIsSearching(true);
             try {
-                const response = await fetch(`${API_ENDPOINTS.SEARCH}?q=${encodeURIComponent(searchTerm)}`);
+                const response = await fetch(`${API_ENDPOINTS.SEARCH}?type=suggestions&q=${encodeURIComponent(searchTerm)}`);
                 const data = await response.json();
-                if (data.success && data.data) {
-                    setSearchResults(data.data);
+                // search-api.php returns { success, query, suggestions: { products, categories, ... } }
+                if (data.success && Array.isArray(data.suggestions?.products)) {
+                    setSearchResults(data.suggestions.products);
                 } else {
                     setSearchResults([]);
                 }

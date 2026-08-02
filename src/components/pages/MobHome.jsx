@@ -308,10 +308,10 @@ const MobHome = () => {
         {/* Top Mobile Banners Sequence with Unique Static Images */}
         <SmallHeightCarouselSlider banners={staticWidescreenBanners} maxHeight="85px" isMobileOnly={true} />
         <SquareSingleImageMobileSlider banners={staticSquareBanners} isMobileOnly={true} />
+        <SmallHeightCarouselSlider banners={staticWidescreenBanners} maxHeight="85px" isMobileOnly={true} />
         <FormatDesignBanner format="desktop_format_6" banners={staticSquareBanners} />
         <SmallHeightStaticBanner banners={staticWidescreenBanners.slice(3, 4)} maxHeight="85px" />
         <OneAndHalfCarousel banners={staticWidescreenBanners.slice(1, 4)} isMobileOnly={true} />
-        <SmallHeightCarouselSlider banners={staticWidescreenBanners.slice(2, 6)} maxHeight="85px" isMobileOnly={true} />
 
         {loading ? (
           <div className="shimmer-bg skeleton-banner-hero w-100" />
@@ -328,444 +328,444 @@ const MobHome = () => {
         ) : (
           <>
 
-        {/* === ABOVE THE FOLD — Eager Load (no LazySection) === */}
-
-        {/* 2. Banner and slider small size */}
-        <MobileHeroSlider banners={dummyBanners} />
-
-        {/* 3. Home page slider */}
-        <ResponsiveHeroCarousel banners={dummyBanners} />
-
-        {/* 4. Banner and slider small size */}
-        <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-
-
-        {/* === BELOW THE FOLD — Lazy Loaded === */}
-
-        {/* 5. Square size Offer Banner (2x2 Grid) */}
-        <LazySection skeleton={<GridSkeleton columns={2} rows={2} />} minHeight="200px">
-          <BannerGrid banners={dummyFourBanners} columns={2} mobileColumns={2} />
-        </LazySection>
-
-        {/* 6. Banner and slider small size */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 7. Banner and slides small size */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 5" />}>
-          <ResponsiveBannerSet banners={bannerImages} />
-        </LazySection>
-
-        {/* 8. New Arrival (Carousel) */}
-        <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
-          <ProductCarousel
-            apiUrl={`${baseURL}api/products/products.php?action=bestseller`}
-            title="New Arrival"
-            badgeText="CUSTOMIZABLE"
-            cardsToShowMobile={1.65}
-          />
-        </LazySection>
-
-        {/* 10. Gift Finder (Mobile Dropdown Version) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 5" />}>
-          <GiftFinderSection />
-        </LazySection>
-
-        {/* 11. End of Season Sale (Pink 3-column Category Grid from API) */}
-        <LazySection skeleton={<GridSkeleton columns={3} rows={2} />}>
-          <CompactCategoryGrid
-            title="End of Season Sale"
-            bgImage={'./bg/flashsale.png'}
-          />
-        </LazySection>
-
-        {/* 12. Banner and slider Square size */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 13. Banner and slider */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 15. Banner and slider */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 16. Bestseller (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <CompactProductGrid
-            apiUrl={`${baseURL}api/products/products.php?action=bestseller`}
-            title="Bestseller"
-            columns={2}
-            limit={8}
-            showViewAll={true}
-          />
-        </LazySection>
-
-        {/* 17. Banner and slider */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 18. Top Selection (Carousel) */}
-        <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
-          <ProductCarousel
-            apiUrl={`${baseURL}api/products/products.php?action=top_selection`}
-            title="Top Selection"
-            badgeText="CUSTOMIZABLE"
-          />
-        </LazySection>
-
-        {/* 19. Square size Banner and Slider (2 Column Grid) */}
-        <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
-          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={2} mobileColumns={2} />
-        </LazySection>
-
-        {/* 20. Discount For You (Carousel) */}
-        <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
-          <ProductCarousel
-            apiUrl={`${baseURL}api/products/products.php?action=discount_for_you`}
-            title="Discount For You"
-            badgeText="CUSTOMIZABLE"
-          />
-        </LazySection>
-
-        {/* 21. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList apiUrl={`${baseURL}api/products/products.php?action=discount_for_you`} />
-        </LazySection>
-
-        {/* 22. Square size Banner and Slider (2 Column Grid) */}
-        <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
-          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={2} mobileColumns={2} />
-        </LazySection>
-
-        {/* 23. Top Rated (Carousel - Single Card) */}
-        <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
-          <ProductCarousel
-            apiUrl={`${baseURL}api/products/products.php?action=top_rated`}
-            title="Top Rated"
-            badgeText="CUSTOMIZABLE"
-            cardsToShowMobile={1.1}
-          />
-        </LazySection>
-
-        {/* 24. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList apiUrl={`${baseURL}api/products/products.php?action=top_rated`} />
-        </LazySection>
-
-        {/* 25. Square size Banner and Slider (1 Column Grid) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 26. Top Deal and Categories (Carousel) */}
-        <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
-          <ProductCarousel
-            apiUrl={`${baseURL}api/products/products.php?action=top_deal`}
-            title="Top Deal and Categories"
-            badgeText="CUSTOMIZABLE"
-          />
-        </LazySection>
-
-        {/* 27. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList apiUrl={`${baseURL}api/products/products.php?action=top_deal`} />
-        </LazySection>
-
-        {/* 28. Banner and Slider (Widescreen 70/30 Slider) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 9" />}>
-          <MobileHeroSlider
-            apiUrl={`${baseURL}api/banners/banners.php`}
-            slidesPerView={1.3}
-            spaceBetween={8}
-          />
-        </LazySection>
-
-        {/* 29. Women's Outfits (Carousel) */}
-        <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
-          <ProductCarousel
-            apiUrl={`${baseURL}api/products/products.php?action=top_selection`}
-            title="Women's Outfits"
-          />
-        </LazySection>
-
-        {/* 30. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
-        </LazySection>
-
-        {/* 31. Square size Banner and Slider (1 Column Grid) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 32. Home Decor items (Category - 2x2 Grid) */}
-        <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
-          <CompactCategoryGrid
-            title="Home Decor items"
-            bgColor="#00a8ec"
-            columns={2}
-            limit={4}
-            showViewAll={true}
-            showBottomViewAll={true}
-            offerText="Min. 30% off"
-          />
-        </LazySection>
-
-        {/* 33. Product List (3 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={6} />}>
-          <CompactProductGrid
-            title=""
-            products={dummyProducts}
-            columns={3}
-            limit={6}
-          />
-        </LazySection>
-
-        {/* 34. Square size Banner and Slider (1 Column Grid) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 35. Table & Dinnerware (Category - 2x2 Grid) */}
-        <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
-          <CompactCategoryGrid
-            title="Table & Dinnerware"
-            columns={2}
-            limit={4}
-            showViewAll={true}
-            showBottomViewAll={true}
-            offerText="Min. 30% off"
-          />
-        </LazySection>
-
-        {/* 36. Product List (3 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={6} />}>
-          <CompactProductGrid
-            title=""
-            products={dummyProducts}
-            columns={3}
-            limit={6}
-          />
-        </LazySection>
-
-        {/* 37. Square size Banner and Slider (1 Column Grid) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 38. Buds (Category - 2x2 Grid) */}
-        <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
-          <CompactCategoryGrid
-            title="Buds"
-            bgColor="#4ba3b0"
-            columns={2}
-            limit={4}
-            showViewAll={true}
-            showBottomViewAll={true}
-            offerText="Min. 30% off"
-          />
-        </LazySection>
-
-        {/* 39. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
-        </LazySection>
-
-        {/* 40. Square size Banner and Slider (1 Column Grid) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 41. Mobile (Category - 2x2 Grid) */}
-        <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
-          <CompactCategoryGrid
-            title="Mobile"
-            bgColor="#c3bfdb"
-            columns={2}
-            limit={4}
-            showViewAll={true}
-            showBottomViewAll={true}
-            offerText="Min. 30% off"
-          />
-        </LazySection>
-
-        {/* 42. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
-        </LazySection>
-
-        {/* 43. Square size Banner and Slider (1 Column Grid) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 44. Earphones (Category - 2x2 Grid) */}
-        <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
-          <CompactCategoryGrid
-            title="Earphones"
-            bgColor="#668bbd"
-            columns={2}
-            limit={4}
-            showViewAll={true}
-            showBottomViewAll={true}
-            offerText="Min. 30% off"
-          />
-        </LazySection>
-
-        {/* 45. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
-        </LazySection>
-
-        {/* 46. Square size Banner and Slider (1 Column Grid) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 47. Top Rated (Category - Mosaic Grid) */}
-        <LazySection skeleton={<MosaicSkeleton />}>
-          <FeaturedProductGrid data={[{ ...gridsectionsecond[0], title: `${gridsectionsecond[0].title} (Category)` }]} />
-        </LazySection>
-
-        {/* 48. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
-        </LazySection>
-
-        {/* 49. Square size Banner and Slider (1 Column Grid) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 50. Top Deals (Category - Mosaic Grid) */}
-        <LazySection skeleton={<MosaicSkeleton />}>
-          <FeaturedProductGrid data={[{ ...gridsectionsecond[1], title: `${gridsectionsecond[1].title} (Category)` }]} />
-        </LazySection>
-
-        {/* 51. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
-        </LazySection>
-
-        {/* 52. Square size Banner and Slider (1 Column Grid) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 53. Top Selection (Category - Mosaic Grid) */}
-        <LazySection skeleton={<MosaicSkeleton />}>
-          <FeaturedProductGrid data={[{ ...gridsectionsecond[2], title: `${gridsectionsecond[2].title} (Category)` }]} />
-        </LazySection>
-
-        {/* 54. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
-        </LazySection>
-
-        {/* 55. Square size Banner and Slider (1 Column Grid) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 56. Women's (Category - Mosaic Grid) */}
-        <LazySection skeleton={<MosaicSkeleton />}>
-          <FeaturedProductGrid data={[gridsectionfirst[0]]} />
-        </LazySection>
-
-        {/* 57. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
-        </LazySection>
-
-        {/* 58. Square size Banner and Slider (1 Column Grid) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 59. Men's (Category - Mosaic Grid) */}
-        <LazySection skeleton={<MosaicSkeleton />}>
-          <FeaturedProductGrid data={[gridsectionfirst[1]]} />
-        </LazySection>
-
-        {/* 60. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
-        </LazySection>
-
-        {/* 61. Square size Banner and Slider (1 Column Grid) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 62. Women's Clothing (Category - Flat Grid) */}
-        <LazySection skeleton={<MosaicSkeleton />}>
-          <CategoryProductMosaic
-            title="Women's Clothing"
-            apiUrl={`${baseURL}api/products/products.php?action=top_deal`}
-            imageColumn={imageColumn}
-            columns={columns}
-            variant="flat"
-            bgColor="#ffebee"
-          />
-        </LazySection>
-
-        {/* 63. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
-        </LazySection>
-
-        {/* 64. Square size Banner and Slider (1 Column Grid) */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-          <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
-        </LazySection>
-
-        {/* 65. Men's Clothing (Category - Flat Grid) */}
-        <LazySection skeleton={<MosaicSkeleton />}>
-          <CategoryProductMosaic
-            title="Men's Clothing"
-            apiUrl={`${baseURL}api/products/products.php?action=top_rated`}
-            imageColumn={imageColumn}
-            columns={columns}
-            variant="flat"
-            bgColor="#e8f5e9"
-          />
-        </LazySection>
-
-        {/* 66. Product List (2 Column Grid) */}
-        <LazySection skeleton={<ProductListSkeleton items={4} />}>
-          <MobileProductList products={dummyProducts} />
-        </LazySection>
-
-        {/* 67. Recently Viewed (Carousel) */}
-        <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
-          <ProductCarousel
-            apiUrl={`${baseURL}api/products/products.php?action=discount_for_you`}
-            title="Your Recently Viewed (Carousel)"
-            products={dummyProducts}
-          />
-        </LazySection>
-
-        {/* 68. Customer Review Carousel */}
-        <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
-          <CustomerReviewCarousel />
-        </LazySection>
-
-        {/* 69. Brand Directory Section */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 3" />}>
-          <BrandDirectorySection />
-        </LazySection>
-
-        {/* 70. Bulk Order Widget */}
-        <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 3" />}>
-          <BulkOrderWidget />
-        </LazySection>
+            {/* === ABOVE THE FOLD — Eager Load (no LazySection) === */}
+
+            {/* 2. Banner and slider small size */}
+            <MobileHeroSlider banners={dummyBanners} />
+
+            {/* 3. Home page slider */}
+            <ResponsiveHeroCarousel banners={dummyBanners} />
+
+            {/* 4. Banner and slider small size */}
+            <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+
+
+            {/* === BELOW THE FOLD — Lazy Loaded === */}
+
+            {/* 5. Square size Offer Banner (2x2 Grid) */}
+            <LazySection skeleton={<GridSkeleton columns={2} rows={2} />} minHeight="200px">
+              <BannerGrid banners={dummyFourBanners} columns={2} mobileColumns={2} />
+            </LazySection>
+
+            {/* 6. Banner and slider small size */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 7. Banner and slides small size */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 5" />}>
+              <ResponsiveBannerSet banners={bannerImages} />
+            </LazySection>
+
+            {/* 8. New Arrival (Carousel) */}
+            <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
+              <ProductCarousel
+                apiUrl={`${baseURL}api/products/products.php?action=bestseller`}
+                title="New Arrival"
+                badgeText="CUSTOMIZABLE"
+                cardsToShowMobile={1.65}
+              />
+            </LazySection>
+
+            {/* 10. Gift Finder (Mobile Dropdown Version) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 5" />}>
+              <GiftFinderSection />
+            </LazySection>
+
+            {/* 11. End of Season Sale (Pink 3-column Category Grid from API) */}
+            <LazySection skeleton={<GridSkeleton columns={3} rows={2} />}>
+              <CompactCategoryGrid
+                title="End of Season Sale"
+                bgImage={'./bg/flashsale.png'}
+              />
+            </LazySection>
+
+            {/* 12. Banner and slider Square size */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 13. Banner and slider */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 15. Banner and slider */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 16. Bestseller (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <CompactProductGrid
+                apiUrl={`${baseURL}api/products/products.php?action=bestseller`}
+                title="Bestseller"
+                columns={2}
+                limit={8}
+                showViewAll={true}
+              />
+            </LazySection>
+
+            {/* 17. Banner and slider */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 18. Top Selection (Carousel) */}
+            <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
+              <ProductCarousel
+                apiUrl={`${baseURL}api/products/products.php?action=top_selection`}
+                title="Top Selection"
+                badgeText="CUSTOMIZABLE"
+              />
+            </LazySection>
+
+            {/* 19. Square size Banner and Slider (2 Column Grid) */}
+            <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
+              <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={2} mobileColumns={2} />
+            </LazySection>
+
+            {/* 20. Discount For You (Carousel) */}
+            <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
+              <ProductCarousel
+                apiUrl={`${baseURL}api/products/products.php?action=discount_for_you`}
+                title="Discount For You"
+                badgeText="CUSTOMIZABLE"
+              />
+            </LazySection>
+
+            {/* 21. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList apiUrl={`${baseURL}api/products/products.php?action=discount_for_you`} />
+            </LazySection>
+
+            {/* 22. Square size Banner and Slider (2 Column Grid) */}
+            <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
+              <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={2} mobileColumns={2} />
+            </LazySection>
+
+            {/* 23. Top Rated (Carousel - Single Card) */}
+            <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
+              <ProductCarousel
+                apiUrl={`${baseURL}api/products/products.php?action=top_rated`}
+                title="Top Rated"
+                badgeText="CUSTOMIZABLE"
+                cardsToShowMobile={1.1}
+              />
+            </LazySection>
+
+            {/* 24. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList apiUrl={`${baseURL}api/products/products.php?action=top_rated`} />
+            </LazySection>
+
+            {/* 25. Square size Banner and Slider (1 Column Grid) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 26. Top Deal and Categories (Carousel) */}
+            <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
+              <ProductCarousel
+                apiUrl={`${baseURL}api/products/products.php?action=top_deal`}
+                title="Top Deal and Categories"
+                badgeText="CUSTOMIZABLE"
+              />
+            </LazySection>
+
+            {/* 27. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList apiUrl={`${baseURL}api/products/products.php?action=top_deal`} />
+            </LazySection>
+
+            {/* 28. Banner and Slider (Widescreen 70/30 Slider) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 9" />}>
+              <MobileHeroSlider
+                apiUrl={`${baseURL}api/banners/banners.php`}
+                slidesPerView={1.3}
+                spaceBetween={8}
+              />
+            </LazySection>
+
+            {/* 29. Women's Outfits (Carousel) */}
+            <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
+              <ProductCarousel
+                apiUrl={`${baseURL}api/products/products.php?action=top_selection`}
+                title="Women's Outfits"
+              />
+            </LazySection>
+
+            {/* 30. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList products={dummyProducts} />
+            </LazySection>
+
+            {/* 31. Square size Banner and Slider (1 Column Grid) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 32. Home Decor items (Category - 2x2 Grid) */}
+            <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
+              <CompactCategoryGrid
+                title="Home Decor items"
+                bgColor="#00a8ec"
+                columns={2}
+                limit={4}
+                showViewAll={true}
+                showBottomViewAll={true}
+                offerText="Min. 30% off"
+              />
+            </LazySection>
+
+            {/* 33. Product List (3 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={6} />}>
+              <CompactProductGrid
+                title=""
+                products={dummyProducts}
+                columns={3}
+                limit={6}
+              />
+            </LazySection>
+
+            {/* 34. Square size Banner and Slider (1 Column Grid) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 35. Table & Dinnerware (Category - 2x2 Grid) */}
+            <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
+              <CompactCategoryGrid
+                title="Table & Dinnerware"
+                columns={2}
+                limit={4}
+                showViewAll={true}
+                showBottomViewAll={true}
+                offerText="Min. 30% off"
+              />
+            </LazySection>
+
+            {/* 36. Product List (3 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={6} />}>
+              <CompactProductGrid
+                title=""
+                products={dummyProducts}
+                columns={3}
+                limit={6}
+              />
+            </LazySection>
+
+            {/* 37. Square size Banner and Slider (1 Column Grid) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 38. Buds (Category - 2x2 Grid) */}
+            <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
+              <CompactCategoryGrid
+                title="Buds"
+                bgColor="#4ba3b0"
+                columns={2}
+                limit={4}
+                showViewAll={true}
+                showBottomViewAll={true}
+                offerText="Min. 30% off"
+              />
+            </LazySection>
+
+            {/* 39. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList products={dummyProducts} />
+            </LazySection>
+
+            {/* 40. Square size Banner and Slider (1 Column Grid) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 41. Mobile (Category - 2x2 Grid) */}
+            <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
+              <CompactCategoryGrid
+                title="Mobile"
+                bgColor="#c3bfdb"
+                columns={2}
+                limit={4}
+                showViewAll={true}
+                showBottomViewAll={true}
+                offerText="Min. 30% off"
+              />
+            </LazySection>
+
+            {/* 42. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList products={dummyProducts} />
+            </LazySection>
+
+            {/* 43. Square size Banner and Slider (1 Column Grid) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 44. Earphones (Category - 2x2 Grid) */}
+            <LazySection skeleton={<GridSkeleton columns={2} rows={2} />}>
+              <CompactCategoryGrid
+                title="Earphones"
+                bgColor="#668bbd"
+                columns={2}
+                limit={4}
+                showViewAll={true}
+                showBottomViewAll={true}
+                offerText="Min. 30% off"
+              />
+            </LazySection>
+
+            {/* 45. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList products={dummyProducts} />
+            </LazySection>
+
+            {/* 46. Square size Banner and Slider (1 Column Grid) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 47. Top Rated (Category - Mosaic Grid) */}
+            <LazySection skeleton={<MosaicSkeleton />}>
+              <FeaturedProductGrid data={[{ ...gridsectionsecond[0], title: `${gridsectionsecond[0].title} (Category)` }]} />
+            </LazySection>
+
+            {/* 48. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList products={dummyProducts} />
+            </LazySection>
+
+            {/* 49. Square size Banner and Slider (1 Column Grid) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 50. Top Deals (Category - Mosaic Grid) */}
+            <LazySection skeleton={<MosaicSkeleton />}>
+              <FeaturedProductGrid data={[{ ...gridsectionsecond[1], title: `${gridsectionsecond[1].title} (Category)` }]} />
+            </LazySection>
+
+            {/* 51. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList products={dummyProducts} />
+            </LazySection>
+
+            {/* 52. Square size Banner and Slider (1 Column Grid) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 53. Top Selection (Category - Mosaic Grid) */}
+            <LazySection skeleton={<MosaicSkeleton />}>
+              <FeaturedProductGrid data={[{ ...gridsectionsecond[2], title: `${gridsectionsecond[2].title} (Category)` }]} />
+            </LazySection>
+
+            {/* 54. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList products={dummyProducts} />
+            </LazySection>
+
+            {/* 55. Square size Banner and Slider (1 Column Grid) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 56. Women's (Category - Mosaic Grid) */}
+            <LazySection skeleton={<MosaicSkeleton />}>
+              <FeaturedProductGrid data={[gridsectionfirst[0]]} />
+            </LazySection>
+
+            {/* 57. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList products={dummyProducts} />
+            </LazySection>
+
+            {/* 58. Square size Banner and Slider (1 Column Grid) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 59. Men's (Category - Mosaic Grid) */}
+            <LazySection skeleton={<MosaicSkeleton />}>
+              <FeaturedProductGrid data={[gridsectionfirst[1]]} />
+            </LazySection>
+
+            {/* 60. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList products={dummyProducts} />
+            </LazySection>
+
+            {/* 61. Square size Banner and Slider (1 Column Grid) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 62. Women's Clothing (Category - Flat Grid) */}
+            <LazySection skeleton={<MosaicSkeleton />}>
+              <CategoryProductMosaic
+                title="Women's Clothing"
+                apiUrl={`${baseURL}api/products/products.php?action=top_deal`}
+                imageColumn={imageColumn}
+                columns={columns}
+                variant="flat"
+                bgColor="#ffebee"
+              />
+            </LazySection>
+
+            {/* 63. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList products={dummyProducts} />
+            </LazySection>
+
+            {/* 64. Square size Banner and Slider (1 Column Grid) */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
+              <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
+            </LazySection>
+
+            {/* 65. Men's Clothing (Category - Flat Grid) */}
+            <LazySection skeleton={<MosaicSkeleton />}>
+              <CategoryProductMosaic
+                title="Men's Clothing"
+                apiUrl={`${baseURL}api/products/products.php?action=top_rated`}
+                imageColumn={imageColumn}
+                columns={columns}
+                variant="flat"
+                bgColor="#e8f5e9"
+              />
+            </LazySection>
+
+            {/* 66. Product List (2 Column Grid) */}
+            <LazySection skeleton={<ProductListSkeleton items={4} />}>
+              <MobileProductList products={dummyProducts} />
+            </LazySection>
+
+            {/* 67. Recently Viewed (Carousel) */}
+            <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
+              <ProductCarousel
+                apiUrl={`${baseURL}api/products/products.php?action=discount_for_you`}
+                title="Your Recently Viewed (Carousel)"
+                products={dummyProducts}
+              />
+            </LazySection>
+
+            {/* 68. Customer Review Carousel */}
+            <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
+              <CustomerReviewCarousel />
+            </LazySection>
+
+            {/* 69. Brand Directory Section */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 3" />}>
+              <BrandDirectorySection />
+            </LazySection>
+
+            {/* 70. Bulk Order Widget */}
+            <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 3" />}>
+              <BulkOrderWidget />
+            </LazySection>
 
           </>
         )}
