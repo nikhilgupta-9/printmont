@@ -287,20 +287,20 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
           <div
             key={index}
             className={`d-flex flex-column align-items-center text-center mb-0 over ${showImages ? "position-relative" : ""}`}
-            onMouseEnter={() => setActiveCategory(index)}
-            onMouseLeave={() => setActiveCategory(null)}
-            style={{ width: showImages ? "70px" : "auto", cursor: "pointer", padding: showImages ? "0" : "0 15px" }}
+            onMouseEnter={() => {
+              setActiveCategory(index);
+              if (typeof setActiveSub === 'function') setActiveSub(0);
+            }}
+            onMouseLeave={() => {
+              setActiveCategory(null);
+              if (typeof setActiveSub === 'function') setActiveSub(null);
+            }}
+            style={{ width: "auto", minWidth: showImages ? "75px" : "auto", cursor: "pointer", padding: showImages ? "0 4px" : "0 15px" }}
           >
             <Link to={`/category/${item.slug}`} className="d-flex flex-column align-items-center text-decoration-none w-100">
               {showImages && renderCategoryThumb(item)}
-              <div className="d-flex justify-content-center align-items-center text-decoration-none w-100" style={{ minWidth: 0 }}>
-                <span
-                  className="fw-semibold text-truncate"
-                  style={{ color: `${color}`, minWidth: 0, fontSize: "11px" }}
-                  title={item.name}
-                >
-                  {item.name}
-                </span>
+              <div className="d-flex justify-content-center align-items-center text-decoration-none over">
+                <span className="fw-semibold" style={{ color: `${color}` }}>{item.name}</span>
                 <IoIosArrowDown
                   className={`ms-1 flex-shrink-0 transition-arrow ${activeCategory === index ? "rotate-arrow" : ""
                     }`} style={{color:`${color}`}}
