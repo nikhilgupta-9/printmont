@@ -1,8 +1,52 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { TbCategory2 } from "react-icons/tb";
-import { IoIosArrowDown, IoIosArrowForward } from "react-icons/io";
+import {
+  TbCategory2, TbCup, TbBottle, TbBackpack, TbDeviceMobile, TbDeviceLaptop,
+  TbDeviceTablet, TbHeadphones, TbDeviceWatch, TbBriefcase, TbShirt, TbGift,
+  TbPencil, TbToolsKitchen2, TbHome, TbDiamond, TbBabyCarriage, TbPaw, TbBook2,
+  TbMusic, TbCamera, TbPrinter, TbCar, TbPlane, TbBuildingStore,
+} from "react-icons/tb";
+import { IoIosArrowDown } from "react-icons/io";
 import { Link } from "react-router-dom";
 import { API_ENDPOINTS, ASSET_URL, resolveImageUrl } from "../../../config/apiEndpoints";
+
+// Site's blue theme (same blue used on the inner-page category bar background).
+const ICON_BLUE = "#0b53a1";
+const ICON_BLUE_BG = "#e8f1fb";
+
+// No uploaded image for a category → pick an icon that matches its name instead of a generic one.
+const CATEGORY_ICON_RULES = [
+  { keywords: ["mug", "cup", "drinkware", "tumbler"], Icon: TbCup },
+  { keywords: ["bottle"], Icon: TbBottle },
+  { keywords: ["bag", "backpack", "tote", "duffel", "luggage"], Icon: TbBackpack },
+  { keywords: ["mobile", "phone"], Icon: TbDeviceMobile },
+  { keywords: ["laptop"], Icon: TbDeviceLaptop },
+  { keywords: ["tablet"], Icon: TbDeviceTablet },
+  { keywords: ["earbud", "headphone", "audio", "buds"], Icon: TbHeadphones },
+  { keywords: ["watch"], Icon: TbDeviceWatch },
+  { keywords: ["corporate"], Icon: TbBriefcase },
+  { keywords: ["shirt", "cloth", "wear", "fashion", "dress", "apparel"], Icon: TbShirt },
+  { keywords: ["gift"], Icon: TbGift },
+  { keywords: ["stationery", "pen", "pencil"], Icon: TbPencil },
+  { keywords: ["kitchen"], Icon: TbToolsKitchen2 },
+  { keywords: ["home", "decor", "furniture"], Icon: TbHome },
+  { keywords: ["jewel", "diamond"], Icon: TbDiamond },
+  { keywords: ["toy", "kid", "baby"], Icon: TbBabyCarriage },
+  { keywords: ["pet"], Icon: TbPaw },
+  { keywords: ["book"], Icon: TbBook2 },
+  { keywords: ["music"], Icon: TbMusic },
+  { keywords: ["camera"], Icon: TbCamera },
+  { keywords: ["print"], Icon: TbPrinter },
+  { keywords: ["car", "auto"], Icon: TbCar },
+  { keywords: ["travel", "plane"], Icon: TbPlane },
+  { keywords: ["store", "shop"], Icon: TbBuildingStore },
+  { keywords: ["electronic", "gadget", "device"], Icon: TbDeviceMobile },
+];
+
+const getCategoryIcon = (name = "") => {
+  const lower = name.toLowerCase();
+  const match = CATEGORY_ICON_RULES.find(rule => rule.keywords.some(k => lower.includes(k)));
+  return match ? match.Icon : TbCategory2;
+};
 
 const fallbackCategories = [
   { id: 1, name: "Electronics", slug: "electronics", image: "/electro/mobile-1.jpeg" },
@@ -17,48 +61,59 @@ const fallbackCategories = [
 
 const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky = false, categories, limit }) => {
   const [categoriesData, setCategoriesData] = useState(categories || []);
+  const [mobileCategoriesData, setMobileCategoriesData] = useState(categories || []);
   const [show, setShow] = useState(true);
   const [categoryHeight, setCategoryHeight] = useState(0);
   const [activeCategory, setActiveCategory] = useState(null);
-  const [activeSub, setActiveSub] = useState(null);
   const categoryRef = useRef(null);
   const lastScrollYRef = useRef(0);
   const frameRef = useRef(null);
 
+  const getArray = (data) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (typeof data === 'object') return Object.values(data);
+    return [];
+  };
+
   useEffect(() => {
     if (categories) {
       setCategoriesData(categories);
+      setMobileCategoriesData(categories);
       return;
     }
     const fetchCategories = async () => {
       try {
-        const fetchUrl = limit ? `${API_ENDPOINTS.CATEGORIES}?limit=${limit}` : API_ENDPOINTS.CATEGORIES;
-        const response = await fetch(fetchUrl);
-        const data = await response.json();
-        
-        let catList = [];
-        if (data && data.success && data.data) {
-          catList = Array.isArray(data.data) ? data.data : (typeof data.data === 'object' ? Object.values(data.data) : []);
-        } else if (Array.isArray(data)) {
-          catList = data;
-        } else if (data && data.categories) {
-          catList = Array.isArray(data.categories) ? data.categories : (typeof data.categories === 'object' ? Object.values(data.categories) : []);
-        } else if (data && typeof data === 'object' && !data.error) {
-          catList = Object.values(data);
-        }
+        // showImages = the home page icon bar → menu_api.php?type=home (icon-flagged
+        // via shown_on_home, split desktop/mobile). Text-only inner bar → ?type=inner
+        // (already pruned server-side, single tree used for both screen sizes).
+        if (showImages) {
+          const response = await fetch(API_ENDPOINTS.HOME_MENU);
+          const data = await response.json();
+          if (!data || !data.success || !data.data) throw new Error('Invalid home menu response');
 
-        if (catList.length > 0) {
-          setCategoriesData(catList);
+          const desktopList = getArray(data.data.desktop).filter(c => c && c.shown_on_home);
+          const mobileList = getArray(data.data.mobile).filter(c => c && c.shown_on_home);
+
+          setCategoriesData(desktopList.length > 0 ? desktopList : fallbackCategories);
+          setMobileCategoriesData(mobileList.length > 0 ? mobileList : fallbackCategories);
         } else {
-          setCategoriesData(fallbackCategories);
+          const response = await fetch(API_ENDPOINTS.INNER_MENU);
+          const data = await response.json();
+          if (!data || !data.success || !Array.isArray(data.data)) throw new Error('Invalid inner menu response');
+
+          const list = data.data.length > 0 ? data.data : fallbackCategories;
+          setCategoriesData(list);
+          setMobileCategoriesData(list);
         }
       } catch (error) {
         console.error("Error fetching categories, using fallback:", error);
         setCategoriesData(fallbackCategories);
+        setMobileCategoriesData(fallbackCategories);
       }
     };
     fetchCategories();
-  }, [categories, limit]);
+  }, [categories, limit, showImages]);
 
   useEffect(() => {
     if (!isSticky) return;
@@ -126,23 +181,48 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
     return resolveImageUrl(imagePath);
   };
 
-  const getArray = (data) => {
-    if (!data) return [];
-    if (Array.isArray(data)) return data;
-    if (typeof data === 'object') return Object.values(data);
-    return [];
-  };
-
-  const safeCategories = getArray(categoriesData);
-  const headerVisibleCategories = safeCategories.filter(cat => {
+  const isVisible = (cat) => {
     if (!cat) return false;
     if (cat.status && (cat.status === 'inactive' || cat.status === 'deactive')) return false;
     if (cat.desktop_menu_status === 'hide' && cat.mobile_topbar_status === 'hide') return false;
     return true;
-  });
-  const displayCategories = limit ? headerVisibleCategories.slice(0, limit) : headerVisibleCategories;
+  };
 
-  const mobileCategories = displayCategories.slice(0, 12);
+  // No image uploaded for this category → fall back to a generic icon instead of a broken/blank tile.
+  const renderCategoryThumb = (item, extraClass = "") => {
+    if (item.image) {
+      return (
+        <img
+          src={getImageUrl(item.image)}
+          alt={item.name}
+          className={`rounded mb-1 categoires-img-width ${extraClass}`}
+          style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
+          onError={(e) => { e.target.src = '/default-img.jpg'; }}
+        />
+      );
+    }
+    const Icon = getCategoryIcon(item.name);
+    return (
+      <span
+        className={`rounded mb-1 categoires-img-width d-flex align-items-center justify-content-center ${extraClass}`}
+        style={{ aspectRatio: "1 / 1", backgroundColor: ICON_BLUE_BG }}
+      >
+        <Icon size={20} color={ICON_BLUE} />
+      </span>
+    );
+  };
+
+  const safeCategories = getArray(categoriesData);
+  const displayCategories = (() => {
+    const visible = safeCategories.filter(isVisible);
+    return limit ? visible.slice(0, limit) : visible;
+  })();
+
+  const safeMobileCategories = getArray(mobileCategoriesData);
+  const mobileCategories = (() => {
+    const visible = safeMobileCategories.filter(isVisible);
+    return (limit ? visible.slice(0, limit) : visible).slice(0, 12);
+  })();
   const half = Math.ceil(mobileCategories.length / 2);
   const columnsData = [];
   for (let i = 0; i < half; i++) {
@@ -176,15 +256,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                   to={`/category/${col.top.slug}`}
                   className="d-flex flex-column align-items-center text-center p-1 categoires-cont-width text-decoration-none"
                 >
-                  {showImages && (
-                    <img
-                      src={getImageUrl(col.top.image)}
-                      alt={col.top.name}
-                      className="rounded mb-1 border categoires-img-width"
-                      style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
-                      onError={(e) => { e.target.src = '/default-img.jpg'; }}
-                    />
-                  )}
+                  {showImages && renderCategoryThumb(col.top, "border")}
                   <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
                     {col.top.name}
                   </small>
@@ -195,15 +267,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                   to={`/category/${col.bottom.slug}`}
                   className="d-flex flex-column align-items-center text-center p-1 categoires-cont-width text-decoration-none"
                 >
-                  {showImages && (
-                    <img
-                      src={getImageUrl(col.bottom.image)}
-                      alt={col.bottom.name}
-                      className="rounded mb-1 border categoires-img-width"
-                      style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
-                      onError={(e) => { e.target.src = '/default-img.jpg'; }}
-                    />
-                  )}
+                  {showImages && renderCategoryThumb(col.bottom, "border")}
                   <small className="text-truncate w-100 fw-bold categories-text" style={{ color: color || '#6c757d' }}>
                     {col.bottom.name}
                   </small>
@@ -223,30 +287,22 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
           <div
             key={index}
             className={`d-flex flex-column align-items-center text-center mb-0 over ${showImages ? "position-relative" : ""}`}
-            onMouseEnter={() => {
-              setActiveCategory(index);
-              setActiveSub(0);
-            }}
-            onMouseLeave={() => {
-              setActiveCategory(null);
-              setActiveSub(null);
-            }}
+            onMouseEnter={() => setActiveCategory(index)}
+            onMouseLeave={() => setActiveCategory(null)}
             style={{ width: showImages ? "70px" : "auto", cursor: "pointer", padding: showImages ? "0" : "0 15px" }}
           >
             <Link to={`/category/${item.slug}`} className="d-flex flex-column align-items-center text-decoration-none w-100">
-              {showImages && (
-              <img
-                src={getImageUrl(item.image)}
-                alt={item.name}
-                className="rounded mb-1 categoires-img-width"
-                style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
-                onError={(e) => { e.target.src = '/default-img.jpg'; }}
-              />
-              )}
-              <div className="d-flex justify-content-center align-items-center text-decoration-none text-truncate over">
-                <span className="fw-semibold" style={{color:`${color}`}}>{item.name}</span>
+              {showImages && renderCategoryThumb(item)}
+              <div className="d-flex justify-content-center align-items-center text-decoration-none w-100" style={{ minWidth: 0 }}>
+                <span
+                  className="fw-semibold text-truncate"
+                  style={{ color: `${color}`, minWidth: 0, fontSize: "11px" }}
+                  title={item.name}
+                >
+                  {item.name}
+                </span>
                 <IoIosArrowDown
-                  className={`ms-1 transition-arrow ${activeCategory === index ? "rotate-arrow" : ""
+                  className={`ms-1 flex-shrink-0 transition-arrow ${activeCategory === index ? "rotate-arrow" : ""
                     }`} style={{color:`${color}`}}
                 />
               </div>
@@ -297,38 +353,34 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
               </div>
               ) : (
                 <div
-                  className="position-absolute bg-white rounded shadow-lg d-flex text-start dropdown-panel active"
-                  style={{ top: "100%", left: index > 5 ? "auto" : "0", right: index > 5 ? "0" : "auto", zIndex: 1000, minWidth: "480px", height: "400px", borderTop: "2px solid #f0f0f0", cursor: "default" }}
+                  className="position-absolute bg-white rounded shadow-lg d-flex text-start py-4 px-4 dropdown-panel active"
+                  style={{
+                    top: "100%",
+                    left: index > 5 ? "auto" : "0",
+                    right: index > 5 ? "0" : "auto",
+                    zIndex: 1000,
+                    width: "max-content",
+                    minWidth: "480px",
+                    maxWidth: "760px",
+                    maxHeight: "70vh",
+                    overflowY: "auto",
+                    borderTop: "2px solid #f0f0f0",
+                    cursor: "default",
+                  }}
                 >
-                  {/* LEFT COLUMN: Subcategories */}
-                  <div className="d-flex flex-column py-2 hide-scrollbar" style={{ width: "220px", backgroundColor: "#f4f7fb", overflowY: "auto" }}>
-                    {itemChildren.map((sub, i) => (
-                      <div key={i} 
-                          className="px-3 py-2 d-flex justify-content-between align-items-center flex-shrink-0"
-                          style={{ cursor: "pointer", backgroundColor: activeSub === i ? "#fff" : "transparent" }}
-                          onMouseEnter={() => setActiveSub(i)}>
-                        <span className="text-dark fw-medium" style={{ fontSize: "14px" }}>{sub.name}</span>
-                        {getArray(sub.children).length > 0 && <IoIosArrowForward className="text-muted" size={14} />}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* RIGHT COLUMN: Sub-subcategories */}
-                  <div className="d-flex flex-column py-3 px-4 flex-grow-1 bg-white hide-scrollbar" style={{ overflowY: "auto" }}>
-                    {itemChildren[activeSub] && (
-                      <>
-                        <div className="fw-bold text-dark mb-3 flex-shrink-0" style={{ fontSize: "15px" }}>
-                          More in {itemChildren[activeSub].name}
-                        </div>
-                        <div className="d-flex flex-column gap-2">
-                          <Link to={`/category/${itemChildren[activeSub].slug}`} className="text-secondary text-decoration-none py-1 flex-shrink-0" style={{ fontSize: "14px", display: "block" }} onMouseOver={(e) => e.target.style.color = "#007bff"} onMouseOut={(e) => e.target.style.color = "#6c757d"}>
-                            All
+                  <div className="d-flex flex-wrap flex-grow-1" style={{ gap: "24px" }}>
+                    {itemChildren.map((sub, i) => {
+                      const subChildren = getArray(sub.children);
+                      return (
+                        <div key={i} className="d-flex flex-column mb-3" style={{ flex: "1 1 180px", maxWidth: "220px" }}>
+                          <Link to={`/category/${sub.slug}`} className="fw-bold text-dark text-decoration-none mb-2 pb-1 border-bottom fs-6 text-wrap">
+                            {sub.name}
                           </Link>
-                          {getArray(itemChildren[activeSub].children).map((m, idx) => (
+                          {subChildren && subChildren.length > 0 && subChildren.map((m, idx) => (
                             <Link
                               key={idx}
                               to={`/category/${m.slug}`}
-                              className="text-secondary text-decoration-none py-1 text-wrap flex-shrink-0"
+                              className="text-secondary text-decoration-none py-1 text-wrap"
                               style={{ fontSize: "14px", display: "block" }}
                               onMouseOver={(e) => e.target.style.color = "#007bff"}
                               onMouseOut={(e) => e.target.style.color = "#6c757d"}
@@ -337,8 +389,8 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                             </Link>
                           ))}
                         </div>
-                      </>
-                    )}
+                      );
+                    })}
                   </div>
                 </div>
               )

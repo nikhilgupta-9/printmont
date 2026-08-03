@@ -6,7 +6,7 @@ const isLocalhost = typeof window !== 'undefined' && (
 
 const LOCAL_API_URL = '/api';
 const LIVE_API_URL = 'https://mediumvioletred-pelican-783174.hostingersite.com/api';
-const LOCAL_ASSET_URL = 'http://localhost/printmont/printmont-backend/';
+const LOCAL_ASSET_URL = 'http://localhost/printmont/';
 const LIVE_ASSET_URL = 'https://mediumvioletred-pelican-783174.hostingersite.com/';
 
 export const BASE_URL = (import.meta.env.VITE_API_URL || (isLocalhost ? LOCAL_API_URL : LIVE_API_URL)).replace(/\/+$/, '');
@@ -67,6 +67,10 @@ export const API_ENDPOINTS = {
 
   // Categories & Layout
   CATEGORIES: `${BASE_URL}/category-api.php`,
+  // Home page category bar (icons, shown_on_home-flagged, split desktop/mobile) vs the
+  // persistent inner-page top menu (text-only, already pruned server-side). See menu_api.php.
+  HOME_MENU: `${BASE_URL}/menu_api.php?type=home`,
+  INNER_MENU: `${BASE_URL}/menu_api.php?type=inner`,
   HOME_LAYOUT: (target = 'desktop') => `${BACKEND_URL}/home-layout-api.php?target=${target}`,
 
   // Cart

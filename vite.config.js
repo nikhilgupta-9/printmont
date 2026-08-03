@@ -10,12 +10,12 @@ export default defineConfig({
       // which is what home-layout-manager.php edits. Kept on its own prefix so the
       // existing /api routes below are untouched.
       '/backend-api': {
-        target: 'http://localhost/printmont/printmont-backend/api',
+        target: 'http://localhost/printmont/api',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/backend-api/, '')
       },
       '/api': {
-        target: 'http://localhost/printmont/printmont-backend/api',
+        target: 'http://localhost/printmont/api',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
