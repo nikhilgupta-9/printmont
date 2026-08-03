@@ -1062,7 +1062,14 @@ class ProductController
     {
         try {
             $products = $this->productModel->getDiscountProducts();
-            return ['success' => true, 'data' => $products];
+            if (empty($products)) {
+                $products = $this->productModel->getActiveProducts();
+            }
+            $formattedProducts = [];
+            foreach ($products as $product) {
+                $formattedProducts[] = $this->formatProductForApi($product);
+            }
+            return ['success' => true, 'data' => $formattedProducts];
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }
@@ -1072,7 +1079,11 @@ class ProductController
     {
         try {
             $products = $this->productModel->getActiveProducts();
-            return ['success' => true, 'data' => $products];
+            $formattedProducts = [];
+            foreach ($products as $product) {
+                $formattedProducts[] = $this->formatProductForApi($product);
+            }
+            return ['success' => true, 'data' => $formattedProducts];
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }

@@ -366,7 +366,16 @@ try {
             // === ORDER ENDPOINTS ===
             case 'get_orders':
                 if ($method == 'GET') {
-                    echo json_encode($orderController->getAllOrders($queryParams));
+                    // Scope to the token holder. Previously this passed
+                    // $queryParams straight into getAllOrders($page, ...) — the
+                    // filters were dropped and every customer's orders came back.
+                    $auth = $authController->verifyToken(getBearerToken());
+                    if (!$auth['success']) {
+                        http_response_code(401);
+                        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+                        break;
+                    }
+                    echo json_encode($orderController->getOrdersForUser($auth['user']['id'], $queryParams));
                 } else {
                     http_response_code(405);
                     echo json_encode(['success' => false, 'error' => 'Method not allowed']);
@@ -375,7 +384,17 @@ try {
 
             case 'get_order':
                 if ($method == 'GET' && isset($queryParams['id'])) {
-                    echo json_encode($orderController->getOrderById($queryParams['id']));
+                    $auth = $authController->verifyToken(getBearerToken());
+                    if (!$auth['success']) {
+                        http_response_code(401);
+                        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+                        break;
+                    }
+                    $result = $orderController->getOrderForUser($queryParams['id'], $auth['user']['id']);
+                    if (!$result['success']) {
+                        http_response_code(404);
+                    }
+                    echo json_encode($result);
                 } else {
                     http_response_code(405);
                     echo json_encode(['success' => false, 'error' => 'Method not allowed or missing ID']);

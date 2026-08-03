@@ -19,9 +19,64 @@ class OrderController
         return $this->order->getAllOrders($page, $limit, $filters);
     }
 
+    /**
+     * Orders belonging to one customer. $userId must come from a verified
+     * token, not from the request, or customers can read each other's orders.
+     */
+    public function getOrdersForUser($userId, $params = [])
+    {
+        try {
+            $page = isset($params['page']) ? (int) $params['page'] : 1;
+            $limit = isset($params['limit']) ? (int) $params['limit'] : 10;
+
+            $filters = ['customer_user_id' => (int) $userId];
+            foreach (['status', 'payment_status', 'search', 'date_from', 'date_to'] as $key) {
+                if (!empty($params[$key])) {
+                    $filters[$key] = $params[$key];
+                }
+            }
+
+            $result = $this->order->getAllOrders($page, $limit, $filters);
+
+            return [
+                'success' => true,
+                'data' => $result['orders'],
+                'total_count' => $result['total_count'],
+                'total_pages' => $result['total_pages'],
+                'current_page' => $result['current_page'],
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage(), 'data' => []];
+        }
+    }
+
     public function getOrderById($id)
     {
         return $this->order->getOrderById($id);
+    }
+
+    /**
+     * Returns the order only when it belongs to $userId.
+     */
+    public function getOrderForUser($id, $userId)
+    {
+        try {
+            $order = $this->order->getOrderById($id);
+            if (!$order) {
+                return ['success' => false, 'error' => 'Order not found', 'data' => null];
+            }
+
+            $column = $this->order->getCustomerColumn();
+            if ($column === null || (int) $order[$column] !== (int) $userId) {
+                return ['success' => false, 'error' => 'Order not found', 'data' => null];
+            }
+
+            $order['items'] = $this->order->getOrderItems($id);
+
+            return ['success' => true, 'data' => $order];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage(), 'data' => null];
+        }
     }
 
     public function getOrderItems($order_id)

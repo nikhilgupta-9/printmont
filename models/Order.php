@@ -5,20 +5,77 @@ class Order
     private $table_orders = "orders";
     private $table_order_items = "order_items";
     private $table_status_history = "order_status_history";
+    private $customer_column = null;
 
     public function __construct($db)
     {
         $this->conn = $db;
     }
 
+    /**
+     * The orders table is not in database/migrations, so the column that links
+     * an order to its customer differs between environments. Resolve it once
+     * instead of hardcoding a guess.
+     */
+    public function getCustomerColumn()
+    {
+        if ($this->customer_column !== null) {
+            return $this->customer_column ?: null;
+        }
+
+        $this->customer_column = false;
+
+        // SHOW COLUMNS ... LIKE ? rejects placeholders on MariaDB, so read
+        // information_schema instead.
+        $stmt = $this->conn->prepare(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME IN ('user_id', 'customer_id')"
+        );
+        if ($stmt) {
+            $stmt->bind_param("s", $this->table_orders);
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+            $present = [];
+            while ($row = $result->fetch_assoc()) {
+                $present[] = $row['COLUMN_NAME'];
+            }
+            $stmt->close();
+
+            // user_id wins when both exist — it is the column actually populated.
+            foreach (['user_id', 'customer_id'] as $candidate) {
+                if (in_array($candidate, $present, true)) {
+                    $this->customer_column = $candidate;
+                    break;
+                }
+            }
+        }
+
+        return $this->customer_column ?: null;
+    }
+
     // Get all orders with pagination
     public function getAllOrders($page = 1, $limit = 10, $filters = [])
     {
+        $page = max(1, (int) $page);
+        $limit = max(1, (int) $limit);
         $offset = ($page - 1) * $limit;
 
         $where_conditions = ["1=1"];
         $params = [];
         $types = "";
+
+        // Scope to a single customer. Callers that pass this MUST have verified
+        // the id against the bearer token — never straight from a query param.
+        if (!empty($filters['customer_user_id'])) {
+            $column = $this->getCustomerColumn();
+            if ($column === null) {
+                throw new Exception("Cannot scope orders to a customer: the orders table has no user_id or customer_id column.");
+            }
+            $where_conditions[] = "o.{$column} = ?";
+            $params[] = (int) $filters['customer_user_id'];
+            $types .= "i";
+        }
 
         if (!empty($filters['status'])) {
             $where_conditions[] = "o.status = ?";
