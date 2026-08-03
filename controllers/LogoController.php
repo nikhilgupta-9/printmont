@@ -12,11 +12,11 @@ class LogoController
         if ($db && ($db instanceof mysqli)) {
             $this->conn = $db;
         } else {
-            $this->conn = new mysqli("localhost", "root", "", "printmont_db");
-            if ($this->conn->connect_error) {
-                $this->conn = new mysqli("127.0.0.1", "root", "", "printmont_db");
-            }
-            $this->conn->set_charset("utf8");
+            // Go through Database so the configured credentials are used. The
+            // old hardcoded root@localhost connection could never work off the
+            // developer's XAMPP box.
+            $database = new Database();
+            $this->conn = $database->getConnection();
         }
 
         // Create upload directory if it doesn't exist

@@ -86,6 +86,9 @@ try {
             break;
 
         case 'discount_for_you':
+        case 'special_offer':
+        case 'special_offers':
+        case 'flash_sale':
             $response = $productController->getDiscountProductsApi();
             if ($limit && isset($response['data']) && is_array($response['data'])) {
                 $response['data'] = array_slice($response['data'], 0, $limit);
