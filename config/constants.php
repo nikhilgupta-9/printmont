@@ -15,4 +15,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit(0);
 }
 
-define('BASE_URL', 'https://printmont.com/');
+define('BASE_URL', 'https://mediumvioletred-pelican-783174.hostingersite.com/');

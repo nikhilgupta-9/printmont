@@ -11,9 +11,11 @@ use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable(dirname(__DIR__));
 $dotenv->load();
 
-// Define BASE_URL outside the class
-// define("BASE_URL", "https://mediumvioletred-pelican-783174.hostingersite.com/");
-if (!defined('BASE_URL')) define("BASE_URL", $_ENV['SITE'] ?? 'https://printmont.com/');
+if (!defined('BASE_URL')) {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    define("BASE_URL", $_ENV['SITE'] ?? ($protocol . $host . '/printmont/printmont-backend/'));
+}
 
 if (!class_exists('Database')) {
 class Database {

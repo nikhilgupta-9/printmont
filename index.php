@@ -23,7 +23,7 @@ if (
     isset($_SESSION['user_id']) && isset($_SESSION['email'])
 ) {
     error_log("User already logged in, redirecting to dashboard");
-    header("Location: " . BASE_URL . "dashboard.php");
+    header("Location: dashboard.php");
     exit();
 }
 
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login']) && $authContr
         error_log("Login successful - Session verified: " . ($_SESSION['logged_in'] ?? 'false'));
         error_log("Session user_id: " . ($_SESSION['user_id'] ?? 'not set'));
 
-        header("Location: " . BASE_URL . "dashboard.php");
+        header("Location: dashboard.php");
         exit();
     } else {
         $error_message = $result['message'];
