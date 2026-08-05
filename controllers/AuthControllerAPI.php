@@ -282,7 +282,12 @@ class AuthController {
                 throw new Exception("Invalid or expired token");
             }
 
-            $user = $this->userModel->getUserById($data->id);
+            $userId = is_array($data) ? ($data['id'] ?? null) : (is_object($data) ? ($data->id ?? null) : null);
+            if (!$userId) {
+                throw new Exception("Invalid token payload");
+            }
+
+            $user = $this->userModel->getUserById($userId);
 
             if ($user && $user['status'] === 'active') {
                 return [
@@ -325,7 +330,12 @@ class AuthController {
                 throw new Exception("Invalid or expired refresh token");
             }
 
-            $user = $this->userModel->getUserById($data->id);
+            $userId = is_array($data) ? ($data['id'] ?? null) : (is_object($data) ? ($data->id ?? null) : null);
+            if (!$userId) {
+                throw new Exception("Invalid token payload");
+            }
+
+            $user = $this->userModel->getUserById($userId);
             if (!$user || $user['status'] !== 'active') {
                 throw new Exception("Account not found or inactive");
             }

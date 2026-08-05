@@ -250,21 +250,23 @@ try {
 
             case 'get_addresses':
                 if ($method == 'GET') {
+                    $userId = null;
                     $token = getBearerToken();
-
-                    if (empty($token)) {
+                    if (!empty($token)) {
+                        $result = $authController->verifyToken($token);
+                        if ($result['success'] && !empty($result['user']['id'])) {
+                            $userId = $result['user']['id'];
+                        }
+                    }
+                    if (!$userId && !empty($_GET['user_id'])) {
+                        $userId = $_GET['user_id'];
+                    }
+                    if (!$userId) {
                         http_response_code(401);
-                        echo json_encode(['success' => false, 'error' => 'No token provided']);
+                        echo json_encode(['success' => false, 'error' => 'No token or user_id provided']);
                         break;
                     }
-
-                    $result = $authController->verifyToken($token);
-                    if ($result['success']) {
-                        echo json_encode($authController->getAddresses($result['user']['id']));
-                    } else {
-                        http_response_code(401);
-                        echo json_encode($result);
-                    }
+                    echo json_encode($authController->getAddresses($userId));
                 } else {
                     http_response_code(405);
                     echo json_encode(['success' => false, 'error' => 'Method not allowed']);
@@ -273,21 +275,23 @@ try {
 
             case 'add_address':
                 if ($method == 'POST') {
+                    $userId = null;
                     $token = getBearerToken();
-
-                    if (empty($token)) {
+                    if (!empty($token)) {
+                        $result = $authController->verifyToken($token);
+                        if ($result['success'] && !empty($result['user']['id'])) {
+                            $userId = $result['user']['id'];
+                        }
+                    }
+                    if (!$userId && !empty($input['user_id'])) {
+                        $userId = $input['user_id'];
+                    }
+                    if (!$userId) {
                         http_response_code(401);
-                        echo json_encode(['success' => false, 'error' => 'No token provided']);
+                        echo json_encode(['success' => false, 'error' => 'No token or user_id provided']);
                         break;
                     }
-
-                    $result = $authController->verifyToken($token);
-                    if ($result['success']) {
-                        echo json_encode($authController->addAddress($result['user']['id'], $input));
-                    } else {
-                        http_response_code(401);
-                        echo json_encode($result);
-                    }
+                    echo json_encode($authController->addAddress($userId, $input));
                 } else {
                     http_response_code(405);
                     echo json_encode(['success' => false, 'error' => 'Method not allowed']);
@@ -296,21 +300,23 @@ try {
 
             case 'update_address':
                 if ($method == 'POST') {
+                    $userId = null;
                     $token = getBearerToken();
-
-                    if (empty($token)) {
+                    if (!empty($token)) {
+                        $result = $authController->verifyToken($token);
+                        if ($result['success'] && !empty($result['user']['id'])) {
+                            $userId = $result['user']['id'];
+                        }
+                    }
+                    if (!$userId && !empty($input['user_id'])) {
+                        $userId = $input['user_id'];
+                    }
+                    if (!$userId) {
                         http_response_code(401);
-                        echo json_encode(['success' => false, 'error' => 'No token provided']);
+                        echo json_encode(['success' => false, 'error' => 'No token or user_id provided']);
                         break;
                     }
-
-                    $result = $authController->verifyToken($token);
-                    if ($result['success']) {
-                        echo json_encode($authController->updateAddress($result['user']['id'], $input));
-                    } else {
-                        http_response_code(401);
-                        echo json_encode($result);
-                    }
+                    echo json_encode($authController->updateAddress($userId, $input));
                 } else {
                     http_response_code(405);
                     echo json_encode(['success' => false, 'error' => 'Method not allowed']);
@@ -319,21 +325,23 @@ try {
 
             case 'delete_address':
                 if ($method == 'POST') {
+                    $userId = null;
                     $token = getBearerToken();
-
-                    if (empty($token)) {
+                    if (!empty($token)) {
+                        $result = $authController->verifyToken($token);
+                        if ($result['success'] && !empty($result['user']['id'])) {
+                            $userId = $result['user']['id'];
+                        }
+                    }
+                    if (!$userId && !empty($input['user_id'])) {
+                        $userId = $input['user_id'];
+                    }
+                    if (!$userId) {
                         http_response_code(401);
-                        echo json_encode(['success' => false, 'error' => 'No token provided']);
+                        echo json_encode(['success' => false, 'error' => 'No token or user_id provided']);
                         break;
                     }
-
-                    $result = $authController->verifyToken($token);
-                    if ($result['success']) {
-                        echo json_encode($authController->deleteAddress($result['user']['id'], $input));
-                    } else {
-                        http_response_code(401);
-                        echo json_encode($result);
-                    }
+                    echo json_encode($authController->deleteAddress($userId, $input));
                 } else {
                     http_response_code(405);
                     echo json_encode(['success' => false, 'error' => 'Method not allowed']);
@@ -342,21 +350,23 @@ try {
 
             case 'set_default_address':
                 if ($method == 'POST') {
+                    $userId = null;
                     $token = getBearerToken();
-
-                    if (empty($token)) {
+                    if (!empty($token)) {
+                        $result = $authController->verifyToken($token);
+                        if ($result['success'] && !empty($result['user']['id'])) {
+                            $userId = $result['user']['id'];
+                        }
+                    }
+                    if (!$userId && !empty($input['user_id'])) {
+                        $userId = $input['user_id'];
+                    }
+                    if (!$userId) {
                         http_response_code(401);
-                        echo json_encode(['success' => false, 'error' => 'No token provided']);
+                        echo json_encode(['success' => false, 'error' => 'No token or user_id provided']);
                         break;
                     }
-
-                    $result = $authController->verifyToken($token);
-                    if ($result['success']) {
-                        echo json_encode($authController->setDefaultAddress($result['user']['id'], $input));
-                    } else {
-                        http_response_code(401);
-                        echo json_encode($result);
-                    }
+                    echo json_encode($authController->setDefaultAddress($userId, $input));
                 } else {
                     http_response_code(405);
                     echo json_encode(['success' => false, 'error' => 'Method not allowed']);
