@@ -19,9 +19,11 @@ import { RiDownload2Line } from "react-icons/ri";
 import { API_ENDPOINTS, ASSET_URL } from "../../config/apiEndpoints";
 import { useAuth } from "../../context/AuthContext";
 import { useCheckout } from "../../context/CheckoutContext";
+import { useWishlist } from "../../context/WishlistContext";
 
 const Header = () => {
   const { user, getUsernamePath } = useAuth();
+  const { wishlistCount } = useWishlist();
   const checkoutContext = useCheckout();
   const cartItems = checkoutContext?.cartItems || [];
   const cartCount = cartItems.reduce((acc, item) => acc + (item.quantity || 1), 0);
@@ -154,15 +156,15 @@ const Header = () => {
     <>
       <div ref={headerRef} className="container-fluid p-0 sticky-navbar">
         <div className="container-fluid bg-white">
-          <Navbar expand="lg" className="border-bottom py-1 container-fluid px-5">
-            <Container className="d-flex align-items-center" style={{ maxWidth: '1440px' }}>
+          <Navbar expand="lg" className="border-bottom py-0 container-fluid px-4 px-xl-5">
+            <Container className="d-flex align-items-center py-1" style={{ maxWidth: '1440px' }}>
             
             {/* ✅ React Router Link for Logo */}
-            <Navbar.Brand as={Link} to="/" className="me-3">
+            <Navbar.Brand as={Link} to="/" className="me-3 p-0">
               <img 
                 src={logo || "/PrintLogo.png"} 
                 alt="PrintMont Logo" 
-                style={{ height: "45px", objectFit: "contain" }} 
+                style={{ height: "36px", objectFit: "contain" }} 
                 onError={(e) => { e.target.src = "/PrintLogo.png"; }}
               />
             </Navbar.Brand>
@@ -186,9 +188,11 @@ const Header = () => {
                   >
                     <div className="position-relative">
                       <GoHeart size={25} color="#007bff" />
-                      <div className="notify-mes">
-                        <span className="notify-num">4</span>
-                      </div>
+                      {wishlistCount > 0 && (
+                        <div className="notify-mes">
+                          <span className="notify-num">{wishlistCount}</span>
+                        </div>
+                      )}
                     </div>
                     <span className="fs-7">Wishlist</span>
                   </Link>

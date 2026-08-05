@@ -32,7 +32,7 @@ const SearchInput = ({
       <input
         ref={inputRef}
         type="text"
-        className="form-control border-0 bg-transparent px-3 py-2 text-dark shadow-none"
+        className="form-control border-0 bg-transparent px-3 py-1 text-dark shadow-none"
         value={query}
         onChange={onChange}
         onKeyDown={onKeyDown}

@@ -17,8 +17,13 @@ import PrintmontCoinsPromo from './PrintmontCoinsPromo';
 import CouponSection from './CouponSection';
 
 import { useCheckout } from '../../context/CheckoutContext';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const Cart = () => {
+    const { user } = useAuth();
+    const navigate = useNavigate();
 
     const {
         checkoutStep, setCheckoutStep,
@@ -34,9 +39,23 @@ const Cart = () => {
     const [show, setShow] = useState(false);
     const [pincode, setPincode] = useState("");
 
+    // Always reset to Step 1 (Cart Products List) when user opens /cart
+    useEffect(() => {
+        setCheckoutStep(1);
+    }, [setCheckoutStep]);
+
     const handleNextStep = () => {
         setCheckoutStep(prevStep => prevStep + 1);
         window.scrollTo(0, 0);
+    };
+
+    const handlePlaceOrder = () => {
+        if (!user) {
+            toast.error("Please login to proceed with your order!");
+            navigate('/login?redirect=/cart');
+            return;
+        }
+        handleNextStep();
     };
 
     const handlePincodeSubmit = () => {
@@ -145,12 +164,12 @@ const Cart = () => {
                                 )}
 
                                 {/* Desktop Inline Place Order */}
-                                {cartItems.length > 0 && (
+                                 {cartItems.length > 0 && (
                                 <div className="d-none d-lg-flex justify-content-end bg-white p-3 mb-4 shadow-sm">
                                     <button 
                                         className="btn btn-theme text-white fw-bold px-5 py-2" 
                                         style={{ backgroundColor: '#0b53a1', fontSize: '16px' }}
-                                        onClick={handleNextStep}
+                                        onClick={handlePlaceOrder}
                                     >
                                         PLACE ORDER
                                     </button>
@@ -309,7 +328,7 @@ const Cart = () => {
                     <button 
                         className="btn btn-theme w-100 py-3 fw-bold text-uppercase text-white rounded-0"
                         style={{ backgroundColor: '#0b53a1', fontSize: '15px' }}
-                        onClick={handleNextStep}
+                        onClick={handlePlaceOrder}
                     >
                         Place Order
                     </button>

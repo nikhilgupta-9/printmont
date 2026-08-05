@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { GoHeartFill } from "react-icons/go";
 import { FaStar } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { useWishlist } from "../../context/WishlistContext";
 import "./Product.css";
 
 const generateSlug = (name, id) => {
@@ -20,7 +21,8 @@ const formatCurrency = (val) => {
 };
 
 const ProductCard = ({ product }) => {
-  const [isWished, setIsWished] = useState(false);
+  const { isInWishlist, toggleWishlist: contextToggleWishlist } = useWishlist();
+  const isWished = isInWishlist(product.id || product.product_id);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const imgContainerRef = useRef(null);
@@ -34,7 +36,7 @@ const ProductCard = ({ product }) => {
   const toggleWishlist = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsWished((prev) => !prev);
+    contextToggleWishlist(product);
   };
 
   // Flipkart Interactive Mouse-Move Image Scrubber

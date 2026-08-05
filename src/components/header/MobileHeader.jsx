@@ -8,10 +8,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from '../search/SearchBar';
 import { API_ENDPOINTS, ASSET_URL } from '../../config/apiEndpoints';
 import { useCheckout } from '../../context/CheckoutContext';
+import { useWishlist } from '../../context/WishlistContext';
 
 const MobileHeader = () => {
   const navigate = useNavigate();
   const checkoutContext = useCheckout();
+  const { wishlistCount } = useWishlist();
   const cartItems = checkoutContext?.cartItems || [];
   const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
   const [dropdowns, setDropdowns] = useState({});
@@ -158,8 +160,21 @@ const MobileHeader = () => {
           </div>
 
           <div className="d-flex align-items-center gap-3">
-            <Link to="/user/wishlist" className="position-relative">
+            <Link to="/wishlist" className="position-relative d-flex align-items-center">
               <CiHeart size={25} color="#007bff" />
+              {wishlistCount > 0 && (
+                <span className="position-absolute rounded-circle bg-danger text-white fw-bold d-flex align-items-center justify-content-center"
+                      style={{
+                        top: '-6px',
+                        right: '-8px',
+                        fontSize: '9px',
+                        width: '16px',
+                        height: '16px',
+                        border: '1px solid white'
+                      }}>
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
 
             <Link to="/cart" className="position-relative d-flex align-items-center">

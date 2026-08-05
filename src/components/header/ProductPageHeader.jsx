@@ -11,6 +11,7 @@ import Categories from '../pages/category-list/Categories';
 import SearchBar from '../search/SearchBar';
 import { useCheckout } from '../../context/CheckoutContext';
 import { useAuth } from '../../context/AuthContext';
+import { useWishlist } from '../../context/WishlistContext';
 import axios from 'axios';
 import { API_ENDPOINTS, ASSET_URL } from '../../config/apiEndpoints';
 
@@ -18,6 +19,7 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCate
     const navigate = useNavigate();
     const location = useLocation();
     const checkoutContext = useCheckout();
+    const { wishlistCount } = useWishlist();
     const { user, logout, getUsernamePath } = useAuth();
     const usernamePath = getUsernamePath();
     const cartItems = checkoutContext ? checkoutContext.cartItems : [];
@@ -236,8 +238,8 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCate
     // --- Default Header View (from the image) ---
     return (
         <>
-            <div ref={headerRef} className='theme shadow-sm position-fixed w-100 py-2 border-bottom px-0 px-lg-5' style={{ zIndex: '1030' }}>
-                <div className="d-flex align-items-center justify-content-between p-2 ">
+            <div ref={headerRef} className='theme shadow-sm position-fixed w-100 py-1 border-bottom px-0 px-lg-5' style={{ zIndex: '1030' }}>
+                <div className="d-flex align-items-center justify-content-between p-1 ">
                     {/* LEFT SIDE: Back Arrow, Logo, Title */}
                     <div className="d-flex align-items-center gap-2 flex-grow-1">
 
@@ -283,20 +285,22 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCate
 
                             {isProductPage ? (
                                 <>
-                                    {/* Wishlist Heart Icon with Badge (Mock count: 4 to match Figma design exactly) */}
-                                    <Link to="/user/wishlist" className="position-relative text-dark d-flex align-items-center">
+                                    {/* Wishlist Heart Icon with Badge */}
+                                    <Link to="/wishlist" className="position-relative text-dark d-flex align-items-center">
                                         <FaHeart color='white' size={20} />
-                                        <span className="position-absolute rounded-circle bg-white text-primary fw-bold d-flex align-items-center justify-content-center" 
-                                              style={{ 
-                                                  top: '-8px', 
-                                                  right: '-8px', 
-                                                  fontSize: '9px', 
-                                                  width: '15px', 
-                                                  height: '15px', 
-                                                  border: '1px solid rgb(11, 83, 161)' 
-                                              }}>
-                                            4
-                                        </span>
+                                        {wishlistCount > 0 && (
+                                            <span className="position-absolute rounded-circle bg-white text-primary fw-bold d-flex align-items-center justify-content-center" 
+                                                  style={{ 
+                                                      top: '-8px', 
+                                                      right: '-8px', 
+                                                      fontSize: '9px', 
+                                                      width: '15px', 
+                                                      height: '15px', 
+                                                      border: '1px solid rgb(11, 83, 161)' 
+                                                  }}>
+                                                {wishlistCount}
+                                            </span>
+                                        )}
                                     </Link>
 
                                     {/* Cart Icon with Badge */}

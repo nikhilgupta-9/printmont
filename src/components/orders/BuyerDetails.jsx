@@ -1,15 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./orders.css";
 import { useCheckout } from '../../context/CheckoutContext';
+import { useAuth } from '../../context/AuthContext';
 
 const BuyerDetails = ({ onContinue }) => {
+  const { user } = useAuth();
   const { buyerDetails, setBuyerDetails } = useCheckout();
 
   const [formData, setFormData] = useState({
-    name: buyerDetails?.name || "",
-    mobile: buyerDetails?.mobile || "",
-    email: buyerDetails?.email || "",
+    name: buyerDetails?.name || user?.name || (user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : ""),
+    mobile: buyerDetails?.mobile || user?.phone || user?.mobile || user?.contact || "",
+    email: buyerDetails?.email || user?.email || "",
   });
+
+  useEffect(() => {
+    if (user && !buyerDetails?.name) {
+      setFormData(prev => ({
+        name: prev.name || user.name || (user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : ""),
+        mobile: prev.mobile || user.phone || user.mobile || user.contact || "",
+        email: prev.email || user.email || ""
+      }));
+    }
+  }, [user]);
 
   const [errors, setErrors] = useState({});
 

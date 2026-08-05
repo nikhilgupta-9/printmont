@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Form, Button, Card, Dropdown, Spinner, Badge } from 'react-bootstrap';
+import { Row, Col, Form, Button, Card, Dropdown, Spinner, Badge, Modal } from 'react-bootstrap';
+import toast from 'react-hot-toast';
 import { 
   FaHome, 
   FaBriefcase, 
@@ -10,7 +11,8 @@ import {
   FaPhoneAlt, 
   FaMapPin, 
   FaEllipsisV,
-  FaArrowLeft
+  FaArrowLeft,
+  FaExclamationTriangle
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
@@ -73,9 +75,9 @@ const SavedAddressCard = ({ data, onEdit, onDelete }) => {
             <span className="d-inline-flex align-items-center gap-1">
               <FaPhoneAlt size={12} className="text-muted" /> {data.phone}
             </span>
-            {data.altPhone && (
+            {(data.alt_phone || data.altPhone) && (
               <span className="d-inline-flex align-items-center gap-1 border-start ps-2">
-                Alt: {data.altPhone}
+                Alt: {data.alt_phone || data.altPhone}
               </span>
             )}
           </div>
@@ -215,7 +217,6 @@ const AddressForm = ({ formData, handleInputChange, setFormData, handleSave, han
               <Form.Control 
                 type="tel" 
                 name="phone" 
-                pattern="[0-9]{10}"
                 placeholder="Mobile number" 
                 value={formData.phone} 
                 onChange={handleInputChange} 
@@ -381,26 +382,38 @@ const ManageAddress = () => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState(emptyAddress);
 
-  const fetchAddresses = async () => {
-    if (!user?.id) return;
+  const [deleteId, setDeleteId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const fetchAddresses = async (showLoader = false) => {
+    const userId = user?.id || user?.user_id || user?.customer_id;
     try {
-      setLoading(true);
-      const res = await fetch(`${API_ENDPOINTS.GET_ADDRESSES}&user_id=${user.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      if (showLoader) setLoading(true);
+      const activeToken = token || localStorage.getItem('token') || '';
+      const headers = {};
+      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+
+      let url = API_ENDPOINTS.GET_ADDRESSES;
+      if (userId) {
+        url += `&user_id=${userId}`;
+      }
+
+      const res = await fetch(url, { headers });
       const data = await res.json();
       if (data.success || data.status === 'success') {
-        setAddresses(data.data || data.addresses || []);
+        const list = data.data || data.addresses || [];
+        setAddresses(Array.isArray(list) ? list : []);
       }
     } catch (err) {
       console.error("Failed to load addresses", err);
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAddresses();
+    fetchAddresses(true);
   }, [user]);
 
   const handleInputChange = (e) => {
@@ -415,68 +428,133 @@ const ManageAddress = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!user?.id) {
-      alert("You must be logged in to save an address.");
+    const userId = user?.id || user?.user_id || user?.customer_id;
+
+    // Clean and validate phone number in JS
+    const cleanedPhone = (formData.phone || "").replace(/\D/g, "");
+    if (cleanedPhone.length < 10) {
+      toast.error("Please enter a valid 10-digit mobile number.");
       return;
     }
 
-    const payload = { ...formData, user_id: user.id };
+    const payload = { 
+      ...formData, 
+      phone: cleanedPhone.slice(-10),
+      user_id: userId 
+    };
     const isEdit = !!formData.id;
     const endpoint = isEdit ? API_ENDPOINTS.UPDATE_ADDRESS : API_ENDPOINTS.ADD_ADDRESS;
 
     try {
+      const activeToken = token || localStorage.getItem('token') || '';
+      const headers = { 'Content-Type': 'application/json' };
+      if (activeToken) {
+        headers['Authorization'] = `Bearer ${activeToken}`;
+      }
+
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers,
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
       
-      if (data.success || data.status === 'success') {
-        fetchAddresses();
+      const rawText = await res.text();
+      let data = {};
+      try {
+        data = JSON.parse(rawText);
+      } catch (parseErr) {
+        console.error("Non-JSON API response:", rawText);
+        toast.error(`Server Error (${res.status}). Failed to save address.`);
+        return;
+      }
+      
+      if (data.success || data.status === 'success' || data.address_id) {
+        toast.success(isEdit ? "Address updated successfully!" : "Address saved successfully!");
+        
+        // INSTANT OPTIMISTIC UI UPDATE (0ms latency)
+        const savedId = data.address_id || formData.id || Date.now();
+        const updatedItem = {
+          ...payload,
+          id: savedId,
+          alt_phone: payload.altPhone || payload.alt_phone || ""
+        };
+
+        if (isEdit) {
+          setAddresses(prev => prev.map(a => Number(a.id) === Number(formData.id) ? { ...a, ...updatedItem } : a));
+        } else {
+          setAddresses(prev => [updatedItem, ...prev]);
+        }
+
         handleCancel();
+        fetchAddresses(false);
       } else {
-        alert(data.message || "Failed to save address");
+        toast.error(data.error || data.message || "Failed to save address");
       }
     } catch (err) {
       console.error("Error saving address", err);
-      alert("An error occurred while saving the address.");
+      toast.error("Network error occurred while saving address");
     }
   };
 
   const handleEdit = (address) => {
-    setFormData(address);
+    setFormData({
+      ...address,
+      altPhone: address.alt_phone || address.altPhone || ""
+    });
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this address?")) {
-      try {
-        const res = await fetch(API_ENDPOINTS.DELETE_ADDRESS, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ id, user_id: user?.id })
-        });
-        const data = await res.json();
-        if (data.success || data.status === 'success') {
-          fetchAddresses();
-        } else {
-          alert(data.message || "Failed to delete address.");
-        }
-      } catch (err) {
-        console.error("Error deleting address", err);
+  const handleDeleteClick = (id) => {
+    setDeleteId(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteAddress = async () => {
+    if (!deleteId) return;
+    const targetId = deleteId;
+    const userId = user?.id || user?.user_id || user?.customer_id;
+
+    // INSTANT OPTIMISTIC REMOVAL (0ms latency)
+    setAddresses(prev => prev.filter(a => Number(a.id) !== Number(targetId)));
+    toast.success("Address deleted successfully!");
+    setShowDeleteModal(false);
+    setDeleteId(null);
+
+    try {
+      const activeToken = token || localStorage.getItem('token') || '';
+      const headers = { 'Content-Type': 'application/json' };
+      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+
+      const res = await fetch(API_ENDPOINTS.DELETE_ADDRESS, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ id: targetId, user_id: userId })
+      });
+      const data = await res.json();
+      if (!data.success && data.status !== 'success') {
+        toast.error(data.error || data.message || "Failed to sync delete with server.");
       }
+      fetchAddresses(false);
+    } catch (err) {
+      console.error("Error deleting address", err);
+      fetchAddresses(false);
+    } finally {
+      setDeleting(false);
     }
   };
 
+  const getInitialFormData = () => {
+    const defaultName = user?.name || (user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : "");
+    const defaultPhone = user?.phone || user?.mobile || user?.contact || "";
+    return {
+      ...emptyAddress,
+      name: defaultName,
+      phone: defaultPhone
+    };
+  };
+
   const handleAddAddressClick = () => {
-    setFormData(emptyAddress);
+    setFormData(getInitialFormData());
     setShowForm(true);
   };
 
@@ -546,13 +624,51 @@ const ManageAddress = () => {
                   key={address.id}
                   data={address}
                   onEdit={handleEdit}
-                  onDelete={handleDelete}
+                  onDelete={handleDeleteClick}
                 />
               ))}
             </div>
           )}
         </>
       )}
+
+      {/* Modern Custom Delete Confirmation Modal */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered size="sm">
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="fw-bold fs-6 text-danger d-flex align-items-center gap-2">
+            <FaExclamationTriangle /> Delete Address
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="py-3 text-secondary small">
+          Are you sure you want to delete this shipping address? This action cannot be undone.
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0 d-flex justify-content-end gap-2">
+          <Button 
+            variant="light" 
+            size="sm" 
+            className="rounded-pill px-3 fw-semibold border text-secondary" 
+            onClick={() => setShowDeleteModal(false)}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="danger" 
+            size="sm" 
+            className="rounded-pill px-4 fw-bold shadow-sm"
+            disabled={deleting}
+            onClick={confirmDeleteAddress}
+          >
+            {deleting ? (
+              <>
+                <Spinner size="sm" animation="border" className="me-1" /> Deleting...
+              </>
+            ) : (
+              'Delete'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
     </div>
   );
 };

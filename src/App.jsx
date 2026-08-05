@@ -6,6 +6,7 @@ import './App.css';
 
 import { AuthProvider } from "./context/AuthContext";
 import { CheckoutProvider } from "./context/CheckoutContext";
+import { WishlistProvider } from "./context/WishlistContext";
 import HeaderManager from "./components/header/HeaderManager";
 import Home from './components/pages/Home';
 import Footer from "./components/footer/Footer";
@@ -66,8 +67,9 @@ function App() {
     <Router>
       <ScrollToTop />
       <AuthProvider>
-        <CheckoutProvider>
-          <Toaster position="top-center" reverseOrder={false} />
+        <WishlistProvider>
+          <CheckoutProvider>
+            <Toaster position="top-center" reverseOrder={false} />
         {/* 👇 Use the HeaderManager here instead of Header */}
         <HeaderManager />
 
@@ -81,6 +83,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/allproducts" element={<AllProducts />} />
+          <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/banner-preview" element={<BannerPreview />} />
           <Route path="/:productSlug" element={<ProductDetails />} />
           <Route path="/blog" element={<Blog />} />
@@ -145,6 +148,7 @@ function App() {
         {/* Footer */}
         <Footer />
         </CheckoutProvider>
+        </WishlistProvider>
       </AuthProvider>
     </Router>
   );

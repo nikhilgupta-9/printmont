@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
@@ -9,6 +9,9 @@ import './Login.css';
 const Login = () => {
   const [isSignup, setIsSignup] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const redirectPath = queryParams.get('redirect') || '/';
   const { user, login: authLogin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -16,9 +19,9 @@ const Login = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate(redirectPath);
     }
-  }, [user, navigate]);
+  }, [user, navigate, redirectPath]);
 
   // Multi-step Login States
   const [step, setStep] = useState(1);
@@ -131,7 +134,7 @@ const Login = () => {
           setStep(1);
         } else {
           toast.success('Login successful!');
-          navigate('/'); 
+          navigate(redirectPath); 
         }
       } else {
         // If it's a mocked OTP step and the backend doesn't support it yet, show a nice message
