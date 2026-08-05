@@ -400,9 +400,17 @@ class AuthController
     // ... (Keep your existing email sending methods)
     private function sendOTPToEmail($email, $username, $otp)
     {
-        // Your existing email sending code here
-        // Return true for testing, false if failed
-        return true;
+        $subject = 'Your Password Reset OTP - Printmont Admin';
+        $bodyHtml = '<p>Hi ' . htmlspecialchars($username ?: 'Admin') . ',</p>'
+            . '<p>Your password reset OTP code is:</p>'
+            . '<h2 style="letter-spacing:4px; color:#3b82f6;">' . htmlspecialchars($otp) . '</h2>'
+            . '<p>This code expires in 15 minutes. If you did not request this, please ignore this email.</p>';
+
+        $headers  = "MIME-Version: 1.0\r\n";
+        $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+        $headers .= "From: Printmont Admin <noreply@printmont.com>\r\n";
+
+        return @mail($email, $subject, $bodyHtml, $headers);
     }
 
     /**

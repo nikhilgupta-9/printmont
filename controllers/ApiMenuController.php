@@ -61,7 +61,10 @@ class ApiMenuController {
         $branch = [];
         foreach ($categories as $c) {
             if ((int) $c['parent_id'] !== $parentId) continue;
-            if ($c['desktop_menu_status'] === 'hide' && $c['mobile_topbar_status'] === 'hide') continue;
+            if (isset($c['status']) && ($c['status'] === 'inactive' || $c['status'] === 'disabled')) continue;
+            if (isset($c['desktop_menu_status']) && isset($c['mobile_topbar_status'])) {
+                if ($c['desktop_menu_status'] === 'hide' && $c['mobile_topbar_status'] === 'hide') continue;
+            }
 
             $node = $this->formatMenuNode($c);
             $children = $this->buildMenuTree($categories, (int) $c['id']);
@@ -73,12 +76,15 @@ class ApiMenuController {
 
     private function buildHomeTree(array $categories, int $parentId, string $device): array {
         $showCol = $device === 'mobile' ? 'mobile_home_show' : 'desktop_home_show';
+        $menuStatusCol = $device === 'mobile' ? 'mobile_topbar_status' : 'desktop_menu_status';
         $branch = [];
         foreach ($categories as $c) {
             if ((int) $c['parent_id'] !== $parentId) continue;
+            if (isset($c['status']) && ($c['status'] === 'inactive' || $c['status'] === 'disabled')) continue;
+            if (isset($c[$menuStatusCol]) && $c[$menuStatusCol] === 'hide') continue;
 
             $node = $this->formatHomeItem($c, $device);
-            $node['shown_on_home'] = $c[$showCol] === 'yes';
+            $node['shown_on_home'] = isset($c[$showCol]) && $c[$showCol] === 'yes';
             $children = $this->buildHomeTree($categories, (int) $c['id'], $device);
             if ($children) $node['children'] = $children;
             $branch[] = $node;

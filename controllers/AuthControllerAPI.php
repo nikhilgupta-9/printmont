@@ -474,46 +474,93 @@ class AuthController {
     // rather than throwing, so forgotPassword() can still return its
     // generic success response either way.
     private function sendOtpEmail($toEmail, $toName, $otp) {
-        $config = $this->db->query(
-            "SELECT * FROM email_configurations WHERE purpose = 'Password Reset' AND status = 'active' LIMIT 1"
-        )->fetch_assoc();
-
-        if (!$config) {
-            error_log("sendOtpEmail: no active 'Password Reset' email configuration found");
-            return false;
+        if (file_exists(__DIR__ . '/../services/MailService.php')) {
+            require_once __DIR__ . '/../services/MailService.php';
+            try {
+                $mailService = new MailService();
+                $bodyHtml = '<div style="font-family:Arial,sans-serif; padding:20px; border:1px solid #eee; border-radius:8px;">'
+                    . '<h2 style="color:#1e293b;">Printmont Password Reset</h2>'
+                    . '<p>Hi ' . htmlspecialchars($toName ?: 'User') . ',</p>'
+                    . '<p>Your OTP code for resetting your password is:</p>'
+                    . '<div style="background:#f1f5f9; padding:12px; font-size:24px; font-weight:bold; letter-spacing:4px; text-align:center; color:#2563eb; border-radius:6px;">'
+                    . htmlspecialchars($otp)
+                    . '</div>'
+                    . '<p style="color:#64748b; font-size:12px; margin-top:20px;">This code will expire in 15 minutes. If you did not request a password reset, please ignore this email.</p>'
+                    . '</div>';
+                
+                $sent = $mailService->sendEmail($toEmail, 'Your Password Reset OTP - Printmont', $bodyHtml, 'Password Reset', 'Printmont');
+                if ($sent) return true;
+            } catch (Throwable $t) {
+                error_log("MailService in sendOtpEmail error: " . $t->getMessage());
+            }
         }
 
-        $mail = new PHPMailer(true);
+        // Fallback if MailService fails or is unavailable
+        $config = null;
         try {
-            $mail->isSMTP();
-            $mail->Host = $config['smtp_host'] ?: $config['mail_host'];
-            $mail->SMTPAuth = true;
-            $mail->Username = $config['smtp_user'] ?: $config['mail_username'];
-            $mail->Password = $config['smtp_pass'] ?: $config['mail_password'];
-            $encryption = $config['encryption'] ?: $config['mail_encryption'];
-            $mail->SMTPSecure = $encryption === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = (int) ($config['smtp_port'] ?: $config['mail_port'] ?: 587);
-
-            $mail->setFrom(
-                $config['from_email'] ?: $config['mail_from_address'],
-                $config['from_name'] ?: $config['mail_from_name']
+            $res = $this->db->query(
+                "SELECT * FROM email_configurations WHERE purpose = 'Password Reset' AND status = 'active' LIMIT 1"
             );
-            $mail->addAddress($toEmail, $toName);
-
-            $mail->isHTML(true);
-            $mail->Subject = 'Your Password Reset Code';
-            $mail->Body = '<p>Hi ' . htmlspecialchars($toName) . ',</p>'
-                . '<p>Your password reset code is:</p>'
-                . '<h2 style="letter-spacing:4px">' . htmlspecialchars($otp) . '</h2>'
-                . '<p>This code expires in 15 minutes. If you did not request this, you can safely ignore this email.</p>';
-            $mail->AltBody = "Your password reset code is: $otp (expires in 15 minutes)";
-
-            $mail->send();
-            return true;
-        } catch (PHPMailerException $e) {
-            error_log('sendOtpEmail failed: ' . $mail->ErrorInfo);
-            return false;
+            if ($res && $res->num_rows > 0) {
+                $config = $res->fetch_assoc();
+            } else {
+                $resFallback = $this->db->query(
+                    "SELECT * FROM email_configurations WHERE status = 'active' ORDER BY id ASC LIMIT 1"
+                );
+                if ($resFallback && $resFallback->num_rows > 0) {
+                    $config = $resFallback->fetch_assoc();
+                }
+            }
+        } catch (Throwable $t) {
+            error_log("sendOtpEmail DB error: " . $t->getMessage());
         }
+
+        $smtpHost = $config['smtp_host'] ?? $config['mail_host'] ?? $_ENV['SMTP_HOST'] ?? getenv('SMTP_HOST') ?: '';
+        $smtpUser = $config['smtp_user'] ?? $config['mail_username'] ?? $_ENV['SMTP_USER'] ?? getenv('SMTP_USER') ?: '';
+        $smtpPass = $config['smtp_pass'] ?? $config['mail_password'] ?? $_ENV['SMTP_PASS'] ?? getenv('SMTP_PASS') ?: '';
+        $smtpPort = (int) ($config['smtp_port'] ?? $config['mail_port'] ?? $_ENV['SMTP_PORT'] ?? getenv('SMTP_PORT') ?: 587);
+        $fromEmail = $config['from_email'] ?? $config['mail_from_address'] ?? $_ENV['MAIL_FROM_ADDRESS'] ?? getenv('MAIL_FROM_ADDRESS') ?: 'noreply@printmont.com';
+        $fromName = $config['from_name'] ?? $config['mail_from_name'] ?? $_ENV['MAIL_FROM_NAME'] ?? getenv('MAIL_FROM_NAME') ?: 'Printmont';
+
+        $subject = 'Your Password Reset Code - Printmont';
+        $bodyHtml = '<p>Hi ' . htmlspecialchars($toName ?: 'User') . ',</p>'
+            . '<p>Your password reset OTP code is:</p>'
+            . '<h2 style="letter-spacing:4px; color:#3b82f6;">' . htmlspecialchars($otp) . '</h2>'
+            . '<p>This code expires in 15 minutes. If you did not request this, please ignore this email.</p>';
+
+        if (!empty($smtpHost) && !empty($smtpUser)) {
+            try {
+                $mail = new PHPMailer(true);
+                $mail->isSMTP();
+                $mail->Host = $smtpHost;
+                $mail->SMTPAuth = true;
+                $mail->Username = $smtpUser;
+                $mail->Password = $smtpPass;
+                $encryption = strtolower($config['encryption'] ?? $config['mail_encryption'] ?? $_ENV['SMTP_ENCRYPTION'] ?? 'tls');
+                $mail->SMTPSecure = ($encryption === 'ssl' || $smtpPort === 465) ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port = $smtpPort;
+
+                $mail->setFrom($fromEmail, $fromName);
+                $mail->addAddress($toEmail, $toName);
+
+                $mail->isHTML(true);
+                $mail->Subject = $subject;
+                $mail->Body = $bodyHtml;
+                $mail->AltBody = "Your password reset code is: $otp (expires in 15 minutes)";
+
+                $mail->send();
+                return true;
+            } catch (Throwable $e) {
+                error_log('sendOtpEmail PHPMailer failed: ' . $e->getMessage());
+            }
+        }
+
+        // Native PHP mail() fallback
+        $headers  = "MIME-Version: 1.0\r\n";
+        $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+        $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
+
+        return @mail($toEmail, $subject, $bodyHtml, $headers);
     }
 
      // Get all addresses for user
