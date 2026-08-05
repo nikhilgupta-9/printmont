@@ -46,23 +46,24 @@ const Login = () => {
 
   const handleContinue = (e) => {
     e.preventDefault();
-    const { identifier } = formData;
-    if (!identifier.trim()) {
+    const cleanIdentifier = (formData.identifier || '').trim();
+    if (!cleanIdentifier) {
       setError('Please enter Email or Mobile number');
       return;
     }
 
     // Basic Validation
-    const isMobile = /^\d{10}$/.test(identifier);
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+    const isMobile = /^\d{10}$/.test(cleanIdentifier);
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanIdentifier);
 
     if (isMobile) {
+      setFormData(prev => ({ ...prev, identifier: cleanIdentifier }));
       setIdentifierType('mobile');
       setLoginMethod('otp');
       setStep(2);
       setError(null);
-      // In a real app, trigger Send OTP API here
     } else if (isEmail) {
+      setFormData(prev => ({ ...prev, identifier: cleanIdentifier }));
       setIdentifierType('email');
       setLoginMethod('password'); // Main priority for email
       setStep(2);
