@@ -295,8 +295,8 @@ export default function useProductFilters() {
         if (selectedSizes.length > 0 && !product.sizes.some((s) => selectedSizes.includes(s))) return null;
         if (selectedColors.length > 0 && !product.colors.some((c) => selectedColors.includes(c))) return null;
         const effPrice = product.discountedPrice || product.price;
-        if (priceMinParam !== null && effPrice < priceMin) return null;
-        if (priceMaxParam !== null && effPrice > priceMax) return null;
+        if (minPriceParam !== null && effPrice < priceMin) return null;
+        if (maxPriceParam !== null && effPrice > priceMax) return null;
         if (minDiscount > 0 && product.discountPercent < minDiscount) return null;
         if (excludeOutOfStock && !product.inStock) return null;
 
