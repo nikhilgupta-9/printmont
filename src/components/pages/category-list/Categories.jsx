@@ -95,14 +95,14 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
           const allDesktop = getArray(data.data.desktop || data.data);
           const allMobile = getArray(data.data.mobile || data.data);
 
-          const desktopList = allDesktop.filter(c => c && (c.shown_on_home == 1 || c.shown_on_home === true || c.shown_on_home === "1"));
-          const mobileList = allMobile.filter(c => c && (c.shown_on_home == 1 || c.shown_on_home === true || c.shown_on_home === "1"));
+          const desktopList = allDesktop.filter(c => c && (c.shown_on_home == 1 || c.shown_on_home === true || c.shown_on_home === "1" || c.shown_on_home === "yes"));
+          const mobileList = allMobile.filter(c => c && (c.shown_on_home == 1 || c.shown_on_home === true || c.shown_on_home === "1" || c.shown_on_home === "yes"));
 
           const finalDesktop = desktopList.length > 0 ? desktopList : allDesktop;
           const finalMobile = mobileList.length > 0 ? mobileList : allMobile;
 
-          setCategoriesData(finalDesktop.length > 0 ? finalDesktop : fallbackCategories);
-          setMobileCategoriesData(finalMobile.length > 0 ? finalMobile : fallbackCategories);
+          setCategoriesData(finalDesktop);
+          setMobileCategoriesData(finalMobile);
         } else {
           const response = await fetch(API_ENDPOINTS.INNER_MENU);
           const data = await response.json();
