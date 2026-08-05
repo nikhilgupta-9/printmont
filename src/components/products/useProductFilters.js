@@ -50,10 +50,10 @@ export default function useProductFilters() {
         const list = data && data.success && Array.isArray(data.data)
           ? data.data
           : Array.isArray(data)
-          ? data
-          : data && Array.isArray(data.products)
-          ? data.products
-          : [];
+            ? data
+            : data && Array.isArray(data.products)
+              ? data.products
+              : [];
 
         const formatted = list.map((p) => {
           let images = ["https://placehold.co/400x550/f5f5f5/888888?text=Printmont"];
@@ -90,7 +90,7 @@ export default function useProductFilters() {
             try {
               const parsed = typeof p.size_attributes === "string" ? JSON.parse(p.size_attributes) : p.size_attributes;
               if (Array.isArray(parsed)) sizes = parsed.map((s) => s.size || s.name || s).filter(Boolean);
-            } catch (e) {}
+            } catch (e) { }
           }
 
           const catLower = (p.category_name || p.main_category_name || p.category || "").toLowerCase();
