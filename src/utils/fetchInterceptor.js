@@ -43,13 +43,13 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 window.fetch = async (...args) => {
   const url = typeof args[0] === 'string' ? args[0] : args[0]?.url;
   const options = args[1] || {};
+  const method = (options.method || 'GET').toUpperCase();
   
   // Only deduplicate and cache GET requests
-  const isGet = !options.method || options.method.toUpperCase() === 'GET';
+  const isGet = method === 'GET';
   const requestKey = isGet && url ? url : null;
 
   if (requestKey) {
-    // 1. Check if we already have a valid cached response in memory OR sessionStorage
     let cached = responseCache.get(requestKey);
     
     if (!cached) {
@@ -57,11 +57,9 @@ window.fetch = async (...args) => {
         const sessionData = sessionStorage.getItem(`api_cache_${requestKey}`);
         if (sessionData) {
           cached = JSON.parse(sessionData);
-          responseCache.set(requestKey, cached); // Load into memory
+          responseCache.set(requestKey, cached);
         }
-      } catch (e) {
-        // Ignore storage errors (e.g., quota exceeded or incognito mode)
-      }
+      } catch (e) {}
     }
 
     if (cached) {
@@ -72,7 +70,6 @@ window.fetch = async (...args) => {
           headers: new Headers(cached.headers)
         });
       } else {
-        // Expired
         responseCache.delete(requestKey);
         try { sessionStorage.removeItem(`api_cache_${requestKey}`); } catch (e) {}
       }
@@ -88,12 +85,41 @@ window.fetch = async (...args) => {
         await delay(backoff);
         return executeWithRetry(retryCount + 1);
       }
+
+      // Enhanced Error Logging to Browser Console for All Requests
+      if (response) {
+        const cloneForLog = response.clone();
+        cloneForLog.text().then((text) => {
+          let isJson = false;
+          let json = null;
+          try {
+            json = JSON.parse(text);
+            isJson = true;
+          } catch (e) {}
+
+          if (!response.ok || (isJson && json && json.success === false)) {
+            console.group(`🚨 [API ERROR ${response.status}] ${method} ${url}`);
+            console.error("URL:", url);
+            console.error("Status:", response.status, response.statusText);
+            if (isJson) {
+              console.error("Error Detail:", json.error || json.message || json);
+            } else {
+              console.error("Server HTML/Raw Output:", text.slice(0, 500));
+            }
+            console.groupEnd();
+          }
+        }).catch(() => {});
+      }
+
       return response;
     } catch (error) {
-      // Retry on network errors
+      console.group(`❌ [NETWORK ERROR] ${method} ${url}`);
+      console.error("Request Failed:", error.message || error);
+      console.groupEnd();
+
       if (retryCount < 3) {
         const backoff = Math.pow(2, retryCount) * 1000 + Math.random() * 1000;
-        console.warn(`[Fetch Interceptor] Network Error for ${url}. Retrying in ${Math.round(backoff)}ms...`);
+        console.warn(`[Fetch Interceptor] Retrying network failure (${retryCount + 1}/3)...`);
         await delay(backoff);
         return executeWithRetry(retryCount + 1);
       }
@@ -102,7 +128,6 @@ window.fetch = async (...args) => {
   };
 
   if (requestKey) {
-    // 2. Check if there's an active in-flight request for this URL
     let sharedPromise;
     if (activeRequests.has(requestKey)) {
       sharedPromise = activeRequests.get(requestKey);
@@ -123,7 +148,6 @@ window.fetch = async (...args) => {
       const res = await sharedPromise;
       const cloneToReturn = res.clone();
       
-      // 3. Save to cache asynchronously so we don't block
       if (!responseCache.has(requestKey) && res.ok) {
         const cacheClone = res.clone();
         cacheClone.text().then(textBody => {
@@ -141,9 +165,7 @@ window.fetch = async (...args) => {
           responseCache.set(requestKey, cacheData);
           try { 
             sessionStorage.setItem(`api_cache_${requestKey}`, JSON.stringify(cacheData)); 
-          } catch (e) {
-            // Storage might be full, silently ignore
-          }
+          } catch (e) {}
         }).catch(e => console.error("[Fetch Interceptor] Cache read error", e));
       }
 
@@ -153,6 +175,5 @@ window.fetch = async (...args) => {
     }
   }
 
-  // Non-GET requests go straight through
   return queueRequest(() => executeWithRetry(0));
 };
