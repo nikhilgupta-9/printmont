@@ -6,7 +6,7 @@ const isLocalhost = typeof window !== 'undefined' && (
 
 const LOCAL_API_URL = '/api';
 const LIVE_API_URL = 'https://mediumvioletred-pelican-783174.hostingersite.com/api';
-const LOCAL_ASSET_URL = 'http://localhost/printmont/';
+const LOCAL_ASSET_URL = 'http://localhost/printmont/printmont-backend/';
 const LIVE_ASSET_URL = 'https://mediumvioletred-pelican-783174.hostingersite.com/';
 
 export const BASE_URL = (import.meta.env.VITE_API_URL || (isLocalhost ? LOCAL_API_URL : LIVE_API_URL)).replace(/\/+$/, '');
@@ -54,7 +54,7 @@ export const API_ENDPOINTS = {
   PRODUCTS: `${BASE_URL}/product-api.php`,
   PRODUCT_BY_ID: (id) => `${BASE_URL}/product-api.php?id=${id}`,
   PRODUCTS_DEACTIVE: `${BASE_URL}/product-api.php?status=deactive`,
-  RELATED_PRODUCTS: (id) => `${BASE_URL}/product-api.php?id=${id}`,
+  RELATED_PRODUCTS: (id) => `${BASE_URL}/related_products.php?id=${id}`,
   // product-api.php has no search handler. Callers append "?q=...", so this
   // must stay free of a query string.
   SEARCH: `${BASE_URL}/search-api.php`,

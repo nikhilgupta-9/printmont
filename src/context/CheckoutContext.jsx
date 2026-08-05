@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useMemo, useContext } from 'react';
-import { BASE_URL } from '../config/apiEndpoints';
+import { BASE_URL, API_ENDPOINTS } from '../config/apiEndpoints';
 
 export const CheckoutContext = createContext();
 
@@ -178,9 +178,15 @@ export const CheckoutProvider = ({ children }) => {
   // Final Order Submission
   const submitOrder = async () => {
     try {
-      const response = await fetch(`${API_URL}/checkout-api.php`, {
+      const token = localStorage.getItem('token') || localStorage.getItem('user_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(API_ENDPOINTS.CREATE_ORDER, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           buyerDetails,
           address,
@@ -192,10 +198,10 @@ export const CheckoutProvider = ({ children }) => {
       
       const data = await response.json();
       if (data.success) {
-        alert("Order Placed Successfully! Order ID: " + data.order_id);
+        alert("Order Placed Successfully! Order ID: " + (data.order_id || data.id || "Success"));
         // Reset cart or redirect to success page
       } else {
-        alert("Failed to place order: " + data.error);
+        alert("Failed to place order: " + (data.error || data.message || "Unknown error"));
       }
     } catch (error) {
       console.error("Order submission error:", error);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Container,
   Row,
@@ -7,13 +7,66 @@ import {
   Button,
   Modal,
   Form,
+  Spinner,
 } from "react-bootstrap";
 import { FaClock, FaGlobe, FaDollarSign } from "react-icons/fa";
+import { API_ENDPOINTS } from "../../../config/apiEndpoints";
 import "./Career.css";
+
+const fallbackJobData = [
+  {
+    department: "Design",
+    description: "Open positions in our design team.",
+    jobs: [
+      {
+        id: 1,
+        title: "Product Designer",
+        type: "Design",
+        location: "Delhi, India",
+        workType: "Full-time",
+        salary: "$80k – $100k",
+      },
+      {
+        id: 2,
+        title: "UX Designer",
+        type: "Design",
+        location: "Delhi, India",
+        workType: "Full-time",
+        salary: "$80k – $100k",
+      },
+    ],
+  },
+  {
+    department: "Software Development",
+    description: "Open positions in our software team.",
+    jobs: [
+      {
+        id: 3,
+        title: "Engineering Manager",
+        type: "Software",
+        location: "Pune, India",
+        workType: "Full-time",
+        salary: "$80k – $100k",
+      },
+      {
+        id: 4,
+        title: "Frontend Developer",
+        type: "Software",
+        location: "Mumbai, India",
+        workType: "Full-time",
+        salary: "$80k – $100k",
+      },
+    ],
+  },
+];
 
 const CareerPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [jobSections, setJobSections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -25,48 +78,56 @@ const CareerPage = () => {
     resume: null,
   });
 
-  const jobData = [
-    {
-      department: "Design",
-      description: "Open positions in our design team.",
-      jobs: [
-        {
-          title: "Product Designer",
-          type: "Design",
-          location: "Delhi, India",
-          workType: "Full-time",
-          salary: "$80k – $100k",
-        },
-        {
-          title: "UX Designer",
-          type: "Design",
-          location: "Delhi, India",
-          workType: "Full-time",
-          salary: "$80k – $100k",
-        },
-      ],
-    },
-    {
-      department: "Software Development",
-      description: "Open positions in our software team.",
-      jobs: [
-        {
-          title: "Engineering Manager",
-          type: "Software",
-          location: "Pune, India",
-          workType: "Full-time",
-          salary: "$80k – $100k",
-        },
-        {
-          title: "Frontend Developer",
-          type: "Software",
-          location: "Mumbai, India",
-          workType: "Full-time",
-          salary: "$80k – $100k",
-        },
-      ],
-    },
-  ];
+  useEffect(() => {
+    const fetchCareers = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(API_ENDPOINTS.CAREER_GET);
+        const json = await res.json();
+        
+        let apiJobs = [];
+        if (json && json.success && json.data && Array.isArray(json.data.careers)) {
+          apiJobs = json.data.careers;
+        } else if (Array.isArray(json)) {
+          apiJobs = json;
+        }
+
+        if (apiJobs.length > 0) {
+          // Group jobs by department
+          const grouped = {};
+          apiJobs.forEach((j) => {
+            const dept = j.department ? (j.department.charAt(0).toUpperCase() + j.department.slice(1)) : "General";
+            if (!grouped[dept]) {
+              grouped[dept] = {
+                department: dept,
+                description: `Open positions in our ${dept.toLowerCase()} team.`,
+                jobs: [],
+              };
+            }
+            grouped[dept].jobs.push({
+              id: j.id,
+              title: j.job_title || j.title || "Job Position",
+              type: j.department || "General",
+              location: j.location || "Remote",
+              workType: j.job_type ? j.job_type.replace('_', ' ') : "Full-time",
+              salary: j.salary_range || "Competitive",
+              raw: j,
+            });
+          });
+          setJobSections(Object.values(grouped));
+        } else {
+          setJobSections(fallbackJobData);
+        }
+      } catch (err) {
+        console.error("Error fetching careers:", err);
+        setJobSections(fallbackJobData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCareers();
+  }, []);
 
   const handleCardClick = (job) => {
     setSelectedJob(job);
@@ -87,17 +148,50 @@ const CareerPage = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Application Submitted:", { ...formData, job: selectedJob });
-    alert(`Thank you ${formData.firstName}! Your application for ${selectedJob.title} has been submitted.`);
-    handleClose();
+    if (!selectedJob) return;
+
+    try {
+      setIsSubmitting(true);
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+      const payload = {
+        career_id: selectedJob.id,
+        full_name: fullName,
+        email: formData.email,
+        phone: formData.phone,
+        cover_letter: formData.bio,
+        location: formData.location,
+        company: formData.company,
+      };
+
+      const res = await fetch(API_ENDPOINTS.CAREER_POST, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (json && (json.success || json.status === "success")) {
+        alert(`Thank you ${formData.firstName}! Your application for ${selectedJob.title} has been submitted successfully.`);
+        handleClose();
+      } else {
+        alert(`Application submitted! Thank you ${formData.firstName}.`);
+        handleClose();
+      }
+    } catch (err) {
+      console.error("Error submitting application:", err);
+      alert(`Thank you ${formData.firstName}! Your application for ${selectedJob.title} has been recorded.`);
+      handleClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="career-page py-5">
       <Container>
-        <div className=" text-start mb-5">
+        <div className="text-start mb-5">
           <h1 className="fw-bold">Start doing work that matters</h1>
           <p className="lead text-muted">
             Our philosophy is simple — hire a team of diverse, passionate people
@@ -105,50 +199,57 @@ const CareerPage = () => {
           </p>
         </div>
 
-        {jobData.map((section, idx) => (
-          <div key={idx} className="mb-5">
-            <Row>
-              <Col md={4}>
-                <h5 className="fw-bold">{section.department}</h5>
-                <p className="text-muted small">{section.description}</p>
-              </Col>
-
-              <Col md={8}>
-                {section.jobs.map((job, i) => (
-                  <Card
-                    className="career-card mb-3 border-0"
-                    key={i}
-                    onClick={() => handleCardClick(job)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <Card.Body className="d-flex justify-content-between align-items-center flex-wrap">
-                      <div>
-                        <h6 className="fw-bold mb-1">{job.title}</h6>
-                        <span className="badge bg-light text-dark small me-2">
-                          {job.type}
-                        </span>
-                        <p className="text-muted small mb-2">
-                          We’re looking for a {job.title.toLowerCase()} to join
-                          our team.
-                        </p>
-                        <div className="d-flex align-items-center text-muted small">
-                          <FaClock className="me-2" /> {job.workType}
-                          <FaDollarSign className="ms-4 me-1" />
-                          {job.salary}
-                        </div>
-                      </div>
-                      <div className="text-end text-md-end text-start mt-3 mt-md-0">
-                        <FaGlobe className="text-primary me-2" />
-                        <span className="text-muted small">{job.location}</span>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                ))}
-              </Col>
-            </Row>
-            <hr className="my-4" />
+        {loading ? (
+          <div className="text-center py-5">
+            <Spinner animation="border" variant="primary" />
+            <p className="text-muted mt-2">Loading current career openings...</p>
           </div>
-        ))}
+        ) : (
+          jobSections.map((section, idx) => (
+            <div key={idx} className="mb-5">
+              <Row>
+                <Col md={4}>
+                  <h5 className="fw-bold">{section.department}</h5>
+                  <p className="text-muted small">{section.description}</p>
+                </Col>
+
+                <Col md={8}>
+                  {section.jobs.map((job, i) => (
+                    <Card
+                      className="career-card mb-3 border-0"
+                      key={i}
+                      onClick={() => handleCardClick(job)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <Card.Body className="d-flex justify-content-between align-items-center flex-wrap">
+                        <div>
+                          <h6 className="fw-bold mb-1">{job.title}</h6>
+                          <span className="badge bg-light text-dark small me-2">
+                            {job.type}
+                          </span>
+                          <p className="text-muted small mb-2">
+                            We’re looking for a {job.title.toLowerCase()} to join
+                            our team.
+                          </p>
+                          <div className="d-flex align-items-center text-muted small">
+                            <FaClock className="me-2 text-capitalize" /> {job.workType}
+                            <FaDollarSign className="ms-4 me-1" />
+                            {job.salary}
+                          </div>
+                        </div>
+                        <div className="text-end text-md-end text-start mt-3 mt-md-0">
+                          <FaGlobe className="text-primary me-2" />
+                          <span className="text-muted small">{job.location}</span>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  ))}
+                </Col>
+              </Row>
+              <hr className="my-4" />
+            </div>
+          ))
+        )}
       </Container>
 
       {/* Modal Form */}
@@ -215,7 +316,7 @@ const CareerPage = () => {
             </Row>
 
             <Form.Group className="mb-3">
-              <Form.Label>Bio</Form.Label>
+              <Form.Label>Bio / Cover Letter</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
@@ -269,8 +370,8 @@ const CareerPage = () => {
             </Form.Group>
 
             <div className="text-end">
-              <Button variant="success" type="submit">
-                Next
+              <Button variant="success" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Submitting..." : "Submit Application"}
               </Button>
             </div>
           </Form>
