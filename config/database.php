@@ -35,31 +35,32 @@ class Database {
         }
 
     public function getConnection() {
-        $this->conn = null;
-        $attempts = [
-            ['host' => $this->host, 'username' => $this->username, 'password' => $this->password, 'db_name' => $this->db_name],
-            ['host' => '127.0.0.1', 'username' => $this->username, 'password' => $this->password, 'db_name' => $this->db_name],
-            ['host' => 'localhost', 'username' => $this->username, 'password' => $this->password, 'db_name' => $this->db_name],
-            ['host' => '127.0.0.1', 'username' => 'root', 'password' => '', 'db_name' => $this->db_name],
-            ['host' => 'localhost', 'username' => 'root', 'password' => '', 'db_name' => $this->db_name],
-        ];
+        $rawPass = $this->password;
+        $cleanPass = trim($rawPass, "\"' \t\n\r\0\x0B");
+        $passwords = array_unique([$cleanPass, $rawPass]);
+        $hosts = array_unique([$this->host, '127.0.0.1', 'localhost']);
+
+        $attempts = [];
+        foreach ($hosts as $h) {
+            foreach ($passwords as $p) {
+                $attempts[] = ['host' => $h, 'username' => $this->username, 'password' => $p, 'db_name' => $this->db_name];
+            }
+        }
+        $attempts[] = ['host' => '127.0.0.1', 'username' => 'root', 'password' => '', 'db_name' => $this->db_name];
+        $attempts[] = ['host' => 'localhost', 'username' => 'root', 'password' => '', 'db_name' => $this->db_name];
 
         $last_error = [];
+        mysqli_report(MYSQLI_REPORT_OFF);
 
         foreach ($attempts as $index => $attempt) {
-            try {
-                $conn = @new mysqli($attempt['host'], $attempt['username'], $attempt['password'], $attempt['db_name']);
-                if ($conn->connect_error) {
-                    $last_error[] = "Attempt {$index} ({$attempt['host']}@{$attempt['username']}): " . $conn->connect_error;
-                    continue;
-                }
-
+            $conn = @new mysqli($attempt['host'], $attempt['username'], $attempt['password'], $attempt['db_name']);
+            if ($conn && !$conn->connect_error) {
                 $conn->set_charset('utf8');
                 $this->conn = $conn;
                 return $this->conn;
-            } catch (Throwable $e) {
-                $last_error[] = "Attempt {$index} ({$attempt['host']}@{$attempt['username']}): " . $e->getMessage();
             }
+            $err = ($conn && $conn->connect_error) ? $conn->connect_error : mysqli_connect_error();
+            $last_error[] = "Attempt {$index} ({$attempt['host']}@{$attempt['username']}): " . ($err ?: 'Unknown error');
         }
 
         throw new Exception("Database connection failed. Details: " . implode(" | ", $last_error));
