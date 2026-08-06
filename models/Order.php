@@ -166,6 +166,154 @@ class Order
         ];
     }
 
+    /**
+     * Create an order and its line items in one transaction.
+     * $data is already normalized and priced by OrderController — this method
+     * does no validation and trusts nothing from the request directly.
+     *
+     * @return int the new order id
+     */
+    public function createOrder(array $data)
+    {
+        $customerColumn = $this->getCustomerColumn();
+
+        $this->conn->begin_transaction();
+
+        try {
+            $orderId = null;
+            $orderNumber = null;
+
+            // order_number is NOT NULL UNIQUE and has to exist before insert, so
+            // take the next free sequence and retry if another request wins the race.
+            $next = $this->nextOrderSequence();
+
+            for ($attempt = 0; $attempt < 5; $attempt++) {
+                $orderNumber = 'ORD-' . ($next + $attempt);
+
+                $columns = ['order_number', 'customer_name', 'customer_email', 'customer_phone',
+                            'subtotal', 'total_amount', 'tax_amount', 'shipping_cost', 'discount_amount',
+                            'grand_total', 'status', 'payment_status', 'payment_method',
+                            'notes', 'shipping_address', 'billing_address', 'shipping_method', 'coupon_code'];
+                $values = [$orderNumber, $data['customer_name'], $data['customer_email'], $data['customer_phone'],
+                           $data['subtotal'], $data['total_amount'], $data['tax_amount'], $data['shipping_cost'],
+                           $data['discount_amount'], $data['grand_total'], 'pending', 'pending',
+                           $data['payment_method'], $data['notes'], $data['shipping_address'],
+                           $data['billing_address'], $data['shipping_method'], $data['coupon_code']];
+                // 4 strings, 6 decimals, 8 strings — must match $columns order.
+                $types = 'ssss' . 'dddddd' . 'ssssssss';
+
+                if ($customerColumn !== null && !empty($data['user_id'])) {
+                    $columns[] = $customerColumn;
+                    $values[] = (int) $data['user_id'];
+                    $types .= 'i';
+                }
+
+                $placeholders = implode(', ', array_fill(0, count($columns), '?'));
+                $sql = "INSERT INTO {$this->table_orders} (" . implode(', ', $columns) . ", created_at, updated_at)
+                        VALUES ($placeholders, NOW(), NOW())";
+
+                $stmt = $this->conn->prepare($sql);
+                if (!$stmt) {
+                    throw new Exception('Prepare failed: ' . $this->conn->error);
+                }
+                $stmt->bind_param($types, ...$values);
+
+                if ($stmt->execute()) {
+                    $orderId = $stmt->insert_id;
+                    $stmt->close();
+                    break;
+                }
+
+                $duplicate = $stmt->errno === 1062;
+                $error = $stmt->error;
+                $stmt->close();
+
+                if (!$duplicate) {
+                    throw new Exception('Failed to create order: ' . $error);
+                }
+            }
+
+            if (!$orderId) {
+                throw new Exception('Could not allocate a unique order number.');
+            }
+
+            $itemStmt = $this->conn->prepare(
+                "INSERT INTO {$this->table_order_items}
+                    (order_id, product_id, product_name, product_sku, sku, quantity, unit_price, total_price, product_image, attributes, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())"
+            );
+            if (!$itemStmt) {
+                throw new Exception('Prepare failed: ' . $this->conn->error);
+            }
+
+            foreach ($data['items'] as $item) {
+                $itemStmt->bind_param(
+                    'iisssiddss',
+                    $orderId,
+                    $item['product_id'],
+                    $item['product_name'],
+                    $item['product_sku'],
+                    $item['product_sku'],
+                    $item['quantity'],
+                    $item['unit_price'],
+                    $item['total_price'],
+                    $item['product_image'],
+                    $item['attributes']
+                );
+                if (!$itemStmt->execute()) {
+                    $error = $itemStmt->error;
+                    $itemStmt->close();
+                    throw new Exception('Failed to add order item: ' . $error);
+                }
+            }
+            $itemStmt->close();
+
+            $this->conn->commit();
+
+            return ['id' => (int) $orderId, 'order_number' => $orderNumber];
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            throw $e;
+        }
+    }
+
+    /**
+     * Authoritative product data for pricing an order line.
+     * Returns null when the product is missing or not purchasable.
+     */
+    public function getProductForOrder($productId)
+    {
+        $stmt = $this->conn->prepare(
+            "SELECT p.id, p.name, p.sku, p.price, p.offer_price, p.discount_price, p.status,
+                    (SELECT image_url FROM product_images pi
+                      WHERE pi.product_id = p.id
+                      ORDER BY pi.is_primary DESC, pi.display_order ASC LIMIT 1) AS image_url
+             FROM products p
+             WHERE p.id = ? AND p.status = 'active'"
+        );
+        if (!$stmt) {
+            throw new Exception('Prepare failed: ' . $this->conn->error);
+        }
+
+        $stmt->bind_param('i', $productId);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        return $row ?: null;
+    }
+
+    private function nextOrderSequence()
+    {
+        $result = $this->conn->query(
+            "SELECT MAX(CAST(SUBSTRING(order_number, 5) AS UNSIGNED)) AS m
+             FROM {$this->table_orders} WHERE order_number LIKE 'ORD-%'"
+        );
+        $max = $result ? (int) $result->fetch_assoc()['m'] : 0;
+
+        return max(1001, $max + 1);
+    }
+
     // Get order by ID
     public function getOrderById($id)
     {

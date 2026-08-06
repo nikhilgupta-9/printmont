@@ -150,24 +150,105 @@ class OrderController
         return $this->order->getRecentPendingOrders($limit);
     }
 
-    // Create new order
-    public function createOrder($data)
+    /**
+     * Create an order from the checkout payload.
+     *
+     * Accepts the shape CheckoutContext sends
+     * ({buyerDetails, address, paymentMethod, items, totalAmount}) as well as
+     * flat {customer_name, customer_email, ...} keys.
+     *
+     * Line prices are re-read from the products table — the client is never
+     * trusted on price, only on which product and how many.
+     */
+    public function createOrder($data, $userId = null)
     {
         try {
-            $required = ['customer_name', 'customer_email', 'total_amount', 'grand_total', 'items'];
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    throw new Exception("Field $field is required");
-                }
+            $buyer = $data['buyerDetails'] ?? [];
+            $address = $data['address'] ?? [];
+
+            $customerName  = trim($data['customer_name']  ?? $buyer['name']   ?? '');
+            $customerEmail = trim($data['customer_email'] ?? $buyer['email']  ?? '');
+            $customerPhone = trim($data['customer_phone'] ?? $buyer['mobile'] ?? $buyer['phone'] ?? '');
+
+            if ($customerName === '')  throw new Exception('Customer name is required');
+            if ($customerEmail === '') throw new Exception('Customer email is required');
+            if (!filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception('Customer email is not valid');
             }
 
-            $orderId = $this->order->createOrder($data);
+            $rawItems = $data['items'] ?? [];
+            if (!is_array($rawItems) || count($rawItems) === 0) {
+                throw new Exception('Order must contain at least one item');
+            }
+
+            $items = [];
+            $subtotal = 0.0;
+
+            foreach ($rawItems as $raw) {
+                $productId = (int) ($raw['product_id'] ?? $raw['id'] ?? 0);
+                $quantity  = (int) ($raw['quantity'] ?? 1);
+
+                if ($productId < 1) throw new Exception('Each item needs a valid product_id');
+                if ($quantity < 1)  throw new Exception('Item quantity must be at least 1');
+
+                $product = $this->order->getProductForOrder($productId);
+                if (!$product) {
+                    throw new Exception("Product $productId is not available");
+                }
+
+                // Mirror the storefront's price precedence.
+                $unitPrice = (float) ($product['offer_price'] ?: $product['discount_price'] ?: $product['price']);
+                $lineTotal = round($unitPrice * $quantity, 2);
+                $subtotal += $lineTotal;
+
+                $attributes = $raw['attributes'] ?? null;
+
+                $items[] = [
+                    'product_id'    => $productId,
+                    'product_name'  => $product['name'],
+                    'product_sku'   => $product['sku'],
+                    'quantity'      => $quantity,
+                    'unit_price'    => $unitPrice,
+                    'total_price'   => $lineTotal,
+                    'product_image' => $product['image_url'],
+                    'attributes'    => $attributes ? json_encode($attributes) : null,
+                ];
+            }
+
+            $subtotal      = round($subtotal, 2);
+            $shippingCost  = (float) ($data['shipping_cost'] ?? ($subtotal > 1000 ? 0 : 160));
+            $taxAmount     = (float) ($data['tax_amount'] ?? 0);
+            $discount      = (float) ($data['discount_amount'] ?? 0);
+            $grandTotal    = round($subtotal + $shippingCost + $taxAmount - $discount, 2);
+
+            $shippingAddress = $this->formatAddress($address);
+
+            $orderId = $this->order->createOrder([
+                'user_id'          => $userId,
+                'customer_name'    => $customerName,
+                'customer_email'   => $customerEmail,
+                'customer_phone'   => $customerPhone,
+                'subtotal'         => $subtotal,
+                'total_amount'     => $subtotal,
+                'tax_amount'       => $taxAmount,
+                'shipping_cost'    => $shippingCost,
+                'discount_amount'  => $discount,
+                'grand_total'      => $grandTotal,
+                'payment_method'   => $data['paymentMethod'] ?? $data['payment_method'] ?? 'cod',
+                'notes'            => $address['orderNotes'] ?? $data['notes'] ?? '',
+                'shipping_address' => $shippingAddress,
+                'billing_address'  => $shippingAddress,
+                'shipping_method'  => $data['shipping_method'] ?? 'standard',
+                'coupon_code'      => $data['coupon_code'] ?? '',
+                'items'            => $items,
+            ]);
 
             return [
-                'success' => true,
-                'message' => 'Order created successfully',
-                'order_id' => $orderId,
-                'order_number' => $data['order_number'] ?? ''
+                'success'      => true,
+                'message'      => 'Order created successfully',
+                'order_id'     => $orderId['id'],
+                'order_number' => $orderId['order_number'],
+                'grand_total'  => $grandTotal,
             ];
         } catch (Exception $e) {
             return [
@@ -175,6 +256,24 @@ class OrderController
                 'error' => $e->getMessage()
             ];
         }
+    }
+
+    private function formatAddress($address)
+    {
+        if (!is_array($address) || empty($address)) {
+            return '';
+        }
+
+        $parts = array_filter([
+            $address['company']  ?? null,
+            $address['address']  ?? $address['addressArea'] ?? null,
+            $address['landmark'] ?? null,
+            $address['city']     ?? null,
+            $address['state']    ?? null,
+            $address['pincode']  ?? null,
+        ], fn($v) => $v !== null && trim((string) $v) !== '');
+
+        return implode(', ', $parts);
     }
 
     // Update order status

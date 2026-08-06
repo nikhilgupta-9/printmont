@@ -413,7 +413,16 @@ try {
 
             case 'create_order':
                 if ($method == 'POST') {
-                    echo json_encode($orderController->createOrder($input));
+                    // Attach the order to the token holder when one is present.
+                    // Guest checkout still works — the order just has no user_id.
+                    $auth = $authController->verifyToken(getBearerToken());
+                    $orderUserId = $auth['success'] ? $auth['user']['id'] : null;
+
+                    $result = $orderController->createOrder($input, $orderUserId);
+                    if (!$result['success']) {
+                        http_response_code(400);
+                    }
+                    echo json_encode($result);
                 } else {
                     http_response_code(405);
                     echo json_encode(['success' => false, 'error' => 'Method not allowed']);
