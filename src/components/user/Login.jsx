@@ -123,19 +123,31 @@ const Login = () => {
       }
 
       if (data.success || data.status === "success" || data.id || data.token || data.tokens) {
-        const authToken = data.tokens?.access_token || data.token || data.access_token || "dummy-token";
-        if (data.tokens || data.token || data.id || data.user) {
-            authLogin(data.user || { firstName: formData.firstName || formData.identifier?.split('@')[0] }, authToken);
+        const authToken = data.tokens?.access_token || data.token || data.access_token;
+
+        // Never fall back to a placeholder token: it makes the app look logged in
+        // while every authenticated request 401s.
+        if (!authToken) {
+          setError(isSignup
+            ? 'Account created, but no session was returned. Please log in.'
+            : 'Signed in, but no session token was returned. Please try again.');
+          if (isSignup) {
+            setIsSignup(false);
+            setStep(1);
+          }
+          return;
         }
 
-        if (isSignup) {
-          toast.success('Account created successfully! Please log in.');
-          setIsSignup(false);
-          setStep(1);
-        } else {
-          toast.success('Login successful!');
-          navigate(redirectPath); 
-        }
+        // register returns tokens just like login, so sign the new user straight in.
+        // Previously signup called authLogin() and then told the user to log in,
+        // while the "already logged in" effect redirected them to the homepage —
+        // which read as the signup having failed.
+        authLogin(
+          data.user || { firstName: formData.firstName || formData.identifier?.split('@')[0] },
+          authToken
+        );
+        toast.success(isSignup ? 'Account created successfully!' : 'Login successful!');
+        navigate(redirectPath);
       } else {
         // If it's a mocked OTP step and the backend doesn't support it yet, show a nice message
         if (loginMethod === 'otp' && data.error && data.error.includes("password")) {
