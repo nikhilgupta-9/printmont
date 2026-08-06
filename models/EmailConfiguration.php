@@ -98,17 +98,61 @@ class EmailConfiguration {
         $this->conn->query($query);
     }
 
+    /**
+     * Real SMTP connect + authenticate, so a failure says why.
+     *
+     * This previously used Swift_SmtpTransport, which is not installed and is
+     * not even in composer.json — the missing class raised an Error, which
+     * catch(Exception) does not catch, so the button produced a fatal.
+     *
+     * @return array{success: bool, error: string}
+     */
     public function testConnection($data) {
-        // This is a basic connection test - you might want to implement actual SMTP testing
-        try {
-            $transport = (new Swift_SmtpTransport($data['mail_host'], $data['mail_port'], $data['mail_encryption']))
-                ->setUsername($data['mail_username'])
-                ->setPassword($data['mail_password']);
+        require_once __DIR__ . '/../services/MailService.php';
 
-            $mailer = new Swift_Mailer($transport);
-            return $mailer->getTransport()->ping();
-        } catch (Exception $e) {
-            return false;
+        try {
+            $mailService = new MailService();
+            return $mailService->testConnection($data);
+        } catch (Throwable $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Connect, authenticate and actually deliver a message, to prove the whole
+     * path works rather than just the credentials.
+     *
+     * @return array{success: bool, error: string}
+     */
+    public function sendTestEmail($data, $recipient) {
+        require_once __DIR__ . '/../services/MailService.php';
+
+        if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'error' => 'Enter a valid recipient email address.'];
+        }
+
+        try {
+            $mailService = new MailService();
+            $config = $mailService->normalizeConfig($data);
+
+            if (!$config) {
+                return ['success' => false, 'error' => 'Host and username are required.'];
+            }
+
+            $body = '<div style="font-family:Arial,sans-serif;padding:20px;">'
+                . '<h2 style="color:#0b53a1;margin-top:0;">SMTP test successful</h2>'
+                . '<p>This message was sent from the Printmont admin panel to confirm your mail settings.</p>'
+                . '<p style="color:#64748b;font-size:13px;">Host: ' . htmlspecialchars($config['host'])
+                . ':' . (int) $config['port'] . ' (' . htmlspecialchars($config['encryption']) . ')<br>'
+                . 'Sent at ' . date('Y-m-d H:i:s') . '</p></div>';
+
+            $sent = $mailService->sendEmailWithConfig($config, $recipient, 'Printmont SMTP test', $body);
+
+            return $sent
+                ? ['success' => true, 'error' => '']
+                : ['success' => false, 'error' => $mailService->getLastError()];
+        } catch (Throwable $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 }

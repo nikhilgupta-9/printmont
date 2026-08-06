@@ -500,6 +500,10 @@ class AuthController {
                 
                 $sent = $mailService->sendEmail($toEmail, 'Your Password Reset OTP - Printmont', $bodyHtml, 'Password Reset', 'Printmont');
                 if ($sent) return true;
+
+                // Without this the reason vanished and the caller still reported
+                // "a reset code has been sent", so nothing was diagnosable.
+                error_log('sendOtpEmail: MailService could not send — ' . $mailService->getLastError());
             } catch (Throwable $t) {
                 error_log("MailService in sendOtpEmail error: " . $t->getMessage());
             }

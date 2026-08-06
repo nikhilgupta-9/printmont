@@ -64,8 +64,14 @@ class EmailController {
         return $this->emailConfiguration->getActive();
     }
 
+    /** @return array{success: bool, error: string} */
     public function testConfiguration($data) {
         return $this->emailConfiguration->testConnection($data);
+    }
+
+    /** @return array{success: bool, error: string} */
+    public function sendTestEmail($data, $recipient) {
+        return $this->emailConfiguration->sendTestEmail($data, $recipient);
     }
 }
 ?>

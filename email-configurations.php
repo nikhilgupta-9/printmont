@@ -32,21 +32,36 @@ if ($_POST) {
         exit;
     }
 
-    // Test connection
-    if (isset($_POST['test_connection'])) {
+    // Test connection / send a test email
+    if (isset($_POST['test_connection']) || isset($_POST['send_test_email'])) {
         $data = [
-            'mail_host' => $_POST['mail_host'],
-            'mail_port' => $_POST['mail_port'],
-            'mail_username' => $_POST['mail_username'],
-            'mail_password' => $_POST['mail_password'],
-            'mail_encryption' => $_POST['mail_encryption']
+            'mail_host' => $_POST['mail_host'] ?? '',
+            'mail_port' => $_POST['mail_port'] ?? '',
+            'mail_username' => $_POST['mail_username'] ?? '',
+            'mail_password' => $_POST['mail_password'] ?? '',
+            'mail_encryption' => $_POST['mail_encryption'] ?? '',
+            'mail_from_address' => $_POST['mail_from_address'] ?? '',
+            'mail_from_name' => $_POST['mail_from_name'] ?? ''
         ];
-        
-        if ($emailController->testConfiguration($data)) {
-            $_SESSION['success_message'] = "Connection test successful!";
+
+        if (isset($_POST['send_test_email'])) {
+            $recipient = trim($_POST['test_recipient'] ?? '');
+            $result = $emailController->sendTestEmail($data, $recipient);
+            $okMessage = "Test email sent to " . htmlspecialchars($recipient) . ". Check the inbox (and spam).";
+            $failPrefix = "Could not send the test email: ";
         } else {
-            $_SESSION['error_message'] = "Connection test failed. Please check your settings.";
+            $result = $emailController->testConfiguration($data);
+            $okMessage = "Connection test successful — the server accepted these credentials.";
+            $failPrefix = "Connection test failed: ";
         }
+
+        // Surface the real SMTP error instead of a generic "check your settings".
+        if (!empty($result['success'])) {
+            $_SESSION['success_message'] = $okMessage;
+        } else {
+            $_SESSION['error_message'] = $failPrefix . ($result['error'] ?: 'unknown error');
+        }
+
         header("Location: email-configurations.php");
         exit;
     }
@@ -419,9 +434,27 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <button type="submit" name="test_connection" class="btn btn-outline-primary mt-4">
+                                    <button type="submit" name="test_connection" class="btn btn-outline-primary mt-4" formnovalidate>
                                         <i class="fas fa-plug"></i> Test Connection
                                     </button>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Send a test email to</label>
+                                    <div class="input-group">
+                                        <input type="email" class="form-control" name="test_recipient"
+                                               placeholder="you@example.com">
+                                        <button type="submit" name="send_test_email" class="btn btn-outline-secondary" formnovalidate>
+                                            <i class="fas fa-paper-plane"></i> Send Test Email
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">
+                                        Uses the values typed above, saved or not. Test Connection only checks the
+                                        credentials; this proves a message actually gets delivered. Any SMTP error is
+                                        shown in full.
+                                    </small>
                                 </div>
                             </div>
                         </div>

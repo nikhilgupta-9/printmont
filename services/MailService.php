@@ -1,106 +1,270 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 
+/**
+ * Minimal SMTP sender. Deliberately dependency-free: vendor/phpmailer is listed
+ * in composer.json but is not actually installed on this project, so anything
+ * relying on PHPMailer silently fails.
+ *
+ * Credentials come from the email_configurations table, which the admin panel
+ * writes (Settings -> Email Configurations). That table carries two parallel
+ * column sets (mail_* and smtp_*); both are read, mail_* winning.
+ */
 class MailService {
     private $db;
-    private $defaultEmail = 'web2techamit@gmail.com';
-    private $defaultPassword = 'rdpnttnyhwxlbgom';
-    private $defaultHost = 'ssl://smtp.gmail.com';
-    private $defaultPort = 465;
+    private $lastError = '';
 
     public function __construct() {
         $database = new Database();
         $this->db = $database->getConnection();
     }
 
-    /**
-     * Get active email configuration by purpose from database or fallback to defaults
-     */
-    private function getConfigForPurpose($purpose = 'Registration') {
-        $email = $this->defaultEmail;
-        $pass = $this->defaultPassword;
-        $host = $this->defaultHost;
-        $port = $this->defaultPort;
-        $fromName = 'Printmont Store';
-
-        if ($this->db) {
-            $stmt = $this->db->prepare("SELECT * FROM email_configurations WHERE (purpose = ? OR config_name LIKE ?) AND status = 'active' LIMIT 1");
-            $likePurpose = "%{$purpose}%";
-            $stmt->bind_param("ss", $purpose, $likePurpose);
-            $stmt->execute();
-            $res = $stmt->get_result();
-            if ($row = $res->fetch_assoc()) {
-                $email = !empty($row['mail_username']) ? $row['mail_username'] : (!empty($row['smtp_user']) ? $row['smtp_user'] : $email);
-                $pass = !empty($row['mail_password']) ? $row['mail_password'] : (!empty($row['smtp_pass']) ? $row['smtp_pass'] : $pass);
-                $fromName = !empty($row['mail_from_name']) ? $row['mail_from_name'] : (!empty($row['from_name']) ? $row['from_name'] : $fromName);
-            }
-        }
-
-        return [
-            'username' => $email,
-            'password' => $pass,
-            'host' => $host,
-            'port' => $port,
-            'fromName' => $fromName
-        ];
+    /** Why the last sendEmail() returned false. */
+    public function getLastError() {
+        return $this->lastError;
     }
 
     /**
-     * Send HTML email using native socket SMTP connection
+     * Resolve config for a purpose, falling back to any active config.
+     * Returns null when nothing is configured, so callers can say so plainly
+     * instead of silently trying a hardcoded mailbox.
+     */
+    public function getConfigForPurpose($purpose = 'Registration') {
+        if (!$this->db) {
+            return null;
+        }
+
+        $row = null;
+
+        $stmt = $this->db->prepare(
+            "SELECT * FROM email_configurations
+             WHERE (purpose = ? OR config_name LIKE ?) AND status = 'active'
+             LIMIT 1"
+        );
+        if ($stmt) {
+            $likePurpose = "%{$purpose}%";
+            $stmt->bind_param("ss", $purpose, $likePurpose);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+        }
+
+        // Any active config beats not sending at all.
+        if (!$row) {
+            $res = $this->db->query("SELECT * FROM email_configurations WHERE status = 'active' ORDER BY id ASC LIMIT 1");
+            $row = $res ? $res->fetch_assoc() : null;
+        }
+
+        return $row ? $this->normalizeConfig($row) : null;
+    }
+
+    /**
+     * Send an HTML email over SMTP.
+     * Supports implicit TLS (port 465) and STARTTLS (587) — the previous version
+     * hardcoded ssl://smtp.gmail.com:465 and ignored the configured host entirely,
+     * so any non-Gmail SMTP failed authentication.
      */
     public function sendEmail($to, $subject, $bodyHtml, $purpose = 'Registration', $customFromName = null) {
+        $this->lastError = '';
+
         $config = $this->getConfigForPurpose($purpose);
-        $fromName = $customFromName ? $customFromName : $config['fromName'];
-
-        $socket = @fsockopen($config['host'], $config['port'], $errno, $errstr, 15);
-        if (!$socket) {
-            error_log("MailService Connection error: $errstr ($errno)");
+        if (!$config) {
+            $this->lastError = 'No active email configuration found. Add one under Email Configurations and set its status to active.';
+            error_log('MailService: ' . $this->lastError);
             return false;
         }
 
-        $getResponse = function($s) {
-            $response = "";
-            while ($line = fgets($s, 512)) {
-                $response .= $line;
-                if (substr($line, 3, 1) == " ") break;
-            }
-            return $response;
-        };
+        return $this->sendEmailWithConfig($config, $to, $subject, $bodyHtml, $customFromName);
+    }
 
-        $sendCommand = function($s, $cmd) use ($getResponse) {
-            fputs($s, $cmd . "\r\n");
-            return $getResponse($s);
-        };
+    /**
+     * Deliver using an explicit config, bypassing the database lookup. Used by
+     * the admin panel to test settings that have not been saved yet.
+     */
+    public function sendEmailWithConfig(array $config, $to, $subject, $bodyHtml, $customFromName = null) {
+        $this->lastError = '';
+        $fromName = $customFromName ?: $config['fromName'];
 
-        $getResponse($socket); // banner
-        $sendCommand($socket, "EHLO printmont.local");
-        $sendCommand($socket, "AUTH LOGIN");
-        $sendCommand($socket, base64_encode($config['username']));
-        $authRes = $sendCommand($socket, base64_encode($config['password']));
+        try {
+            $socket = $this->openSession($config);
+        } catch (Throwable $e) {
+            $this->lastError = $e->getMessage();
+            error_log('MailService: ' . $this->lastError);
+            return false;
+        }
 
-        if (strpos($authRes, '235') === false) {
+        try {
+            $this->command($socket, 'MAIL FROM: <' . $config['fromEmail'] . '>', '250');
+            $this->command($socket, 'RCPT TO: <' . $to . '>', '250');
+            $this->command($socket, 'DATA', '354');
+
+            $headers = 'From: ' . $this->encodeHeader($fromName) . ' <' . $config['fromEmail'] . ">\r\n"
+                . 'To: <' . $to . ">\r\n"
+                . 'Subject: ' . $this->encodeHeader($subject) . "\r\n"
+                . 'Date: ' . date('r') . "\r\n"
+                . "MIME-Version: 1.0\r\n"
+                . "Content-Type: text/html; charset=UTF-8\r\n"
+                . "Content-Transfer-Encoding: 8bit\r\n\r\n";
+
+            // Dot-stuffing: a line that is just "." would otherwise end the message.
+            $body = preg_replace('/^\./m', '..', str_replace(["\r\n", "\r", "\n"], "\r\n", $bodyHtml));
+
+            fwrite($socket, $headers . $body . "\r\n.\r\n");
+            $this->expect($socket, $this->read($socket), '250', 'message body');
+
+            $this->command($socket, 'QUIT', null);
             fclose($socket);
-            error_log("MailService Auth failed: " . trim($authRes));
+
+            return true;
+        } catch (Throwable $e) {
+            $this->lastError = $e->getMessage();
+            error_log('MailService (' . $config['configName'] . ' via ' . $config['host'] . ':' . $config['port'] . '): ' . $this->lastError);
+            @fclose($socket);
             return false;
         }
+    }
 
-        $sendCommand($socket, "MAIL FROM: <{$config['username']}>");
-        $sendCommand($socket, "RCPT TO: <{$to}>");
-        $sendCommand($socket, "DATA");
+    /**
+     * Connect, negotiate TLS and authenticate. Returns a ready socket.
+     * @throws RuntimeException with a human-readable reason
+     */
+    private function openSession(array $config) {
+        $useImplicitTls = ($config['encryption'] === 'ssl') || (int) $config['port'] === 465;
+        $address = ($useImplicitTls ? 'ssl://' : '') . $config['host'] . ':' . $config['port'];
 
-        $headers  = "From: {$fromName} <{$config['username']}>\r\n";
-        $headers .= "To: {$to}\r\n";
-        $headers .= "Subject: {$subject}\r\n";
-        $headers .= "MIME-Version: 1.0\r\n";
-        $headers .= "Content-Type: text/html; charset=UTF-8\r\n\r\n";
+        $context = stream_context_create([
+            'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
+        ]);
 
-        fputs($socket, $headers . $bodyHtml . "\r\n.\r\n");
-        $sendRes = $getResponse($socket);
+        $socket = @stream_socket_client($address, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $context);
 
-        $sendCommand($socket, "QUIT");
-        fclose($socket);
+        if (!$socket) {
+            throw new RuntimeException(sprintf(
+                'Could not connect to %s:%d — %s (%d)',
+                $config['host'], $config['port'], $errstr ?: 'connection refused', $errno
+            ));
+        }
 
-        return strpos($sendRes, '250') !== false;
+        stream_set_timeout($socket, 15);
+
+        try {
+            $this->expect($socket, $this->read($socket), '220', 'greeting');
+            $this->command($socket, 'EHLO printmont', '250');
+
+            if (!$useImplicitTls && $config['encryption'] !== 'none') {
+                $this->command($socket, 'STARTTLS', '220');
+                if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                    throw new RuntimeException('STARTTLS negotiation failed');
+                }
+                // The server forgets everything before STARTTLS, so greet again.
+                $this->command($socket, 'EHLO printmont', '250');
+            }
+
+            $this->command($socket, 'AUTH LOGIN', '334');
+            $this->command($socket, base64_encode($config['username']), '334', 'username');
+            $this->command($socket, base64_encode($config['password']), '235', 'authentication');
+        } catch (Throwable $e) {
+            @fclose($socket);
+            throw $e;
+        }
+
+        return $socket;
+    }
+
+    /**
+     * Connect and authenticate without sending anything, for the admin
+     * "Test Connection" button.
+     *
+     * @param array|null $override raw admin-form values; null uses the stored config
+     * @return array{success: bool, error: string}
+     */
+    public function testConnection($override = null, $purpose = 'Registration') {
+        $config = $override ? $this->normalizeConfig($override) : $this->getConfigForPurpose($purpose);
+
+        if (!$config) {
+            return ['success' => false, 'error' => 'Host and username are required.'];
+        }
+
+        try {
+            $socket = $this->openSession($config);
+            $this->command($socket, 'QUIT', null);
+            @fclose($socket);
+
+            return ['success' => true, 'error' => ''];
+        } catch (Throwable $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /** Map loose admin-form / DB keys onto the shape the sender expects. */
+    public function normalizeConfig(array $row) {
+        $pick = function (...$keys) use ($row) {
+            foreach ($keys as $key) {
+                if (isset($row[$key]) && trim((string) $row[$key]) !== '') {
+                    return trim((string) $row[$key]);
+                }
+            }
+            return '';
+        };
+
+        $host = $pick('mail_host', 'smtp_host', 'host');
+        $username = $pick('mail_username', 'smtp_user', 'username');
+        if ($host === '' || $username === '') {
+            return null;
+        }
+
+        $port = (int) ($pick('mail_port', 'smtp_port', 'port') ?: 587);
+        $encryption = strtolower($pick('mail_encryption', 'encryption') ?: ($port === 465 ? 'ssl' : 'tls'));
+
+        return [
+            'host'       => $host,
+            'port'       => $port ?: 587,
+            'encryption' => $encryption,
+            'username'   => $username,
+            'password'   => $pick('mail_password', 'smtp_pass', 'password'),
+            'fromEmail'  => $pick('mail_from_address', 'from_email') ?: $username,
+            'fromName'   => $pick('mail_from_name', 'from_name') ?: 'Printmont',
+            'configName' => $pick('config_name') ?: '(unsaved form values)',
+        ];
+    }
+
+    private function read($socket) {
+        $response = '';
+        while ($line = fgets($socket, 515)) {
+            $response .= $line;
+            // Multi-line replies use "250-"; the final line uses "250 ".
+            if (strlen($line) < 4 || $line[3] === ' ') {
+                break;
+            }
+        }
+        return $response;
+    }
+
+    /**
+     * @param string|null $expected response code to require, null to fire-and-forget
+     * @param string|null $label     shown on failure; always pass one for credential
+     *                               lines so the base64 secret never reaches a log
+     */
+    private function command($socket, $command, $expected, $label = null) {
+        fwrite($socket, $command . "\r\n");
+        if ($expected === null) {
+            return '';
+        }
+        $response = $this->read($socket);
+        $this->expect($socket, $response, $expected, $label ?: explode(' ', $command)[0]);
+        return $response;
+    }
+
+    private function expect($socket, $response, $code, $label) {
+        if (strncmp(trim($response), $code, strlen($code)) !== 0) {
+            throw new RuntimeException(sprintf('SMTP %s failed (expected %s): %s', $label, $code, trim($response) ?: 'no response'));
+        }
+    }
+
+    private function encodeHeader($value) {
+        return preg_match('/[^\x20-\x7E]/', $value)
+            ? '=?UTF-8?B?' . base64_encode($value) . '?='
+            : $value;
     }
 
     /**
@@ -117,9 +281,6 @@ class MailService {
                 <p style='font-size: 16px;'>Hello <b>" . htmlspecialchars($userName) . "</b>,</p>
                 <p>Thank you for registering with <b>Printmont</b>. Your account has been created successfully using <b>" . htmlspecialchars($userEmail) . "</b>.</p>
                 <p>You can now explore thousands of customizable corporate gifts, promotional items, t-shirts, and merchandises.</p>
-                <div style='text-align: center; margin: 30px 0;'>
-                    <a href='http://localhost:5173/login' style='background-color: #ffc107; color: #000000; padding: 12px 25px; text-decoration: none; font-weight: bold; border-radius: 5px; display: inline-block;'>Login to Your Account</a>
-                </div>
                 <p style='font-size: 13px; color: #777777;'>If you did not register for this account, please ignore this email.</p>
             </div>
             <div style='background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;'>
