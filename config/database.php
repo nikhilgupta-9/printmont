@@ -68,12 +68,30 @@ class Database {
         mysqli_report(MYSQLI_REPORT_OFF);
 
         foreach ($attempts as $index => $attempt) {
+            // Try standard new mysqli
             $conn = @new mysqli($attempt['host'], $attempt['username'], $attempt['password'], $attempt['db_name']);
             if ($conn && !$conn->connect_error) {
                 $conn->set_charset('utf8');
                 $this->conn = $conn;
                 return $this->conn;
             }
+
+            // Try explicit port 3306
+            $conn2 = @new mysqli($attempt['host'], $attempt['username'], $attempt['password'], $attempt['db_name'], 3306);
+            if ($conn2 && !$conn2->connect_error) {
+                $conn2->set_charset('utf8');
+                $this->conn = $conn2;
+                return $this->conn;
+            }
+
+            // Try mysqli_init + mysqli_real_connect
+            $conn3 = mysqli_init();
+            if ($conn3 && @mysqli_real_connect($conn3, $attempt['host'], $attempt['username'], $attempt['password'], $attempt['db_name'], 3306)) {
+                $conn3->set_charset('utf8');
+                $this->conn = $conn3;
+                return $this->conn;
+            }
+
             $err = ($conn && $conn->connect_error) ? $conn->connect_error : mysqli_connect_error();
             $last_error[] = "Attempt {$index} ({$attempt['host']}@{$attempt['username']}): " . ($err ?: 'Unknown error');
         }
