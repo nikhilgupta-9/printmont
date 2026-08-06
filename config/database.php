@@ -44,25 +44,25 @@ class Database {
             ['host' => 'localhost', 'username' => 'root', 'password' => '', 'db_name' => $this->db_name],
         ];
 
-        $last_error = null;
+        $last_error = [];
 
-        foreach ($attempts as $attempt) {
+        foreach ($attempts as $index => $attempt) {
             try {
-                $conn = new mysqli($attempt['host'], $attempt['username'], $attempt['password'], $attempt['db_name']);
+                $conn = @new mysqli($attempt['host'], $attempt['username'], $attempt['password'], $attempt['db_name']);
                 if ($conn->connect_error) {
-                    $last_error = "Connection failed: " . $conn->connect_error;
+                    $last_error[] = "Attempt {$index} ({$attempt['host']}@{$attempt['username']}): " . $conn->connect_error;
                     continue;
                 }
 
                 $conn->set_charset('utf8');
                 $this->conn = $conn;
                 return $this->conn;
-            } catch (Exception $e) {
-                $last_error = $e->getMessage();
+            } catch (Throwable $e) {
+                $last_error[] = "Attempt {$index} ({$attempt['host']}@{$attempt['username']}): " . $e->getMessage();
             }
         }
 
-        throw new Exception("Database connection failed. Please verify MySQL is running and the database credentials are correct. Last error: " . $last_error);
+        throw new Exception("Database connection failed. Details: " . implode(" | ", $last_error));
     }
 
     public function execute($query, $params = []) {
