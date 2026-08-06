@@ -14,7 +14,7 @@ Desktop.ini
 .idea/
 
 # Environment / Secret files (Agar future me use karo to credentials leak na hon)
-# .env
+.env
 .env.local
 
 # Node modules (Agar npx ya node use ho raha ho)
