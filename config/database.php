@@ -38,6 +38,7 @@ class Database {
         $this->conn = null;
         $attempts = [
             ['host' => $this->host, 'username' => $this->username, 'password' => $this->password, 'db_name' => $this->db_name],
+            ['host' => '127.0.0.1', 'username' => $this->username, 'password' => $this->password, 'db_name' => $this->db_name],
             ['host' => 'localhost', 'username' => $this->username, 'password' => $this->password, 'db_name' => $this->db_name],
             ['host' => '127.0.0.1', 'username' => 'root', 'password' => '', 'db_name' => $this->db_name],
             ['host' => 'localhost', 'username' => 'root', 'password' => '', 'db_name' => $this->db_name],
