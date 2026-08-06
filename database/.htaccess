@@ -1,0 +1,11 @@
+# Schema dumps, migrations and backups must never be downloadable over HTTP.
+# They were served as plain text before this file existed.
+# migrations.php reads these from the filesystem, so it is unaffected.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

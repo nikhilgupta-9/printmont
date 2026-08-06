@@ -319,6 +319,11 @@ $page_groups = [
 		'master-modules.php'
 	],
 
+	// Database Migrations
+	'migrations' => [
+		'migrations.php'
+	],
+
 	// Product Filters (standalone)
 	'product_filters_setting' => [
 		'product-filters.php'
@@ -1441,6 +1446,13 @@ function shouldExpand($group_name, $current_page, $page_groups)
 					<a class='sidebar-link' href='master-modules.php'>
 						<i class="align-middle" data-feather="layers"></i>
 						<span class="align-middle">Master Modules</span>
+					</a>
+				</li>
+
+				<li class="sidebar-item <?php echo isActivePage('migrations.php', $current_page) ? 'active' : ''; ?>">
+					<a class='sidebar-link' href='migrations.php'>
+						<i class="align-middle" data-feather="database"></i>
+						<span class="align-middle">DB Migrations</span>
 					</a>
 				</li>
 
