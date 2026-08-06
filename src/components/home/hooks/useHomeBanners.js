@@ -59,23 +59,36 @@ export default function useHomeBanners(apiUrl, sectionKey = "", basePath = "") {
 
         // Check success flag standard format
         if (data && data.success && data.data) {
+          // banner_api.php answers in two shapes:
+          //   ?page=...    -> data: { page, sections: { <key>: { banners: [] } } }
+          //   ?section=... -> data: { section_key, label, banners: [] }
           const payload = data.data;
 
-          if (sectionKey && payload[sectionKey] && payload[sectionKey].banners) {
-            bannerList = payload[sectionKey].banners;
-          } else if (sectionKey && Array.isArray(payload[sectionKey])) {
-            bannerList = payload[sectionKey];
-          } else if (Array.isArray(payload)) {
-            bannerList = payload;
+          if (Array.isArray(payload.banners)) {
+            // Single-section response — the banners are already right here.
+            bannerList = payload.banners;
           } else {
-            // Check fallback for first key if sectionKey is not specified or not found
-            const keys = Object.keys(payload);
-            if (keys.length > 0) {
-              const firstKey = keys[0];
-              if (payload[firstKey] && payload[firstKey].banners) {
-                bannerList = payload[firstKey].banners;
-              } else if (Array.isArray(payload[firstKey])) {
-                bannerList = payload[firstKey];
+            // Page response — look inside the sections map.
+            const sections =
+              payload.sections && typeof payload.sections === "object"
+                ? payload.sections
+                : payload;
+
+            if (sectionKey && sections[sectionKey] && sections[sectionKey].banners) {
+              bannerList = sections[sectionKey].banners;
+            } else if (sectionKey && Array.isArray(sections[sectionKey])) {
+              bannerList = sections[sectionKey];
+            } else if (Array.isArray(sections)) {
+              bannerList = sections;
+            } else if (!sectionKey) {
+              // No key asked for: fall back to the first section that has banners.
+              const firstWithBanners = Object.values(sections).find(
+                (s) => s && (Array.isArray(s.banners) || Array.isArray(s))
+              );
+              if (firstWithBanners) {
+                bannerList = Array.isArray(firstWithBanners)
+                  ? firstWithBanners
+                  : firstWithBanners.banners;
               }
             }
           }

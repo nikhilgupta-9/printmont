@@ -62,8 +62,14 @@ export const CheckoutProvider = ({ children }) => {
       const response = await fetch(`${API_URL}/cart-api.php`, { headers });
       if (response.ok) {
         const data = await response.json();
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-           setCartItems(data.data);
+        // cart-api.php returns { success, data: { items, subtotal, count } }.
+        const serverItems = Array.isArray(data.data) ? data.data : data.data?.items;
+        if (data.success && Array.isArray(serverItems) && serverItems.length > 0) {
+          // Cart lines key off product_id server-side; the rest of checkout uses id.
+          setCartItems(serverItems.map(item => ({
+            ...item,
+            id: item.product_id ?? item.id,
+          })));
         }
       }
     } catch (error) {

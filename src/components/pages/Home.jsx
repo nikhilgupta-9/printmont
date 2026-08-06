@@ -65,17 +65,17 @@ const Home = () => {
             ) : (
               <>
                  {/* === ABOVE THE FOLD — Eager Load (no LazySection) === */}
-                 <ResponsiveHeroCarousel apiUrl={`${baseURL}api/banners/banners.php`} basePath={`${baseURL}uploads/banners/`} />
-                 <MobileHeroSlider apiUrl={`${baseURL}api/banners/banners.php`} />
-                 <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} sectionKey="home_above_fold" columns={4} mobileColumns={2} />
+                 <ResponsiveHeroCarousel apiUrl={`${baseURL}api/banner_api.php`} basePath={`${baseURL}uploads/banners/`} />
+                 <MobileHeroSlider apiUrl={`${baseURL}api/banner_api.php`} />
+                 <BannerGrid apiUrl={`${baseURL}api/banner_api.php`} sectionKey="home_above_fold" columns={4} mobileColumns={2} />
 
                  {/* === BELOW THE FOLD — Lazy Loaded === */}
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 4" />}>
-                   <MultiColumnBannerCarousel apiUrl={`${baseURL}api/banners/banners.php`} columns={3} sectionKey="home_mid_section_1" />
+                   <MultiColumnBannerCarousel apiUrl={`${baseURL}api/banner_api.php`} columns={3} sectionKey="home_mid_section_1" />
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 4" />}>
-                   <MultiColumnBannerCarousel apiUrl={`${baseURL}api/banners/banners.php`} columns={4} sectionKey="home_mid_section_2" />
+                   <MultiColumnBannerCarousel apiUrl={`${baseURL}api/banner_api.php`} columns={4} sectionKey="home_mid_section_2" />
                  </LazySection>
 
                  <LazySection skeleton={<CarouselSkeleton />}>
@@ -83,7 +83,7 @@ const Home = () => {
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-                   <BannerGrid apiUrl={`${baseURL}api/banners/banners.php`} sectionKey="home_mid_section_3" columns={1} mobileColumns={1} />
+                   <BannerGrid apiUrl={`${baseURL}api/banner_api.php`} sectionKey="home_mid_section_3" columns={1} mobileColumns={1} />
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 5" />}>
@@ -95,7 +95,7 @@ const Home = () => {
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 4" />}>
-                   <BannerGrid apiUrl={`${baseURL}api/banners/banners.php?section=banner_api6`} columns={3} mobileColumns={1} />
+                   <BannerGrid apiUrl={`${baseURL}api/banner_api.php?section=banner_api6`} columns={3} mobileColumns={1} />
                  </LazySection>
 
                  <LazySection skeleton={<CarouselSkeleton />}>
@@ -103,7 +103,7 @@ const Home = () => {
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 5" />}>
-                   <ResponsiveBannerSet apiUrl={`${baseURL}api/banners/banners.php?section=banner_api7`} />
+                   <ResponsiveBannerSet apiUrl={`${baseURL}api/banner_api.php?section=banner_api7`} />
                  </LazySection>
 
                  <LazySection skeleton={<CarouselSkeleton />}>
@@ -111,7 +111,7 @@ const Home = () => {
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 5" />}>
-                   <ResponsiveBannerSet apiUrl={`${baseURL}api/banners/banners.php?section=banner_api8`} />
+                   <ResponsiveBannerSet apiUrl={`${baseURL}api/banner_api.php?section=banner_api8`} />
                  </LazySection>
 
                  <LazySection skeleton={<CarouselSkeleton />}>
@@ -119,7 +119,7 @@ const Home = () => {
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 5" />}>
-                   <ResponsiveBannerSet apiUrl={`${baseURL}api/banners/banners.php?section=banner_api9`} />
+                   <ResponsiveBannerSet apiUrl={`${baseURL}api/banner_api.php?section=banner_api9`} />
                  </LazySection>
 
                  <LazySection skeleton={<CarouselSkeleton />}>
@@ -135,7 +135,7 @@ const Home = () => {
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 4" />}>
-                   <BannerGrid apiUrl={`${baseURL}api/banners/banners.php?section=banner_api11`} columns={3} mobileColumns={1} />
+                   <BannerGrid apiUrl={`${baseURL}api/banner_api.php?section=banner_api11`} columns={3} mobileColumns={1} />
                  </LazySection>
 
                  <LazySection skeleton={<MosaicSkeleton />}>
@@ -143,7 +143,7 @@ const Home = () => {
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 5" />}>
-                   <ResponsiveBannerSet apiUrl={`${baseURL}api/banners/banners.php?section=banner_api14`} />
+                   <ResponsiveBannerSet apiUrl={`${baseURL}api/banner_api.php?section=banner_api14`} />
                  </LazySection>
 
                  <LazySection skeleton={<GridSkeleton columns={3} rows={2} />}>
@@ -151,7 +151,7 @@ const Home = () => {
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 4" />}>
-                   <BannerGrid apiUrl={`${baseURL}api/banners/banners.php?section=banner_api13`} columns={3} mobileColumns={1} />
+                   <BannerGrid apiUrl={`${baseURL}api/banner_api.php?section=banner_api13`} columns={3} mobileColumns={1} />
                  </LazySection>
 
                  <LazySection skeleton={<GridSkeleton columns={3} rows={2} />}>
@@ -159,7 +159,7 @@ const Home = () => {
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-                   <BannerGrid apiUrl={`${baseURL}api/banners/banners.php?section=banner_api15`} columns={1} mobileColumns={1} />
+                   <BannerGrid apiUrl={`${baseURL}api/banner_api.php?section=banner_api15`} columns={1} mobileColumns={1} />
                  </LazySection>
 
                  <LazySection skeleton={<MosaicSkeleton />}>
@@ -167,7 +167,7 @@ const Home = () => {
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 6" />}>
-                   <BannerGrid apiUrl={`${baseURL}api/banners/banners.php?section=banner_api16`} columns={1} mobileColumns={1} />
+                   <BannerGrid apiUrl={`${baseURL}api/banner_api.php?section=banner_api16`} columns={1} mobileColumns={1} />
                  </LazySection>
 
                  <LazySection skeleton={<MosaicSkeleton />}>

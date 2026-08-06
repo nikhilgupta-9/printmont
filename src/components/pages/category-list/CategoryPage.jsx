@@ -168,7 +168,7 @@ const CategoryPage = () => {
 
           {/* 2. Small Banner (First 2 images) */}
           <div className="cp-card-section">
-            <BannerSmall apiUrl={`${BASE_URL}api/banners/banners.php`} sliceStart={0} sliceEnd={2} />
+            <BannerSmall apiUrl={`${BASE_URL}api/banner_api.php`} sliceStart={0} sliceEnd={2} />
           </div>
 
           {/* 3. ── BIG BANNER — Before / After comparison slider ── */}
@@ -184,7 +184,7 @@ const CategoryPage = () => {
 
           {/* 4. Small Banner (Next 2 images) */}
           <div className="cp-card-section">
-            <BannerSmall apiUrl={`${BASE_URL}api/banners/banners.php`} sliceStart={2} sliceEnd={4} />
+            <BannerSmall apiUrl={`${BASE_URL}api/banner_api.php`} sliceStart={2} sliceEnd={4} />
           </div>
 
           {/* 4.5. Categories Grid Section */}
@@ -206,7 +206,7 @@ const CategoryPage = () => {
           {/* 5. Main Slider */}
           <div className="cp-card-section">
             <ResponsiveHeroCarousel
-              apiUrl={`${BASE_URL}api/banners/banners.php`}
+              apiUrl={`${BASE_URL}api/banner_api.php`}
               basePath={`${BASE_URL}uploads/banners/`}
               carouselId="catSmallCarousel"
             />
@@ -226,7 +226,7 @@ const CategoryPage = () => {
 
           {/* 7. ResponsiveBannerSet */}
           <div className="cp-card-section">
-            <ResponsiveBannerSet apiUrl={`${BASE_URL}api/banners/banners.php?section=banner_api7`} />
+            <ResponsiveBannerSet apiUrl={`${BASE_URL}api/banner_api.php?section=banner_api7`} />
           </div>
 
           {/* 7.5. Personalized Gifts Section */}
@@ -236,7 +236,7 @@ const CategoryPage = () => {
 
           {/* 7.6. Four Image Banner */}
           <div className="cp-card-section">
-            <MultiColumnBannerCarousel apiUrl={`${BASE_URL}api/banners/banners.php`} columns={4} sectionKey="home_mid_section_2" />
+            <MultiColumnBannerCarousel apiUrl={`${BASE_URL}api/banner_api.php`} columns={4} sectionKey="home_mid_section_2" />
           </div>
 
           {/* Special Offers Carousel */}
@@ -268,14 +268,14 @@ const CategoryPage = () => {
 
         {/* 1 - Slider */}
         <MobileBannerCarousel
-          apiUrl={`${BASE_URL}api/banners/banners.php?section=category_slider`}
+          apiUrl={`${BASE_URL}api/banner_api.php?section=category_slider`}
           type="single"
         />
 
         {/* 2 - Banner carousel (Double image side-by-side) */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_double`}
+            apiUrl={`${BASE_URL}api/banner_api.php?section=category_double`}
             type="double"
           />
         </div>
@@ -283,7 +283,7 @@ const CategoryPage = () => {
         {/* 3 - Banner and slider */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_banner_slider`}
+            apiUrl={`${BASE_URL}api/banner_api.php?section=category_banner_slider`}
             type="single"
           />
         </div>
@@ -300,7 +300,7 @@ const CategoryPage = () => {
         {/* 5 - Banner and slider (Sider banner) */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_banner_slider_2`}
+            apiUrl={`${BASE_URL}api/banner_api.php?section=category_banner_slider_2`}
             type="single"
           />
         </div>
@@ -317,7 +317,7 @@ const CategoryPage = () => {
         {/* 7 - Banner carousel (Double image side-by-side) */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_double_2`}
+            apiUrl={`${BASE_URL}api/banner_api.php?section=category_double_2`}
             type="double"
           />
         </div>
@@ -342,7 +342,7 @@ const CategoryPage = () => {
         {/* 9 - Banner and slider */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_banner_slider_3`}
+            apiUrl={`${BASE_URL}api/banner_api.php?section=category_banner_slider_3`}
             type="single"
           />
         </div>
@@ -359,7 +359,7 @@ const CategoryPage = () => {
         {/* 11 - Banner carousel (Double image side-by-side) */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_double_3`}
+            apiUrl={`${BASE_URL}api/banner_api.php?section=category_double_3`}
             type="double"
           />
         </div>
@@ -376,7 +376,7 @@ const CategoryPage = () => {
         {/* 13 - Banner and slider */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_banner_slider_4`}
+            apiUrl={`${BASE_URL}api/banner_api.php?section=category_banner_slider_4`}
             type="single"
           />
         </div>
@@ -393,7 +393,7 @@ const CategoryPage = () => {
         {/* 15 - Banner carousel (Double image side-by-side) */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_double_4`}
+            apiUrl={`${BASE_URL}api/banner_api.php?section=category_double_4`}
             type="double"
           />
         </div>
@@ -410,7 +410,7 @@ const CategoryPage = () => {
         {/* 17 - Banner and slider */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_banner_slider_5`}
+            apiUrl={`${BASE_URL}api/banner_api.php?section=category_banner_slider_5`}
             type="single"
           />
         </div>
@@ -427,7 +427,7 @@ const CategoryPage = () => {
         {/* 18b - Banner carousel (Double image side-by-side) */}
         <div className="mob-section-gap">
           <MobileBannerCarousel
-            apiUrl={`${BASE_URL}api/banners/banners.php?section=category_double_5`}
+            apiUrl={`${BASE_URL}api/banner_api.php?section=category_double_5`}
             type="double"
           />
         </div>

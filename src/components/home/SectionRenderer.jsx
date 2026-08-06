@@ -174,7 +174,7 @@ function renderSectionContent({
       if (section_key.includes("banner_api7")) {
         return (
           <ResponsiveBannerSet
-            apiUrl={`${baseURL}api/banner_api7.php`}
+            apiUrl={`${baseURL}api/banner_api.php?section=${section_key}`}
             banners={formattedBanners && formattedBanners.length > 0 ? formattedBanners : bannerTwoDesktop}
           />
         );
@@ -182,7 +182,7 @@ function renderSectionContent({
       if (section_key.includes("banner_api8")) {
         return (
           <ResponsiveBannerSet
-            apiUrl={`${baseURL}api/banner_api8.php`}
+            apiUrl={`${baseURL}api/banner_api.php?section=${section_key}`}
             banners={formattedBanners && formattedBanners.length > 0 ? formattedBanners : bannerTwoDesktop}
           />
         );
@@ -190,7 +190,7 @@ function renderSectionContent({
       if (section_key.includes("banner_api9")) {
         return (
           <ResponsiveBannerSet
-            apiUrl={`${baseURL}api/banner_api9.php`}
+            apiUrl={`${baseURL}api/banner_api.php?section=${section_key}`}
             banners={formattedBanners && formattedBanners.length > 0 ? formattedBanners : bannerTwoDesktop}
           />
         );
@@ -198,7 +198,7 @@ function renderSectionContent({
       if (section_key.includes("banner_api14")) {
         return (
           <ResponsiveBannerSet
-            apiUrl={`${baseURL}api/banner_api14.php`}
+            apiUrl={`${baseURL}api/banner_api.php?section=${section_key}`}
             banners={formattedBanners && formattedBanners.length > 0 ? formattedBanners : bannerTwoDesktop}
           />
         );
@@ -206,7 +206,7 @@ function renderSectionContent({
       if (section_key.includes("banner_api6") || section_key.includes("banner_api11") || section_key.includes("banner_api13")) {
         return (
           <BannerGrid
-            apiUrl={`${baseURL}api/${section_key.replace('home_', '')}.php`}
+            apiUrl={`${baseURL}api/banner_api.php?section=${section_key}`}
             sectionKey={section_key}
             banners={formattedBanners && formattedBanners.length > 0 ? formattedBanners : bannerTwoDesktop}
             columns={columns_per_row || 3}
