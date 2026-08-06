@@ -194,17 +194,25 @@ class Database {
         }
 
         // 2. Try PDO fallback (which works on Hostinger)
-        foreach ($hosts as $h) {
+        $dsns = [
+            "mysql:host={$this->host};dbname={$this->db_name};charset=utf8",
+            "mysql:host=127.0.0.1;dbname={$this->db_name};charset=utf8",
+            "mysql:host=localhost;dbname={$this->db_name};charset=utf8",
+            "mysql:unix_socket=/var/lib/mysql/mysql.sock;dbname={$this->db_name};charset=utf8",
+            "mysql:unix_socket=/tmp/mysql.sock;dbname={$this->db_name};charset=utf8"
+        ];
+
+        foreach ($dsns as $dsn) {
             foreach ($passwords as $p) {
                 try {
-                    $pdo = new PDO("mysql:host={$h};dbname={$this->db_name};charset=utf8", $this->username, $p, [
+                    $pdo = new PDO($dsn, $this->username, $p, [
                         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
                     ]);
                     $wrapper = new PdoMysqliWrapper($pdo);
                     $this->conn = $wrapper;
                     return $this->conn;
                 } catch (Throwable $e) {
-                    $last_error[] = "PDO ({$h}): " . $e->getMessage();
+                    $last_error[] = "PDO ({$dsn}): " . $e->getMessage();
                 }
             }
         }
