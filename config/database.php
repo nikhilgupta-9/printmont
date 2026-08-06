@@ -17,6 +17,137 @@ if (!defined('BASE_URL')) {
     define("BASE_URL", $_ENV['SITE'] ?? ($protocol . $host . '/printmont/printmont-backend/'));
 }
 
+if (!class_exists('PdoResultWrapper')) {
+class PdoResultWrapper {
+    private $rows;
+    private $currentIndex = 0;
+    public $num_rows;
+
+    public function __construct(array $rows) {
+        $this->rows = array_values($rows);
+        $this->num_rows = count($this->rows);
+    }
+
+    public function fetch_assoc() {
+        if ($this->currentIndex < $this->num_rows) {
+            return $this->rows[$this->currentIndex++];
+        }
+        return null;
+    }
+
+    public function fetch_all($mode = MYSQLI_ASSOC) {
+        return $this->rows;
+    }
+}
+}
+
+if (!class_exists('PdoStmtWrapper')) {
+class PdoStmtWrapper {
+    private $pdo;
+    private $sql;
+    private $params = [];
+    private $resultRows = [];
+    public $insert_id = 0;
+    public $error = '';
+
+    public function __construct($pdo, $sql) {
+        $this->pdo = $pdo;
+        $this->sql = $sql;
+    }
+
+    public function bind_param($types, ...$params) {
+        $this->params = $params;
+        return true;
+    }
+
+    public function execute() {
+        try {
+            $stmt = $this->pdo->prepare($this->sql);
+            $success = $stmt->execute($this->params);
+            $this->insert_id = (int)$this->pdo->lastInsertId();
+            if ($stmt->columnCount() > 0) {
+                $this->resultRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            return $success;
+        } catch (Throwable $e) {
+            $this->error = $e->getMessage();
+            return false;
+        }
+    }
+
+    public function get_result() {
+        return new PdoResultWrapper($this->resultRows);
+    }
+
+    public function close() {
+        return true;
+    }
+}
+}
+
+if (!class_exists('PdoMysqliWrapper')) {
+class PdoMysqliWrapper {
+    public $pdo;
+    public $connect_error = null;
+
+    public function __construct($pdo) {
+        $this->pdo = $pdo;
+    }
+
+    public function query($sql) {
+        try {
+            $stmt = $this->pdo->query($sql);
+            if (!$stmt) return false;
+            if ($stmt->columnCount() > 0) {
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                return new PdoResultWrapper($rows);
+            }
+            return true;
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    public function prepare($sql) {
+        return new PdoStmtWrapper($this->pdo, $sql);
+    }
+
+    public function real_escape_string($str) {
+        if ($str === null) return '';
+        $quoted = $this->pdo->quote($str);
+        if (strlen($quoted) >= 2 && $quoted[0] === "'" && substr($quoted, -1) === "'") {
+            return substr($quoted, 1, -1);
+        }
+        return addslashes($str);
+    }
+
+    public function set_charset($charset) {
+        try {
+            $this->pdo->exec("SET NAMES " . $charset);
+            return true;
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    public function begin_transaction() {
+        return $this->pdo->beginTransaction();
+    }
+
+    public function commit() {
+        return $this->pdo->commit();
+    }
+
+    public function rollback() {
+        return $this->pdo->rollBack();
+    }
+
+    public function close() {
+        $this->pdo = null;
+    }
+}
+}
+
 if (!class_exists('Database')) {
 class Database {
     private $host;
@@ -50,50 +181,32 @@ class Database {
         $attempts[] = ['host' => 'localhost', 'username' => 'root', 'password' => '', 'db_name' => $this->db_name];
 
         $last_error = [];
-
-        try {
-            $pdo = new PDO("mysql:host=localhost;dbname={$this->db_name};charset=utf8", $this->username, $cleanPass);
-            $last_error[] = "PDO(localhost) SUCCESS";
-        } catch (Throwable $pe) {
-            $last_error[] = "PDO(localhost): " . $pe->getMessage();
-        }
-
-        try {
-            $pdo2 = new PDO("mysql:host=127.0.0.1;dbname={$this->db_name};charset=utf8", $this->username, $cleanPass);
-            $last_error[] = "PDO(127.0.0.1) SUCCESS";
-        } catch (Throwable $pe) {
-            $last_error[] = "PDO(127.0.0.1): " . $pe->getMessage();
-        }
-
         mysqli_report(MYSQLI_REPORT_OFF);
 
+        // 1. Try standard mysqli first
         foreach ($attempts as $index => $attempt) {
-            // Try standard new mysqli
             $conn = @new mysqli($attempt['host'], $attempt['username'], $attempt['password'], $attempt['db_name']);
             if ($conn && !$conn->connect_error) {
                 $conn->set_charset('utf8');
                 $this->conn = $conn;
                 return $this->conn;
             }
+        }
 
-            // Try explicit port 3306
-            $conn2 = @new mysqli($attempt['host'], $attempt['username'], $attempt['password'], $attempt['db_name'], 3306);
-            if ($conn2 && !$conn2->connect_error) {
-                $conn2->set_charset('utf8');
-                $this->conn = $conn2;
-                return $this->conn;
+        // 2. Try PDO fallback (which works on Hostinger)
+        foreach ($hosts as $h) {
+            foreach ($passwords as $p) {
+                try {
+                    $pdo = new PDO("mysql:host={$h};dbname={$this->db_name};charset=utf8", $this->username, $p, [
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+                    ]);
+                    $wrapper = new PdoMysqliWrapper($pdo);
+                    $this->conn = $wrapper;
+                    return $this->conn;
+                } catch (Throwable $e) {
+                    $last_error[] = "PDO ({$h}): " . $e->getMessage();
+                }
             }
-
-            // Try mysqli_init + mysqli_real_connect
-            $conn3 = mysqli_init();
-            if ($conn3 && @mysqli_real_connect($conn3, $attempt['host'], $attempt['username'], $attempt['password'], $attempt['db_name'], 3306)) {
-                $conn3->set_charset('utf8');
-                $this->conn = $conn3;
-                return $this->conn;
-            }
-
-            $err = ($conn && $conn->connect_error) ? $conn->connect_error : mysqli_connect_error();
-            $last_error[] = "Attempt {$index} ({$attempt['host']}@{$attempt['username']}): " . ($err ?: 'Unknown error');
         }
 
         throw new Exception("Database connection failed. Details: " . implode(" | ", $last_error));
