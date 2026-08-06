@@ -50,6 +50,21 @@ class Database {
         $attempts[] = ['host' => 'localhost', 'username' => 'root', 'password' => '', 'db_name' => $this->db_name];
 
         $last_error = [];
+
+        try {
+            $pdo = new PDO("mysql:host=localhost;dbname={$this->db_name};charset=utf8", $this->username, $cleanPass);
+            $last_error[] = "PDO(localhost) SUCCESS";
+        } catch (Throwable $pe) {
+            $last_error[] = "PDO(localhost): " . $pe->getMessage();
+        }
+
+        try {
+            $pdo2 = new PDO("mysql:host=127.0.0.1;dbname={$this->db_name};charset=utf8", $this->username, $cleanPass);
+            $last_error[] = "PDO(127.0.0.1) SUCCESS";
+        } catch (Throwable $pe) {
+            $last_error[] = "PDO(127.0.0.1): " . $pe->getMessage();
+        }
+
         mysqli_report(MYSQLI_REPORT_OFF);
 
         foreach ($attempts as $index => $attempt) {
