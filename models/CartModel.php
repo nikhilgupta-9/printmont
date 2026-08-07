@@ -75,6 +75,16 @@ class CartModel {
         return (bool) $this->db->execute("DELETE FROM cart_items WHERE id = ?", [$itemId]);
     }
 
+    /** Scoped by customer_id so a clear can never reach another user's cart. */
+    public function clearCart(int $customerId): bool {
+        return (bool) $this->db->execute("DELETE FROM cart_items WHERE customer_id = ?", [$customerId]);
+    }
+
+    public function countItems(int $customerId): int {
+        $row = $this->db->fetch("SELECT COUNT(*) AS n FROM cart_items WHERE customer_id = ?", [$customerId]);
+        return (int) ($row['n'] ?? 0);
+    }
+
     public function productExists(int $productId): bool {
         $row = $this->db->fetch("SELECT id FROM products WHERE id = ? AND status = 'active'", [$productId]);
         return (bool) $row;

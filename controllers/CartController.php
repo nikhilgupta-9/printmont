@@ -87,6 +87,22 @@ class CartController {
         return ['success' => true, 'message' => 'Cart item updated', 'item_id' => $itemId, 'quantity' => $quantity];
     }
 
+    /** Empty the whole cart — used after checkout and by "remove all". */
+    public function clearCart(int $userId): array {
+        $customerId = $this->model->getOrCreateCustomerId($userId);
+        $removed = $this->model->countItems($customerId);
+
+        if ($removed === 0) {
+            return ['success' => true, 'message' => 'Cart is already empty', 'removed' => 0];
+        }
+
+        if (!$this->model->clearCart($customerId)) {
+            return ['success' => false, 'error' => 'Failed to clear cart'];
+        }
+
+        return ['success' => true, 'message' => 'Cart cleared', 'removed' => $removed];
+    }
+
     public function removeFromCart(int $userId, int $itemId): array {
         $item = $this->assertOwnership($userId, $itemId);
         if (isset($item['error'])) {

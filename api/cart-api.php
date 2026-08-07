@@ -8,6 +8,7 @@
  *                                                                    existing line if same product + attributes)
  * PUT    /api/cart-api.php   {item_id, quantity}     → update a line item's quantity
  * DELETE /api/cart-api.php?item_id=123               → remove a line item
+ * DELETE /api/cart-api.php?action=clear              → empty the whole cart
  */
 // api/cart-api.php
 header('Content-Type: application/json');
@@ -94,11 +95,17 @@ try {
             break;
 
         case 'DELETE':
+            // ?action=clear empties the whole cart; otherwise item_id removes one line.
+            if (($_GET['action'] ?? '') === 'clear') {
+                echo json_encode($cartController->clearCart($userId));
+                break;
+            }
+
             $itemId = (int) ($_GET['item_id'] ?? 0);
 
             if (!$itemId) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'error' => 'Item ID is required']);
+                echo json_encode(['success' => false, 'error' => 'Item ID is required, or pass ?action=clear to empty the cart']);
                 break;
             }
 

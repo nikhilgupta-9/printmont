@@ -107,6 +107,10 @@ class AddressModel {
     // Update address
     public function updateAddress($id, $user_id, $data) {
         try {
+            if (!$this->belongsToUser($id, $user_id)) {
+                return false;
+            }
+
             $altPhone = $data['altPhone'] ?? $data['alt_phone'] ?? '';
             $landmark = $data['landmark'] ?? '';
             $type = $data['type'] ?? 'Home';
@@ -137,23 +141,39 @@ class AddressModel {
     }
 
     // Delete address
+    /**
+     * True only when this address exists AND belongs to this user.
+     *
+     * execute() reports success even when a statement matches zero rows, so an
+     * "id = ? AND user_id = ?" write cannot tell "not yours" from "done". Callers
+     * check ownership up front instead.
+     */
+    public function belongsToUser($id, $user_id) {
+        $row = $this->db->fetch(
+            "SELECT id FROM " . $this->table_name . " WHERE id = ? AND user_id = ?",
+            [(int)$id, (int)$user_id]
+        );
+        return (bool) $row;
+    }
+
     public function deleteAddress($id, $user_id = null) {
         try {
+            // The previous version fell back to "DELETE ... WHERE id = ?" with no
+            // user_id when the scoped delete returned falsy — one statement error
+            // away from letting anyone delete anyone else's address.
+            if ($user_id !== null && !$this->belongsToUser($id, $user_id)) {
+                return false;
+            }
+
             $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";
             $params = [(int)$id];
-            
-            if ($user_id) {
+
+            if ($user_id !== null) {
                 $query = "DELETE FROM " . $this->table_name . " WHERE id = ? AND user_id = ?";
                 $params[] = (int)$user_id;
             }
-            
-            $res = $this->db->execute($query, $params);
-            if (!$res && $user_id) {
-                // Fallback: Delete by ID
-                $queryFallback = "DELETE FROM " . $this->table_name . " WHERE id = ?";
-                return $this->db->execute($queryFallback, [(int)$id]);
-            }
-            return $res;
+
+            return $this->db->execute($query, $params);
         } catch (Exception $e) {
             error_log("Error deleting address: " . $e->getMessage());
             return false;
@@ -163,6 +183,11 @@ class AddressModel {
     // Set address as default
     public function setDefaultAddress($id, $user_id) {
         try {
+            // Report "not yours" instead of a success that changed nothing.
+            if (!$this->belongsToUser($id, $user_id)) {
+                return false;
+            }
+
             $queryReset = "UPDATE " . $this->table_name . " SET is_default = 0 WHERE user_id = ?";
             $this->db->execute($queryReset, [(int)$user_id]);
 
