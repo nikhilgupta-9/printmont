@@ -1,12 +1,21 @@
 <?php
 session_start();
 require_once(__DIR__ . '/config/database.php');
+require_once(__DIR__ . '/controllers/AuthController.php');
 require_once(__DIR__ . '/controllers/ProductController.php');
 require_once(__DIR__ . '/controllers/CategoryController.php');
 
 // Create database connection
 $database = new Database();
 $db = $database->getConnection();
+
+// ── Auth check (must happen before any HTML output, otherwise a redirect
+//    here fails with "headers already sent" and leaves a broken half page) ──
+$auth = new AuthController($db);
+if (!$auth->isLoggedIn()) {
+    header('Location: index.php');
+    exit;
+}
 
 if (!isset($_GET['id']) || empty($_GET['id'])) {
     header('Location: view-products.php');

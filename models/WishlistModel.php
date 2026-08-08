@@ -26,7 +26,7 @@ class WishlistModel {
     public function getWishlist(int $customerId): array {
         return $this->db->fetchAll(
             "SELECT wi.id, wi.product_id, wi.created_at,
-                    p.name, p.slug, p.price, p.regular_price, p.offer_price, p.discount_price,
+                    p.name, p.product_slug AS slug, p.price, p.regular_price, p.offer_price, p.discount_price,
                     p.stock_quantity, p.status AS product_status,
                     (SELECT image_url FROM product_images pi
                       WHERE pi.product_id = p.id

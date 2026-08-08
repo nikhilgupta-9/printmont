@@ -1,4 +1,4 @@
-# Zip and Archive files (Jo galti se commit ho jaati hain)
+# Zip and archive files
 *.zip
 *.tar.gz
 *.rar
@@ -9,15 +9,17 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 
-# IDE / Editor configuration folders
+# IDE / Editor configuration
 .vscode/
 .idea/
 
-# Environment / Secret files (Agar future me use karo to credentials leak na hon)
+# Environment / Secret files
 .env
-.env.local
+.env.*
+!.env.example
 
-# Node modules (Agar npx ya node use ho raha ho)
+# Node modules
 node_modules/
 
+# Config / local configuration
 .config/

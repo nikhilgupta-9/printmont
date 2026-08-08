@@ -1,11 +1,20 @@
 <?php
 session_start();
 require_once(__DIR__ . '/config/database.php');
+require_once(__DIR__ . '/controllers/AuthController.php');
 require_once(__DIR__ . '/controllers/CategoryController.php');
 require_once(__DIR__ . '/controllers/ProductController.php');
 
 $database = new Database();
 $db       = $database->getConnection();
+
+// ── Auth check (must happen before any HTML output, otherwise a redirect
+//    here fails with "headers already sent" and leaves a broken half page) ──
+$auth = new AuthController($db);
+if (!$auth->isLoggedIn()) {
+    header('Location: index.php');
+    exit;
+}
 
 $productController = new ProductController($db);
 $categoryCtrl      = new CategoryController($db);
@@ -159,7 +168,7 @@ function esc($v)              { return htmlspecialchars($v ?? '', ENT_QUOTES); }
                 </div>
 
                 <?php if ($error_message): ?>
-                    <div class="alert alert-danger alert-dismissible">
+                    <div class="alert alert-danger alert-dismissible p-2">
                         <?php echo htmlspecialchars($error_message); ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>

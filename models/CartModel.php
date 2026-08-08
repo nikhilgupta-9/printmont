@@ -27,8 +27,8 @@ class CartModel {
     public function getCart(int $customerId): array {
         return $this->db->fetchAll(
             "SELECT ci.id, ci.product_id, ci.quantity, ci.attributes, ci.created_at,
-                    p.name, p.slug, p.price, p.regular_price, p.offer_price, p.discount_price,
-                    p.stock_quantity, p.status AS product_status, p.min_quantity,
+                    p.name, p.product_slug AS slug, p.price, p.regular_price, p.offer_price, p.discount_price,
+                    p.stock_quantity, p.status AS product_status, p.minimum_quantity AS min_quantity,
                     (SELECT image_url FROM product_images pi
                       WHERE pi.product_id = p.id
                       ORDER BY pi.is_primary DESC, pi.display_order ASC LIMIT 1) AS image_url
