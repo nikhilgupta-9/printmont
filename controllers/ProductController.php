@@ -39,10 +39,23 @@ class ProductController
 
     private function formatProductForApi($product)
     {
-        // Get base URL for absolute image paths
-        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+        // Get base URL for absolute image paths.
+        // Local XAMPP has no trusted cert for "localhost", so force http there
+        // regardless of the protocol this particular request arrived on
+        // (a browser can end up hitting https://localhost due to stale HSTS
+        // from an unrelated local project) — otherwise image URLs come out
+        // https and silently fail to load.
         $host = $_SERVER['HTTP_HOST'];
-        $basePath = dirname(dirname($_SERVER['SCRIPT_NAME']));
+        $isLocalHost = strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false;
+        $protocol = (!$isLocalHost && isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
+        // Anchor to the app root (the segment before "/api/") instead of counting
+        // folder levels via dirname() — that assumed every caller lived exactly
+        // one level under /api/, which broke for scripts nested deeper (e.g.
+        // api/products/products.php), producing image URLs with a stray extra
+        // "/api/" segment that 404'd.
+        $scriptDir = dirname($_SERVER['SCRIPT_NAME']);
+        $apiPos = strpos($scriptDir, '/api');
+        $basePath = $apiPos !== false ? substr($scriptDir, 0, $apiPos) : dirname(dirname($_SERVER['SCRIPT_NAME']));
         $baseUrl = $protocol . "://" . $host . $basePath . "/";
 
         // Format images with full URLs
@@ -113,39 +126,39 @@ class ProductController
             'offer_price' => $product['offer_price'] ? (float) $product['offer_price'] : null,
             'stock_quantity' => (int) $product['stock_quantity'],
             'sku' => $product['sku'],
-            'slug' => $product['slug'] ?? null,
+            'slug' => $product['product_slug'] ?? null,
             'status' => $product['status'],
             'featured' => (bool) $product['featured'],
             'our_bestseller' => (bool) ($product['our_bestseller'] ?? false),
             'top_rated' => (bool) ($product['top_rated'] ?? false),
             'top_deal' => (bool) ($product['top_deal'] ?? false),
-            'min_quantity' => (int) ($product['min_quantity'] ?? 1),
+            'min_quantity' => (int) ($product['minimum_quantity'] ?? 1),
             'out_of_stock_status' => $product['out_of_stock_status'] ?? 'in_stock',
-            'show_left_quantity' => (bool) ($product['show_left_quantity'] ?? false),
+            'show_left_quantity' => (bool) ($product['show_quantity'] ?? false),
             'show_help_button' => (bool) ($product['show_help_button'] ?? false),
             'show_bulk_form' => (bool) ($product['show_bulk_form'] ?? false),
-            'customization_label_status' => (bool) ($product['customization_label_status'] ?? false),
-            'customization_data' => !empty($product['customization_data']) ? json_decode($product['customization_data'], true) : [],
-            'size_status' => (bool) ($product['size_status'] ?? false),
-            'sizes' => !empty($product['sizes']) ? json_decode($product['sizes'], true) : [],
-            'colors' => !empty($product['colors']) ? json_decode($product['colors'], true) : [],
+            'customization_label_status' => (bool) ($product['show_customization_label'] ?? false),
+            'customization_data' => !empty($product['customization_fields']) ? json_decode($product['customization_fields'], true) : [],
+            'size_status' => (bool) ($product['show_sizes'] ?? false),
+            'sizes' => !empty($product['size_attributes']) ? json_decode($product['size_attributes'], true) : [],
+            'colors' => !empty($product['color_attributes']) ? json_decode($product['color_attributes'], true) : [],
             'color_images' => !empty($product['color_images']) ? json_decode($product['color_images'], true) : [],
-            'materials' => !empty($product['materials']) ? json_decode($product['materials'], true) : [],
-            'lamination' => !empty($product['lamination']) ? json_decode($product['lamination'], true) : [],
-            'orientation' => !empty($product['orientation']) ? json_decode($product['orientation'], true) : [],
+            'materials' => !empty($product['material_attributes']) ? json_decode($product['material_attributes'], true) : [],
+            'lamination' => !empty($product['lamination_attributes']) ? json_decode($product['lamination_attributes'], true) : [],
+            'orientation' => !empty($product['orientation_attributes']) ? json_decode($product['orientation_attributes'], true) : [],
             'printing_location' => !empty($product['printing_location']) ? json_decode($product['printing_location'], true) : [],
-            'bulk_order_pricing' => !empty($product['bulk_order_pricing']) ? json_decode($product['bulk_order_pricing'], true) : [],
-            'quantity_pricing' => !empty($product['quantity_pricing']) ? json_decode($product['quantity_pricing'], true) : [],
+            'bulk_order_pricing' => !empty($product['bulk_price_variance']) ? json_decode($product['bulk_price_variance'], true) : [],
+            'quantity_pricing' => !empty($product['quantity_price_breaks']) ? json_decode($product['quantity_price_breaks'], true) : [],
             'shipping_method_status' => (bool) ($product['shipping_method_status'] ?? false),
-            'local_shipping_price' => (float) ($product['local_shipping_price'] ?? 0),
-            'regional_shipping_price' => (float) ($product['regional_shipping_price'] ?? 0),
-            'national_shipping_price' => (float) ($product['national_shipping_price'] ?? 0),
-            'regional_shipping_msg' => $product['regional_shipping_msg'] ?? '',
-            'national_shipping_msg' => $product['national_shipping_msg'] ?? '',
-            'cancel_status' => $product['cancel_status'] ?? 'yes',
-            'cancel_type' => $product['cancel_type'] ?? 'hour',
-            'cancel_value' => (int) ($product['cancel_value'] ?? 24),
-            'cod_status' => $product['cod_status'] ?? 'yes',
+            'local_shipping_price' => (float) ($product['local_shipping_charge'] ?? 0),
+            'regional_shipping_price' => (float) ($product['regional_shipping_charge'] ?? 0),
+            'national_shipping_price' => (float) ($product['national_shipping_charge'] ?? 0),
+            'regional_shipping_msg' => $product['regional_shipping_message'] ?? '',
+            'national_shipping_msg' => $product['national_shipping_message'] ?? '',
+            'cancel_status' => !empty($product['cancel_available'] ?? 1) ? 'yes' : 'no',
+            'cancel_type' => $product['cancel_type'] ?? 'hours',
+            'cancel_value' => (int) ($product['cancel_time'] ?? 24),
+            'cod_status' => !empty($product['cod_available'] ?? 1) ? 'yes' : 'no',
             'addon_product_ids' => !empty($product['addon_product_ids']) ? json_decode($product['addon_product_ids'], true) : [],
             'meta_title' => $product['meta_title'] ?? '',
             'meta_keywords' => $product['meta_keywords'] ?? '',
@@ -1116,7 +1129,11 @@ class ProductController
     {
         try {
             $products = $this->productModel->getTopDealByCategoriesProducts();
-            return ['success' => true, 'data' => $products];
+            $formattedProducts = [];
+            foreach ($products as $product) {
+                $formattedProducts[] = $this->formatProductForApi($product);
+            }
+            return ['success' => true, 'data' => $formattedProducts];
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }

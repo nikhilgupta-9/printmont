@@ -239,6 +239,57 @@ class BlogPostModel {
         return $data;
     }
 
-    
+    // Get post by slug
+    public function getPostBySlug($slug) {
+        $slug = $this->conn->real_escape_string($slug);
+
+        $query = "SELECT p.*, c.name AS category_name
+                  FROM blog_posts p
+                  LEFT JOIN blog_categories c ON p.category_id = c.id
+                  WHERE p.slug = '$slug' AND p.is_active = 1";
+
+        $result = $this->conn->query($query);
+        return $result->fetch_assoc();
+    }
+
+    // Get most recently published posts
+    public function getRecentPosts($limit = 5) {
+        $limit = intval($limit);
+
+        $query = "SELECT p.*, c.name AS category_name
+                  FROM blog_posts p
+                  LEFT JOIN blog_categories c ON p.category_id = c.id
+                  WHERE p.is_active = 1 AND p.status = 'published'
+                  ORDER BY p.created_at DESC
+                  LIMIT $limit";
+
+        $result = $this->conn->query($query);
+
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+        return $data;
+    }
+
+    // Get most-viewed posts
+    public function getPopularPosts($limit = 5) {
+        $limit = intval($limit);
+
+        $query = "SELECT p.*, c.name AS category_name
+                  FROM blog_posts p
+                  LEFT JOIN blog_categories c ON p.category_id = c.id
+                  WHERE p.is_active = 1 AND p.status = 'published'
+                  ORDER BY p.views DESC
+                  LIMIT $limit";
+
+        $result = $this->conn->query($query);
+
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+        return $data;
+    }
 }
 ?>

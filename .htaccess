@@ -1,6 +1,12 @@
 # In your root .htaccess (if any)
 RewriteEngine On
 
+# Let requests under /api/ 404 normally instead of falling through to the
+# admin login front controller (which was causing infinite redirect loops
+# for missing product images when an admin session cookie was present).
+RewriteCond %{REQUEST_URI} ^/printmont/api/
+RewriteRule ^ - [L]
+
 # Handle front controller
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

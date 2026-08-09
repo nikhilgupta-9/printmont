@@ -37,7 +37,18 @@ class ApiBannerController {
 
         $data = $this->model->getBySectionKey($key);
         if (empty($data)) {
-            $this->error('Section not found or has no active banners', 404);
+            // A page layout can reference a section key that hasn't had any
+            // banners configured yet (e.g. an admin added the slot but hasn't
+            // uploaded banners for it). That's a normal empty state, not an
+            // error — respond 200 with an empty banner list so the frontend
+            // just renders nothing instead of logging a 404.
+            $this->ok([
+                'section_key'     => $key,
+                'label'           => null,
+                'columns_per_row' => null,
+                'is_slider'       => false,
+                'banners'         => [],
+            ]);
         }
 
         $this->ok($this->formatSection($data));
