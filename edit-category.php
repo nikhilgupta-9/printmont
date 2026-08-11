@@ -25,12 +25,14 @@ function uploadEditImg($fileKey, $subdir, $existing = '') {
     $file = $_FILES[$fileKey];
     $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     if (!in_array($ext, ['jpg','jpeg','png','gif','webp']) || $file['size'] > 5*1024*1024) return $existing;
-    $dir = __DIR__ . "/uploads/category/{$subdir}/";
+    $subdir = trim($subdir, '/');
+    $prefix = $subdir !== '' ? "{$subdir}/" : '';
+    $dir = __DIR__ . "/uploads/category/{$prefix}";
     if (!is_dir($dir)) mkdir($dir, 0755, true);
     // Remove old file
     if ($existing && file_exists(__DIR__ . '/' . $existing)) @unlink(__DIR__ . '/' . $existing);
     $fn = uniqid() . '_' . time() . '.' . $ext;
-    return move_uploaded_file($file['tmp_name'], $dir . $fn) ? "uploads/category/{$subdir}/{$fn}" : $existing;
+    return move_uploaded_file($file['tmp_name'], $dir . $fn) ? "uploads/category/{$prefix}{$fn}" : $existing;
 }
 
 function removeImg($col, $category) {
@@ -52,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Handle each image: remove > upload > keep
+    $legacy_image       = isset($_POST['remove_image'])              ? removeImg('image',              $category) : uploadEditImg('image',              '',           $category['image'] ?? '');
     $desktop_menu_image = isset($_POST['remove_desktop_menu_image']) ? removeImg('desktop_menu_image', $category) : uploadEditImg('desktop_menu_image', 'menu',       $category['desktop_menu_image'] ?? '');
     $desktop_image      = isset($_POST['remove_desktop_image'])      ? removeImg('desktop_image',      $category) : uploadEditImg('desktop_image',      'desktop',    $category['desktop_image'] ?? '');
     $desktop_bg_image   = isset($_POST['remove_desktop_bg_image'])   ? removeImg('desktop_bg_image',   $category) : uploadEditImg('desktop_bg_image',   'bg',         $category['desktop_bg_image'] ?? '');
@@ -66,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'is_featured'          => (int)($_POST['is_featured'] ?? 0),
         'icon'                 => trim($_POST['icon'] ?? ''),
         'display_order'        => (int)($_POST['display_order'] ?? 0),
+        'image'                => $legacy_image,
         // Desktop menu
         'desktop_menu_status'  => $_POST['desktop_menu_status'] ?? 'show',
         'desktop_menu_order'   => (int)($_POST['desktop_menu_order'] ?? 0),
@@ -229,13 +233,13 @@ function currentImgBlock($col, $label, $category) {
                                 <label class="form-label">Description</label>
                                 <textarea class="form-control" name="description" rows="2"><?php echo htmlspecialchars($category['description']); ?></textarea>
                             </div>
-                            <?php if (!empty($category['image'])): ?>
-                            <div class="alert alert-info p-2">
-                                <small><strong>Legacy Image (old column):</strong></small><br>
-                                <img src="<?php echo htmlspecialchars($category['image']); ?>" style="max-height:80px;border-radius:4px;margin-top:4px;" onerror="this.style.display='none'">
-                                <p class="mb-0 mt-1 small text-muted">This is the old image. Upload a new Desktop Category Image below to replace it.</p>
+                            <div class="mb-3">
+                                <label class="form-label">Legacy Image <small class="text-muted">(old column)</small></label>
+                                <?php currentImgBlock('image', 'Legacy Image', $category); ?>
+                                <input type="file" class="form-control mt-1" name="image" accept="image/*" onchange="previewImg(this,'prevLegacyImg')">
+                                <img id="prevLegacyImg" class="image-preview">
+                                <small class="text-muted">Max 5 MB · JPG/PNG/GIF/WebP</small>
                             </div>
-                            <?php endif; ?>
                         </div>
                     </div>
 

@@ -17,7 +17,7 @@ class ApiMenuModel {
         return $this->db->fetchAll(
             "SELECT * FROM {$this->table}
              WHERE status = 'active' AND {$showCol} = 'yes'
-             ORDER BY {$orderCol} ASC, display_order ASC"
+             ORDER BY {$orderCol} ASC, display_order ASC limit 12"
         );
     }
 
