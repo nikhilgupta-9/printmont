@@ -44,6 +44,12 @@ export const CheckoutProvider = ({ children }) => {
   }, []);
 
   const fetchCartItems = async () => {
+    // cart-api.php requires a logged-in user (no guest carts) — skip the call
+    // entirely when there's no token instead of firing a request that's
+    // guaranteed to 401.
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
     // If local cart already has items, do not overwrite with backend empty state
     const saved = localStorage.getItem('printmont_cart');
     if (saved) {
@@ -54,11 +60,10 @@ export const CheckoutProvider = ({ children }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
       const response = await fetch(`${API_URL}/cart-api.php`, { headers });
       if (response.ok) {
         const data = await response.json();

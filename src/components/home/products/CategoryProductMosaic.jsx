@@ -81,7 +81,7 @@ export default function CategoryProductMosaic({
             const mappedProduct = {
               id: item.id || item.productId || "",
               title: item.title || item.name || "",
-              img: item.image || item.img || "/default-img.jpg",
+              img: item.image || item.img || item.primary_image || item.thumbnail || (item.images && item.images[0]?.image_url) || "/default-img.jpg",
               price: (item.price !== undefined && item.price !== null) ? item.price : null,
               originalPrice: item.originalPrice || null,
               discount: item.discount || "",
@@ -194,7 +194,7 @@ export default function CategoryProductMosaic({
                   const mappedProduct = {
                     id: item.id || "",
                     title: item.title || item.name || "",
-                    img: item.image || item.img || "/default-img.jpg",
+                    img: item.image || item.img || item.primary_image || item.thumbnail || (item.images && item.images[0]?.image_url) || "/default-img.jpg",
                     price: (item.price !== undefined && item.price !== null) ? item.price : null,
                     originalPrice: item.originalPrice || null,
                     discount: item.discount || "",

@@ -67,9 +67,14 @@ export const API_ENDPOINTS = {
 
   // Categories & Layout
   CATEGORIES: `${BASE_URL}/category-api.php`,
+  // Single category lookup by slug (used to resolve a URL slug to its numeric id).
+  CATEGORY_BY_SLUG: (slug) => `${BASE_URL}/category_api.php?action=subcategories}`,
+  // Level-2 (sub) categories, used for the plain image-grid section — pass a
+  // parentId to scope to one category's children, omit it for the flat sitewide list.
+  SUBCATEGORIES: (parentId) => `${BASE_URL}/category_api.php?action=subcategories${parentId ? `&parent_id=${parentId}` : ''}`,
   // Home page category bar (icons, shown_on_home-flagged, split desktop/mobile) vs the
   // persistent inner-page top menu (text-only, already pruned server-side). See menu_api.php.
-  HOME_MENU: `${BASE_URL}/menu_api.php?type=home`,
+  HOME_MENU: `${BASE_URL}/menu_api.php?type=home&device=desktop`,
   INNER_MENU: `${BASE_URL}/menu_api.php?type=inner`,
   HOME_LAYOUT: (target = 'desktop') => `${BACKEND_URL}/home-layout-api.php?target=${target}`,
 

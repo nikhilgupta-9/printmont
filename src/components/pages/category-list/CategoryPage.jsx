@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { ROOT_URL } from "../../../config/apiEndpoints";
 
 // ── Migrated homepage components ──────────
@@ -159,6 +159,11 @@ const CategoryInfoTextField = ({ initialText }) => {
 };
 
 const CategoryPage = () => {
+  // Route is /category/:id, but every <Categories>/<CategoryGridSection> link
+  // in this app builds URLs from a category's slug, not its numeric id — so
+  // this param is actually a slug (e.g. "eco-friendly-gifts").
+  const { id: categorySlug } = useParams();
+
   return (
     <div className="category-page">
 
@@ -189,7 +194,7 @@ const CategoryPage = () => {
 
           {/* 4.5. Categories Grid Section */}
           <div className="cp-card-section">
-            <CategoryGridSection />
+            <CategoryGridSection categorySlug={categorySlug} />
           </div>
 
 

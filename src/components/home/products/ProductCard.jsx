@@ -28,10 +28,14 @@ export default function ProductCard({
       {/* Product Image Area with Stable Square Aspect Ratio */}
       <div className="product-card-img-wrapper position-relative w-100 bg-white">
         <img
-          src={product.img || "/default-img.jpg"}
+          src={product.img  ||"/default-img.jpg"}
           alt={product.title}
           className="product-card-img zoom-hover"
           loading="lazy"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "/default-img.jpg";
+          }}
         />
         
         {/* Product Badges (e.g., Best Seller, Top Rated, Premium) */}
