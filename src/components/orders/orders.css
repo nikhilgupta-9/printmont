@@ -223,3 +223,193 @@
         z-index: 10;
     }
 }
+/* ============================================================
+   Three-step checkout (Address -> Order Summary -> Payment)
+   Shared form + panel styling for the mobile checkout screens.
+   ============================================================ */
+
+.checkout-form-heading {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #1a1a1a;
+    margin: 0 0 14px;
+}
+
+.checkout-group-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 8px;
+}
+
+/* Labels live inside the controls as placeholders, so the boxes are
+   uniform and taller than Bootstrap's default. */
+.checkout-input.form-control,
+.checkout-input.form-select {
+    border: 1px solid #b6bcc4;
+    border-radius: 3px;
+    padding: 12px 12px;
+    font-size: 13px;
+    color: #1a1a1a;
+    background-color: #fff;
+    box-shadow: none;
+}
+
+.checkout-input.form-control::placeholder {
+    color: #7c848d;
+    opacity: 1;
+}
+
+.checkout-input.form-control:focus,
+.checkout-input.form-select:focus {
+    border-color: #0b53a1;
+    box-shadow: 0 0 0 2px rgba(11, 83, 161, 0.12);
+}
+
+.checkout-input.form-select:invalid,
+.checkout-input.form-select option[value=""] {
+    color: #7c848d;
+}
+
+.checkout-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 0;
+    margin: 0;
+    min-height: auto;
+}
+
+.checkout-check .form-check-input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    flex: 0 0 auto;
+    border: 1px solid #6c757d;
+    border-radius: 2px;
+}
+
+.checkout-check .form-check-input[type="radio"] {
+    border-radius: 50%;
+}
+
+.checkout-check .form-check-input:checked {
+    background-color: #0b53a1;
+    border-color: #0b53a1;
+}
+
+.checkout-check .form-check-label {
+    font-size: 14px;
+    color: #1a1a1a;
+    margin: 0;
+    cursor: pointer;
+}
+
+/* Primary action. Full width on mobile, inline on desktop. */
+.checkout-cta {
+    background-color: #0b53a1;
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 0;
+    padding: 14px 28px;
+}
+
+.checkout-cta:hover,
+.checkout-cta:focus {
+    background-color: #09447f;
+    color: #fff;
+}
+
+.checkout-bottom-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1030;
+    background: #fff;
+    border-top: 1px solid #e3e6ea;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Grey band that frames PRICE DETAILS on mobile, per the design. */
+.checkout-panel-band {
+    background-color: #e0e0e0;
+}
+
+.checkout-panel-title {
+    color: #0b53a1;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+}
+
+/* "Deliver to" summary shown above the order summary step. */
+.deliver-to-bar {
+    background: #fff;
+    border-bottom: 1px solid #e3e6ea;
+    padding: 10px 12px;
+}
+
+.deliver-to-bar .addr-type {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: #eef1f5;
+    color: #5b6673;
+    padding: 2px 6px;
+    border-radius: 2px;
+}
+
+.deliver-to-bar .change-link {
+    color: #0b53a1;
+    font-size: 12px;
+    font-weight: 700;
+    background: none;
+    border: 1px solid #0b53a1;
+    border-radius: 2px;
+    padding: 2px 10px;
+}
+
+/* Payment step accordion */
+.pay-method {
+    border-bottom: 1px solid #e8ebee;
+    background: #fff;
+}
+
+.pay-method__head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    background: none;
+    border: 0;
+    text-align: left;
+    padding: 14px 12px;
+}
+
+.pay-method__title {
+    font-size: 14px;
+    color: #1a1a1a;
+    font-weight: 500;
+}
+
+.pay-method__sub {
+    font-size: 11px;
+    color: #7c848d;
+}
+
+.pay-offer-banner {
+    background: #eaf7ee;
+    border: 1px solid #cfe9d8;
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #1a1a1a;
+}
