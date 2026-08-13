@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { IoSearch } from "react-icons/io5";
+import { BsBagX } from "react-icons/bs";
 import { Spinner, Alert } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
+import './orders.css';
 const filterOptions = {
   status: ['On the way', 'Delivered', 'Cancelled', 'Returned'],
   time: ['Last 30 days', '2024', '2023', '2022', '2021', 'Older']
@@ -50,6 +53,7 @@ const OrderCard = ({ order }) => {
 
 const Orders = () => {
   const { user, token } = useAuth();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -108,6 +112,12 @@ const Orders = () => {
     return searchString.includes(searchTerm.toLowerCase());
   });
 
+  // Filters and search only make sense once there is something to filter.
+  // Deliberately keyed off `orders`, not `filteredOrders`: when a search
+  // matches nothing there are still orders, and hiding the box would strand
+  // the user with no way to clear the term they just typed.
+  const hasOrders = orders.length > 0;
+
   return (
     <div className="container-fluid pt-3 custom-bg">
       <nav aria-label="breadcrumb" className="mb-3">
@@ -119,14 +129,17 @@ const Orders = () => {
       </nav>
 
       {/* Mobile Filter Button */}
-      <div className="d-md-none d-flex justify-content-end mb-2">
-        <button className="btn btn-outline-secondary btn-sm" onClick={() => setShowFilterModal(true)}>
-          Filters
-        </button>
-      </div>
+      {hasOrders && (
+        <div className="d-md-none d-flex justify-content-end mb-2">
+          <button className="btn btn-outline-secondary btn-sm" onClick={() => setShowFilterModal(true)}>
+            Filters
+          </button>
+        </div>
+      )}
 
       <div className="row">
         {/* Desktop Sidebar Filters */}
+        {hasOrders && (
         <aside className="col-md-3 d-none d-md-block mb-4">
           <div className="border rounded p-3 bg-white">
             <h5>Filters</h5>
@@ -164,27 +177,30 @@ const Orders = () => {
             </div>
           </div>
         </aside>
+        )}
 
-        {/* Main Orders Area */}
-        <main className="col-md-9">
-          <form className="d-flex mb-3" onSubmit={(e) => e.preventDefault()}>
-            <div className='d-flex w-100 justify-content-center align-items-center border border-sm-0 bg-white border-bd rounded'>
+        {/* Main Orders Area — spans the full row once the sidebar is hidden. */}
+        <main className={hasOrders ? 'col-md-9' : 'col-12'}>
+          {hasOrders && (
+            <form className="d-flex mb-3" onSubmit={(e) => e.preventDefault()}>
+              <div className='d-flex w-100 justify-content-center align-items-center border border-sm-0 bg-white border-bd rounded'>
                 <IoSearch className='text-muted ms-2 d-flex d-lg-none' size={25}/>
 
                 <input
-              type="text"
-              className="form-control  px-2 rounded-0 rounded-start border-0"
-              placeholder="Search your orders here"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div className='d-none d-sm-none d-lg-flex'>
-                <button className="btn btn-primary rounded-0 rounded-end px-3 text-nowrap d-flex align-items-center justify-content-center gap-1" type="submit">
-              <IoSearch size={18}/> <span>Search Orders</span>
-            </button>
-            </div>
-            </div>
-          </form>
+                  type="text"
+                  className="form-control  px-2 rounded-0 rounded-start border-0"
+                  placeholder="Search your orders here"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <div className='d-none d-sm-none d-lg-flex'>
+                  <button className="btn btn-primary rounded-0 rounded-end px-3 text-nowrap d-flex align-items-center justify-content-center gap-1" type="submit">
+                    <IoSearch size={18}/> <span>Search Orders</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
 
           {loading ? (
             <div className="text-center p-5">
@@ -198,9 +214,29 @@ const Orders = () => {
             filteredOrders.map((order, idx) => (
               <OrderCard key={order.id || idx} order={order} />
             ))
+          ) : orders.length ? (
+            /* There are orders, the search just did not match any of them —
+               offering "start shopping" here would be the wrong exit. */
+            <div className="orders-empty bg-white text-center p-5 my-3 shadow-sm rounded">
+              <IoSearch size={44} className="text-secondary mb-3" />
+              <h5 className="fw-bold text-dark mb-2">No matching orders</h5>
+              <p className="text-muted mb-4">
+                Nothing matched &ldquo;{searchTerm}&rdquo;. Try a different search.
+              </p>
+              <button className="btn btn-outline-secondary" onClick={() => setSearchTerm('')}>
+                Clear search
+              </button>
+            </div>
           ) : (
-            <div className="text-center p-5 text-muted">
-                <p>No orders found.</p>
+            <div className="orders-empty bg-white text-center p-5 my-3 shadow-sm rounded">
+              <BsBagX size={44} className="text-secondary mb-3" />
+              <h5 className="fw-bold text-dark mb-2">No Orders Yet</h5>
+              <p className="text-muted mb-4">
+                You haven&rsquo;t placed any orders. Start shopping and they will show up here.
+              </p>
+              <button className="btn checkout-cta" onClick={() => navigate('/allproducts')}>
+                Start Shopping
+              </button>
             </div>
           )}
         </main>

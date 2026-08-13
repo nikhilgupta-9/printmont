@@ -6,7 +6,9 @@ export const CheckoutContext = createContext();
 export const useCheckout = () => useContext(CheckoutContext);
 
 export const CheckoutProvider = ({ children }) => {
-  const [checkoutStep, setCheckoutStep] = useState(1);
+  // 0 is the cart, which is not one of the numbered steps. Checkout proper is
+  // 1 Address -> 2 Order Summary -> 3 Payment.
+  const [checkoutStep, setCheckoutStep] = useState(0);
   const [cartItems, setCartItems] = useState(() => {
     try {
       const saved = localStorage.getItem('printmont_cart');
@@ -31,6 +33,9 @@ export const CheckoutProvider = ({ children }) => {
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [useCashCoins, setUseCashCoins] = useState(false);
   const [couponApplied, setCouponApplied] = useState(false);
+  // Entered from the cart's "Enter Delivery Pincode" button and used to
+  // pre-fill the pincode on the address step.
+  const [deliveryPincode, setDeliveryPincode] = useState('');
   
   // Static backend config
   const API_URL = BASE_URL;
@@ -181,7 +186,21 @@ export const CheckoutProvider = ({ children }) => {
     };
   }, [cartItems, couponApplied, useCashCoins]);
 
-  // Final Order Submission
+  // Empties the cart itself. Saved-for-later items are deliberately left
+  // alone — they were never part of the order.
+  const clearCart = () => {
+    setCartItems([]);
+    setCouponApplied(false);
+    setUseCashCoins(false);
+  };
+
+  /**
+   * Final order submission.
+   *
+   * Returns a result object rather than reporting to the user itself: the
+   * caller owns the UI, and it needs to know whether the order actually
+   * landed before navigating away or showing a success message.
+   */
   const submitOrder = async () => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('user_token');
@@ -201,17 +220,28 @@ export const CheckoutProvider = ({ children }) => {
           totalAmount: cartTotals.totalPayable
         })
       });
-      
+
       const data = await response.json();
-      if (data.success) {
-        alert("Order Placed Successfully! Order ID: " + (data.order_id || data.id || "Success"));
-        // Reset cart or redirect to success page
-      } else {
-        alert("Failed to place order: " + (data.error || data.message || "Unknown error"));
+
+      if (!response.ok || !data.success) {
+        return {
+          success: false,
+          error: data.error || data.message || 'Could not place your order.',
+        };
       }
+
+      // The cart has become an order, so it must not survive the checkout.
+      clearCart();
+
+      return {
+        success: true,
+        orderId: data.order_id ?? data.id ?? null,
+        orderNumber: data.order_number ?? null,
+        grandTotal: data.grand_total ?? null,
+      };
     } catch (error) {
       console.error("Order submission error:", error);
-      alert("Error connecting to checkout server.");
+      return { success: false, error: 'Could not reach the checkout server.' };
     }
   };
 
@@ -226,11 +256,12 @@ export const CheckoutProvider = ({ children }) => {
       paymentMethod, setPaymentMethod,
       useCashCoins, setUseCashCoins,
       couponApplied, setCouponApplied,
+      deliveryPincode, setDeliveryPincode,
       PRINTMONT_COINS_BALANCE,
       
       // Actions
       addToCart, updateQuantity, removeItem, saveForLater, moveToCart,
-      submitOrder,
+      clearCart, submitOrder,
       
       // Computed
       cartTotals

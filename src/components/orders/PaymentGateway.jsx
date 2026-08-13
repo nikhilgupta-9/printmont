@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import {
   BsChevronDown, BsChevronUp, BsPhone, BsCreditCard2Front,
-  BsBank, BsCashCoin, BsGift, BsTagFill,
+  BsBank, BsCashCoin, BsGift, BsTagFill, BsListUl,
 } from 'react-icons/bs';
+import toast from 'react-hot-toast';
 import PriceDetails from './PriceDetails';
 import TrustBar from './TrustBar';
 import { useCheckout } from '../../context/CheckoutContext';
+
+/** Share of the total taken up front when paying cash on delivery. */
+const COD_ADVANCE_RATE = 0.3;
 
 const PAYMENT_OPTIONS = [
   {
     id: 'upi',
     title: 'UPI',
-    subtitle: null,
+    subtitle: 'Pay by any UPI app',
+    offers: 'Save upto ₹50 • 5 offers available',
     Icon: BsPhone,
   },
   {
@@ -24,8 +29,8 @@ const PAYMENT_OPTIONS = [
   {
     id: 'emi',
     title: 'EMI',
-    subtitle: 'Credit Card EMI',
-    Icon: BsBank,
+    subtitle: 'Get Debit and Cardless EMIs on HDFC Bank',
+    Icon: BsListUl,
   },
   {
     id: 'netbanking',
@@ -42,8 +47,11 @@ const PAYMENT_OPTIONS = [
 ];
 
 /**
- * Step 3 of checkout. One accordion row per method; only the open one shows
- * its form. The order is only submitted from the pay action.
+ * Step 4 of checkout.
+ *
+ * Desktop follows the design's split: the methods list on the left, the chosen
+ * method's form in a card on the right. Mobile keeps the accordion, with the
+ * same form rendered inline under the open row.
  */
 const PaymentGateway = ({ onPaymentSuccess }) => {
   const { paymentMethod, setPaymentMethod, cartTotals, submitOrder } = useCheckout();
@@ -52,25 +60,112 @@ const PaymentGateway = ({ onPaymentSuccess }) => {
   const [submitting, setSubmitting] = useState(false);
 
   const payable = cartTotals.totalPayable.toLocaleString('en-IN');
+  const codAdvance = Math.round(cartTotals.totalPayable * COD_ADVANCE_RATE).toLocaleString('en-IN');
 
   const handlePayment = async () => {
     if (submitting) return;
     setSubmitting(true);
     try {
-      await submitOrder();
+      const result = await submitOrder();
+
+      // Only leave the checkout once the order is genuinely placed; this used
+      // to navigate to the orders page even when submission had failed.
+      if (!result?.success) {
+        toast.error(result?.error || 'Could not place your order. Please try again.');
+        return;
+      }
+
+      const reference = result.orderNumber || result.orderId;
+      toast.success(
+        reference ? `Order #${reference} placed successfully` : 'Order placed successfully'
+      );
+
       if (onPaymentSuccess) onPaymentSuccess();
     } finally {
       setSubmitting(false);
     }
   };
 
+  const payLabel = (id) => {
+    if (submitting) return 'Placing order…';
+    return id === 'cod' ? 'Confirm Order' : `Pay ₹${payable}`;
+  };
+
+  // Rendered twice — in the right-hand card on desktop and inline under the
+  // open row on mobile — so ids and radio group names carry the variant to
+  // keep the two copies from colliding in the DOM.
+  const renderDetail = (id, variant) => {
+    if (id === 'upi') {
+      return (
+        <>
+          <div className="d-flex align-items-center mb-3">
+            <input
+              type="radio" id={`new-upi-${variant}`} name={`upi-option-${variant}`} defaultChecked
+              className="form-check-input mt-0 me-2 shadow-none"
+              style={{ width: '15px', height: '15px' }}
+            />
+            <label htmlFor={`new-upi-${variant}`} className="me-auto text-dark" style={{ fontSize: '13px' }}>
+              Add new UPI ID
+            </label>
+            <a href="#how-to-find" className="text-decoration-none fw-semibold text-end"
+              style={{ color: '#0b53a1', fontSize: '12px', lineHeight: 1.2 }}>
+              How to find?
+            </a>
+          </div>
+
+          <label htmlFor={`upi-id-${variant}`} className="d-block text-secondary mb-1" style={{ fontSize: '11px' }}>UPI ID</label>
+          <div className="d-flex gap-2 mb-3">
+            <input
+              id={`upi-id-${variant}`} type="text" placeholder="Enter your UPI ID"
+              className="form-control checkout-input"
+              value={upiId} onChange={(e) => setUpiId(e.target.value)}
+            />
+            <button type="button" className="pay-verify-btn">Verify</button>
+          </div>
+
+          <button
+            type="button"
+            className={`pay-pay-btn${upiId.trim() ? ' pay-pay-btn--ready' : ''}`}
+            onClick={handlePayment}
+            disabled={submitting}
+          >
+            {payLabel(id)}
+          </button>
+        </>
+      );
+    }
+
+    if (id === 'cod') {
+      return (
+        <>
+          <p className="text-dark mb-3" style={{ fontSize: '13px' }}>
+            Pay ₹{codAdvance} as advance and balance amount as Cash on delivery
+          </p>
+          <button type="button" className="pay-pay-btn pay-pay-btn--ready"
+            onClick={handlePayment} disabled={submitting}>
+            {payLabel(id)}
+          </button>
+        </>
+      );
+    }
+
+    return (
+      <button type="button" className="pay-pay-btn pay-pay-btn--ready"
+        onClick={handlePayment} disabled={submitting}>
+        {payLabel(id)}
+      </button>
+    );
+  };
+
+  const openOption = PAYMENT_OPTIONS.find((o) => o.id === paymentMethod);
+
   return (
     <div className="payment-step bg-white">
 
-      {/* Total, collapsible */}
+      {/* Total, collapsible — mobile only; desktop has the sidebar. */}
       <button
         type="button"
-        className="w-100 d-flex align-items-center justify-content-between bg-white border-0 border-bottom px-3 py-3"
+        className="d-md-none w-100 d-flex align-items-center justify-content-between bg-white border-0 border-bottom px-3 py-3"
         onClick={() => setShowTotal((v) => !v)}
         aria-expanded={showTotal}
       >
@@ -81,7 +176,7 @@ const PaymentGateway = ({ onPaymentSuccess }) => {
       </button>
 
       {showTotal && (
-        <div className="px-3 py-3 border-bottom bg-white">
+        <div className="d-md-none px-3 py-3 border-bottom bg-white">
           <PriceDetails
             itemCount={cartTotals.totalItems}
             totalPrice={cartTotals.originalTotalPrice}
@@ -89,14 +184,13 @@ const PaymentGateway = ({ onPaymentSuccess }) => {
             couponApplied={cartTotals.couponApplied}
             deliveryCharges={cartTotals.deliveryCharges}
             cashCoinsApplied={cartTotals.cashCoinsApplied}
-            step={4}
             isMobile
           />
         </div>
       )}
 
-      {/* Offer strip */}
-      <div className="px-3 py-3">
+      {/* Offer strip — mobile only, the design has no equivalent on desktop. */}
+      <div className="d-md-none px-3 py-3">
         <div className="pay-offer-banner d-flex align-items-center gap-2">
           <div className="flex-grow-1">
             <div className="fw-semibold">10% instant discount</div>
@@ -108,99 +202,66 @@ const PaymentGateway = ({ onPaymentSuccess }) => {
         </div>
       </div>
 
-      {/* Methods */}
-      <div className="payment-options border-top">
-        {PAYMENT_OPTIONS.map(({ id, title, subtitle, offers, Icon }) => {
-          const open = paymentMethod === id;
-          return (
-            <div key={id} className="pay-method">
-              <button
-                type="button"
-                className="pay-method__head"
-                onClick={() => setPaymentMethod(open ? null : id)}
-                aria-expanded={open}
-              >
-                <Icon size={17} className="text-secondary flex-shrink-0" />
-                <span className="flex-grow-1">
-                  <span className="pay-method__title d-block">{title}</span>
-                  {subtitle && <span className="pay-method__sub d-block">{subtitle}</span>}
-                  {offers && (
-                    <span className="d-block text-success fw-semibold" style={{ fontSize: '11px' }}>{offers}</span>
-                  )}
-                </span>
-                {open ? <BsChevronUp size={12} className="text-secondary" /> : <BsChevronDown size={12} className="text-secondary" />}
-              </button>
+      <div className="pay-split">
 
-              {open && id === 'upi' && (
-                <div className="px-3 pb-3">
-                  <div className="d-flex align-items-center mb-2">
-                    <input
-                      type="radio" id="new-upi" name="upi-option" defaultChecked
-                      className="form-check-input mt-0 me-2 shadow-none"
-                      style={{ width: '15px', height: '15px' }}
-                    />
-                    <label htmlFor="new-upi" className="me-auto text-dark" style={{ fontSize: '13px' }}>
-                      Add new UPI ID
-                    </label>
-                    <a href="#how-to-find" className="text-decoration-none fw-semibold" style={{ color: '#0b53a1', fontSize: '12px' }}>
-                      How to find?
-                    </a>
+        {/* Methods */}
+        <div className="pay-split__methods">
+          {PAYMENT_OPTIONS.map(({ id, title, subtitle, offers, Icon }) => {
+            const open = paymentMethod === id;
+            return (
+              <div key={id} className={`pay-method${open ? ' pay-method--open' : ''}`}>
+                <button
+                  type="button"
+                  className="pay-method__head"
+                  onClick={() => setPaymentMethod(open ? null : id)}
+                  aria-expanded={open}
+                >
+                  <Icon size={17} className="text-secondary flex-shrink-0 mt-1" />
+                  <span className="flex-grow-1">
+                    <span className="pay-method__title d-block">{title}</span>
+                    {subtitle && <span className="pay-method__sub d-block">{subtitle}</span>}
+                    {offers && (
+                      <span className="d-block text-success fw-semibold" style={{ fontSize: '11px' }}>{offers}</span>
+                    )}
+                  </span>
+                  {open
+                    ? <BsChevronUp size={12} className="text-secondary" />
+                    : <BsChevronDown size={12} className="text-secondary" />}
+                </button>
+
+                {/* Mobile accordion body. */}
+                {open && (
+                  <div className="d-lg-none px-3 pb-3">
+                    {renderDetail(id, 'mobile')}
                   </div>
+                )}
+              </div>
+            );
+          })}
 
-                  <label htmlFor="upi-id" className="d-block text-secondary mb-1" style={{ fontSize: '11px' }}>UPI ID</label>
-                  <div className="d-flex gap-2 mb-3">
-                    <input
-                      id="upi-id" type="text" placeholder="Enter your UPI ID"
-                      className="form-control checkout-input"
-                      value={upiId} onChange={(e) => setUpiId(e.target.value)}
-                    />
-                    <button type="button" className="btn text-white fw-semibold px-3"
-                      style={{ backgroundColor: '#0b53a1', borderRadius: '3px', fontSize: '13px' }}>
-                      Verify
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="btn w-100 text-white fw-semibold py-2"
-                    style={{ backgroundColor: upiId.trim() ? '#0b53a1' : '#8b8b8b', borderRadius: '2px', fontSize: '14px' }}
-                    onClick={handlePayment}
-                    disabled={submitting}
-                  >
-                    {submitting ? 'Placing order…' : `Pay ₹${payable}`}
-                  </button>
-                </div>
-              )}
-
-              {open && id !== 'upi' && (
-                <div className="px-3 pb-3">
-                  <button
-                    type="button"
-                    className="btn w-100 text-white fw-semibold py-2"
-                    style={{ backgroundColor: '#0b53a1', borderRadius: '2px', fontSize: '14px' }}
-                    onClick={handlePayment}
-                    disabled={submitting}
-                  >
-                    {submitting ? 'Placing order…' : id === 'cod' ? 'Confirm Order' : `Pay ₹${payable}`}
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Gift card */}
-        <div className="pay-method d-flex align-items-center gap-3 px-3 py-3">
-          <BsGift size={17} className="text-secondary flex-shrink-0" />
-          <span className="pay-method__title flex-grow-1">Have a Printmont Gift Card?</span>
-          <button type="button" className="btn btn-link p-0 text-decoration-none fw-semibold"
-            style={{ color: '#0b53a1', fontSize: '13px' }}>
-            Add
-          </button>
+          {/* Gift card */}
+          <div className="pay-method d-flex align-items-center gap-3 px-3 py-3">
+            <BsGift size={17} className="text-secondary flex-shrink-0" />
+            <span className="pay-method__title flex-grow-1">Have a Printmont Gift Card?</span>
+            <button type="button" className="btn btn-link p-0 text-decoration-none fw-semibold"
+              style={{ color: '#0b53a1', fontSize: '13px' }}>
+              Add
+            </button>
+          </div>
         </div>
+
+        {/* Desktop detail pane */}
+        <div className="pay-split__detail">
+          {openOption && (
+            <div className="pay-detail-card">
+              {renderDetail(openOption.id, 'desktop')}
+            </div>
+          )}
+        </div>
+
       </div>
 
-      {/* Price details */}
+      {/* Price details — mobile only. */}
       <div className="checkout-panel-band d-md-none mt-3">
         <div className="px-3 py-2 checkout-panel-title">PRICE DETAILS</div>
         <div className="px-3 pb-3">
@@ -212,7 +273,6 @@ const PaymentGateway = ({ onPaymentSuccess }) => {
               couponApplied={cartTotals.couponApplied}
               deliveryCharges={cartTotals.deliveryCharges}
               cashCoinsApplied={cartTotals.cashCoinsApplied}
-              step={4}
               isMobile
             />
           </div>
@@ -220,12 +280,6 @@ const PaymentGateway = ({ onPaymentSuccess }) => {
             <TrustBar />
           </div>
         </div>
-      </div>
-
-      <div className="d-none d-md-flex justify-content-end p-3 bg-white border-top">
-        <button className="btn checkout-cta" onClick={handlePayment} disabled={submitting}>
-          {submitting ? 'Placing order…' : 'Proceed to Pay'}
-        </button>
       </div>
 
       <div className="d-md-none checkout-bottom-bar">

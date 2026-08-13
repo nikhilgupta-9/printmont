@@ -1,93 +1,58 @@
 import React from 'react';
+import { BsCheck2 } from 'react-icons/bs';
 
 /**
- * Three-node checkout progress bar: Address -> Order Summary -> Payment.
+ * One row of the vertical checkout accordion.
  *
- * checkoutStep 1 is the cart itself, which has no stepper. Steps 2/3/4 map to
- * nodes 1/2/3, so the number the shopper sees never matches the internal step.
+ * The design stacks the steps as full-width bars in the main column: the step
+ * being worked on is a solid blue bar, finished steps collapse to a white bar
+ * with a tick and a CHANGE link, and the body of a finished step (the saved
+ * address, say) sits underneath its own bar.
+ *
+ *   number    the digit in the leading square; omit for an unnumbered row
+ *             such as the buyer header, which is not one of the steps
+ *   title     bar text; uppercased by the stylesheet
+ *   active    solid blue treatment
+ *   done      tick after the title, CHANGE link when onChange is given
+ *   aside     right-aligned text (used for "Buyer Mobile no.")
+ *   onChange  renders the CHANGE button and calls back when clicked
+ *   children  collapsed body under the bar, e.g. the saved address line
  */
-const STEPS = [
-  { step: 2, label: 'Address' },
-  { step: 3, label: 'Order Summary' },
-  { step: 4, label: 'Payment' },
-];
+const CheckoutStepBar = ({
+  number = null,
+  title,
+  active = false,
+  done = false,
+  plainTitle = false,
+  aside = null,
+  onChange = null,
+  children = null,
+}) => (
+  <>
+    <div className={`step-bar${active ? ' step-bar--active' : ''}`}>
+      {/* Unnumbered rows keep the square as a spacer so every bar's title
+          lines up on the same left edge. */}
+      <span className={`step-bar__num${number ? '' : ' step-bar__num--empty'}`}>
+        {number}
+      </span>
 
-const THEME = '#0b53a1';
+      <span className={`step-bar__title${plainTitle ? ' step-bar__title--plain' : ''}`}>
+        {title}
+      </span>
 
-const CheckoutStepper = ({ currentStep, onStepClick }) => {
-  if (currentStep < 2) return null;
+      {done && <BsCheck2 className="step-bar__check" size={18} strokeWidth={1} />}
 
-  const handleStepClick = (targetStep) => {
-    // Backwards only — you cannot skip ahead past an unfinished step.
-    if (onStepClick && targetStep < currentStep) {
-      onStepClick(targetStep);
-    }
-  };
+      {aside && <span className="step-bar__aside">{aside}</span>}
 
-  return (
-    <div className="checkout-stepper bg-white px-3 pt-3 pb-2 border-bottom">
-      <div className="d-flex align-items-start justify-content-between position-relative">
-        {STEPS.map(({ step, label }, index) => {
-          const isActive = currentStep === step;
-          const isDone = currentStep > step;
-          const isPast = isActive || isDone;
-          const clickable = step < currentStep;
-
-          return (
-            <React.Fragment key={step}>
-              {index > 0 && (
-                <div
-                  className="flex-grow-1"
-                  style={{
-                    height: '1px',
-                    backgroundColor: isPast ? THEME : '#c9ced6',
-                    marginTop: '13px',
-                  }}
-                  aria-hidden="true"
-                />
-              )}
-
-              <button
-                type="button"
-                onClick={() => handleStepClick(step)}
-                disabled={!clickable}
-                className="btn p-0 border-0 bg-transparent d-flex flex-column align-items-center shadow-none"
-                style={{ cursor: clickable ? 'pointer' : 'default', flex: '0 0 auto', width: '92px' }}
-                aria-current={isActive ? 'step' : undefined}
-              >
-                <span
-                  className="d-flex align-items-center justify-content-center rounded-circle"
-                  style={{
-                    width: '27px',
-                    height: '27px',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    lineHeight: 1,
-                    border: `1.5px solid ${THEME}`,
-                    backgroundColor: isPast ? THEME : '#fff',
-                    color: isPast ? '#fff' : THEME,
-                  }}
-                >
-                  {index + 1}
-                </span>
-                <span
-                  className="text-center mt-1"
-                  style={{
-                    fontSize: '12px',
-                    lineHeight: 1.25,
-                    color: isPast ? '#1a1a1a' : '#7a828c',
-                    fontWeight: isActive ? 600 : 400,
-                  }}
-                >
-                  {label}
-                </span>
-              </button>
-            </React.Fragment>
-          );
-        })}
-      </div>
+      {onChange && (
+        <button type="button" className="step-bar__change" onClick={onChange}>
+          CHANGE
+        </button>
+      )}
     </div>
-  );
-};
 
-export default CheckoutStepper;
+    {children && <div className="step-bar__body">{children}</div>}
+  </>
+);
+
+export default CheckoutStepBar;

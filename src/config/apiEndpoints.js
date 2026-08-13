@@ -27,9 +27,11 @@ export const API_ENDPOINTS = {
   LOGIN: `${BASE_URL}/user-api.php?action=login`,
   PROFILE: `${BASE_URL}/user-api.php?action=profile`,
   UPDATE_PROFILE: `${BASE_URL}/user-api.php?action=update_profile`,
-  // No "change password with current password" flow exists yet; this is the
-  // token-based reset used after forgot_password.
-  CHANGE_PASSWORD: `${BASE_URL}/user-api.php?action=reset_password`,
+  // Two distinct flows. RESET_PASSWORD is the OTP-based one reached from
+  // forgot_password when signed out; CHANGE_PASSWORD is for a signed-in user
+  // and authenticates with the current password plus a bearer token.
+  RESET_PASSWORD: `${BASE_URL}/user-api.php?action=reset_password`,
+  CHANGE_PASSWORD: `${BASE_URL}/user-api.php?action=change_password`,
   FORGOT_PASSWORD: `${BASE_URL}/user-api.php?action=forgot_password`,
 
   // User Addresses
@@ -47,6 +49,9 @@ export const API_ENDPOINTS = {
   // The id is ignored server-side — orders come from the verified token, so a
   // customer cannot read another customer's orders by changing it.
   GET_CUSTOMER_ORDERS: () => `${BASE_URL}/user-api.php?action=get_orders`,
+  // Public, no token: takes { order_number, contact } where contact is the
+  // email or mobile the order was placed with.
+  TRACK_ORDER: `${BASE_URL}/user-api.php?action=track_order`,
   // Admin-only actions; not exposed through the public API yet.
   // UPDATE_ORDER_STATUS, UPDATE_PAYMENT_STATUS, GET_DASHBOARD_STATS
 

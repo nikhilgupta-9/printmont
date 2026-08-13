@@ -77,7 +77,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      const endpoint = API_ENDPOINTS.CHANGE_PASSWORD || '/api/user-api.php?action=reset_password';
+      const endpoint = API_ENDPOINTS.RESET_PASSWORD || '/api/user-api.php?action=reset_password';
       
       const response = await fetch(endpoint, {
         method: 'POST',

@@ -16,6 +16,7 @@ import Orders from "./components/orders/Orders";
 import User from "./components/user/User";
 import Login from "./components/user/Login";
 import ForgotPassword from "./components/user/ForgotPassword";
+import ChangePassword from "./components/user/ChangePassword";
 import GiftCard from "./components/orders/GiftCard";
 import ProductDetails from "./components/products/ProductDetails";
 import AllProducts from "./components/products/AllProducts";
@@ -128,6 +129,7 @@ function App() {
             <Route path="wallet" element={<PrintmontCoin />} />
             <Route path="giftcard" element={<GiftCard />} />
             <Route path="manage-address" element={<ManageAddress  />} />
+            <Route path="change-password" element={<ChangePassword />} />
           </Route>
 
           {/* Account pages are linked as /<username>/profile (see getUsernamePath in
@@ -140,6 +142,7 @@ function App() {
             <Route path="wallet" element={<PrintmontCoin />} />
             <Route path="giftcard" element={<GiftCard />} />
             <Route path="manage-address" element={<ManageAddress />} />
+            <Route path="change-password" element={<ChangePassword />} />
           </Route>
 
           <Route path="*" element={<PageNotFound />} />

@@ -9,71 +9,48 @@ const CASH_COINS_DISCOUNT = 20;
 const COINS_SPENT = 20;
 
 /**
- * Step 2 of checkout: confirm what is being delivered where, optionally spend
- * coins, then continue to payment. The product cards are the cart's own cards
- * in read-only mode so the two screens stay identical.
+ * Step 3 of checkout: spend coins if wanted, check the items, continue to
+ * payment. The delivery address is shown by the collapsed step-2 bar that
+ * Cart renders above this, so it is not repeated here.
+ *
+ * The product cards are the cart's own cards in read-only mode so the two
+ * screens stay identical.
  */
-const OrderSummary = ({ onContinue, onChangeAddress }) => {
+const OrderSummary = ({ onContinue }) => {
   const {
     cartItems,
     useCashCoins, setUseCashCoins,
     PRINTMONT_COINS_BALANCE,
     cartTotals,
     buyerDetails,
-    address,
   } = useCheckout();
 
-  const deliverToName = buyerDetails?.name || 'Your address';
-  const deliverToPin = address?.pincode || '';
-  const addressType = (address?.addressType || 'Home').toUpperCase();
-  const fullAddress = [
-    address?.address || address?.addressArea,
-    address?.landmark,
-    address?.city,
-    address?.state,
-  ].filter(Boolean).join(', ');
+  const confirmEmail = buyerDetails?.email || 'your registered email';
 
   return (
-    <div className="order-summary-step">
-
-      {/* Deliver to */}
-      <div className="deliver-to-bar">
-        <div className="d-flex align-items-center gap-2">
-          <span style={{ fontSize: '13px' }}>
-            <span className="text-secondary">Deliver to :</span>{' '}
-            <span className="fw-semibold text-dark">{deliverToName}{deliverToPin && `, ${deliverToPin}`}</span>
-          </span>
-          <span className="addr-type">{addressType}</span>
-          <button type="button" className="change-link ms-auto" onClick={onChangeAddress}>
-            CHANGE
-          </button>
-        </div>
-        {fullAddress && (
-          <p className="text-secondary mb-0 mt-1 text-truncate" style={{ fontSize: '12px' }}>
-            {fullAddress}
-          </p>
-        )}
-      </div>
+    <div className="order-summary-step bg-white">
 
       {/* Cash coins */}
-      <div className="bg-white px-3 py-3 border-bottom">
-        <div className="form-check checkout-check mb-2">
-          <input
-            className="form-check-input shadow-none" type="checkbox" id="useCashCoins"
-            checked={useCashCoins} onChange={(e) => setUseCashCoins(e.target.checked)}
-          />
-          <label className="form-check-label fw-semibold" htmlFor="useCashCoins" style={{ color: '#0b53a1' }}>
-            Pay Using Cash Coins
-          </label>
+      <div className="px-3 px-md-4 py-3 border-bottom">
+        <div className="d-flex align-items-center gap-3">
+          <span className="cash-coins-head">Pay Using Cash Coins</span>
+          <button
+            type="button"
+            className={`coins-applied-btn ms-auto${useCashCoins ? '' : ' coins-applied-btn--off'}`}
+            onClick={() => setUseCashCoins(!useCashCoins)}
+          >
+            {useCashCoins ? 'APPLIED' : 'APPLY'}
+          </button>
         </div>
 
-        <div className="d-flex align-items-center gap-2 ps-4" style={{ fontSize: '12px' }}>
-          <span className="fw-semibold" style={{ color: '#0b53a1' }}>Printmont Coin</span>
+        <div className="d-flex align-items-center gap-1 mt-1" style={{ fontSize: '13px' }}>
+          <span className="text-dark">Balance</span>
           <img src="/printmont-coin.png" width={14} height={14} alt="" />
-          <span className="fw-bold text-dark">{PRINTMONT_COINS_BALANCE}</span>
+          <span className="fw-semibold text-dark">{PRINTMONT_COINS_BALANCE}</span>
         </div>
-        <p className="text-success fw-semibold mb-0 ps-4" style={{ fontSize: '12px' }}>
-          Save extra ₹{CASH_COINS_DISCOUNT} using {COINS_SPENT} Printmont Coins
+
+        <p className="text-success mb-0" style={{ fontSize: '13px' }}>
+          Save {CASH_COINS_DISCOUNT} using {COINS_SPENT} Printmont Coins
         </p>
       </div>
 
@@ -84,7 +61,7 @@ const OrderSummary = ({ onContinue, onChangeAddress }) => {
         ))}
       </div>
 
-      {/* Price details */}
+      {/* Price details — desktop gets these in the sidebar instead. */}
       <div className="checkout-panel-band d-md-none">
         <div className="px-3 py-2 checkout-panel-title">PRICE DETAILS.</div>
         <div className="px-3 pb-3">
@@ -96,7 +73,6 @@ const OrderSummary = ({ onContinue, onChangeAddress }) => {
               couponApplied={cartTotals.couponApplied}
               deliveryCharges={cartTotals.deliveryCharges}
               cashCoinsApplied={cartTotals.cashCoinsApplied}
-              step={3}
               isMobile
             />
             <div className="mt-3">
@@ -109,9 +85,12 @@ const OrderSummary = ({ onContinue, onChangeAddress }) => {
         </div>
       </div>
 
-      {/* Desktop keeps the action inline; mobile pins it. */}
-      <div className="d-none d-md-flex justify-content-end p-3 bg-white border-top">
-        <button className="btn checkout-cta" onClick={onContinue}>CONTINUE</button>
+      {/* Desktop keeps the action inline next to the confirmation note. */}
+      <div className="d-none d-md-flex align-items-center gap-3 px-4 py-3 border-top">
+        <span className="order-confirm-note">
+          Order confirmation email will be sent to <strong>{confirmEmail}</strong>
+        </span>
+        <button className="btn checkout-cta ms-auto" onClick={onContinue}>CONTINUE</button>
       </div>
 
       <div className="d-md-none checkout-bottom-bar">
