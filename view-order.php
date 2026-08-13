@@ -266,6 +266,36 @@ if ($_POST && isset($_POST['update_payment_status'])) {
                                 </div>
                             </div>
 
+                            <!-- Shipment tracking, as the customer sees it -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Shipment Tracking</h5>
+                                </div>
+                                <div class="card-body">
+                                    <?php if (empty($order['tracking_number']) && empty($order['courier_name'])): ?>
+                                        <p class="text-muted mb-0">
+                                            No tracking details yet.
+                                            <a href="edit-order.php?id=<?php echo (int)$order['id']; ?>">Add them</a>
+                                            so the customer can track this order.
+                                        </p>
+                                    <?php else: ?>
+                                        <?php if (!empty($order['courier_name'])): ?>
+                                            <p class="mb-1"><strong>Courier:</strong> <?php echo htmlspecialchars($order['courier_name']); ?></p>
+                                        <?php endif; ?>
+                                        <?php if (!empty($order['tracking_number'])): ?>
+                                            <p class="mb-1"><strong>Tracking No:</strong> <?php echo htmlspecialchars($order['tracking_number']); ?></p>
+                                        <?php endif; ?>
+                                        <?php if (!empty($order['tracking_url'])): ?>
+                                            <p class="mb-0">
+                                                <a href="<?php echo htmlspecialchars($order['tracking_url']); ?>" target="_blank" rel="noopener noreferrer">
+                                                    Open courier tracking
+                                                </a>
+                                            </p>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
                             <!-- Billing Address -->
                             <?php if (!empty($order['billing_address'])): ?>
                             <div class="card mb-4">

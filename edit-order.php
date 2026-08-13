@@ -36,13 +36,30 @@ if ($_POST) {
             'shipping_cost' => (float)$_POST['shipping_cost'],
             'discount_amount' => (float)$_POST['discount_amount'],
             'status' => $_POST['status'],
-            'payment_status' => $_POST['payment_status']
+            'payment_status' => $_POST['payment_status'],
+            'courier_name' => trim($_POST['courier_name'] ?? ''),
+            'tracking_number' => trim($_POST['tracking_number'] ?? ''),
+            'tracking_url' => trim($_POST['tracking_url'] ?? '')
         ];
 
         // Recalculate grand total
         $subtotal = $order['total_amount'];
         $grand_total = $subtotal + $data['tax_amount'] + $data['shipping_cost'] - $data['discount_amount'];
         $data['grand_total'] = $grand_total;
+
+        // A status change has to go through updateOrderStatus, which is what
+        // writes order_status_history. updateOrder only sets the column, so
+        // editing here used to change the status with no trace in the trail
+        // that view-order.php and the customer's Track Order page read from.
+        $statusChanged = $data['status'] !== $order['status'];
+        if ($statusChanged) {
+            $orderController->updateOrderStatus(
+                $orderId,
+                $data['status'],
+                'Updated from admin order edit',
+                $_SESSION['user_id'] ?? null
+            );
+        }
 
         if ($orderController->updateOrder($orderId, $data)) {
             $_SESSION['success_message'] = "Order updated successfully!";
@@ -323,9 +340,31 @@ if ($_POST) {
                                         
                                         <div class="mb-3">
                                             <label class="form-label">Shipping Method</label>
-                                            <input type="text" class="form-control" name="shipping_method" 
+                                            <input type="text" class="form-control" name="shipping_method"
                                                    value="<?php echo htmlspecialchars($order['shipping_method'] ?? ''); ?>"
                                                    placeholder="e.g., Standard Shipping, Express">
+                                        </div>
+
+                                        <!-- Shown to the customer on the public Track Order page. -->
+                                        <div class="mb-3">
+                                            <label class="form-label">Courier Name</label>
+                                            <input type="text" class="form-control" name="courier_name"
+                                                   value="<?php echo htmlspecialchars($order['courier_name'] ?? ''); ?>"
+                                                   placeholder="e.g., BlueDart Express, Delhivery">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Tracking Number</label>
+                                            <input type="text" class="form-control" name="tracking_number"
+                                                   value="<?php echo htmlspecialchars($order['tracking_number'] ?? ''); ?>"
+                                                   placeholder="e.g., AWB-89712634">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Tracking URL</label>
+                                            <input type="url" class="form-control" name="tracking_url"
+                                                   value="<?php echo htmlspecialchars($order['tracking_url'] ?? ''); ?>"
+                                                   placeholder="https://courier.example.com/track/AWB-89712634">
                                         </div>
                                         
                                         <div class="mb-3">

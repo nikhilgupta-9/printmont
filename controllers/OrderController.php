@@ -79,6 +79,62 @@ class OrderController
         }
     }
 
+    /**
+     * Public order tracking. Requires the order/tracking number plus the email
+     * or mobile the order was placed with.
+     *
+     * Returns 'not_found' rather than distinguishing "no such order" from
+     * "wrong contact" on purpose — telling them apart would confirm which
+     * order numbers exist.
+     */
+    public function trackOrder($reference, $contact)
+    {
+        try {
+            $reference = trim((string) $reference);
+            $contact = trim((string) $contact);
+
+            if ($reference === '' || $contact === '') {
+                return [
+                    'success' => false,
+                    'reason' => 'invalid',
+                    'error' => 'Order number and the email or mobile used to place it are both required.',
+                ];
+            }
+
+            $order = $this->order->findForTracking($reference, $contact);
+
+            if (!$order) {
+                return [
+                    'success' => false,
+                    'reason' => 'not_found',
+                    'error' => 'No order matches those details. Check the order number and the email or mobile it was placed with.',
+                ];
+            }
+
+            return [
+                'success' => true,
+                'data' => [
+                    'order_number'     => $order['order_number'],
+                    'customer_name'    => $order['customer_name'],
+                    'status'           => $order['status'] ?: 'pending',
+                    'payment_status'   => $order['payment_status'],
+                    'grand_total'      => $order['grand_total'],
+                    'shipping_method'  => $order['shipping_method'],
+                    'shipping_address' => $order['shipping_address'],
+                    'courier_name'     => $order['courier_name'],
+                    'tracking_number'  => $order['tracking_number'],
+                    'tracking_url'     => $order['tracking_url'],
+                    'placed_at'        => $order['created_at'],
+                    'updated_at'       => $order['updated_at'],
+                    'items'            => $this->order->getOrderItems($order['id']),
+                    'history'          => $this->order->getStatusHistory($order['id']),
+                ],
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'reason' => 'error', 'error' => $e->getMessage()];
+        }
+    }
+
     public function getOrderItems($order_id)
     {
         return $this->order->getOrderItems($order_id);

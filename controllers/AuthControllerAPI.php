@@ -235,8 +235,13 @@ class AuthController {
             $currentPassword = trim($data['current_password']);
             $newPassword = trim($data['new_password']);
 
-            // Verify current password
+            // Verify current password. Guard the lookup first: without it a
+            // missing row emits a PHP warning that prints ahead of the JSON
+            // body and breaks the response the caller tries to parse.
             $user = $this->userModel->getUserById($userId);
+            if (!$user || empty($user['password'])) {
+                throw new Exception("User not found");
+            }
             if (!password_verify($currentPassword, $user['password'])) {
                 throw new Exception("Current password is incorrect");
             }

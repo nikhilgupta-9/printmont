@@ -202,6 +202,38 @@ try {
                 }
                 break;
 
+            // Signed-in password change: proves ownership with the current
+            // password rather than an emailed OTP the way reset_password does.
+            case 'change_password':
+                if ($method == 'POST') {
+                    $token = getBearerToken();
+
+                    if (empty($token)) {
+                        http_response_code(401);
+                        echo json_encode(['success' => false, 'error' => 'No token provided']);
+                        break;
+                    }
+
+                    $result = $authController->verifyToken($token);
+                    if (!$result['success']) {
+                        http_response_code(401);
+                        echo json_encode($result);
+                        break;
+                    }
+
+                    // The user id comes from the verified token, never from the
+                    // request body, so one account cannot change another's password.
+                    $changed = $authController->changePassword($result['user']['id'], $input);
+                    if (!$changed['success']) {
+                        http_response_code(400);
+                    }
+                    echo json_encode($changed);
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
             case 'delete_account':
                 if ($method == 'DELETE' || $method == 'POST') {
                     $token = getBearerToken();
@@ -411,6 +443,25 @@ try {
                 }
                 break;
 
+            // Public: no token. The contact check inside trackOrder is what
+            // stops an order number alone from exposing an order.
+            case 'track_order':
+                if ($method == 'POST' || $method == 'GET') {
+                    $reference = $input['order_number'] ?? $queryParams['order_number'] ?? '';
+                    $contact   = $input['contact'] ?? $queryParams['contact'] ?? '';
+
+                    $result = $orderController->trackOrder($reference, $contact);
+
+                    if (!$result['success']) {
+                        http_response_code(($result['reason'] ?? '') === 'invalid' ? 400 : 404);
+                    }
+                    echo json_encode($result);
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
             case 'create_order':
                 if ($method == 'POST') {
                     // Attach the order to the token holder when one is present.
@@ -433,7 +484,7 @@ try {
                 http_response_code(404);
                 echo json_encode([
                     'success' => false,
-                    'error' => 'Action not found. Available actions: register, login, logout, refresh_token, forgot_password, reset_password, profile, update_profile, delete_account, soft_delete_account, get_orders, get_order, create_order, ...'
+                    'error' => 'Action not found. Available actions: register, login, logout, refresh_token, forgot_password, reset_password, change_password, profile, update_profile, delete_account, soft_delete_account, get_orders, get_order, create_order, ...'
                 ]);
         }
 

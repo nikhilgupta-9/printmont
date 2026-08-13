@@ -268,6 +268,19 @@ class Order
             }
             $itemStmt->close();
 
+            // Seed the status trail with the order's own creation. Without this
+            // the timeline shown on Track Order stays empty until an admin
+            // happens to change the status.
+            $historyStmt = $this->conn->prepare(
+                "INSERT INTO {$this->table_status_history} (order_id, status, notes, created_at)
+                 VALUES (?, 'pending', 'Order placed', NOW())"
+            );
+            if ($historyStmt) {
+                $historyStmt->bind_param('i', $orderId);
+                $historyStmt->execute();
+                $historyStmt->close();
+            }
+
             $this->conn->commit();
 
             return ['id' => (int) $orderId, 'order_number' => $orderNumber];
@@ -359,6 +372,38 @@ class Order
 
         return $items;
     }
+    /**
+     * Public order lookup for the Track Order page.
+     *
+     * Unauthenticated, so the order number alone is never enough: the caller
+     * must also supply the email or phone the order was placed with. Without
+     * that second factor, sequential numbers like ORD-1011 would let anyone
+     * walk the whole order table.
+     */
+    public function findForTracking($reference, $contact)
+    {
+        $query = "SELECT id, order_number, customer_name, status, payment_status,
+                         grand_total, shipping_method, shipping_address,
+                         courier_name, tracking_number, tracking_url,
+                         created_at, updated_at
+                  FROM {$this->table_orders}
+                  WHERE (order_number = ? OR tracking_number = ?)
+                    AND (customer_email = ? OR customer_phone = ?)
+                  LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+        if (!$stmt) {
+            return null;
+        }
+
+        $stmt->bind_param('ssss', $reference, $reference, $contact, $contact);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        return $row ?: null;
+    }
+
     // Get order status history
     public function getStatusHistory($order_id)
     {

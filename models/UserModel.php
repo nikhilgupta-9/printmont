@@ -188,6 +188,7 @@ class UserModel extends BaseModel {
     }
 
     public function changePassword($userId, $newPassword) {
+        $userId = (int)$userId;
         $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
         $query = "UPDATE users SET password = '$hashedPassword', updated_at = NOW() WHERE id = $userId";
         return $this->db->query($query);
