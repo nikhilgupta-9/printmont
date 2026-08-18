@@ -43,8 +43,10 @@ const ContactUs = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
       toast.error("Please fill in all required fields.");
       return;
@@ -52,16 +54,44 @@ const ContactUs = () => {
 
     setIsSubmitting(true);
 
-    // Simulate query submission
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // The order tab collects an order id, which has no column of its own —
+      // fold it into the subject so support still sees which order it concerns.
+      const subject = activeTab === "order"
+        ? `Order Issue${formData.orderId.trim() ? ` — ${formData.orderId.trim()}` : ""}`
+        : (formData.subject || "General Inquiry");
+
+      const res = await fetch(API_ENDPOINTS.CONTACT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim(),
+          subject,
+          message: formData.message.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toast.error(data.message || "Could not send your message. Please try again.");
+        return;
+      }
+
       setIsSubmitted(true);
       toast.success(
         activeTab === "general"
           ? "Your General Query has been submitted successfully!"
           : "Your Order Issue details have been submitted!"
       );
-    }, 1000);
+    } catch (err) {
+      console.error("Contact form submission failed:", err);
+      toast.error("Could not reach the server. Please try again in a moment.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
@@ -273,7 +303,7 @@ const ContactUs = () => {
                             <Form.Control
                               type="text"
                               name="orderId"
-                              placeholder="e.g. ORD-109283"
+                              placeholder="e.g. AK3H8CWWKHPS"
                               value={formData.orderId}
                               onChange={handleChange}
                               className="bg-white"

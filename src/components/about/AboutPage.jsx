@@ -2,11 +2,19 @@ import React, { useState, useEffect } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import Slider from "react-slick";
 import { API_ENDPOINTS, ASSET_URL } from "../../config/apiEndpoints";
+import BannerGrid from "../home/banners/BannerGrid";
+import useHomeBanners from "../home/hooks/useHomeBanners";
 import "./About.css";
 
 const AboutPage = () => {
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Both of these areas used to be hardcoded markup. They are now ordinary
+  // banner sections, uploaded and ordered from the admin panel, and each
+  // stays hidden until at least one banner is published to it.
+  const { banners: accoladeBanners } = useHomeBanners(API_ENDPOINTS.BANNERS, "about_accolades");
+  const { banners: timelineBanners } = useHomeBanners(API_ENDPOINTS.BANNERS, "about_timeline");
 
   useEffect(() => {
     // Scroll to top on mount
@@ -41,15 +49,6 @@ const AboutPage = () => {
   const missionSection = getSection("mission", "Our Mission");
   const visionSection = getSection("history", "Our Vision");
 
-  // Timeline milestones matching FNP's timeline format but with Printmont details
-  const milestones = [
-    { year: "1994", text: "Beginning of the first organised print outlet, fueled by passion." },
-    { year: "2002", text: "India’s first online custom merchandising store that redefined gifting." },
-    { year: "2004", text: "Launch of custom corporate gift packs, adding sweetness to occasions." },
-    { year: "2010", text: "Printmont goes global - making every custom print celebration accessible." },
-    { year: "2023", text: "400+ outlets and millions of custom print packages delivered." },
-    { year: "2024", text: "Launch of Exclusive Luxury Box Collection & Same-Day Custom Delivery." }
-  ];
 
   // Leadership team data matching FNP's vertical layout with overlay names
   const team = [
@@ -59,15 +58,6 @@ const AboutPage = () => {
     { name: "Saurav Singh", role: "Chief Technology Officer", img: "/team-saurav.png" }
   ];
 
-  // Accolades list customized for Printmont
-  const accolades = [
-    "2025 Pitch\nTop 50 Brands India",
-    "Future of Workplace &\nLeadership Award",
-    "Top 100 Franchise\nOpportunities",
-    "National Excellence\nin Digital Printing",
-    "Best Gifting e-Retailer\nof the Year",
-    "Corporate Merchandise\nLeader of the Year"
-  ];
 
   // Slick slider settings for team carousel
   const teamSliderSettings = {
@@ -104,38 +94,6 @@ const AboutPage = () => {
     ]
   };
 
-  // Slick slider settings for timeline carousel (matches 2nd reference image with arrows)
-  const timelineSliderSettings = {
-    dots: false,
-    infinite: false,
-    speed: 500,
-    slidesToShow: 5,
-    slidesToScroll: 1,
-    arrows: true,
-    responsive: [
-      {
-        breakpoint: 1024,
-        settings: {
-          slidesToShow: 4,
-          slidesToScroll: 1
-        }
-      },
-      {
-        breakpoint: 768,
-        settings: {
-          slidesToShow: 2,
-          slidesToScroll: 1
-        }
-      },
-      {
-        breakpoint: 480,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1
-        }
-      }
-    ]
-  };
 
   return (
     <div className="about-fnp-page bg-white">
@@ -260,168 +218,30 @@ const AboutPage = () => {
         </Container>
       </div>
 
-      {/* 🏆 Accolades & Milestones Section (Laurel Wreaths Grid) */}
-      <div className="fnp-accolades-section py-5 bg-white">
-        <Container>
-          <h2 className="fnp-theme-heading text-center mb-5">Accolades & Milestones</h2>
-          <Row className="gy-4 justify-content-center">
-            {accolades.map((acc, idx) => (
-              <Col xs={12} sm={6} md={4} key={idx} className="d-flex align-items-center justify-content-center">
-                <div className="fnp-laurel-wrapper d-flex align-items-center justify-content-center px-3">
-                  {/* Left Laurel Branch with Thick Leaves */}
-                  <div className="fnp-laurel-left me-3">
-                    <svg width="45" height="90" viewBox="0 0 40 85" fill="none">
-                      {/* Curved Stem */}
-                      <path d="M32,78 C20,70 11,52 11,35 C11,20 16,5 17,4" stroke="#ffcb2f" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                      
-                      {/* Pair 1 (Top) */}
-                      <g transform="translate(17, 4) rotate(-10)">
-                        <path d="M0,0 C-4,-1 -6,-7 0,-10 C6,-7 4,-1 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(17, 4) rotate(40)">
-                        <path d="M0,0 C-4,-1 -6,-7 0,-10 C6,-7 4,-1 0,0 Z" fill="#ffcb2f"/>
-                      </g>
+      {/* 🏆 Accolades & Milestones — uploaded as banners from the admin panel */}
+      {accoladeBanners.length > 0 && (
+        <div className="fnp-accolades-section py-5 bg-white">
+          <Container>
+            <h2 className="fnp-theme-heading text-center mb-5">Accolades &amp; Milestones</h2>
+            <BannerGrid banners={accoladeBanners} columns={3} mobileColumns={1} />
+          </Container>
+        </div>
+      )}
 
-                      {/* Pair 2 */}
-                      <g transform="translate(14, 13) rotate(-25)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(16, 14) rotate(35)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
 
-                      {/* Pair 3 */}
-                      <g transform="translate(12, 23) rotate(-35)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(14, 24) rotate(25)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
 
-                      {/* Pair 4 */}
-                      <g transform="translate(11, 33) rotate(-45)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(13, 34) rotate(15)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
 
-                      {/* Pair 5 */}
-                      <g transform="translate(11, 44) rotate(-55)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(13, 45) rotate(5)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
 
-                      {/* Pair 6 */}
-                      <g transform="translate(13, 54) rotate(-65)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(15, 55) rotate(-5)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
 
-                      {/* Pair 7 */}
-                      <g transform="translate(17, 64) rotate(-75)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(19, 65) rotate(-15)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
 
-                      {/* Pair 8 */}
-                      <g transform="translate(23, 73) rotate(-85)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(25, 74) rotate(-25)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                    </svg>
-                  </div>
-                  
-                  {/* Achievement Text */}
-                  <div className="fnp-laurel-text text-center fw-semibold text-dark fs-6" style={{ whiteSpace: "pre-line", minWidth: "160px" }}>
-                    {acc}
-                  </div>
 
-                  {/* Right Laurel Branch with Thick Leaves (Mirrored) */}
-                  <div className="fnp-laurel-right ms-3">
-                    <svg width="45" height="90" viewBox="0 0 40 85" fill="none" style={{ transform: "scaleX(-1)" }}>
-                      {/* Curved Stem */}
-                      <path d="M32,78 C20,70 11,52 11,35 C11,20 16,5 17,4" stroke="#ffcb2f" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                      
-                      {/* Pair 1 (Top) */}
-                      <g transform="translate(17, 4) rotate(-10)">
-                        <path d="M0,0 C-4,-1 -6,-7 0,-10 C6,-7 4,-1 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(17, 4) rotate(40)">
-                        <path d="M0,0 C-4,-1 -6,-7 0,-10 C6,-7 4,-1 0,0 Z" fill="#ffcb2f"/>
-                      </g>
 
-                      {/* Pair 2 */}
-                      <g transform="translate(14, 13) rotate(-25)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(16, 14) rotate(35)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
 
-                      {/* Pair 3 */}
-                      <g transform="translate(12, 23) rotate(-35)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(14, 24) rotate(25)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
 
-                      {/* Pair 4 */}
-                      <g transform="translate(11, 33) rotate(-45)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(13, 34) rotate(15)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
 
-                      {/* Pair 5 */}
-                      <g transform="translate(11, 44) rotate(-55)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(13, 45) rotate(5)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
 
-                      {/* Pair 6 */}
-                      <g transform="translate(13, 54) rotate(-65)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(15, 55) rotate(-5)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
 
-                      {/* Pair 7 */}
-                      <g transform="translate(17, 64) rotate(-75)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(19, 65) rotate(-15)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
 
-                      {/* Pair 8 */}
-                      <g transform="translate(23, 73) rotate(-85)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                      <g transform="translate(25, 74) rotate(-25)">
-                        <path d="M0,0 C-5,-2 -7,-9 0,-12 C7,-9 5,-2 0,0 Z" fill="#ffcb2f"/>
-                      </g>
-                    </svg>
-                  </div>
-                </div>
-              </Col>
-            ))}
-          </Row>
-        </Container>
-      </div>
 
       {/* 👁️ Vision & Mission side-by-side with Landscape Images */}
       <div className="fnp-vision-mission-cards py-5 bg-white">
@@ -461,29 +281,12 @@ const AboutPage = () => {
         </Container>
       </div>
 
-      {/* 📅 Timeline: Rooted in Love, Growing With You (Dark Banner Timeline Slider) */}
-      <div 
-        className="fnp-dark-timeline-section py-5"
-        style={{ backgroundImage: `url('/about-hero-banner.png')` }}
-      >
-        <div className="fnp-timeline-overlay py-5">
-          <Container>
-            <h3 className="text-center text-white mb-5 fw-bold fnp-timeline-heading">Rooted in Love, Growing With You</h3>
-            <div className="fnp-timeline-wrapper position-relative px-4">
-              <div className="fnp-timeline-horizontal-line d-none d-md-block"></div>
-              <Slider {...timelineSliderSettings} className="fnp-timeline-slider">
-                {milestones.map((m, idx) => (
-                  <div key={idx} className="text-center position-relative z-index-2 px-2">
-                    <div className="fnp-timeline-node-circle mb-3 mx-auto"></div>
-                    <h4 className="fnp-timeline-year text-white fw-bold mb-2">{m.year}</h4>
-                    <p className="fnp-timeline-node-text text-white-50 small mb-0 px-1">{m.text}</p>
-                  </div>
-                ))}
-              </Slider>
-            </div>
-          </Container>
+      {/* 📅 Our Journey Timeline — uploaded as a banner from the admin panel */}
+      {timelineBanners.length > 0 && (
+        <div className="fnp-about-banner-section">
+          <BannerGrid banners={timelineBanners} columns={1} mobileColumns={1} />
         </div>
-      </div>
+      )}
 
       {/* 👥 Meet the Team (Slider Carousel with Overlay Text) */}
       <div className="fnp-leadership-grid-section py-5 bg-white">

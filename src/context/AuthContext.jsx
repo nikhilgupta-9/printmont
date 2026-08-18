@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal, Button } from 'react-bootstrap';
 
@@ -57,13 +57,43 @@ export const AuthProvider = ({ children }) => {
     navigate('/');
   };
 
+  /**
+   * Clear the session without the confirmation modal. Used when the server
+   * rejects the stored token: the user did not choose to log out, so asking
+   * them to confirm makes no sense, but leaving `user` set would keep the
+   * header showing them as signed in while every request 401s.
+   */
+  const clearSession = useCallback(() => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    setUser(null);
+    setToken(null);
+  }, []);
+
+  // The global fetch interceptor raises this on any 401 from our API.
+  useEffect(() => {
+    const onUnauthorized = () => {
+      setUser((current) => {
+        if (current) {
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          setToken(null);
+        }
+        return null;
+      });
+    };
+
+    window.addEventListener('auth:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', onUnauthorized);
+  }, []);
+
   const getUsernamePath = () => {
     if (!user) return 'user';
     return (user.first_name || user.firstName || user.name || (user.email ? user.email.split('@')[0] : 'user')).toLowerCase().replace(/\s+/g, '');
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, setUser, getUsernamePath }}>
+    <AuthContext.Provider value={{ user, token, login, logout, clearSession, setUser, getUsernamePath }}>
       {children}
       
       <Modal show={showLogoutModal} onHide={() => setShowLogoutModal(false)} centered>

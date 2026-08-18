@@ -121,7 +121,7 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCate
         const updateHeaderHeight = () => {
             document.documentElement.style.setProperty(
                 "--site-header-height",
-                `${headerRef.current.offsetHeight}px`
+                `${headerRef.current.getBoundingClientRect().height}px`
             );
         };
 

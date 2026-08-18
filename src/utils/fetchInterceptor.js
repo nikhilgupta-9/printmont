@@ -101,6 +101,14 @@ window.fetch = async (...args) => {
         }
       }
 
+      // A 401 from our own API means the stored token is expired or invalid.
+      // Announce it once, globally, so AuthContext can clear the session —
+      // otherwise the header keeps showing the user as signed in while every
+      // authenticated request is being rejected.
+      if (response && response.status === 401 && !/\/login|\/register/.test(url || "")) {
+        window.dispatchEvent(new CustomEvent("auth:unauthorized", { detail: { url } }));
+      }
+
       // Enhanced Error Logging to Browser Console for All Requests
       if (response) {
         const cloneForLog = response.clone();

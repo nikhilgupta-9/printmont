@@ -31,6 +31,7 @@ import TrackOrder from "./components/trackOrder/TrackOrder";
 import AppAnnouncement from "./components/appAnnouncement/AppAnnouncement";
 import MyAccount from "./components/myAccount/MyAccount";
 import CareerPage from "./components/pages/career/CareerPage";
+import VacancyDetails from "./components/pages/career/VacancyDetails";
 import AboutPage from "./components/about/AboutPage";
 import PolicyPage from "./components/policy/PolicyPage";
 import PrintmontFAQ from "./components/printmontFAQ/PrintmontFAQ";
@@ -96,6 +97,7 @@ function App() {
           <Route path="/track-order" element={<TrackOrder />} />
           <Route path="/app-download" element={<AppAnnouncement />} />
           <Route path="/careers" element={<CareerPage />} />
+          <Route path="/careers/:id" element={<VacancyDetails />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/faq" element={<PrintmontFAQ />} />
           <Route path="/security" element={<SecurityInfo />} />

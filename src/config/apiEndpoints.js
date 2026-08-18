@@ -48,7 +48,15 @@ export const API_ENDPOINTS = {
   CREATE_ORDER: `${BASE_URL}/user-api.php?action=create_order`,
   // The id is ignored server-side — orders come from the verified token, so a
   // customer cannot read another customer's orders by changing it.
-  GET_CUSTOMER_ORDERS: () => `${BASE_URL}/user-api.php?action=get_orders`,
+  // Optional params: status (csv), date_from, date_to, search, page, limit.
+  GET_CUSTOMER_ORDERS: (params = {}) => {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') qs.append(k, v);
+    });
+    const tail = qs.toString();
+    return `${BASE_URL}/user-api.php?action=get_orders${tail ? `&${tail}` : ''}`;
+  },
   // Public, no token: takes { order_number, contact } where contact is the
   // email or mobile the order was placed with.
   TRACK_ORDER: `${BASE_URL}/user-api.php?action=track_order`,
@@ -110,6 +118,7 @@ export const API_ENDPOINTS = {
   FAQ: `${BASE_URL}/faq-api.php`,
   HELP_CENTER: `${BASE_URL}/help-center-api.php`,
   POLICIES: `${BASE_URL}/policies-api.php`,
+  SECURITY: `${BASE_URL}/security-api.php`,
   // The backend exposes the public logo endpoint directly under /api.
   LOGO: `${BASE_URL}/logo-api.php`,
 };

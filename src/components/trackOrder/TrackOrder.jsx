@@ -171,11 +171,11 @@ const TrackOrder = () => {
                     <>
                       <Col md={5} xs={12}>
                         <Form.Group>
-                          <Form.Label className="small fw-semibold text-secondary">Tracking / AWB Number *</Form.Label>
+                          <Form.Label className="small fw-semibold text-secondary">Tracking ID *</Form.Label>
                           <Form.Control
                             type="text" name="trackingId"
                             value={formData.trackingId} onChange={handleChange}
-                            placeholder="E.g. AWB-89712634"
+                            placeholder="E.g. 4820917365"
                             className="py-2 rounded-3 shadow-none border"
                             required
                           />
@@ -202,7 +202,7 @@ const TrackOrder = () => {
                           <Form.Control
                             type="text" name="orderId"
                             value={formData.orderId} onChange={handleChange}
-                            placeholder="E.g. ORD-1011"
+                            placeholder="E.g. AK3H8CWWKHPS"
                             className="py-2 rounded-3 shadow-none border text-uppercase"
                             required
                           />
@@ -280,13 +280,16 @@ const TrackOrder = () => {
                     </Col>
                   </Row>
 
-                  {(order.courier_name || order.tracking_number) && (
+                  {(order.courier_name || order.tracking_number || order.courier_tracking_number) && (
                     <div className="border-top mt-3 pt-3 small">
+                      {order.tracking_number && (
+                        <div className="mb-1">Tracking ID: <strong>{order.tracking_number}</strong></div>
+                      )}
                       {order.courier_name && (
                         <div className="mb-1">Courier Partner: <strong>{order.courier_name}</strong></div>
                       )}
-                      {order.tracking_number && (
-                        <div className="mb-1">Tracking ID: <strong>{order.tracking_number}</strong></div>
+                      {order.courier_tracking_number && (
+                        <div className="mb-1">Courier AWB: <strong>{order.courier_tracking_number}</strong></div>
                       )}
                       {order.tracking_url && (
                         <a

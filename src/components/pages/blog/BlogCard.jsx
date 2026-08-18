@@ -23,12 +23,15 @@ const BlogCard = ({ cardData }) => {
   const targetUrl = slug ? `/blog/${slug}` : `/blog/${id || 1}`;
 
   return (
-    <div className="card h-100 blog-card border-0 bg-transparent p-2">
-      <div className="card-body rounded border bg-white shadow-sm d-flex flex-column justify-content-between p-3 p-md-4 h-100 transition-all hover-shadow">
+    // The card now sits inside a white section panel, so it carries only a
+    // border — the same treatment product cards get on the homepage. The extra
+    // shadow and padding read as a card-on-a-card once nested.
+    <div className="card h-100 blog-card border-0 bg-transparent p-0">
+      <div className="card-body rounded border bg-white d-flex flex-column justify-content-between p-3 h-100 transition-all hover-shadow">
         <div>
           {/* Category Header */}
           <div className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-            <span className="badge bg-primary-subtle text-primary fw-bold px-2 py-1 fs-7 rounded-pill text-uppercase">
+            <span className="badge bg-primary-subtle text-primary fw-bold px-2 py-1 fs-7 text-uppercase">
               {category || "Blog"}
             </span>
             <span className="text-primary d-flex align-items-center small fw-semibold">
@@ -83,7 +86,7 @@ const BlogCard = ({ cardData }) => {
         <div className="pt-2">
           <Link
             to={targetUrl}
-            className="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold d-inline-flex align-items-center gap-1"
+            className="btn btn-outline-primary btn-sm px-3 fw-semibold d-inline-flex align-items-center gap-1"
           >
             Read Full Post <MdOutlineKeyboardArrowRight size={18} />
           </Link>
