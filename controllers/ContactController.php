@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/ContactModel.php';
+require_once __DIR__ . '/../services/MailService.php';
 
 class ContactController {
     private $contactModel;
@@ -10,6 +11,63 @@ class ContactController {
 
     public function getContactDetails() {
         return $this->contactModel->getContactInfo();
+    }
+
+    /**
+     * Public contact form submission.
+     */
+    public function submitInquiry($data) {
+        $errors = $this->contactModel->validateInquiry($data);
+
+        if (!empty($errors)) {
+            return [
+                'success' => false,
+                'reason'  => 'invalid',
+                'message' => implode(', ', $errors),
+            ];
+        }
+
+        $inquiry = [
+            'name'    => trim($data['name']),
+            'email'   => trim($data['email']),
+            'phone'   => trim($data['phone'] ?? ''),
+            'subject' => trim($data['subject'] ?? ''),
+            'message' => trim($data['message']),
+        ];
+
+        $result = $this->contactModel->createInquiry($inquiry);
+
+        if (!$result['success']) {
+            return $result;
+        }
+
+        // Acknowledge by email. Storing the enquiry is the operation that
+        // matters, so a mail failure is reported alongside a successful save
+        // rather than turning the whole submission into an error.
+        $mailer = new MailService();
+        $sent = $mailer->sendContactAcknowledgement(
+            $inquiry['email'],
+            $inquiry['name'],
+            $inquiry['subject'],
+            $inquiry['message'],
+            $this->contactModel->getContactInfo() ?: []
+        );
+
+        $result['mail_sent'] = (bool) $sent;
+        if (!$sent) {
+            $result['mail_error'] = $mailer->getLastError();
+            error_log('Contact acknowledgement not sent to ' . $inquiry['email'] . ': ' . $mailer->getLastError());
+        }
+
+        return $result;
+    }
+
+    public function getInquiries($status = '') {
+        return $this->contactModel->getInquiries($status);
+    }
+
+    public function updateInquiryStatus($id, $status, $notes = '') {
+        return $this->contactModel->updateInquiryStatus($id, $status, $notes);
     }
 
     public function updateContactDetails($data) {

@@ -445,15 +445,28 @@ public function createApplication($data) {
             return ['success' => false, 'message' => 'Full name, email, and phone are required fields.'];
         }
 
-        $query = "INSERT INTO job_applications 
-                 (career_id, full_name, email, phone, cover_letter, linkedin_url, 
-                  portfolio_url, experience, education, skills, resume_path, status, applied_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
+        // The table carries two parallel name/email/phone column sets, and both
+        // applicant_* and name/email are NOT NULL, so each value is written to
+        // both. The previous query targeted a full_name column that does not
+        // exist, so prepare() returned false and bind_param() on it killed the
+        // request with a PHP fatal — no application could ever be submitted.
+        $query = "INSERT INTO job_applications
+                 (career_id, applicant_name, applicant_email, applicant_phone,
+                  name, email, phone, cover_letter, linkedin_url,
+                  portfolio_url, experience, education, skills,
+                  resume_path, status, applied_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("issssssssssss", 
-            $career_id, $full_name, $email, $phone, $cover_letter, $linkedin_url,
-            $portfolio_url, $experience, $education, $skills, $resume_path, $status, $applied_at
+        if (!$stmt) {
+            return ['success' => false, 'message' => 'Could not save your application: ' . $this->conn->error];
+        }
+
+        $stmt->bind_param("isssssssssssssss",
+            $career_id, $full_name, $email, $phone,
+            $full_name, $email, $phone, $cover_letter, $linkedin_url,
+            $portfolio_url, $experience, $education, $skills,
+            $resume_path, $status, $applied_at
         );
         
         if ($stmt->execute()) {

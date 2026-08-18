@@ -38,7 +38,10 @@ if ($_POST) {
             'status' => $_POST['status'],
             'payment_status' => $_POST['payment_status'],
             'courier_name' => trim($_POST['courier_name'] ?? ''),
-            'tracking_number' => trim($_POST['tracking_number'] ?? ''),
+            // tracking_number is deliberately absent: it is generated at order
+            // time and handed to the customer, so an edit here must not be able
+            // to change the number they were told to track with.
+            'courier_tracking_number' => trim($_POST['courier_tracking_number'] ?? ''),
             'tracking_url' => trim($_POST['tracking_url'] ?? '')
         ];
 
@@ -354,9 +357,18 @@ if ($_POST) {
                                         </div>
 
                                         <div class="mb-3">
-                                            <label class="form-label">Tracking Number</label>
-                                            <input type="text" class="form-control" name="tracking_number"
-                                                   value="<?php echo htmlspecialchars($order['tracking_number'] ?? ''); ?>"
+                                            <label class="form-label">Printmont Tracking ID</label>
+                                            <input type="text" class="form-control" readonly disabled
+                                                   value="<?php echo htmlspecialchars($order['tracking_number'] ?: 'Not generated (pre-dates tracking IDs)'); ?>">
+                                            <small class="text-muted">
+                                                Generated when the order was placed and given to the customer. Not editable.
+                                            </small>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Courier AWB / Consignment No.</label>
+                                            <input type="text" class="form-control" name="courier_tracking_number"
+                                                   value="<?php echo htmlspecialchars($order['courier_tracking_number'] ?? ''); ?>"
                                                    placeholder="e.g., AWB-89712634">
                                         </div>
 

@@ -77,10 +77,28 @@ class Order
             $types .= "i";
         }
 
+        // Accepts one status, or several as an array / comma-separated list, so
+        // the storefront's multi-select filter can ask for "shipped or delivered"
+        // in a single query. A single value still produces the same SQL as before.
         if (!empty($filters['status'])) {
-            $where_conditions[] = "o.status = ?";
-            $params[] = $filters['status'];
-            $types .= "s";
+            $statuses = is_array($filters['status'])
+                ? $filters['status']
+                : explode(',', (string) $filters['status']);
+
+            $statuses = array_values(array_filter(array_map('trim', $statuses), fn($s) => $s !== ''));
+
+            if (count($statuses) === 1) {
+                $where_conditions[] = "o.status = ?";
+                $params[] = $statuses[0];
+                $types .= "s";
+            } elseif (count($statuses) > 1) {
+                $placeholders = implode(', ', array_fill(0, count($statuses), '?'));
+                $where_conditions[] = "o.status IN ($placeholders)";
+                foreach ($statuses as $s) {
+                    $params[] = $s;
+                    $types .= "s";
+                }
+            }
         }
 
         if (!empty($filters['payment_status'])) {
@@ -182,25 +200,26 @@ class Order
         try {
             $orderId = null;
             $orderNumber = null;
+            $trackingNumber = null;
 
-            // order_number is NOT NULL UNIQUE and has to exist before insert, so
-            // take the next free sequence and retry if another request wins the race.
-            $next = $this->nextOrderSequence();
-
+            // order_number and tracking_number are both UNIQUE and generated,
+            // so a collision is possible however unlikely. Retry with fresh
+            // values rather than failing the order.
             for ($attempt = 0; $attempt < 5; $attempt++) {
-                $orderNumber = 'ORD-' . ($next + $attempt);
+                $orderNumber = $this->generateOrderNumber();
+                $trackingNumber = $this->generateTrackingNumber();
 
-                $columns = ['order_number', 'customer_name', 'customer_email', 'customer_phone',
+                $columns = ['order_number', 'tracking_number', 'customer_name', 'customer_email', 'customer_phone',
                             'subtotal', 'total_amount', 'tax_amount', 'shipping_cost', 'discount_amount',
                             'grand_total', 'status', 'payment_status', 'payment_method',
                             'notes', 'shipping_address', 'billing_address', 'shipping_method', 'coupon_code'];
-                $values = [$orderNumber, $data['customer_name'], $data['customer_email'], $data['customer_phone'],
+                $values = [$orderNumber, $trackingNumber, $data['customer_name'], $data['customer_email'], $data['customer_phone'],
                            $data['subtotal'], $data['total_amount'], $data['tax_amount'], $data['shipping_cost'],
                            $data['discount_amount'], $data['grand_total'], 'pending', 'pending',
                            $data['payment_method'], $data['notes'], $data['shipping_address'],
                            $data['billing_address'], $data['shipping_method'], $data['coupon_code']];
-                // 4 strings, 6 decimals, 8 strings — must match $columns order.
-                $types = 'ssss' . 'dddddd' . 'ssssssss';
+                // 5 strings, 6 decimals, 8 strings — must match $columns order.
+                $types = 'sssss' . 'dddddd' . 'ssssssss';
 
                 if ($customerColumn !== null && !empty($data['user_id'])) {
                     $columns[] = $customerColumn;
@@ -283,7 +302,11 @@ class Order
 
             $this->conn->commit();
 
-            return ['id' => (int) $orderId, 'order_number' => $orderNumber];
+            return [
+                'id' => (int) $orderId,
+                'order_number' => $orderNumber,
+                'tracking_number' => $trackingNumber,
+            ];
         } catch (Exception $e) {
             $this->conn->rollback();
             throw $e;
@@ -316,15 +339,62 @@ class Order
         return $row ?: null;
     }
 
-    private function nextOrderSequence()
-    {
-        $result = $this->conn->query(
-            "SELECT MAX(CAST(SUBSTRING(order_number, 5) AS UNSIGNED)) AS m
-             FROM {$this->table_orders} WHERE order_number LIKE 'ORD-%'"
-        );
-        $max = $result ? (int) $result->fetch_assoc()['m'] : 0;
+    /**
+     * Alphabet for generated order numbers.
+     *
+     * Uppercase letters and digits, minus the pairs people misread when
+     * copying an order number off an invoice into the Track Order box:
+     * 0/O and 1/I/L. 31 symbols over 12 places is ~7.9e17 combinations.
+     */
+    private const ORDER_ID_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    private const ORDER_ID_LENGTH = 12;
+    private const TRACKING_ID_LENGTH = 10;
 
-        return max(1001, $max + 1);
+    /**
+     * A 12-character order number mixing letters and digits.
+     *
+     * Both classes are seeded explicitly before shuffling: drawing 12
+     * symbols at random from the alphabet yields an all-letters number
+     * about 3% of the time, which would not be the mixed format the rest
+     * of the system advertises.
+     */
+    private function generateOrderNumber()
+    {
+        $letters = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+        $digits = '23456789';
+
+        $chars = [
+            $letters[random_int(0, strlen($letters) - 1)],
+            $digits[random_int(0, strlen($digits) - 1)],
+        ];
+
+        $alphabet = self::ORDER_ID_ALPHABET;
+        $max = strlen($alphabet) - 1;
+        for ($i = count($chars); $i < self::ORDER_ID_LENGTH; $i++) {
+            $chars[] = $alphabet[random_int(0, $max)];
+        }
+
+        // Fisher-Yates, so the seeded letter and digit are not always first.
+        for ($i = count($chars) - 1; $i > 0; $i--) {
+            $j = random_int(0, $i);
+            [$chars[$i], $chars[$j]] = [$chars[$j], $chars[$i]];
+        }
+
+        return implode('', $chars);
+    }
+
+    /**
+     * A 10-digit tracking number. The leading digit is never zero, so the
+     * value survives anything that treats it as an integer along the way.
+     */
+    private function generateTrackingNumber()
+    {
+        $number = (string) random_int(1, 9);
+        for ($i = 1; $i < self::TRACKING_ID_LENGTH; $i++) {
+            $number .= (string) random_int(0, 9);
+        }
+
+        return $number;
     }
 
     // Get order by ID
@@ -382,12 +452,14 @@ class Order
      */
     public function findForTracking($reference, $contact)
     {
+        // Accepts the order number, the generated tracking id, or the courier's
+        // own AWB — a customer may have been given any of the three.
         $query = "SELECT id, order_number, customer_name, status, payment_status,
                          grand_total, shipping_method, shipping_address,
-                         courier_name, tracking_number, tracking_url,
+                         courier_name, tracking_number, courier_tracking_number, tracking_url,
                          created_at, updated_at
                   FROM {$this->table_orders}
-                  WHERE (order_number = ? OR tracking_number = ?)
+                  WHERE (order_number = ? OR tracking_number = ? OR courier_tracking_number = ?)
                     AND (customer_email = ? OR customer_phone = ?)
                   LIMIT 1";
 
@@ -396,7 +468,7 @@ class Order
             return null;
         }
 
-        $stmt->bind_param('ssss', $reference, $reference, $contact, $contact);
+        $stmt->bind_param('sssss', $reference, $reference, $reference, $contact, $contact);
         $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
         $stmt->close();
@@ -404,6 +476,46 @@ class Order
         return $row ?: null;
     }
 
+
+    /**
+     * Items for several orders in one query, grouped by order_id.
+     *
+     * My Orders needs each order's product names and thumbnails, but
+     * getAllOrders only returns order-level columns. Fetching per order would
+     * be N+1, so callers pass the whole page of ids at once.
+     */
+    public function getItemsForOrders(array $orderIds)
+    {
+        $ids = array_values(array_filter(array_map('intval', $orderIds)));
+        if (!$ids) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $types = str_repeat('i', count($ids));
+
+        $query = "SELECT order_id, product_id, product_name, product_image, quantity, unit_price, total_price
+                  FROM {$this->table_order_items}
+                  WHERE order_id IN ($placeholders)
+                  ORDER BY id ASC";
+
+        $stmt = $this->conn->prepare($query);
+        if (!$stmt) {
+            return [];
+        }
+
+        $stmt->bind_param($types, ...$ids);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $grouped = [];
+        while ($row = $result->fetch_assoc()) {
+            $grouped[(int) $row['order_id']][] = $row;
+        }
+        $stmt->close();
+
+        return $grouped;
+    }
     // Get order status history
     public function getStatusHistory($order_id)
     {

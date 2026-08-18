@@ -13,14 +13,23 @@ $postController = new BlogPostController();
 $categoryController = new BlogCategoryController();
 
 try {
-    // Check if specific endpoint is requested
+    // Routing is "blog-api.php/<endpoint>/<param>". Anchor on the script name
+    // rather than a fixed segment index: the old code shifted one segment and
+    // read index 1, which only lands on the endpoint when the API sits exactly
+    // at /api/blog-api.php. Under a subdirectory (e.g. XAMPP's
+    // /printmont/printmont-backend/api/...) it read "api" as the endpoint, so
+    // categories, recent and popular all silently fell through to posts.
     $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    $pathSegments = explode('/', trim($path, '/'));
-    
-    // Remove 'api' from path segments
-    array_shift($pathSegments);
-    $endpoint = $pathSegments[1] ?? '';
-    $param = $pathSegments[2] ?? null;
+    $pathSegments = array_values(array_filter(explode('/', $path), fn($s) => $s !== ''));
+
+    $scriptIndex = array_search('blog-api.php', $pathSegments, true);
+    if ($scriptIndex === false) {
+        $endpoint = $_GET['endpoint'] ?? '';
+        $param = $_GET['param'] ?? null;
+    } else {
+        $endpoint = $pathSegments[$scriptIndex + 1] ?? '';
+        $param = $pathSegments[$scriptIndex + 2] ?? null;
+    }
 
     switch ($endpoint) {
         case 'posts':

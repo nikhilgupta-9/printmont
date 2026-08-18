@@ -292,6 +292,151 @@ class MailService {
     }
 
     /**
+     * Acknowledge a contact-form submission back to the sender.
+     *
+     * Uses the "General Support" purpose so it picks up the "Customer Inquiries
+     * & Support Notifications" configuration when that is active; MailService
+     * falls back to any active config otherwise, so an inactive purpose still
+     * delivers rather than silently dropping the mail.
+     *
+     * @param array $contactInfo optional contact_info row, so the footer shows
+     *                           the real support number and hours
+     */
+    public function sendContactAcknowledgement($toEmail, $name, $subject, $message, array $contactInfo = []) {
+        $topic = trim((string) $subject) !== '' ? trim($subject) : 'your enquiry';
+        $safeName = htmlspecialchars($name !== '' ? $name : 'there', ENT_QUOTES, 'UTF-8');
+        $safeTopic = htmlspecialchars($topic, ENT_QUOTES, 'UTF-8');
+        // The customer's own words, preserved with line breaks.
+        $safeMessage = nl2br(htmlspecialchars((string) $message, ENT_QUOTES, 'UTF-8'));
+
+        $mailSubject = "Thank you for contacting Printmont — {$topic}";
+
+        $helpNumber  = htmlspecialchars((string) ($contactInfo['help_number'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $serviceTime = htmlspecialchars((string) ($contactInfo['service_time'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $supportMail = htmlspecialchars((string) ($contactInfo['sales_email'] ?? ''), ENT_QUOTES, 'UTF-8');
+
+        $contactLines = '';
+        if ($helpNumber !== '') {
+            $contactLines .= "<p style='margin:4px 0;'>Call us: <b>{$helpNumber}</b>"
+                . ($serviceTime !== '' ? " <span style='color:#777;'>({$serviceTime})</span>" : '')
+                . "</p>";
+        }
+        if ($supportMail !== '') {
+            $contactLines .= "<p style='margin:4px 0;'>Email: <b>{$supportMail}</b></p>";
+        }
+
+        $htmlBody = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
+            <div style='background-color: #0b53a1; padding: 20px; text-align: center; color: #ffffff;'>
+                <h2 style='margin: 0;'>Thanks for getting in touch</h2>
+            </div>
+            <div style='padding: 25px; color: #333333;'>
+                <p style='font-size: 16px; margin-top:0;'>Hello <b>{$safeName}</b>,</p>
+                <p>Thank you for contacting <b>Printmont</b> about <b>{$safeTopic}</b>.
+                   We have received your message and our team will get back to you shortly.</p>
+
+                <div style='background-color:#f6f8fb; border-left:4px solid #0b53a1; padding:14px 16px; margin:20px 0; border-radius:4px;'>
+                    <p style='margin:0 0 6px; font-size:13px; color:#666; text-transform:uppercase; letter-spacing:0.03em;'>Your message</p>
+                    <p style='margin:0 0 10px;'><b>Subject:</b> {$safeTopic}</p>
+                    <p style='margin:0; color:#444;'>{$safeMessage}</p>
+                </div>
+
+                <p style='margin-bottom:4px;'>Need to reach us sooner?</p>
+                {$contactLines}
+
+                <p style='font-size: 13px; color: #777777; margin-top:20px;'>
+                    This is an automated confirmation — there is no need to reply to it.
+                </p>
+            </div>
+            <div style='background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;'>
+                &copy; " . date('Y') . " Printmont Corporate Gifts &amp; Merchandise. All rights reserved.
+            </div>
+        </div>";
+
+        return $this->sendEmail($toEmail, $mailSubject, $htmlBody, 'General Support');
+    }
+
+
+    /**
+     * Order confirmation, sent once an order is created.
+     *
+     * Carries both identifiers the customer needs later: the order number and
+     * the tracking id, either of which works on the Track Order page together
+     * with the email or mobile the order was placed with.
+     */
+    public function sendOrderConfirmation(array $order, array $items = []) {
+        $name     = htmlspecialchars((string) ($order['customer_name'] ?? 'there'), ENT_QUOTES, 'UTF-8');
+        $orderNo  = htmlspecialchars((string) ($order['order_number'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $tracking = htmlspecialchars((string) ($order['tracking_number'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $total    = number_format((float) ($order['grand_total'] ?? 0), 2);
+        $address  = nl2br(htmlspecialchars((string) ($order['shipping_address'] ?? ''), ENT_QUOTES, 'UTF-8'));
+        $payment  = htmlspecialchars((string) ($order['payment_method'] ?? ''), ENT_QUOTES, 'UTF-8');
+
+        $rows = '';
+        foreach ($items as $item) {
+            $rows .= "<tr>"
+                . "<td style='padding:8px 0; border-bottom:1px solid #eee;'>"
+                . htmlspecialchars((string) ($item['product_name'] ?? ''), ENT_QUOTES, 'UTF-8')
+                . "<br><span style='color:#777; font-size:12px;'>Qty " . (int) ($item['quantity'] ?? 1) . "</span></td>"
+                . "<td align='right' style='padding:8px 0; border-bottom:1px solid #eee; white-space:nowrap;'>&#8377;"
+                . number_format((float) ($item['total_price'] ?? 0), 2) . "</td>"
+                . "</tr>";
+        }
+
+        $trackingBlock = '';
+        if ($tracking !== '') {
+            $trackingBlock = "
+                <tr>
+                  <td style='padding:6px 0; color:#666;'>Tracking ID</td>
+                  <td align='right' style='padding:6px 0;'><b style='font-size:15px;'>{$tracking}</b></td>
+                </tr>";
+        }
+
+        $subject = "Order Confirmed" . ($orderNo !== '' ? " - {$orderNo}" : '') . " | Printmont";
+
+        $htmlBody = "
+        <div style='font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
+            <div style='background-color: #0b53a1; padding: 22px; text-align: center; color: #ffffff;'>
+                <h2 style='margin: 0;'>Thank you for your order</h2>
+            </div>
+            <div style='padding: 25px; color: #333333;'>
+                <p style='font-size: 16px; margin-top:0;'>Hello <b>{$name}</b>,</p>
+                <p>Your order has been placed successfully. Keep the details below safe &mdash;
+                   you can use either number to track it.</p>
+
+                <table style='width:100%; border-collapse:collapse; background:#f6f8fb; border-left:4px solid #0b53a1; padding:0 14px; margin:18px 0;'>
+                  <tr>
+                    <td style='padding:12px 14px 6px; color:#666;'>Order ID</td>
+                    <td align='right' style='padding:12px 14px 6px;'><b style='font-size:15px;'>{$orderNo}</b></td>
+                  </tr>
+                  {$trackingBlock}
+                  <tr>
+                    <td style='padding:6px 14px 12px; color:#666;'>Order total</td>
+                    <td align='right' style='padding:6px 14px 12px;'><b style='font-size:15px;'>&#8377;{$total}</b></td>
+                  </tr>
+                </table>
+
+                <h4 style='margin:20px 0 6px; font-size:15px;'>Items</h4>
+                <table style='width:100%; border-collapse:collapse; font-size:14px;'>{$rows}</table>
+
+                <h4 style='margin:20px 0 6px; font-size:15px;'>Delivering to</h4>
+                <p style='margin:0; color:#555; font-size:14px;'>{$address}</p>
+
+                <p style='margin:18px 0 0; color:#555; font-size:14px;'>Payment method: <b>{$payment}</b></p>
+
+                <p style='font-size: 13px; color: #777777; margin-top:22px;'>
+                    Track your order any time from the Track Order page using your Order ID or
+                    Tracking ID, along with the email or mobile you ordered with.
+                </p>
+            </div>
+            <div style='background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;'>
+                &copy; " . date('Y') . " Printmont Corporate Gifts &amp; Merchandise. All rights reserved.
+            </div>
+        </div>";
+
+        return $this->sendEmail($order['customer_email'], $subject, $htmlBody, 'Order Confirmation');
+    }
+    /**
      * Send OTP Code Email
      */
     public function sendOtpEmail($userEmail, $otp) {

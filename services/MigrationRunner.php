@@ -13,6 +13,28 @@ require_once(__DIR__ . '/../config/database.php');
  */
 class MigrationRunner
 {
+    /**
+     * MySQL errors that mean "this statement's change is already in place".
+     *
+     * A migration is a description of the desired schema, so re-running one
+     * against a database that already has the column/table/index is a no-op,
+     * not a failure. Without this, adopting the runner on a live database
+     * where someone had already added a column by hand meant the migration
+     * aborted and every later statement in the file was skipped.
+     *
+     * Deliberately excludes 1062 (duplicate entry): that is data, not schema,
+     * and silently swallowing it would hide real problems. Seed rows should
+     * use INSERT IGNORE or ON DUPLICATE KEY UPDATE instead.
+     */
+    private const ALREADY_APPLIED_ERRNOS = [
+        1007, // database exists
+        1050, // table already exists
+        1060, // duplicate column name
+        1061, // duplicate key name
+        1091, // can't DROP; column/key does not exist (already dropped)
+        1826, // duplicate foreign key constraint name
+    ];
+
     private $conn;
     private string $dir;
 
@@ -168,15 +190,23 @@ class MigrationRunner
 
         $start = microtime(true);
         $executed = 0;
+        $skipped = 0;
 
         foreach ($statements as $index => $statement) {
             $result = $this->conn->query($statement);
 
             if ($result === false) {
+                // Already in place (column/table/index exists)? Treat as done.
+                if (in_array($this->conn->errno, self::ALREADY_APPLIED_ERRNOS, true)) {
+                    $skipped++;
+                    continue;
+                }
+
                 return [
                     'migration'  => $name,
                     'ok'         => false,
                     'statements' => $executed,
+                    'skipped'    => $skipped,
                     'ms'         => (int) round((microtime(true) - $start) * 1000),
                     'error'      => sprintf(
                         'Statement %d of %d failed: %s — %s',
@@ -198,9 +228,21 @@ class MigrationRunner
         }
 
         $ms = (int) round((microtime(true) - $start) * 1000);
-        $this->record($name, sha1($sql), $executed, $ms, false, $appliedBy);
 
-        return ['migration' => $name, 'ok' => true, 'statements' => $executed, 'ms' => $ms, 'error' => null];
+        // Nothing left to do means the schema already matched the file — record
+        // it as baselined so the admin screen shows "auto applied" rather than
+        // implying work was performed.
+        $alreadyPresent = ($executed === 0 && $skipped > 0);
+        $this->record($name, sha1($sql), $executed, $ms, $alreadyPresent, $appliedBy);
+
+        return [
+            'migration'  => $name,
+            'ok'         => true,
+            'statements' => $executed,
+            'skipped'    => $skipped,
+            'ms'         => $ms,
+            'error'      => null,
+        ];
     }
 
     /**

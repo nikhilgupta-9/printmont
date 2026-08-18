@@ -272,18 +272,26 @@ if ($_POST && isset($_POST['update_payment_status'])) {
                                     <h5 class="card-title mb-0">Shipment Tracking</h5>
                                 </div>
                                 <div class="card-body">
-                                    <?php if (empty($order['tracking_number']) && empty($order['courier_name'])): ?>
-                                        <p class="text-muted mb-0">
-                                            No tracking details yet.
+                                    <?php if (!empty($order['tracking_number'])): ?>
+                                        <p class="mb-1">
+                                            <strong>Printmont Tracking ID:</strong>
+                                            <?php echo htmlspecialchars($order['tracking_number']); ?>
+                                            <br><small class="text-muted">What the customer uses on the Track Order page.</small>
+                                        </p>
+                                    <?php endif; ?>
+
+                                    <?php if (empty($order['courier_tracking_number']) && empty($order['courier_name'])): ?>
+                                        <p class="text-muted mb-0 mt-2">
+                                            No courier details yet.
                                             <a href="edit-order.php?id=<?php echo (int)$order['id']; ?>">Add them</a>
-                                            so the customer can track this order.
+                                            once the parcel is handed over.
                                         </p>
                                     <?php else: ?>
                                         <?php if (!empty($order['courier_name'])): ?>
-                                            <p class="mb-1"><strong>Courier:</strong> <?php echo htmlspecialchars($order['courier_name']); ?></p>
+                                            <p class="mb-1 mt-2"><strong>Courier:</strong> <?php echo htmlspecialchars($order['courier_name']); ?></p>
                                         <?php endif; ?>
-                                        <?php if (!empty($order['tracking_number'])): ?>
-                                            <p class="mb-1"><strong>Tracking No:</strong> <?php echo htmlspecialchars($order['tracking_number']); ?></p>
+                                        <?php if (!empty($order['courier_tracking_number'])): ?>
+                                            <p class="mb-1"><strong>Courier AWB:</strong> <?php echo htmlspecialchars($order['courier_tracking_number']); ?></p>
                                         <?php endif; ?>
                                         <?php if (!empty($order['tracking_url'])): ?>
                                             <p class="mb-0">

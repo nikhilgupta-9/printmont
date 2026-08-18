@@ -117,8 +117,10 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                             <!-- Description -->
                                             <div class="mb-3">
                                                 <label class="form-label">Description</label>
-                                                <textarea class="form-control" name="description"
-                                                    rows="4"><?= $p['description'] ?></textarea>
+                                                <textarea class="form-control policy-richtext"
+                                                    id="description-<?= htmlspecialchars($p['policy_key']) ?>"
+                                                    name="description"
+                                                    rows="8"><?= htmlspecialchars($p['description'] ?? '') ?></textarea>
                                             </div>
 
                                             <!-- Points -->
@@ -173,7 +175,64 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     </div>
 
     <script src="js/app.js"></script>
+    <!-- Same CKEditor build the rest of the admin uses (blog posts, products). -->
+    <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
     <script>
+        // Each policy is its own tab pane, so there is one editor per policy.
+        // CKEditor measures the textarea when it attaches, and a pane that is
+        // still hidden measures zero — so only the visible tab is initialised
+        // up front and the rest are created the first time their tab is shown.
+        (function () {
+            if (typeof CKEDITOR === 'undefined') return;
+
+            const CONFIG = {
+                height: 260,
+                removePlugins: 'elementspath',
+                resize_enabled: true,
+                toolbar: [
+                    { name: 'styles', items: ['Format'] },
+                    { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', '-', 'RemoveFormat'] },
+                    { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote'] },
+                    { name: 'links', items: ['Link', 'Unlink'] },
+                    { name: 'insert', items: ['Table', 'HorizontalRule'] },
+                    { name: 'tools', items: ['Maximize'] },
+                    { name: 'document', items: ['Source'] }
+                ]
+            };
+
+            function initEditor(textarea) {
+                if (!textarea || CKEDITOR.instances[textarea.id]) return;
+                CKEDITOR.replace(textarea.id, CONFIG);
+            }
+
+            function initVisible() {
+                document.querySelectorAll('.tab-pane.active .policy-richtext').forEach(initEditor);
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                initVisible();
+
+                // Bootstrap fires this after the pane is visible and measurable.
+                document.querySelectorAll('[data-bs-toggle="tab"], [data-bs-toggle="pill"]').forEach(function (trigger) {
+                    trigger.addEventListener('shown.bs.tab', function (e) {
+                        const paneId = (e.target.getAttribute('href') || e.target.dataset.bsTarget || '').replace('#', '');
+                        const pane = paneId && document.getElementById(paneId);
+                        if (pane) pane.querySelectorAll('.policy-richtext').forEach(initEditor);
+                    });
+                });
+            });
+
+            // CKEditor writes back to its textarea on submit, but only for the
+            // form it belongs to — force it so a stale value is never posted.
+            document.addEventListener('submit', function (e) {
+                if (!e.target.matches('form')) return;
+                e.target.querySelectorAll('.policy-richtext').forEach(function (ta) {
+                    const instance = CKEDITOR.instances[ta.id];
+                    if (instance) ta.value = instance.getData();
+                });
+            }, true);
+        })();
+
         function addPoint(id) {
             const container = document.getElementById("points-" + id);
             const div = document.createElement("div");

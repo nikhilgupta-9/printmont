@@ -2,6 +2,7 @@
 require_once(__DIR__ . '/../config/database.php');
 // require_once 'models/Database.php';
 require_once(__DIR__ . '/../models/Order.php');
+require_once(__DIR__ . '/../services/MailService.php');
 
 class OrderController
 {
@@ -38,9 +39,20 @@ class OrderController
 
             $result = $this->order->getAllOrders($page, $limit, $filters);
 
+            // Attach line items so My Orders can show real product names and
+            // thumbnails. Without this the list carries only order-level
+            // columns, so every row rendered as a generic "Order #13" with a
+            // placeholder image. One batched query, not one per order.
+            $orders = $result['orders'];
+            $itemsByOrder = $this->order->getItemsForOrders(array_column($orders, 'id'));
+            foreach ($orders as &$order) {
+                $order['items'] = $itemsByOrder[(int) $order['id']] ?? [];
+            }
+            unset($order);
+
             return [
                 'success' => true,
-                'data' => $result['orders'],
+                'data' => $orders,
                 'total_count' => $result['total_count'],
                 'total_pages' => $result['total_pages'],
                 'current_page' => $result['current_page'],
@@ -123,6 +135,7 @@ class OrderController
                     'shipping_address' => $order['shipping_address'],
                     'courier_name'     => $order['courier_name'],
                     'tracking_number'  => $order['tracking_number'],
+                    'courier_tracking_number' => $order['courier_tracking_number'],
                     'tracking_url'     => $order['tracking_url'],
                     'placed_at'        => $order['created_at'],
                     'updated_at'       => $order['updated_at'],
@@ -299,12 +312,33 @@ class OrderController
                 'items'            => $items,
             ]);
 
+            // Confirmation email carrying both the order number and the
+            // tracking id. The order is already committed, so a mail failure is
+            // logged and reported alongside success rather than failing the
+            // order the customer just paid for.
+            $mailer = new MailService();
+            $mailSent = $mailer->sendOrderConfirmation([
+                'customer_name'    => $customerName,
+                'customer_email'   => $customerEmail,
+                'order_number'     => $orderId['order_number'],
+                'tracking_number'  => $orderId['tracking_number'] ?? null,
+                'grand_total'      => $grandTotal,
+                'shipping_address' => $shippingAddress,
+                'payment_method'   => $data['paymentMethod'] ?? $data['payment_method'] ?? 'cod',
+            ], $items);
+
+            if (!$mailSent) {
+                error_log('Order confirmation not sent for ' . $orderId['order_number'] . ': ' . $mailer->getLastError());
+            }
+
             return [
-                'success'      => true,
-                'message'      => 'Order created successfully',
-                'order_id'     => $orderId['id'],
-                'order_number' => $orderId['order_number'],
-                'grand_total'  => $grandTotal,
+                'success'         => true,
+                'message'         => 'Order created successfully',
+                'order_id'        => $orderId['id'],
+                'order_number'    => $orderId['order_number'],
+                'tracking_number' => $orderId['tracking_number'] ?? null,
+                'grand_total'     => $grandTotal,
+                'mail_sent'       => $mailSent,
             ];
         } catch (Exception $e) {
             return [

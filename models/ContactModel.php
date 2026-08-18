@@ -115,6 +115,114 @@ class ContactModel
     }
 
     /* ============================
+       CREATE Contact Inquiry (public contact form)
+       ============================ */
+    public function createInquiry($data)
+    {
+        $stmt = $this->db->prepare(
+            "INSERT INTO contact_inquiries (name, email, phone, subject, message, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, 'new', NOW(), NOW())"
+        );
+
+        if (!$stmt) {
+            return ['success' => false, 'message' => 'Could not save your message.'];
+        }
+
+        $name    = $data['name'];
+        $email   = $data['email'];
+        $phone   = $data['phone'] ?? '';
+        $subject = $data['subject'] ?? '';
+        $message = $data['message'];
+
+        $stmt->bind_param('sssss', $name, $email, $phone, $subject, $message);
+
+        if (!$stmt->execute()) {
+            $error = $stmt->error;
+            $stmt->close();
+            return ['success' => false, 'message' => 'Could not save your message: ' . $error];
+        }
+
+        $id = $stmt->insert_id;
+        $stmt->close();
+
+        return ['success' => true, 'id' => (int) $id, 'message' => 'Thanks — we have received your message.'];
+    }
+
+    /* ============================
+       LIST Contact Inquiries (admin)
+       ============================ */
+    public function getInquiries($status = '')
+    {
+        $sql = "SELECT * FROM contact_inquiries";
+        $params = [];
+
+        if ($status !== '') {
+            $sql .= " WHERE status = ?";
+            $params[] = $status;
+        }
+        $sql .= " ORDER BY created_at DESC";
+
+        $stmt = $this->db->prepare($sql);
+        if (!$stmt) {
+            return [];
+        }
+        if ($params) {
+            $stmt->bind_param('s', $params[0]);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $rows = [];
+        while ($row = $result->fetch_assoc()) {
+            $rows[] = $row;
+        }
+        $stmt->close();
+
+        return $rows;
+    }
+
+    public function updateInquiryStatus($id, $status, $notes = '')
+    {
+        $stmt = $this->db->prepare(
+            "UPDATE contact_inquiries SET status = ?, admin_notes = ?, updated_at = NOW() WHERE id = ?"
+        );
+        if (!$stmt) {
+            return false;
+        }
+        $id = (int) $id;
+        $stmt->bind_param('ssi', $status, $notes, $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+
+        return $ok;
+    }
+
+    /* ============================
+       VALIDATE Inquiry (public contact form)
+       ============================ */
+    public function validateInquiry($data)
+    {
+        $errors = [];
+
+        if (empty(trim($data['name'] ?? ''))) {
+            $errors[] = "Name is required";
+        }
+        if (empty(trim($data['email'] ?? ''))) {
+            $errors[] = "Email is required";
+        } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "Enter a valid email address";
+        }
+        if (empty(trim($data['message'] ?? ''))) {
+            $errors[] = "Message is required";
+        }
+        if (!empty($data['phone']) && !preg_match('/^[0-9+\-\s()]{6,20}$/', $data['phone'])) {
+            $errors[] = "Enter a valid phone number";
+        }
+
+        return $errors;
+    }
+
+    /* ============================
        VALIDATE Contact Data
        ============================ */
     public function validateContactData($data)

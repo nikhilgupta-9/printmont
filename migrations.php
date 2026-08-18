@@ -235,7 +235,8 @@ $needsBaseline = $appliedCount === 0 && count($pending) > 0;
                                                             <?php elseif (!$row['applied']): ?>
                                                                 <span class="status-badge status-pending">Pending</span>
                                                             <?php elseif ($row['baselined']): ?>
-                                                                <span class="status-badge status-baselined">Baselined</span>
+                                                                <span class="status-badge status-baselined"
+                                                                      title="Schema already matched this file, so nothing needed running">Auto applied</span>
                                                             <?php else: ?>
                                                                 <span class="status-badge status-applied">Applied</span>
                                                             <?php endif; ?>
@@ -287,11 +288,14 @@ $needsBaseline = $appliedCount === 0 && count($pending) > 0;
                                     <div class="card-body">
                                         <div class="log-box"><?php
                                             foreach ($migrationLog as $entry) {
+                                                $skipped = (int) ($entry['skipped'] ?? 0);
                                                 echo htmlspecialchars(sprintf(
-                                                    "%s  %s  (%d statement(s), %dms)\n",
+                                                    "%s  %s  (%d statement(s)%s, %dms)\n",
                                                     $entry['ok'] ? '[  OK  ]' : '[FAILED]',
                                                     $entry['migration'],
                                                     $entry['statements'],
+                                                    // Statements whose change was already present on this database.
+                                                    $skipped > 0 ? ", {$skipped} already applied" : '',
                                                     $entry['ms']
                                                 ));
                                                 if (!$entry['ok']) {

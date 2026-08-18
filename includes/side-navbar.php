@@ -179,7 +179,8 @@ $page_groups = [
 		'faq-view.php',
 		'faq-view-category.php',
 		'edit-faq.php',
-		'help-center.php'
+		'help-center.php',
+		'security-management.php'
 	],
 
 	// Watermark
@@ -328,6 +329,7 @@ $page_groups = [
 	'product_filters_setting' => [
 		'product-filters.php'
 	],
+
 
 	// Analytics
 	'analytics' => [
@@ -930,6 +932,13 @@ function shouldExpand($group_name, $current_page, $page_groups)
 								<span class="align-middle">Help Center</span>
 							</a>
 						</li>
+						<li
+							class="sidebar-item <?php echo isActivePage('security-management.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='security-management.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Security Page</span>
+							</a>
+						</li>
 					</ul>
 				</li>
 
@@ -1321,6 +1330,12 @@ function shouldExpand($group_name, $current_page, $page_groups)
 							<a class='sidebar-link' href='website-content.php'>
 								<i class="align-middle" data-feather="circle"></i>
 								<span class="align-middle">Website Contents</span>
+							</a>
+						</li>
+						<li class="sidebar-item <?php echo isActivePage('general-settings.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='general-settings.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Contact Details</span>
 							</a>
 						</li>
 						<li class="sidebar-item <?php echo isActivePage('error-background.php', $current_page) ? 'active' : ''; ?>">
