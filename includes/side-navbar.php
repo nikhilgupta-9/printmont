@@ -174,6 +174,7 @@ $page_groups = [
 		'edit-career.php',
 		'career-applications.php',
 		'affiliate-page.php',
+		'become-a-seller-page.php',
 		'policy-management.php',
 		'policy-edit.php',
 		'faq-view.php',
@@ -899,6 +900,13 @@ function shouldExpand($group_name, $current_page, $page_groups)
 								<i class="align-middle"
 									data-feather="<?php echo isActivePage('affiliate-page.php', $current_page) ? 'circle' : 'circle'; ?>"></i>
 								<span class="align-middle">Affiliate Program</span>
+							</a>
+						</li>
+						<li
+							class="sidebar-item <?php echo isActivePage('become-a-seller-page.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='become-a-seller-page.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Become a Seller</span>
 							</a>
 						</li>
 						<li

@@ -141,6 +141,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                                 <option value="team" <?php echo ($_POST['section_type'] ?? '') == 'team' ? 'selected' : ''; ?>>Team Section</option>
                                                                 <option value="values" <?php echo ($_POST['section_type'] ?? '') == 'values' ? 'selected' : ''; ?>>Values Section</option>
                                                                 <option value="history" <?php echo ($_POST['section_type'] ?? '') == 'history' ? 'selected' : ''; ?>>History Section</option>
+                                                                <option value="story" <?php echo ($_POST['section_type'] ?? '') == 'story' ? 'selected' : ''; ?>>Story — how it all started</option>
+                                                                <option value="highlight" <?php echo ($_POST['section_type'] ?? '') == 'highlight' ? 'selected' : ''; ?>>Highlight — wide info panel</option>
+                                                                <option value="feature" <?php echo ($_POST['section_type'] ?? '') == 'feature' ? 'selected' : ''; ?>>Feature card — add one row per card</option>
+                                                                <option value="stat" <?php echo ($_POST['section_type'] ?? '') == 'stat' ? 'selected' : ''; ?>>Statistic — title is the number, content is the label</option>
+                                                                <option value="accolade" <?php echo ($_POST['section_type'] ?? '') == 'accolade' ? 'selected' : ''; ?>>Accolade — award name goes in the title</option>
                                                             </select>
                                                             <div class="form-text">Choose the purpose of this section.</div>
                                                         </div>

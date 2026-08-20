@@ -19,7 +19,11 @@ try {
         echo json_encode([
             'success' => true,
             'message' => 'About Us sections retrieved successfully',
-            'data' => $sections
+            'data' => $sections,
+            // Team members live in their own table with their own admin
+            // screens, but were never served, so the About page had to
+            // hardcode the team.
+            'team' => $aboutController->getTeamMembers()
         ]);
     } else {
         http_response_code(404); // Not found

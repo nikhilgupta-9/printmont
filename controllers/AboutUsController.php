@@ -10,6 +10,11 @@ class AboutUsController {
     }
 
     // Section Methods
+    /** Team members for the About page. The model already had this; the API never exposed it. */
+    public function getTeamMembers() {
+        return $this->model->getAllTeamMembers();
+    }
+
     public function getAllSections() {
         return $this->model->getAllSections();
     }
