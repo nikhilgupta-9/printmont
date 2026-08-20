@@ -112,6 +112,9 @@ export const API_ENDPOINTS = {
   CAREER_DETAIL: (id) => `${BASE_URL}/career-get-api.php?id=${id}`,
   CAREER_POST: `${BASE_URL}/career-post-api.php`,
 
+  // Marketing pages driven by page_sections (affiliate, business-solutions)
+  PAGE_SECTIONS: (pageKey) => `${BASE_URL}/page-sections-api.php?page=${pageKey}`,
+
   // CMS & Content (Logo, Header, Footer, etc.)
   ABOUT: `${BASE_URL}/about-api.php`,
   CONTACT: `${BASE_URL}/contact-api.php`,

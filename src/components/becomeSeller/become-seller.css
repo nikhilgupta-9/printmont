@@ -1,0 +1,543 @@
+/* ============================================================
+   Become a Seller — the seller-marketplace layout from the reference,
+   in the Printmont theme.
+
+   Alternating white and pale-blue bands, two-tone headings, bordered
+   white cards with a small "Learn More" link, outline secondary buttons
+   and a solid primary. All content comes from page_sections, so every
+   band is optional and the grids grow with the row count.
+   ============================================================ */
+
+:root {
+  --bs-theme: rgb(11, 83, 161);
+  --bs-theme-dark: #09447f;
+  --bs-ink: #212121;
+  --bs-body: #5b6673;
+  --bs-line: #e4e7ec;
+  --bs-tint: #f4f9ff;
+
+  --bs-h1: 2.25rem;   /* ~36px */
+  --bs-h2: 1.75rem;   /* ~28px */
+  --bs-h3: 1.0625rem; /* ~17px */
+  --bs-text: 1rem;    /* 16px */
+  --bs-small: 0.875rem;
+}
+
+.bs-page {
+  background: #fff;
+  color: var(--bs-body);
+  overflow-x: hidden;
+}
+
+/* ---------- Hero ---------- */
+.bs-hero-wrap {
+  /* Leaves room for the stats strip to straddle the hero's lower edge. */
+  padding-bottom: 3.5rem;
+}
+
+.bs-hero {
+  position: relative;
+  background-color: var(--bs-theme);
+  background-size: cover;
+  background-position: center;
+  padding: 3.5rem 0 5rem;
+}
+
+.bs-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11, 83, 161, .82) 0%, rgba(9, 68, 127, .92) 100%);
+}
+
+.bs-hero__inner {
+  position: relative;
+  color: #fff;
+  text-align: center;
+}
+
+.bs-hero__title {
+  font-weight: 700;
+  font-size: clamp(1.6rem, 1.2rem + 2vw, var(--bs-h1));
+  margin: 0 0 .75rem;
+}
+
+.bs-hero__lead {
+  max-width: 40rem;
+  margin: 0 auto 1.5rem;
+  font-size: var(--bs-text);
+  line-height: 1.7;
+  color: rgba(255, 255, 255, .9);
+}
+
+/* ---------- Stats strip ---------- */
+.bs-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: #fff;
+  border: 1px solid var(--bs-line);
+  border-radius: .5rem;
+  box-shadow: 0 .35rem 1.1rem rgba(0, 0, 0, .08);
+  /* Pulls the strip up over the hero. */
+  margin-top: -3.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.bs-stats__item {
+  text-align: center;
+  padding: 1.1rem .75rem;
+}
+
+.bs-stats__item + .bs-stats__item {
+  border-left: 1px solid var(--bs-line);
+}
+
+.bs-stats__num {
+  color: var(--bs-theme);
+  font-weight: 700;
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.bs-stats__label {
+  color: var(--bs-body);
+  font-size: var(--bs-small);
+  margin-top: .15rem;
+}
+
+/* ---------- Bands ---------- */
+.bs-sec {
+  padding: 3rem 0;
+}
+
+.bs-sec--tint {
+  background: var(--bs-tint);
+}
+
+.bs-h2 {
+  color: var(--bs-ink);
+  font-weight: 700;
+  font-size: clamp(1.3rem, 1.1rem + 1vw, var(--bs-h2));
+  text-align: center;
+  margin: 0 0 .65rem;
+}
+
+.bs-h2 span {
+  color: var(--bs-theme);
+}
+
+.bs-h2--left {
+  text-align: left;
+}
+
+.bs-intro {
+  font-size: var(--bs-text);
+  line-height: 1.7;
+  text-align: center;
+  max-width: 46rem;
+  margin: 0 auto 2rem;
+}
+
+.bs-intro--left {
+  text-align: left;
+  margin-left: 0;
+}
+
+/* ---------- Cards ---------- */
+.bs-card {
+  background: #fff;
+  border: 1px solid var(--bs-line);
+  border-radius: .5rem;
+  padding: 1.15rem 1.25rem;
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+
+.bs-card:hover {
+  border-color: var(--bs-theme);
+  box-shadow: 0 .35rem .9rem rgba(0, 0, 0, .07);
+}
+
+.bs-card__head {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  margin-bottom: .6rem;
+}
+
+.bs-card__icon {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  color: var(--bs-theme);
+}
+
+.bs-card__img {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.bs-card__title {
+  color: var(--bs-ink);
+  font-weight: 700;
+  font-size: var(--bs-h3);
+  margin: 0;
+}
+
+.bs-card__text {
+  font-size: var(--bs-small);
+  line-height: 1.65;
+  margin-bottom: .75rem;
+}
+
+.bs-learn {
+  color: var(--bs-ink);
+  font-size: var(--bs-small);
+  text-decoration: none;
+  border-bottom: 1px solid var(--bs-line);
+  padding-bottom: 1px;
+}
+
+.bs-learn:hover {
+  color: var(--bs-theme);
+  border-color: var(--bs-theme);
+}
+
+/* Decorative panel where the reference places a photograph. */
+.bs-aside {
+  background: var(--bs-tint);
+  border-radius: .75rem;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bs-aside--support {
+  min-height: 260px;
+}
+
+.bs-aside__icon {
+  width: 74px;
+  height: 74px;
+  color: rgba(11, 83, 161, .25);
+}
+
+/* ---------- Seller stories ---------- */
+.bs-story-wrap {
+  position: relative;
+  padding: 0 2.75rem;
+}
+
+.bs-story {
+  background: #fff;
+  border: 1px solid var(--bs-line);
+  border-radius: .75rem;
+  padding: 1.75rem 1.5rem;
+  text-align: center;
+}
+
+.bs-story__avatar {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto .85rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #ffd66b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--bs-ink);
+}
+
+.bs-story__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bs-story__name,
+.bs-story__co {
+  color: var(--bs-ink);
+  font-weight: 600;
+  font-size: var(--bs-h3);
+  line-height: 1.4;
+}
+
+.bs-story__quote {
+  color: var(--bs-theme);
+  width: 22px;
+  height: 22px;
+  margin: .65rem 0 .4rem;
+}
+
+.bs-story__text {
+  font-size: var(--bs-small);
+  line-height: 1.75;
+  margin: 0;
+}
+
+/* ---------- Carousel controls ---------- */
+.bs-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--bs-line);
+  background: #fff;
+  color: var(--bs-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+}
+
+.bs-arrow:hover {
+  border-color: var(--bs-theme);
+  color: var(--bs-theme);
+}
+
+.bs-arrow--prev { left: 0; }
+.bs-arrow--next { right: 0; }
+
+.bs-dots {
+  display: flex;
+  justify-content: center;
+  gap: .35rem;
+  margin-top: 1rem;
+}
+
+.bs-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: #c8ced6;
+  transition: width .2s ease, background .2s ease;
+}
+
+.bs-dot.is-active {
+  width: 22px;
+  background: var(--bs-theme);
+}
+
+/* ---------- Journey ---------- */
+.bs-journey {
+  text-align: left;
+}
+
+.bs-journey__art {
+  background: var(--bs-tint);
+  border-radius: .5rem;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: .75rem;
+  overflow: hidden;
+}
+
+.bs-journey__art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bs-journey__num {
+  font-weight: 700;
+  font-size: 2rem;
+  color: rgba(11, 83, 161, .3);
+}
+
+.bs-journey__title {
+  color: var(--bs-ink);
+  font-weight: 700;
+  font-size: var(--bs-h3);
+  margin: 0 0 .3rem;
+}
+
+.bs-journey__text {
+  font-size: var(--bs-small);
+  line-height: 1.6;
+}
+
+/* ---------- Growth tools ---------- */
+.bs-tools {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Oversized faded word behind the tool cards, as on the reference. */
+.bs-watermark {
+  position: absolute;
+  left: 1rem;
+  top: 7.5rem;
+  font-size: clamp(3rem, 2rem + 6vw, 6rem);
+  font-weight: 800;
+  line-height: 1;
+  color: rgba(11, 83, 161, .07);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* ---------- Platform peek ---------- */
+.bs-peek-wrap {
+  position: relative;
+  padding: 0 2.75rem;
+}
+
+.bs-peek {
+  background: #fff;
+  border: 1px solid var(--bs-line);
+  border-radius: .75rem;
+  padding: 1.75rem;
+}
+
+.bs-peek__title {
+  color: var(--bs-theme);
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin: 0 0 .6rem;
+}
+
+.bs-peek__text {
+  font-size: var(--bs-small);
+  line-height: 1.75;
+  margin-bottom: 1.25rem;
+}
+
+.bs-peek__art img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: .5rem;
+}
+
+.bs-peek__placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: .5rem;
+  background: linear-gradient(135deg, #eaf2fb 0%, #dbe8f7 100%);
+}
+
+/* ---------- Buttons ---------- */
+.bs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  background: var(--bs-theme);
+  border: 1px solid var(--bs-theme);
+  color: #fff;
+  font-weight: 600;
+  font-size: var(--bs-small);
+  padding: .6rem 1.4rem;
+  border-radius: .25rem;
+  text-decoration: none;
+}
+
+.bs-btn:hover {
+  background: var(--bs-theme-dark);
+  border-color: var(--bs-theme-dark);
+  color: #fff;
+}
+
+.bs-btn:disabled {
+  opacity: .7;
+}
+
+.bs-btn--ghost {
+  background: #fff;
+  color: var(--bs-theme);
+}
+
+.bs-btn--ghost:hover {
+  background: rgba(11, 83, 161, .06);
+  color: var(--bs-theme-dark);
+}
+
+/* ---------- Help form ---------- */
+.bs-field.form-control,
+.bs-field.form-select {
+  border: 1px solid #ccd2d9;
+  border-radius: .25rem;
+  padding: .55rem .75rem;
+  font-size: var(--bs-small);
+  margin-bottom: .85rem;
+  box-shadow: none;
+  max-width: 26rem;
+}
+
+.bs-field.form-control:focus,
+.bs-field.form-select:focus {
+  border-color: var(--bs-theme);
+  box-shadow: 0 0 0 .2rem rgba(11, 83, 161, .12);
+}
+
+.bs-sent {
+  border: 1px solid var(--bs-line);
+  border-radius: .5rem;
+  padding: 1.5rem;
+  max-width: 26rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 991.98px) {
+  .bs-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* With two per row, the divider must reset on each new row. */
+  .bs-stats__item:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .bs-stats__item:nth-child(n + 3) {
+    border-top: 1px solid var(--bs-line);
+  }
+
+  .bs-watermark {
+    top: 6rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .bs-sec {
+    padding: 2rem 0;
+  }
+
+  .bs-hero {
+    padding: 2.5rem 0 4rem;
+  }
+
+  /* Arrows sit under the card rather than crowding it on a phone. */
+  .bs-story-wrap,
+  .bs-peek-wrap {
+    padding: 0;
+  }
+
+  .bs-arrow {
+    display: none;
+  }
+
+  .bs-peek {
+    padding: 1.15rem;
+  }
+
+  .bs-field.form-control,
+  .bs-field.form-select,
+  .bs-sent {
+    max-width: none;
+  }
+
+  .bs-btn {
+    width: 100%;
+  }
+}
