@@ -226,12 +226,53 @@
   transform: scale(1.05);
 }
 
+/* ------------------------------------------------------------------
+   Product card type scale
+
+   Every size on the card used to be a fixed rem value written inline,
+   which meant 9.6px prices on a phone and the same 9.6px on a 1440px
+   monitor. These grow with the viewport instead, with a readable floor.
+   ------------------------------------------------------------------ */
+/* On :root, not .product-card — the category tiles reuse these classes
+   inside a plain .card and would not inherit them otherwise. */
+:root {
+  --pc-badge: clamp(0.7rem, 0.64rem + 0.2vw, 0.78rem);
+  --pc-title: clamp(0.82rem, 0.74rem + 0.3vw, 0.95rem);
+  --pc-price: clamp(0.92rem, 0.82rem + 0.35vw, 1.06rem);
+  --pc-was: clamp(0.74rem, 0.68rem + 0.2vw, 0.84rem);
+  --pc-off: clamp(0.74rem, 0.68rem + 0.2vw, 0.84rem);
+}
+
 .product-card-badge {
-  font-size: 0.7rem;
+  font-size: var(--pc-badge);
   padding: 3px 6px;
   font-weight: 600;
   border-radius: 0 0 4px 0;
   z-index: 10;
+}
+
+.product-card-overlay-tag {
+  font-size: var(--pc-badge);
+  letter-spacing: 0.5px;
+  background-color: #1d3557;
+  opacity: 0.95;
+  z-index: 10;
+}
+
+.product-card-title {
+  font-size: var(--pc-title);
+}
+
+.product-card-main-price {
+  font-size: var(--pc-price);
+}
+
+.product-card-was-price {
+  font-size: var(--pc-was);
+}
+
+.product-card-discount-text {
+  font-size: var(--pc-off);
 }
 
 .product-card-action-badge {
@@ -354,21 +395,22 @@
     padding: 0 !important;
   }
 
-  /* Standardize product and category item text size on desktop */
+  /* Standardize product and category item text size on desktop.
+     Sizes come from the card's own scale so one place sets them. */
   .product-card-title {
-    font-size: 0.85rem !important;
+    font-size: var(--pc-title) !important;
     font-weight: 600 !important;
     line-height: 1.25 !important;
     max-height: 2.6em !important;
   }
 
   .product-card-discount-text {
-    font-size: 0.78rem !important;
+    font-size: var(--pc-off) !important;
     font-weight: 600 !important;
   }
 
   .product-card-main-price {
-    font-size: 0.85rem !important;
+    font-size: var(--pc-price) !important;
     font-weight: 700 !important;
   }
 }

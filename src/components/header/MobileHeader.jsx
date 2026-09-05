@@ -155,7 +155,7 @@ const MobileHeader = () => {
               <GiHamburgerMenu size={24} />
             </button>
             <Link to="/">
-              <img src={logo || "/PrintLogo.png"} alt="Printmont Logo" style={{ height: "30px", objectFit: "contain" }} onError={(e) => { e.target.src = "/PrintLogo.png"; }} />
+              <img src={logo || "/PrintLogo.png"} alt="Printmont Logo" className="site-header__logo" onError={(e) => { e.target.src = "/PrintLogo.png"; }} />
             </Link>
           </div>
 

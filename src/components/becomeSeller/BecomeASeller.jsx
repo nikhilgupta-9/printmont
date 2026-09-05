@@ -36,6 +36,7 @@ const BecomeASeller = () => {
   const headings = many("heading");
   const labels = many("label");
   const topics = many("topic");
+  const asides = many("aside");
 
   /**
    * A band's heading row. `content` packs two values behind a pipe —
@@ -52,6 +53,24 @@ const BecomeASeller = () => {
   /** Button or label caption by key. */
   const label = (key, fallback = "") =>
     labels.find((l) => l.extra === key)?.title || fallback;
+
+  /**
+   * The photograph in a band's side panel. Until one is uploaded the panel
+   * keeps its icon, so `Aside` decides between the two rather than the
+   * markup at each call site.
+   */
+  const Aside = ({ band: key, icon: Icon, className = "" }) => {
+    const row = asides.find((a) => a.extra === key);
+    const src = row?.image_path ? resolveImageUrl(row.image_path) : "";
+
+    return (
+      <div className={`bs-aside ${className}`} aria-hidden={src ? undefined : "true"}>
+        {src
+          ? <img src={src} alt={row.title || ""} loading="lazy" />
+          : <Icon className="bs-aside__icon" />}
+      </div>
+    );
+  };
 
   const [storyIndex, setStoryIndex] = useState(0);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -181,9 +200,7 @@ const BecomeASeller = () => {
                 </Row>
               </Col>
               <Col xs={12} lg={4} className="d-none d-lg-block">
-                <div className="bs-aside" aria-hidden="true">
-                  <FaStore className="bs-aside__icon" />
-                </div>
+                <Aside band="why" icon={FaStore} />
               </Col>
             </Row>
           </Container>
@@ -269,15 +286,17 @@ const BecomeASeller = () => {
 
             <Row className="g-3 g-md-4">
               {journey.map((j, i) => (
-                <Col xs={6} md={4} lg key={j.id}>
+                <Col xs={12} sm={6} md={4} lg key={j.id}>
                   <div className="bs-journey">
                     <div className="bs-journey__art">
                       {j.image_path
                         ? <img src={resolveImageUrl(j.image_path)} alt="" loading="lazy" />
                         : <span className="bs-journey__num">{i + 1}</span>}
                     </div>
-                    <h3 className="bs-journey__title">{j.title}</h3>
-                    <p className="bs-journey__text mb-0">{j.content}</p>
+                    <div className="bs-journey__body">
+                      <h3 className="bs-journey__title">{j.title}</h3>
+                      <p className="bs-journey__text mb-0">{j.content}</p>
+                    </div>
                   </div>
                 </Col>
               ))}
@@ -448,9 +467,7 @@ const BecomeASeller = () => {
             </Col>
 
             <Col xs={12} lg={7} className="d-none d-lg-block">
-              <div className="bs-aside bs-aside--support" aria-hidden="true">
-                <FaHeadset className="bs-aside__icon" />
-              </div>
+              <Aside band="help" icon={FaHeadset} className="bs-aside--support" />
             </Col>
           </Row>
         </Container>

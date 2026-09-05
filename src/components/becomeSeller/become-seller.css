@@ -29,6 +29,22 @@
   overflow-x: hidden;
 }
 
+/* index.css strips the padding off every .container site-wide with an
+   !important rule. Without a gutter of our own, headings and body copy sit
+   flush against the screen edge on phones and tablets. Scoped to this page
+   so the global rule is left alone. */
+.bs-page .container {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+@media (min-width: 768px) {
+  .bs-page .container {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+  }
+}
+
 /* ---------- Hero ---------- */
 .bs-hero-wrap {
   /* Leaves room for the stats strip to straddle the hero's lower edge. */
@@ -192,6 +208,7 @@
 }
 
 .bs-learn {
+  display: inline-block;
   color: var(--bs-ink);
   font-size: var(--bs-small);
   text-decoration: none;
@@ -199,23 +216,42 @@
   padding-bottom: 1px;
 }
 
+/* A one-line link is a poor tap target on a phone; give it some height. */
+@media (max-width: 767.98px) {
+  .bs-learn {
+    padding-top: .5rem;
+    padding-bottom: .4rem;
+  }
+}
+
 .bs-learn:hover {
   color: var(--bs-theme);
   border-color: var(--bs-theme);
 }
 
-/* Decorative panel where the reference places a photograph. */
+/* Side panel: an uploaded photograph, or an icon until there is one.
+   The box keeps its shape either way so the band never shifts height. */
 .bs-aside {
   background: var(--bs-tint);
   border-radius: .75rem;
+  aspect-ratio: 4 / 3;
   min-height: 240px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .bs-aside--support {
+  aspect-ratio: 16 / 9;
   min-height: 260px;
+}
+
+.bs-aside img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .bs-aside__icon {
@@ -227,7 +263,7 @@
 /* ---------- Seller stories ---------- */
 .bs-story-wrap {
   position: relative;
-  padding: 0 2.75rem;
+  padding: 0 3.25rem;
 }
 
 .bs-story {
@@ -285,8 +321,9 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 38px;
-  height: 38px;
+  /* 44px keeps the arrows inside the comfortable tap-target size. */
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid var(--bs-line);
   background: #fff;
@@ -313,6 +350,7 @@
 }
 
 .bs-dot {
+  position: relative;
   width: 8px;
   height: 8px;
   padding: 0;
@@ -320,6 +358,13 @@
   border-radius: 4px;
   background: #c8ced6;
   transition: width .2s ease, background .2s ease;
+}
+
+/* The dot stays small; the tap area around it does not. */
+.bs-dot::after {
+  content: "";
+  position: absolute;
+  inset: -18px -7px;
 }
 
 .bs-dot.is-active {
@@ -390,7 +435,7 @@
 /* ---------- Platform peek ---------- */
 .bs-peek-wrap {
   position: relative;
-  padding: 0 2.75rem;
+  padding: 0 3.25rem;
 }
 
 .bs-peek {
@@ -413,11 +458,19 @@
   margin-bottom: 1.25rem;
 }
 
+/* Held at 16:9 so the carousel keeps one height whatever is uploaded. */
+.bs-peek__art {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: .5rem;
+}
+
 .bs-peek__art img {
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;
   display: block;
-  border-radius: .5rem;
 }
 
 .bs-peek__placeholder {
@@ -503,8 +556,10 @@
     border-top: 1px solid var(--bs-line);
   }
 
+  /* Below the two-column layout there is no clear space left for it, and it
+     ends up sitting behind the band's intro paragraph. */
   .bs-watermark {
-    top: 6rem;
+    display: none;
   }
 }
 
@@ -539,5 +594,28 @@
 
   .bs-btn {
     width: 100%;
+  }
+
+  /* One step per row, art beside the text. Stacked, the 4:3 tile turns into
+     a large empty block — five of them filled most of a phone screen. */
+  .bs-journey {
+    display: flex;
+    align-items: flex-start;
+    gap: .9rem;
+  }
+
+  .bs-journey__art {
+    flex: none;
+    width: 64px;
+    aspect-ratio: 1 / 1;
+    margin-bottom: 0;
+  }
+
+  .bs-journey__num {
+    font-size: 1.5rem;
+  }
+
+  .bs-journey__body {
+    min-width: 0;
   }
 }

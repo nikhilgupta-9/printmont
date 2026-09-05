@@ -147,16 +147,13 @@ export default function CompactCategoryGrid({
                 />
               </div>
               <div className="p-1 text-center mt-1">
-                <p 
-                  className="m-0 fw-semibold text-truncate product-card-title" 
-                  style={{ fontSize: "0.72rem", lineHeight: "1.2" }}
+                <p
+                  className="m-0 fw-semibold text-truncate product-card-title"
+                  style={{ lineHeight: "1.2" }}
                 >
                   {category.name}
                 </p>
-                <span 
-                  className="text-success fw-bold product-card-discount-text" 
-                  style={{ fontSize: "0.65rem" }}
-                >
+                <span className="text-success fw-bold product-card-discount-text">
                   {offerText || offerLabels[index % offerLabels.length]}
                 </span>
               </div>

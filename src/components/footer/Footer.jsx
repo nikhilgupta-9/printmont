@@ -125,34 +125,37 @@ const Footer = () => {
 
           <hr className="border-light border-1 my-4" />
 
-          <div className="row text-center text-md-start align-items-center pb-3">
-            <div className="col-12 col-md-6 d-flex flex-wrap justify-content-around justify-content-md-start gap-5 small">
-              <span>
-                <img src="/become-seller.png" alt="" width={"20px"} height={"20px"} /> <Link to={'/become-a-seller'} className="link-text-white">Become a Seller</Link>
+          {/*
+            Links, copyright and payment strip on one row from 1200px up.
+            A 6/3/3 grid could not do it: the links alone need ~590px and
+            half the row is 580px after column padding, so the last link
+            kept dropping out of line. Flexbox gives each block the width
+            it actually needs and lets the copyright take up the slack.
+          */}
+          <div className="footer-bottom pb-3">
+            <div className="footer-bottom__links small">
+              <span className="footer-bottom__link">
+                <img src="/become-seller.png" alt="" width="20" height="20" />
+                <Link to="/become-a-seller" className="link-text-white">Become a Seller</Link>
               </span>
-              <span>
-                <img src="/advertising.png" alt="" width={"20px"} height={"20px"}/>
-                <Link to={'/business-solutions'} className="link-text-white"> Business Solutions</Link> 
+              <span className="footer-bottom__link">
+                <img src="/advertising.png" alt="" width="20" height="20" />
+                <Link to="/business-solutions" className="link-text-white">Business Solutions</Link>
               </span>
-              <span>
-                <img src="/printmont-coin.png" alt="" width={"20px"} height={"20px"} />
-                <Link to={'/printmont-coin'} className="link-text-white"> Printmont Coins</Link> 
+              <span className="footer-bottom__link">
+                <img src="/printmont-coin.png" alt="" width="20" height="20" />
+                <Link to="/printmont-coin" className="link-text-white">Printmont Coins</Link>
               </span>
-              <span>
-                <img src="/Help-center.png" alt="" width={"20px"} height={"20px"}/>
-                <Link to={'help-center'} className="link-text-white"> Help Center</Link>
+              <span className="footer-bottom__link">
+                <img src="/Help-center.png" alt="" width="20" height="20" />
+                <Link to="/help-center" className="link-text-white">Help Center</Link>
               </span>
             </div>
-            <div className="col-12 col-md-3 small text-center">
+            <div className="footer-bottom__copy small">
               © 2019-2024 printmont.com All Rights Reserved.
             </div>
-            <div className="col-12 col-md-3 text-center text-md-end">
-              <img
-                src="./payment-method.svg"
-                alt="Payment Methods"
-                className="img-fluid"
-                style={{ maxHeight: "32px" }}
-              />
+            <div className="footer-bottom__pay">
+              <img src="./payment-method.svg" alt="Payment Methods" className="img-fluid" />
             </div>
           </div>
         </div>

@@ -18,6 +18,98 @@ body {
 .reviews-container h5 {
   font-size: 1.1rem;
 }
+/* ------------------------------------------------------------------
+   Footer bottom bar
+
+   Four icon links, the copyright and the payment strip. Stacked on small
+   screens; one row from 1200px up, where the links keep their natural
+   width, the payment strip shrinks a little and the copyright absorbs
+   whatever is left over.
+   ------------------------------------------------------------------ */
+.footer-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.footer-bottom__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem 1.5rem;
+}
+
+.footer-bottom__copy {
+  text-align: center;
+}
+
+/* The strip is one very wide SVG — about 21:1 — so max-height never
+   limits how much room it takes. Its width is what has to be set. */
+.footer-bottom__pay img {
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+}
+
+@media (min-width: 1200px) {
+  .footer-bottom {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 1.25rem;
+  }
+
+  /* The links never wrap; they are the block with a fixed appetite. */
+  .footer-bottom__links {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: 0.75rem;
+  }
+
+  /* The only block that can give ground, so it takes the remainder and
+     wraps to a second line on narrower desktops. */
+  .footer-bottom__copy {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.8125rem;
+  }
+
+  .footer-bottom__pay {
+    flex: 0 0 auto;
+  }
+
+  .footer-bottom__pay img {
+    max-width: 300px;
+  }
+}
+
+@media (min-width: 1500px) {
+  .footer-bottom__links {
+    gap: 1.5rem;
+  }
+
+  .footer-bottom__copy {
+    font-size: 0.875rem;
+  }
+
+  .footer-bottom__pay img {
+    max-width: 380px;
+  }
+}
+
+.footer-bottom__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.footer-bottom__link img {
+  flex: none;
+}
+
+
 .link-text-white{
   color: white !important;
 }
@@ -89,6 +181,25 @@ font-size: 3rem;
 
 .mobile-footer {
   font-family: 'Segoe UI', sans-serif;
+}
+
+/* Three trust badges across a 320px screen leaves each about 100px, which
+   breaks "100% Original Guarantee." over three ragged lines. A grid wraps
+   them to two columns instead, and to one when even that is too tight. */
+.mobile-footer__trust {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem 0.75rem;
+  align-items: start;
+}
+
+.mobile-footer__trust > div {
+  min-width: 0;
+}
+
+.mobile-footer__trust p {
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
 }
 
 .social-icon {
@@ -394,7 +505,9 @@ border-radius: 10px;
   font-size: medium;
 }
 .txex{
-  font-size: x-small;
+  /* x-small resolves to 10px, which is below comfortable reading size on
+     a phone. Scales a little with the viewport, with a 12px floor. */
+  font-size: clamp(0.75rem, 0.7rem + 0.15vw, 0.82rem);
 }
 .txsm{
   font-size: small;
@@ -438,6 +551,31 @@ border-radius: 10px;
 
 .site-header-spacer {
   height: var(--site-header-height, 104px);
+}
+
+/* The logo is a wide wordmark. Left at its natural width it pushes the
+   icons and the Login button off the right edge of a 320px screen. */
+.site-header__logo {
+  height: 30px;
+  max-width: 45vw;
+  object-fit: contain;
+}
+
+@media (max-width: 380px) {
+  .site-header__logo {
+    max-width: 34vw;
+  }
+
+  /* 16px gaps between five items is more than a 320px bar can carry. */
+  .site-header .gap-3 {
+    gap: 0.55rem !important;
+  }
+
+  .site-header .btn-sm {
+    padding-left: 0.55rem !important;
+    padding-right: 0.55rem !important;
+    white-space: nowrap;
+  }
 }
 
 .bg-theme{
@@ -1580,7 +1718,8 @@ input:focus {
   }
 
   .btn-small-text {
-    font-size: 10px;
+    /* 10px was below reading size, and these are tap targets. */
+    font-size: clamp(0.75rem, 0.68rem + 0.3vw, 0.875rem);
     color: white;
     background-color: rgb(26, 144, 218);
     border: none;

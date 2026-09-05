@@ -41,7 +41,6 @@ export default function ProductCard({
             style={{
               backgroundColor: (product.badge.toLowerCase().includes('priemium') || product.badge.toLowerCase().includes('premium')) ? '#00a65a' : '#0b53a1',
               color: '#ffffff',
-              fontSize: '0.65rem',
               fontWeight: '600',
               zIndex: 10
             }}
@@ -52,16 +51,7 @@ export default function ProductCard({
 
         {/* Customizable Banner at bottom of image */}
         {(badgeText || product.overlayTag) && (
-          <div 
-            className="position-absolute bottom-0 start-0 w-100 text-uppercase text-white text-center fw-semibold py-1" 
-            style={{ 
-              backgroundColor: '#1d3557', 
-              fontSize: '0.65rem', 
-              letterSpacing: '0.5px', 
-              opacity: 0.95,
-              zIndex: 10 
-            }}
-          >
+          <div className="product-card-overlay-tag position-absolute bottom-0 start-0 w-100 text-uppercase text-white text-center fw-semibold py-1">
             {badgeText || product.overlayTag}
           </div>
         )}
@@ -79,7 +69,6 @@ export default function ProductCard({
             overflow: "hidden",
             maxHeight: "2.4em",
             lineHeight: "1.2",
-            fontSize: "0.72rem",
             fontWeight: "500"
           }}
         >
@@ -88,15 +77,15 @@ export default function ProductCard({
         
         <div className="product-card-price mb-0 p-0 text-center text-dark d-flex align-items-center justify-content-center gap-1 flex-wrap">
           {product.price !== undefined && product.price !== null && product.price > 0 && (
-            <span className="fw-bold product-card-main-price" style={{ fontSize: '0.8rem' }}>₹{product.price}</span>
+            <span className="fw-bold product-card-main-price">₹{product.price}</span>
           )}
           {product.originalPrice && product.originalPrice > 0 && (
-            <del className="text-muted" style={{ fontSize: "0.6rem" }}>
+            <del className="text-muted product-card-was-price">
               ₹{product.originalPrice}
             </del>
           )}
           {product.discount && (
-            <span className="text-success fw-bold product-card-discount-text" style={{ fontSize: '0.65rem' }}>
+            <span className="text-success fw-bold product-card-discount-text">
               ({product.discount.includes("off") || product.discount.includes("%") ? product.discount : `${product.discount} off`})
             </span>
           )}

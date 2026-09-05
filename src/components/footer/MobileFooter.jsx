@@ -16,7 +16,7 @@ const MobileFooter = () => {
     return (
         <div className="mobile-footer text-center p-3 bg-light">
             {/* Top Icons with Text */}
-            <div className="d-flex justify-content-around text-center mb-3">
+            <div className="mobile-footer__trust text-center mb-3">
                 <div>
                     <div><img src={'/free.png'} alt="Free Shipping" className="me-2 feature-icon" /></div>
                     <p className="txsm mb-0 fw-semibold">Free Shipping.</p>
