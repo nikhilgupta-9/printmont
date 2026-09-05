@@ -1,14 +1,14 @@
 <?php
 /**
- * Affiliate Program — page content.
+ * FAQ — page content.
  *
- * Business Solutions used to share this screen behind a ?page= switch;
- * it now has its own file. See includes/page-editor.php.
+ * The screen is generated from config/page-editor-schema.php.
+ * See includes/page-editor.php.
  */
 
 require_once 'config/constants.php';
 
-$pageKey = 'affiliate';
+$pageKey = 'faq';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -16,7 +16,7 @@ $pageKey = 'affiliate';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Affiliate Program | Printmont</title>
+    <title>FAQ | Printmont</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
 </head>

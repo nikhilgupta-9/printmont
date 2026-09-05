@@ -1,14 +1,14 @@
 <?php
 /**
- * Affiliate Program — page content.
+ * Business Solutions — page content.
  *
- * Business Solutions used to share this screen behind a ?page= switch;
- * it now has its own file. See includes/page-editor.php.
+ * Split out of affiliate-page.php so each website page has its own admin
+ * screen. See includes/page-editor.php.
  */
 
 require_once 'config/constants.php';
 
-$pageKey = 'affiliate';
+$pageKey = 'business-solutions';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -16,7 +16,7 @@ $pageKey = 'affiliate';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Affiliate Program | Printmont</title>
+    <title>Business Solutions | Printmont</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
 </head>

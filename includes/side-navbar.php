@@ -165,21 +165,28 @@ $page_groups = [
 
 	// Website Pages
 	'pages' => [
+		'website-pages.php',
+		'about-us-page.php',
+		'faq-page.php',
+		'help-center-page.php',
+		'security-page.php',
+		'affiliate-page.php',
+		'become-a-seller-page.php',
+		'business-solutions-page.php',
 		'add-page.php',
 		'contact-view.php',
-		'about-page.php',
-		'edit-about-page.php',
 		'careers.php',
 		'add-career.php',
 		'edit-career.php',
 		'career-applications.php',
-		'affiliate-page.php',
-		'become-a-seller-page.php',
 		'policy-management.php',
 		'policy-edit.php',
-		'faq-view.php',
 		'faq-view-category.php',
 		'edit-faq.php',
+		// Superseded screens, kept so a bookmark still expands the group.
+		'about-page.php',
+		'edit-about-page.php',
+		'faq-view.php',
 		'help-center.php',
 		'security-management.php'
 	],
@@ -864,41 +871,66 @@ function shouldExpand($group_name, $current_page, $page_groups)
 					<ul id="pages"
 						class="sidebar-dropdown list-unstyled collapse <?php echo isActiveGroup('pages', $current_page, $page_groups) ? 'show' : ''; ?>"
 						data-bs-parent="#sidebar">
-						<li class="sidebar-item <?php echo isActivePage('add-page.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='add-page.php'>
-								<i class="align-middle"
-									data-feather="<?php echo isActivePage('add-page.php', $current_page) ? 'circle' : 'circle'; ?>"></i>
-								<span class="align-middle">Add New Page</span>
+						<li
+							class="sidebar-item <?php echo isActivePage('website-pages.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='website-pages.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">All Pages</span>
+							</a>
+						</li>
+						<li
+							class="sidebar-item <?php echo isActivePage('about-us-page.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='about-us-page.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">About Us</span>
 							</a>
 						</li>
 						<li
 							class="sidebar-item <?php echo isActivePage('contact-view.php', $current_page) ? 'active' : ''; ?>">
 							<a class='sidebar-link' href='contact-view.php'>
-								<i class="align-middle"
-									data-feather="<?php echo isActivePage('contact-view.php', $current_page) ? 'circle' : 'circle'; ?>"></i>
+								<i class="align-middle" data-feather="circle"></i>
 								<span class="align-middle">Contact Us</span>
 							</a>
 						</li>
 						<li
-							class="sidebar-item <?php echo isActivePage('about-page.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='about-page.php'>
-								<i class="align-middle"
-									data-feather="<?php echo isActivePage('about-page.php', $current_page) ? 'circle' : 'circle'; ?>"></i>
-								<span class="align-middle">About Us</span>
+							class="sidebar-item <?php echo isActivePage('faq-page.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='faq-page.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">FAQ</span>
 							</a>
 						</li>
-						<li class="sidebar-item <?php echo isActivePage('careers.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='careers.php'>
-								<i class="align-middle"
-									data-feather="<?php echo isActivePage('careers.php', $current_page) ? 'circle' : 'circle'; ?>"></i>
-								<span class="align-middle">Careers</span>
+						<li
+							class="sidebar-item <?php echo isActivePage('faq-view-category.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='faq-view-category.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">FAQ Categories</span>
+							</a>
+						</li>
+						<li
+							class="sidebar-item <?php echo isActivePage('help-center-page.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='help-center-page.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Help Center</span>
+							</a>
+						</li>
+						<li
+							class="sidebar-item <?php echo isActivePage('security-page.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='security-page.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Security Page</span>
+							</a>
+						</li>
+						<li
+							class="sidebar-item <?php echo isActivePage('policy-edit.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='policy-edit.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Policy Management</span>
 							</a>
 						</li>
 						<li
 							class="sidebar-item <?php echo isActivePage('affiliate-page.php', $current_page) ? 'active' : ''; ?>">
 							<a class='sidebar-link' href='affiliate-page.php'>
-								<i class="align-middle"
-									data-feather="<?php echo isActivePage('affiliate-page.php', $current_page) ? 'circle' : 'circle'; ?>"></i>
+								<i class="align-middle" data-feather="circle"></i>
 								<span class="align-middle">Affiliate Program</span>
 							</a>
 						</li>
@@ -910,41 +942,24 @@ function shouldExpand($group_name, $current_page, $page_groups)
 							</a>
 						</li>
 						<li
-							class="sidebar-item <?php echo isActivePage('policy-edit.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='policy-edit.php'>
-								<i class="align-middle"
-									data-feather="<?php echo isActivePage('policy-edit.php', $current_page) ? 'circle' : 'circle'; ?>"></i>
-								<span class="align-middle">Policy Management</span>
-							</a>
-						</li>
-						<li class="sidebar-item <?php echo isActivePage('faq-view.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='faq-view.php'>
-								<i class="align-middle"
-									data-feather="<?php echo isActivePage('faq-view.php', $current_page) ? 'circle' : 'circle'; ?>"></i>
-								<span class="align-middle">FAQ</span>
-							</a>
-						</li>
-						<li
-							class="sidebar-item <?php echo isActivePage('faq-view-category.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='faq-view-category.php'>
-								<i class="align-middle"
-									data-feather="<?php echo isActivePage('faq-view-category.php', $current_page) ? 'circle' : 'circle'; ?>"></i>
-								<span class="align-middle">FAQ Category</span>
-							</a>
-						</li>
-						<li
-							class="sidebar-item <?php echo isActivePage('help-center.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='help-center.php'>
-								<i class="align-middle"
-									data-feather="<?php echo isActivePage('help-center.php', $current_page) ? 'circle' : 'circle'; ?>"></i>
-								<span class="align-middle">Help Center</span>
-							</a>
-						</li>
-						<li
-							class="sidebar-item <?php echo isActivePage('security-management.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='security-management.php'>
+							class="sidebar-item <?php echo isActivePage('business-solutions-page.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='business-solutions-page.php'>
 								<i class="align-middle" data-feather="circle"></i>
-								<span class="align-middle">Security Page</span>
+								<span class="align-middle">Business Solutions</span>
+							</a>
+						</li>
+						<li
+							class="sidebar-item <?php echo isActivePage('careers.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='careers.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Careers</span>
+							</a>
+						</li>
+						<li
+							class="sidebar-item <?php echo isActivePage('add-page.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='add-page.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Add New Page</span>
 							</a>
 						</li>
 					</ul>

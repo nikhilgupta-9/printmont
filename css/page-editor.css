@@ -1,0 +1,734 @@
+/* ------------------------------------------------------------------
+   Page editor
+
+   Scoped under .pe so it cannot leak into the rest of the admin theme,
+   and written against its own tokens rather than Bootstrap utilities so
+   the screen keeps its shape if the theme is swapped.
+   ------------------------------------------------------------------ */
+
+.pe {
+    --pe-accent: #3b7ddd;
+    --pe-accent-soft: #eaf1fc;
+    --pe-ink: #1d2939;
+    --pe-ink-soft: #667085;
+    --pe-line: #e4e7ec;
+    --pe-surface: #fff;
+    --pe-canvas: #f7f8fa;
+    --pe-radius: 10px;
+    --pe-shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .04);
+
+    color: var(--pe-ink);
+    font-size: 14px;
+}
+
+/* ---------- Header ---------- */
+
+.pe-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 18px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--pe-line);
+}
+
+.pe-eyebrow {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--pe-ink-soft);
+}
+
+.pe-title {
+    margin: 4px 0 0;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.pe-note {
+    margin: 6px 0 0;
+    max-width: 62ch;
+    color: var(--pe-ink-soft);
+}
+
+.pe-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pe-status {
+    font-size: 13px;
+    color: var(--pe-ink-soft);
+    opacity: 0;
+    transition: opacity .2s ease;
+}
+
+.pe-status.is-on { opacity: 1; }
+.pe-status.is-busy::before { content: "Saving… "; }
+
+/* ---------- Layout ---------- */
+
+.pe-layout {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+}
+
+.pe-rail {
+    position: sticky;
+    top: 84px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pe-rail a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: var(--pe-ink-soft);
+    font-weight: 500;
+    text-decoration: none;
+    border-left: 2px solid transparent;
+}
+
+.pe-rail a:hover { background: var(--pe-canvas); color: var(--pe-ink); }
+
+.pe-rail a.is-current {
+    background: var(--pe-accent-soft);
+    border-left-color: var(--pe-accent);
+    color: var(--pe-accent);
+}
+
+.pe-rail .pe-count {
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--pe-ink-soft);
+}
+
+.pe-bands {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+/* ---------- Band ---------- */
+
+.pe-band {
+    background: var(--pe-surface);
+    border: 1px solid var(--pe-line);
+    border-radius: var(--pe-radius);
+    box-shadow: var(--pe-shadow);
+    scroll-margin-top: 90px;
+}
+
+.pe-band-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.pe-band-head h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 650;
+}
+
+.pe-band-head .pe-band-note {
+    margin: 3px 0 0;
+    font-size: 13px;
+    color: var(--pe-ink-soft);
+}
+
+.pe-caret {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--pe-ink-soft);
+    transition: transform .18s ease;
+}
+
+.pe-band.is-closed .pe-caret { transform: rotate(-90deg); }
+.pe-band.is-closed .pe-band-body { display: none; }
+
+.pe-band-body {
+    padding: 0 20px 20px;
+    border-top: 1px solid var(--pe-line);
+}
+
+.pe-part { padding-top: 18px; }
+.pe-part + .pe-part { margin-top: 6px; }
+
+.pe-part-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.pe-part-head h3 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--pe-ink-soft);
+}
+
+/* ---------- Fields ---------- */
+
+.pe-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.pe-field.is-wide { grid-column: 1 / -1; }
+
+.pe-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.pe-field .pe-req { color: #d92d20; }
+
+.pe-field input[type="text"],
+.pe-field textarea {
+    width: 100%;
+    padding: 9px 12px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--pe-ink);
+    background: var(--pe-surface);
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.pe-field textarea { resize: vertical; line-height: 1.5; }
+
+/* Fields holding markup read better in a monospace face. */
+.pe-field textarea.pe-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.pe-field select.pe-select {
+    width: 100%;
+    padding: 9px 12px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--pe-ink);
+    background: var(--pe-surface);
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+}
+
+.pe-field select.pe-select:focus {
+    outline: 0;
+    border-color: var(--pe-accent);
+    box-shadow: 0 0 0 3px var(--pe-accent-soft);
+}
+
+/* Visibility switch and Save button, side by side under a single form. */
+.pe-form-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.pe-eyebrow a { color: inherit; text-decoration: none; }
+.pe-eyebrow a:hover { color: var(--pe-accent); }
+
+.pe-field input[type="text"]:focus,
+.pe-field textarea:focus {
+    outline: 0;
+    border-color: var(--pe-accent);
+    box-shadow: 0 0 0 3px var(--pe-accent-soft);
+}
+
+.pe-field .pe-help {
+    margin: 5px 0 0;
+    font-size: 12px;
+    color: var(--pe-ink-soft);
+}
+
+.pe-field .pe-error {
+    margin: 5px 0 0;
+    font-size: 12px;
+    color: #d92d20;
+}
+
+/* ---------- Image field ---------- */
+
+.pe-image {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 12px;
+    border: 1px dashed #d0d5dd;
+    border-radius: 8px;
+    background: var(--pe-canvas);
+}
+
+.pe-image.is-hover { border-color: var(--pe-accent); background: var(--pe-accent-soft); }
+
+/* Sized by aspect-ratio in script, so the tile previews the real crop. */
+.pe-image-preview {
+    flex: none;
+    width: 104px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--pe-line);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--pe-ink-soft);
+}
+
+.pe-image-preview img { width: 100%; height: 100%; object-fit: cover; }
+
+.pe-image-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pe-image input[type="file"] { display: none; }
+
+.pe-image-actions .pe-help,
+.pe-image-actions .pe-note-warn { flex-basis: 100%; margin: 0; }
+
+.pe-note-warn:empty { display: none; }
+
+.pe-note-warn {
+    padding: 7px 10px;
+    font-size: 12px;
+    color: #93370d;
+    background: #fffaeb;
+    border: 1px solid #fedf89;
+    border-radius: 6px;
+}
+
+/* The exact pixel size, kept beside the field label. */
+.pe-dim {
+    float: right;
+    padding: 1px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .01em;
+    color: var(--pe-accent);
+    background: var(--pe-accent-soft);
+    border-radius: 999px;
+}
+
+/* ---------- Rows ---------- */
+
+.pe-items { display: flex; flex-direction: column; gap: 8px; }
+
+.pe-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--pe-surface);
+    border: 1px solid var(--pe-line);
+    border-radius: 8px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.pe-row:hover { border-color: #cdd5e0; box-shadow: var(--pe-shadow); }
+.pe-row.is-dragging { opacity: .45; }
+.pe-row.is-over { border-color: var(--pe-accent); box-shadow: 0 0 0 3px var(--pe-accent-soft); }
+.pe-row.is-hidden .pe-row-title { color: var(--pe-ink-soft); }
+
+.pe-handle {
+    flex: none;
+    width: 22px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    color: #98a2b3;
+    cursor: grab;
+    border-radius: 4px;
+}
+
+.pe-handle:active { cursor: grabbing; }
+.pe-handle:hover { background: var(--pe-canvas); color: var(--pe-ink); }
+
+.pe-thumb {
+    flex: none;
+    width: 44px;
+    height: 34px;
+    object-fit: cover;
+    background: var(--pe-canvas);
+    border: 1px solid var(--pe-line);
+    border-radius: 5px;
+}
+
+.pe-thumb-none {
+    flex: none;
+    width: 44px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+    color: #98a2b3;
+    background: var(--pe-canvas);
+    border: 1px dashed var(--pe-line);
+    border-radius: 5px;
+}
+
+.pe-row-text { flex: 1; min-width: 0; }
+
+.pe-row-title {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pe-row-sub {
+    font-size: 12.5px;
+    color: var(--pe-ink-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pe-row-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+
+.pe-empty {
+    padding: 22px;
+    text-align: center;
+    color: var(--pe-ink-soft);
+    background: var(--pe-canvas);
+    border: 1px dashed var(--pe-line);
+    border-radius: 8px;
+}
+
+/* ---------- Switch ---------- */
+
+/* The switch is itself a <label>, so it has to outrank `.pe-field label`,
+   which would otherwise turn it into a block and collapse the track. */
+.pe-switch,
+.pe-field label.pe-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.pe-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.pe-switch .pe-track {
+    display: block;
+    flex: none;
+    width: 36px;
+    height: 20px;
+    padding: 2px;
+    background: #d0d5dd;
+    border-radius: 999px;
+    transition: background .15s ease;
+}
+
+.pe-switch .pe-knob {
+    display: block;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .2);
+    transition: transform .15s ease;
+}
+
+.pe-switch input:checked + .pe-track { background: #12b76a; }
+.pe-switch input:checked + .pe-track .pe-knob { transform: translateX(16px); }
+.pe-switch input:focus-visible + .pe-track { box-shadow: 0 0 0 3px var(--pe-accent-soft); }
+
+.pe-switch .pe-switch-text { font-size: 12.5px; color: var(--pe-ink-soft); min-width: 44px; }
+
+/* ---------- Buttons ---------- */
+
+.pe-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--pe-ink);
+    background: var(--pe-surface);
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.pe-btn:hover { background: var(--pe-canvas); }
+.pe-btn:disabled { opacity: .55; cursor: default; }
+
+.pe-btn-primary {
+    color: #fff;
+    background: var(--pe-accent);
+    border-color: var(--pe-accent);
+}
+
+.pe-btn-primary:hover { background: #2f6cc4; border-color: #2f6cc4; }
+
+.pe-btn-ghost { color: var(--pe-ink-soft); }
+
+.pe-btn-danger { color: #b42318; border-color: #f4c4bf; background: #fff; }
+.pe-btn-danger:hover { background: #fef3f2; }
+
+.pe-btn-sm { padding: 5px 10px; font-size: 12.5px; }
+
+.pe-btn-icon { padding: 6px; }
+.pe-btn-icon svg { width: 15px; height: 15px; }
+
+/* ---------- Dialog ---------- */
+
+.pe-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1090;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(16, 24, 40, .55);
+}
+
+.pe-overlay[hidden] { display: none; }
+
+.pe-dialog {
+    width: min(680px, 100%);
+    max-height: calc(100vh - 48px);
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 20px 24px -4px rgba(16, 24, 40, .1), 0 8px 8px -4px rgba(16, 24, 40, .04);
+}
+
+.pe-dialog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--pe-line);
+}
+
+.pe-dialog-head h2 { margin: 0; font-size: 17px; font-weight: 650; }
+
+.pe-close {
+    border: 0;
+    background: none;
+    font-size: 26px;
+    line-height: 1;
+    color: var(--pe-ink-soft);
+    cursor: pointer;
+}
+
+.pe-dialog-body {
+    padding: 22px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.pe-dialog-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 22px;
+    border-top: 1px solid var(--pe-line);
+}
+
+/* ---------- Search ---------- */
+
+.pe-search input {
+    width: 220px;
+    padding: 7px 12px;
+    font: inherit;
+    font-size: 13.5px;
+    color: var(--pe-ink);
+    background: var(--pe-surface);
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+}
+
+.pe-search input:focus {
+    outline: 0;
+    border-color: var(--pe-accent);
+    box-shadow: 0 0 0 3px var(--pe-accent-soft);
+}
+
+/* ---------- Website Pages hub ---------- */
+
+.pe-group-title {
+    margin: 26px 0 12px;
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--pe-ink-soft);
+}
+
+.pe-hub {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.pe-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px 20px;
+    background: var(--pe-surface);
+    border: 1px solid var(--pe-line);
+    border-radius: var(--pe-radius);
+    box-shadow: var(--pe-shadow);
+    transition: border-color .15s ease, transform .15s ease;
+}
+
+.pe-tile:hover { border-color: #cdd5e0; transform: translateY(-1px); }
+.pe-tile.is-plain { background: var(--pe-canvas); box-shadow: none; }
+
+.pe-tile-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.pe-tile-top h3 { margin: 0; font-size: 15.5px; font-weight: 650; }
+
+.pe-path {
+    font-size: 11.5px;
+    color: var(--pe-ink-soft);
+    background: var(--pe-canvas);
+    border: 1px solid var(--pe-line);
+    border-radius: 5px;
+    padding: 1px 6px;
+}
+
+.pe-tile.is-plain .pe-path { background: #fff; }
+
+.pe-tile-note {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--pe-ink-soft);
+    flex: 1;
+}
+
+.pe-tile-why {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--pe-ink-soft);
+    padding-left: 9px;
+    border-left: 2px solid var(--pe-line);
+}
+
+.pe-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12.5px;
+    color: var(--pe-ink-soft);
+}
+
+.pe-facts strong {
+    color: var(--pe-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.pe-facts .is-warn strong { color: #b54708; }
+
+.pe-tile-actions { display: flex; gap: 8px; margin-top: 2px; }
+
+/* ---------- Toasts ---------- */
+
+.pe-toasts {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pe-toast {
+    min-width: 220px;
+    padding: 11px 15px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #fff;
+    background: #1d2939;
+    border-radius: 8px;
+    box-shadow: 0 8px 16px rgba(16, 24, 40, .18);
+    animation: pe-toast-in .18s ease;
+}
+
+.pe-toast.is-bad { background: #b42318; }
+
+@keyframes pe-toast-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* ---------- Narrow screens ---------- */
+
+@media (max-width: 991.98px) {
+    .pe-layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+
+    .pe-rail {
+        position: static;
+        flex-direction: row;
+        gap: 6px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+    }
+
+    .pe-rail a { white-space: nowrap; border-left: 0; border-bottom: 2px solid transparent; }
+    .pe-rail a.is-current { border-bottom-color: var(--pe-accent); }
+}
+
+@media (max-width: 575.98px) {
+    .pe-fields,
+    .pe-dialog-body { grid-template-columns: minmax(0, 1fr); }
+
+    .pe-head { align-items: flex-start; }
+    .pe-row { flex-wrap: wrap; }
+    .pe-row-text { flex-basis: 100%; order: 3; }
+}
