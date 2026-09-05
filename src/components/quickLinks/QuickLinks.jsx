@@ -27,11 +27,14 @@ import "./quick.css";
 const QuickLinks = () => {
   const navigate = useNavigate();
 
-  // 👉 Redirect if screen width > 768px (desktop)
+  // This page is only reachable from the compact footer, which CSS shows via
+  // .big-screen-foot up to 1024px inclusive. The redirect used to fire above
+  // 768px, so between 769px and 1024px the Quick Links button was visible but
+  // bounced straight back to the homepage. Keep the two breakpoints in step.
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth > 768) {
-        navigate("/"); // redirect to homepage
+      if (window.innerWidth > 1024) {
+        navigate("/"); // desktop has these links in the full footer
       }
     };
 

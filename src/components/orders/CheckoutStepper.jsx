@@ -1,86 +1,58 @@
 import React from 'react';
+import { BsCheck2 } from 'react-icons/bs';
 
-const CheckoutStepper = ({ currentStep, onStepClick }) => {
-  // Mobile only stepper. Visible on steps 2, 3, 4, 5.
-  if (currentStep === 1) return null;
+/**
+ * One row of the vertical checkout accordion.
+ *
+ * The design stacks the steps as full-width bars in the main column: the step
+ * being worked on is a solid blue bar, finished steps collapse to a white bar
+ * with a tick and a CHANGE link, and the body of a finished step (the saved
+ * address, say) sits underneath its own bar.
+ *
+ *   number    the digit in the leading square; omit for an unnumbered row
+ *             such as the buyer header, which is not one of the steps
+ *   title     bar text; uppercased by the stylesheet
+ *   active    solid blue treatment
+ *   done      tick after the title, CHANGE link when onChange is given
+ *   aside     right-aligned text (used for "Buyer Mobile no.")
+ *   onChange  renders the CHANGE button and calls back when clicked
+ *   children  collapsed body under the bar, e.g. the saved address line
+ */
+const CheckoutStepBar = ({
+  number = null,
+  title,
+  active = false,
+  done = false,
+  plainTitle = false,
+  aside = null,
+  onChange = null,
+  children = null,
+}) => (
+  <>
+    <div className={`step-bar${active ? ' step-bar--active' : ''}`}>
+      {/* Unnumbered rows keep the square as a spacer so every bar's title
+          lines up on the same left edge. */}
+      <span className={`step-bar__num${number ? '' : ' step-bar__num--empty'}`}>
+        {number}
+      </span>
 
-  const handleStepClick = (targetStep) => {
-    // Only allow clicking back to previous steps
-    if (onStepClick && targetStep < currentStep) {
-      onStepClick(targetStep);
-    }
-  };
+      <span className={`step-bar__title${plainTitle ? ' step-bar__title--plain' : ''}`}>
+        {title}
+      </span>
 
+      {done && <BsCheck2 className="step-bar__check" size={18} strokeWidth={1} />}
 
+      {aside && <span className="step-bar__aside">{aside}</span>}
 
-  return (
-    <div className="checkout-stepper bg-white p-3 d-md-none border-bottom">
-      <div className="d-flex justify-content-between position-relative">
-        {/* Background Line */}
-        <div className="position-absolute start-0" style={{ top: '12px', height: '2px', backgroundColor: '#e0e0e0', zIndex: 0, left: '12.5%', right: '12.5%' }}></div>
-        
-        {/* Progress Line */}
-        <div className="position-absolute start-0 bg-theme" 
-             style={{ 
-               top: '12px',
-               height: '2px', 
-               zIndex: 0, 
-               left: '12.5%', 
-               width: currentStep === 2 ? '0%' : currentStep === 3 ? '25%' : currentStep === 4 ? '50%' : '75%',
-               transition: 'width 0.3s ease'
-             }}>
-        </div>
-
-        {/* Node 1: Buyer Details (Step 2) */}
-        <div 
-          className="step-item d-flex flex-column align-items-center position-relative" 
-          style={{ zIndex: 1, width: '25%', cursor: currentStep > 2 ? 'pointer' : 'default' }}
-          onClick={() => handleStepClick(2)}
-        >
-          <div className={`step-circle rounded-circle d-flex align-items-center justify-content-center text-white mb-1 ${currentStep >= 2 ? 'bg-theme' : 'bg-secondary'}`} style={{ width: '24px', height: '24px', fontSize: '12px' }}>
-            {currentStep > 2 ? '✓' : '1'}
-          </div>
-          <span className="small text-center" style={{ fontSize: '10px', color: currentStep >= 2 ? '#000' : '#888', fontWeight: currentStep >= 2 ? '600' : 'normal' }}>Buyer</span>
-        </div>
-
-        {/* Node 2: Address (Step 3) */}
-        <div 
-          className="step-item d-flex flex-column align-items-center position-relative" 
-          style={{ zIndex: 1, width: '25%', cursor: currentStep > 3 ? 'pointer' : 'default' }}
-          onClick={() => handleStepClick(3)}
-        >
-          <div className={`step-circle rounded-circle d-flex align-items-center justify-content-center text-white mb-1 ${currentStep >= 3 ? 'bg-theme' : 'bg-secondary'}`} style={{ width: '24px', height: '24px', fontSize: '12px', backgroundColor: currentStep < 3 ? '#bdbdbd' : '' }}>
-            {currentStep > 3 ? '✓' : '2'}
-          </div>
-          <span className="small text-center" style={{ fontSize: '10px', color: currentStep >= 3 ? '#000' : '#888', fontWeight: currentStep >= 3 ? '600' : 'normal' }}>Address</span>
-        </div>
-
-        {/* Node 3: Order Summary (Step 4) */}
-        <div 
-          className="step-item d-flex flex-column align-items-center position-relative" 
-          style={{ zIndex: 1, width: '25%', cursor: currentStep > 4 ? 'pointer' : 'default' }}
-          onClick={() => handleStepClick(4)}
-        >
-          <div className={`step-circle rounded-circle d-flex align-items-center justify-content-center text-white mb-1 ${currentStep >= 4 ? 'bg-theme' : 'bg-secondary'}`} style={{ width: '24px', height: '24px', fontSize: '12px', backgroundColor: currentStep < 4 ? '#bdbdbd' : '' }}>
-            {currentStep > 4 ? '✓' : '3'}
-          </div>
-          <span className="small text-center" style={{ fontSize: '10px', color: currentStep >= 4 ? '#000' : '#888', fontWeight: currentStep >= 4 ? '600' : 'normal' }}>Summary</span>
-        </div>
-
-        {/* Node 4: Payment (Step 5) */}
-        <div 
-          className="step-item d-flex flex-column align-items-center position-relative" 
-          style={{ zIndex: 1, width: '25%', cursor: 'default' }}
-          onClick={() => handleStepClick(5)}
-        >
-          <div className={`step-circle rounded-circle d-flex align-items-center justify-content-center text-white mb-1 ${currentStep >= 5 ? 'bg-theme' : 'bg-secondary'}`} style={{ width: '24px', height: '24px', fontSize: '12px', backgroundColor: currentStep < 5 ? '#bdbdbd' : '' }}>
-            4
-          </div>
-          <span className="small text-center" style={{ fontSize: '10px', color: currentStep >= 5 ? '#000' : '#888', fontWeight: currentStep >= 5 ? '600' : 'normal' }}>Payment</span>
-        </div>
-      </div>
+      {onChange && (
+        <button type="button" className="step-bar__change" onClick={onChange}>
+          CHANGE
+        </button>
+      )}
     </div>
-  );
-};
 
-export default CheckoutStepper;
+    {children && <div className="step-bar__body">{children}</div>}
+  </>
+);
+
+export default CheckoutStepBar;

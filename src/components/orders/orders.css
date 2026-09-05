@@ -217,9 +217,483 @@
         position: -webkit-sticky;
         /* For Safari */
         position: sticky;
-        top: 80px;
-        /* Increased from 80px to clear the 104px site header */
+        /* The header is fixed, and the two variants differ in height (the full
+           site header is ~104px, the inner-page one ~65px), so track whatever
+           the rendered header measured itself as. */
+        top: calc(var(--site-header-height, 104px) + 12px);
         height: max-content;
         z-index: 10;
+    }
+}
+/* ============================================================
+   Three-step checkout (Address -> Order Summary -> Payment)
+   Shared form + panel styling for the mobile checkout screens.
+   ============================================================ */
+
+.checkout-form-heading {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #1a1a1a;
+    margin: 0 0 14px;
+}
+
+.checkout-group-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 8px;
+}
+
+/* Labels live inside the controls as placeholders, so the boxes are
+   uniform and taller than Bootstrap's default. */
+.checkout-input.form-control,
+.checkout-input.form-select {
+    border: 1px solid #b6bcc4;
+    border-radius: 3px;
+    padding: 12px 12px;
+    font-size: 13px;
+    color: #1a1a1a;
+    background-color: #fff;
+    box-shadow: none;
+}
+
+.checkout-input.form-control::placeholder {
+    color: #7c848d;
+    opacity: 1;
+}
+
+.checkout-input.form-control:focus,
+.checkout-input.form-select:focus {
+    border-color: #0b53a1;
+    box-shadow: 0 0 0 2px rgba(11, 83, 161, 0.12);
+}
+
+.checkout-input.form-select:invalid,
+.checkout-input.form-select option[value=""] {
+    color: #7c848d;
+}
+
+.checkout-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 0;
+    margin: 0;
+    min-height: auto;
+}
+
+.checkout-check .form-check-input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    flex: 0 0 auto;
+    border: 1px solid #6c757d;
+    border-radius: 2px;
+}
+
+.checkout-check .form-check-input[type="radio"] {
+    border-radius: 50%;
+}
+
+.checkout-check .form-check-input:checked {
+    background-color: #0b53a1;
+    border-color: #0b53a1;
+}
+
+.checkout-check .form-check-label {
+    font-size: 14px;
+    color: #1a1a1a;
+    margin: 0;
+    cursor: pointer;
+}
+
+/* Primary action. Full width on mobile, inline on desktop. */
+.checkout-cta {
+    background-color: #0b53a1;
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 0;
+    padding: 14px 28px;
+}
+
+.checkout-cta:hover,
+.checkout-cta:focus {
+    background-color: #09447f;
+    color: #fff;
+}
+
+.checkout-bottom-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1030;
+    background: #fff;
+    border-top: 1px solid #e3e6ea;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Grey band that frames PRICE DETAILS on mobile, per the design. */
+.checkout-panel-band {
+    background-color: #e0e0e0;
+}
+
+.checkout-panel-title {
+    color: #0b53a1;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+}
+
+/* "Deliver to" summary shown above the order summary step. */
+.deliver-to-bar {
+    background: #fff;
+    border-bottom: 1px solid #e3e6ea;
+    padding: 10px 12px;
+}
+
+.deliver-to-bar .addr-type {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: #eef1f5;
+    color: #5b6673;
+    padding: 2px 6px;
+    border-radius: 2px;
+}
+
+.deliver-to-bar .change-link {
+    color: #0b53a1;
+    font-size: 12px;
+    font-weight: 700;
+    background: none;
+    border: 1px solid #0b53a1;
+    border-radius: 2px;
+    padding: 2px 10px;
+}
+
+/* Payment step accordion */
+.pay-method {
+    border-bottom: 1px solid #e8ebee;
+    background: #fff;
+}
+
+.pay-method__head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    background: none;
+    border: 0;
+    text-align: left;
+    padding: 14px 12px;
+}
+
+.pay-method__title {
+    font-size: 14px;
+    color: #1a1a1a;
+    font-weight: 500;
+}
+
+.pay-method__sub {
+    font-size: 11px;
+    color: #7c848d;
+}
+
+.pay-offer-banner {
+    background: #eaf7ee;
+    border: 1px solid #cfe9d8;
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #1a1a1a;
+}
+
+/* Empty states on the orders list. */
+.orders-empty {
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ============================================================
+   Vertical step accordion (steps 1-4 stacked in the main column)
+   ============================================================ */
+
+.step-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    padding: 11px 14px;
+    border-bottom: 1px solid #e3e6ea;
+}
+
+.step-bar--active {
+    background: #0b53a1;
+    border-bottom-color: #0b53a1;
+}
+
+.step-bar__num {
+    flex: 0 0 auto;
+    width: 21px;
+    height: 21px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    background: #0b53a1;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.step-bar--active .step-bar__num {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+/* Buyer header: no number, but the square still holds the title's left edge. */
+.step-bar__num--empty {
+    background: transparent;
+}
+
+.step-bar__title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #1a1a1a;
+}
+
+.step-bar--active .step-bar__title {
+    color: #fff;
+}
+
+/* "Buyer name" keeps its sentence case; the rest of the bars are uppercase. */
+.step-bar__title--plain {
+    text-transform: none;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.step-bar__check {
+    flex: 0 0 auto;
+    color: #0b53a1;
+}
+
+.step-bar--active .step-bar__check {
+    color: #fff;
+}
+
+.step-bar__aside {
+    margin-left: auto;
+    font-size: 13px;
+    color: #5b6673;
+}
+
+.step-bar--active .step-bar__aside {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.step-bar__change {
+    margin-left: auto;
+    background: #fff;
+    border: 1px solid #c9ced6;
+    border-radius: 2px;
+    color: #1a1a1a;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 4px 16px;
+}
+
+.step-bar__change:hover {
+    border-color: #0b53a1;
+    color: #0b53a1;
+}
+
+/* Collapsed body under a finished bar — the saved address line. */
+.step-bar__body {
+    background: #fff;
+    border-bottom: 1px solid #e3e6ea;
+    padding: 0 14px 11px 45px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: #1a1a1a;
+}
+
+/* ============================================================
+   Address form — labels sit above the controls, per the design
+   ============================================================ */
+
+.checkout-label {
+    display: block;
+    font-size: 13px;
+    color: #1a1a1a;
+    margin-bottom: 5px;
+}
+
+.checkout-label .req {
+    color: #1a1a1a;
+}
+
+.checkout-label .opt {
+    color: #7c848d;
+    font-size: 12px;
+}
+
+/* ============================================================
+   Order summary step
+   ============================================================ */
+
+.cash-coins-head {
+    font-size: 19px;
+    font-weight: 600;
+    color: #1a73e8;
+}
+
+.coins-applied-btn {
+    background: #0b53a1;
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 5px 18px;
+}
+
+.coins-applied-btn--off {
+    background: #fff;
+    color: #0b53a1;
+    border: 1px solid #0b53a1;
+}
+
+.order-confirm-note {
+    font-size: 14px;
+    color: #1a1a1a;
+}
+
+.order-confirm-note strong {
+    color: #d32f2f;
+    text-decoration: underline;
+}
+
+/* ============================================================
+   Payment step — two columns on desktop, accordion on mobile
+   ============================================================ */
+
+.pay-split {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #e8ebee;
+    border-left: 3px solid #b6bcc4;
+    background: #fff;
+    margin: 14px;
+}
+
+.pay-split__methods {
+    flex: 0 0 300px;
+    background: #f5f6f8;
+    border-right: 1px solid #e8ebee;
+}
+
+.pay-split__detail {
+    flex: 1 1 auto;
+    padding: 18px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.pay-detail-card {
+    width: 100%;
+    max-width: 330px;
+    background: #fff;
+    border: 1px solid #e8ebee;
+    padding: 16px;
+}
+
+/* A method row in the desktop list; the open one turns white. */
+.pay-split .pay-method {
+    border-bottom: 1px solid #e8ebee;
+    background: transparent;
+}
+
+.pay-split .pay-method--open {
+    background: #fff;
+}
+
+.pay-split .pay-method__head {
+    align-items: flex-start;
+    padding: 15px 14px;
+}
+
+.pay-split .pay-method__head svg:last-child {
+    display: none;
+}
+
+.pay-pay-btn {
+    display: block;
+    width: 100%;
+    border: none;
+    border-radius: 2px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px;
+    background: #7d7d7d;
+}
+
+.pay-pay-btn--ready {
+    background: #0b53a1;
+}
+
+.pay-verify-btn {
+    background: #2874f0;
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0 18px;
+}
+
+@media (max-width: 991.98px) {
+    .pay-split {
+        display: block;
+        margin: 0;
+        border: none;
+        border-left: none;
+    }
+
+    .pay-split__methods {
+        flex: none;
+        background: #fff;
+        border-right: none;
+    }
+
+    /* Mobile renders the form inline under the open row instead. */
+    .pay-split__detail {
+        display: none;
+    }
+
+    .pay-detail-card {
+        max-width: none;
+        border: none;
+        padding: 0 14px 14px;
+    }
+
+    .pay-split .pay-method__head svg:last-child {
+        display: block;
     }
 }

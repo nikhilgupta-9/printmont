@@ -162,7 +162,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
     if (!isSticky || !categoryRef.current) return;
 
     const updateCategoryHeight = () => {
-      const h = categoryRef.current.offsetHeight;
+      const h = categoryRef.current.getBoundingClientRect().height;
       setCategoryHeight(h);
       if (show) {
         document.documentElement.style.setProperty("--category-bar-offset", `${h}px`);

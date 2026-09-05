@@ -27,9 +27,11 @@ export const API_ENDPOINTS = {
   LOGIN: `${BASE_URL}/user-api.php?action=login`,
   PROFILE: `${BASE_URL}/user-api.php?action=profile`,
   UPDATE_PROFILE: `${BASE_URL}/user-api.php?action=update_profile`,
-  // No "change password with current password" flow exists yet; this is the
-  // token-based reset used after forgot_password.
-  CHANGE_PASSWORD: `${BASE_URL}/user-api.php?action=reset_password`,
+  // Two distinct flows. RESET_PASSWORD is the OTP-based one reached from
+  // forgot_password when signed out; CHANGE_PASSWORD is for a signed-in user
+  // and authenticates with the current password plus a bearer token.
+  RESET_PASSWORD: `${BASE_URL}/user-api.php?action=reset_password`,
+  CHANGE_PASSWORD: `${BASE_URL}/user-api.php?action=change_password`,
   FORGOT_PASSWORD: `${BASE_URL}/user-api.php?action=forgot_password`,
 
   // User Addresses
@@ -46,7 +48,18 @@ export const API_ENDPOINTS = {
   CREATE_ORDER: `${BASE_URL}/user-api.php?action=create_order`,
   // The id is ignored server-side — orders come from the verified token, so a
   // customer cannot read another customer's orders by changing it.
-  GET_CUSTOMER_ORDERS: () => `${BASE_URL}/user-api.php?action=get_orders`,
+  // Optional params: status (csv), date_from, date_to, search, page, limit.
+  GET_CUSTOMER_ORDERS: (params = {}) => {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') qs.append(k, v);
+    });
+    const tail = qs.toString();
+    return `${BASE_URL}/user-api.php?action=get_orders${tail ? `&${tail}` : ''}`;
+  },
+  // Public, no token: takes { order_number, contact } where contact is the
+  // email or mobile the order was placed with.
+  TRACK_ORDER: `${BASE_URL}/user-api.php?action=track_order`,
   // Admin-only actions; not exposed through the public API yet.
   // UPDATE_ORDER_STATUS, UPDATE_PAYMENT_STATUS, GET_DASHBOARD_STATS
 
@@ -59,6 +72,14 @@ export const API_ENDPOINTS = {
   // must stay free of a query string.
   SEARCH: `${BASE_URL}/search-api.php`,
 
+  // Reviews — GET ?product_id= for approved reviews + rating stats, POST to submit
+  // a new one (goes into the same pending-approval queue the admin panel manages).
+  PRODUCT_REVIEWS: (productId) => `${BASE_URL}/product-reviews-api.php?product_id=${productId}`,
+  SUBMIT_REVIEW: `${BASE_URL}/product-reviews-api.php`,
+  // Uploads a single customization file (logo/artwork); returns { url } to attach
+  // to the cart item's `attributes` — cart-api.php's JSON field can't hold raw bytes.
+  CUSTOMIZATION_UPLOAD: `${BASE_URL}/customization-upload-api.php`,
+
   // Home Product Sections
   HOME_PRODUCT_SECTIONS: (action) => `${BASE_URL}/products/products.php?action=${action}`,
   TOP_RATED: `${BASE_URL}/products/products.php?action=top_rated`,
@@ -68,10 +89,23 @@ export const API_ENDPOINTS = {
   // Categories & Layout
   CATEGORIES: `${BASE_URL}/category-api.php`,
   // Single category lookup by slug (used to resolve a URL slug to its numeric id).
-  CATEGORY_BY_SLUG: (slug) => `${BASE_URL}/category_api.php?action=subcategories}`,
+  CATEGORY_BY_SLUG: (slug) => `${BASE_URL}/category_api.php?slug=${encodeURIComponent(slug)}`,
   // Level-2 (sub) categories, used for the plain image-grid section — pass a
   // parentId to scope to one category's children, omit it for the flat sitewide list.
+  // NOTE: the backend only returns children here when parentId is a level-1 category.
+  // A level-2 parent's own children (level 3) must be fetched via SUBSUBCATEGORIES below.
   SUBCATEGORIES: (parentId) => `${BASE_URL}/category_api.php?action=subcategories${parentId ? `&parent_id=${parentId}` : ''}`,
+  // Level-3 categories — children of a level-2 category (e.g. Bamboo Bottles under Eco Drinkware).
+  SUBSUBCATEGORIES: (parentId) => `${BASE_URL}/category_api.php?action=subsubcategories&parent_id=${parentId}`,
+  // Products belonging to one category-tree node (any level) — see category-products-api.php.
+  // The backend resolves category_id -> the right products column (category_id /
+  // sub_category_id / sub_sub_category_id) from that category's own level, so a
+  // mid-level id (e.g. Eco Drinkware) correctly aggregates products from all its
+  // leaf descendants too.
+  CATEGORY_PRODUCTS: (categoryId, params = {}) => {
+    const qs = new URLSearchParams({ category_id: categoryId, ...params }).toString();
+    return `${BASE_URL}/category-products-api.php?${qs}`;
+  },
   // Home page category bar (icons, shown_on_home-flagged, split desktop/mobile) vs the
   // persistent inner-page top menu (text-only, already pruned server-side). See menu_api.php.
   HOME_MENU: `${BASE_URL}/menu_api.php?type=home&device=desktop`,
@@ -104,14 +138,29 @@ export const API_ENDPOINTS = {
   CAREER_DETAIL: (id) => `${BASE_URL}/career-get-api.php?id=${id}`,
   CAREER_POST: `${BASE_URL}/career-post-api.php`,
 
+  // Marketing pages driven by page_sections (affiliate, business-solutions)
+  PAGE_SECTIONS: (pageKey) => `${BASE_URL}/page-sections-api.php?page=${pageKey}`,
+
   // CMS & Content (Logo, Header, Footer, etc.)
   ABOUT: `${BASE_URL}/about-api.php`,
   CONTACT: `${BASE_URL}/contact-api.php`,
   FAQ: `${BASE_URL}/faq-api.php`,
   HELP_CENTER: `${BASE_URL}/help-center-api.php`,
   POLICIES: `${BASE_URL}/policies-api.php`,
+  SECURITY: `${BASE_URL}/security-api.php`,
   // The backend exposes the public logo endpoint directly under /api.
   LOGO: `${BASE_URL}/logo-api.php`,
+};
+
+// Picks the right children-endpoint for a category based on its own level, since
+// the backend splits this across two actions (see SUBCATEGORIES/SUBSUBCATEGORIES
+// above): level 1 -> subcategories, level 2 -> subsubcategories, level 3+ -> leaf.
+export const getChildCategoriesUrl = (parentId, parentLevel) => {
+  const level = Number(parentLevel);
+  if (level >= 3) return null;
+  return level === 1
+    ? API_ENDPOINTS.SUBCATEGORIES(parentId)
+    : API_ENDPOINTS.SUBSUBCATEGORIES(parentId);
 };
 
 export const resolveImageUrl = (imagePath) => {

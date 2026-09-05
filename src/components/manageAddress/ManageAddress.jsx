@@ -16,20 +16,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
-
-const statesList = [
-  "Delhi", 
-  "Haryana", 
-  "Uttar Pradesh", 
-  "Maharashtra",
-  "Karnataka",
-  "Gujarat",
-  "Rajasthan",
-  "Punjab",
-  "Tamil Nadu",
-  "Telangana",
-  "West Bengal"
-];
+import { INDIAN_STATES as statesList } from '../../config/indianStates';
 
 const emptyAddress = {
   id: null,

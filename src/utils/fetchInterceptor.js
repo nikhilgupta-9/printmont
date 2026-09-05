@@ -86,6 +86,29 @@ window.fetch = async (...args) => {
         return executeWithRetry(retryCount + 1);
       }
 
+      // Hostinger's CDN sporadically answers requests arriving from the Vercel
+      // proxy with a 403 "Bot Verification" HTML page. It is served by hcdn, so
+      // the request never reaches PHP — retrying is side-effect free even for a
+      // POST, and usually succeeds on the next attempt. Surfaced to the user as
+      // "Server error (403)" on login/signup before this.
+      if (response.status === 403 && retryCount < 3) {
+        const peek = await response.clone().text().catch(() => '');
+        if (peek.includes('Bot Verification')) {
+          const backoff = 400 * Math.pow(2, retryCount) + Math.random() * 300;
+          console.warn(`[Fetch Interceptor] Hostinger bot challenge on ${url}. Retrying in ${Math.round(backoff)}ms...`);
+          await delay(backoff);
+          return executeWithRetry(retryCount + 1);
+        }
+      }
+
+      // A 401 from our own API means the stored token is expired or invalid.
+      // Announce it once, globally, so AuthContext can clear the session —
+      // otherwise the header keeps showing the user as signed in while every
+      // authenticated request is being rejected.
+      if (response && response.status === 401 && !/\/login|\/register/.test(url || "")) {
+        window.dispatchEvent(new CustomEvent("auth:unauthorized", { detail: { url } }));
+      }
+
       // Enhanced Error Logging to Browser Console for All Requests
       if (response) {
         const cloneForLog = response.clone();

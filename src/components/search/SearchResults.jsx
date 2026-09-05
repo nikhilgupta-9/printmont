@@ -1,22 +1,59 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { ASSET_URL, resolveImageUrl } from '../../config/apiEndpoints';
+import { resolveImageUrl } from '../../config/apiEndpoints';
 import { SearchGridSkeleton } from './SearchSkeleton';
+import ProductCard from '../products/ProductCard';
+import '../products/Product.css';
 import { FiFilter, FiRefreshCw, FiShoppingBag } from 'react-icons/fi';
+
+// Reshape one item from this page's various product APIs into the shape
+// ProductCard expects (the same "ap-*" Flipkart-style card used on AllProducts).
+const toProductCardShape = (prod) => {
+  const price = parseFloat(prod.regular_price ?? prod.price) || 0;
+  const discountedPrice = parseFloat(prod.discount_price) || price;
+  const discountPercent = price > 0 && discountedPrice < price
+    ? Math.round(((price - discountedPrice) / price) * 100)
+    : 0;
+
+  const images = Array.isArray(prod.images) && prod.images.length > 0
+    ? prod.images.map((img) => resolveImageUrl(typeof img === 'string' ? img : img.image_url)).filter(Boolean)
+    : [resolveImageUrl(prod.image || prod.primary_image)];
+
+  return {
+    id: prod.id,
+    title: prod.name,
+    brand: prod.brand,
+    image: images,
+    price,
+    discountedPrice,
+    originalPrice: price,
+    discountPercent,
+    ourBestseller: !!prod.our_bestseller,
+    topRated: !!prod.top_rated,
+    slug: prod.slug,
+    // Same placeholder-rating formula useProductFilters.js uses for /allproducts —
+    // there's no real reviews table yet, so this keeps the rating pill consistent
+    // app-wide rather than showing it on one listing and not another.
+    rating: 4.2 + ((parseInt(prod.id, 10) || 1) % 8) * 0.1,
+    ratingCount: 15 + ((parseInt(prod.id, 10) || 1) % 50) * 12,
+  };
+};
 
 const SearchResults = ({
   query,
+  title,
   results,
   isLoading,
   filters,
   onFilterChange,
   onResetFilters,
   onPageChange,
-  onSortChange
+  onSortChange,
+  hideCategoryFilter = false
 }) => {
   const { items = [], total = 0, page = 1, totalPages = 1, facets = {} } = results || {};
   const categoriesFacet = facets.categories || [];
   const brandsFacet = facets.brands || [];
+  const heading = title || (query ? `Search Results for "${query}"` : 'All Products Catalog');
 
   return (
     <div className="container-fluid px-3 px-md-4 px-xl-5 py-4">
@@ -24,7 +61,7 @@ const SearchResults = ({
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between pb-3 mb-4 border-bottom gap-3">
         <div>
           <h2 className="fw-bold text-dark mb-1" style={{ fontSize: '1.65rem' }}>
-            {query ? `Search Results for "${query}"` : 'All Products Catalog'}
+            {heading}
           </h2>
           <p className="text-secondary mb-0" style={{ fontSize: '0.9rem' }}>
             Showing <strong>{total}</strong> product{total !== 1 ? 's' : ''} found
@@ -51,20 +88,26 @@ const SearchResults = ({
         </div>
       </div>
 
+      {/* Sticky filter positioning only makes sense once the sidebar sits
+          beside the grid (Bootstrap's lg breakpoint, >=992px) — on mobile the
+          sidebar stacks full-width above the grid, where "sticky" just makes
+          it float oddly as the page scrolls. */}
+      <style>{`
+        @media (min-width: 992px) {
+          .search-filters-sidebar {
+            position: sticky;
+            top: 95px;
+            max-height: calc(100vh - 110px);
+            overflow-y: auto;
+          }
+        }
+      `}</style>
+
       <div className="row g-4">
-        {/* Left Column: Fixed / Sticky Non-Scrolling Sidebar */}
-        <div className="col-12 col-lg-3 col-xl-2.5">
-          <div 
-            className="card border-0 shadow-sm rounded-4 p-3.5"
-            style={{
-              position: 'sticky',
-              top: '95px',
-              maxHeight: 'calc(100vh - 110px)',
-              overflowY: 'auto',
-              zIndex: 10
-            }}
-          >
-            <div className="d-flex align-items-center justify-content-between pb-2.5 border-bottom mb-3">
+        {/* Left Column: Filter Sidebar — sticky on desktop, static on mobile */}
+        <div className="col-12 col-lg-3">
+          <div className="card border-0 shadow-sm rounded-4 p-3 search-filters-sidebar" style={{ zIndex: 10 }}>
+            <div className="d-flex align-items-center justify-content-between pb-2 border-bottom mb-3">
               <div className="d-flex align-items-center gap-2 fw-bold text-dark" style={{ fontSize: '1rem' }}>
                 <FiFilter className="text-primary" />
                 <span>Filters</span>
@@ -80,10 +123,10 @@ const SearchResults = ({
             </div>
 
             {/* Categories Filter */}
-            {categoriesFacet.length > 0 && (
+            {!hideCategoryFilter && categoriesFacet.length > 0 && (
               <div className="mb-4">
                 <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '0.85rem' }}>Categories</h6>
-                <div className="d-flex flex-column gap-1.5" style={{ maxHeight: '220px', overflowY: 'auto' }}>
+                <div className="d-flex flex-column gap-2" style={{ maxHeight: '220px', overflowY: 'auto' }}>
                   <label className="d-flex align-items-center gap-2 cursor-pointer small text-secondary">
                     <input
                       type="radio"
@@ -112,7 +155,7 @@ const SearchResults = ({
             {brandsFacet.length > 0 && (
               <div className="mb-4">
                 <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '0.85rem' }}>Brands</h6>
-                <div className="d-flex flex-column gap-1.5" style={{ maxHeight: '180px', overflowY: 'auto' }}>
+                <div className="d-flex flex-column gap-2" style={{ maxHeight: '180px', overflowY: 'auto' }}>
                   <label className="d-flex align-items-center gap-2 cursor-pointer small text-secondary">
                     <input
                       type="radio"
@@ -162,7 +205,7 @@ const SearchResults = ({
         </div>
 
         {/* Right Column: Independent Product Grid Area */}
-        <div className="col-12 col-lg-9 col-xl-9.5">
+        <div className="col-12 col-lg-9">
           {isLoading ? (
             <SearchGridSkeleton />
           ) : items.length === 0 ? (
@@ -182,57 +225,12 @@ const SearchResults = ({
             </div>
           ) : (
             <div>
-              <div className="row g-4 mb-4">
-                {items.map((prod) => {
-                  const imgUrl = resolveImageUrl(prod.image);
-
-                  return (
-                    <div key={prod.id} className="col-12 col-sm-6 col-md-4 col-xl-3">
-                      <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden hover-shadow transition-all bg-white">
-                        {/* Image Box */}
-                        <Link to={`/product/${prod.id}`} className="position-relative d-block overflow-hidden bg-light" style={{ paddingTop: '85%' }}>
-                          <img
-                            src={imgUrl}
-                            alt={prod.name}
-                            className="position-absolute top-0 start-0 w-100 h-100 object-fit-cover hover-scale"
-                            onError={(e) => {
-                              e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
-                            }}
-                          />
-                        </Link>
-
-                        {/* Product Info */}
-                        <div className="card-body p-3 d-flex flex-column">
-                          <div className="badge bg-primary-subtle text-primary border-primary-subtle align-self-start mb-2 small fw-normal">
-                            {prod.category_name || 'General'}
-                          </div>
-                          <h6 className="card-title fw-bold text-dark mb-1 text-truncate" style={{ fontSize: '0.92rem' }}>
-                            <Link to={`/product/${prod.id}`} className="text-dark text-decoration-none hover-text-primary">
-                              {prod.name}
-                            </Link>
-                          </h6>
-                          {prod.brand && <div className="text-secondary small mb-2">{prod.brand}</div>}
-
-                          <div className="mt-auto d-flex align-items-center justify-content-between pt-2 border-top">
-                            <div>
-                              <span className="fw-bold text-dark fs-6">
-                                ₹{prod.discount_price ? prod.discount_price.toLocaleString('en-IN') : prod.price.toLocaleString('en-IN')}
-                              </span>
-                              {prod.discount_price && (
-                                <span className="text-muted text-decoration-line-through ms-1.5 small" style={{ fontSize: '0.75rem' }}>
-                                  ₹{prod.price.toLocaleString('en-IN')}
-                                </span>
-                              )}
-                            </div>
-                            <Link to={`/product/${prod.id}`} className="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-medium" style={{ fontSize: '0.8rem' }}>
-                              View
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="row g-3 g-md-4 mb-4">
+                {items.map((prod) => (
+                  <div key={prod.id} className="col-6 col-md-4 col-lg-3">
+                    <ProductCard product={toProductCardShape(prod)} />
+                  </div>
+                ))}
               </div>
 
               {/* Pagination */}

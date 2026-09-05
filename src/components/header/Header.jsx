@@ -135,7 +135,7 @@ const Header = () => {
     const updateHeaderHeight = () => {
       document.documentElement.style.setProperty(
         "--site-header-height",
-        `${headerRef.current.offsetHeight}px`
+        `${headerRef.current.getBoundingClientRect().height}px`
       );
     };
 
@@ -156,7 +156,7 @@ const Header = () => {
     <>
       <div ref={headerRef} className="container-fluid p-0 sticky-navbar">
         <div className="container-fluid bg-white">
-          <Navbar expand="lg" className="border-bottom py-0 container-fluid px-4 px-xl-5">
+          <Navbar expand="lg" className="border-bottom py-2 container-fluid px-4 px-xl-5">
             {/* py-2 = 8px top/bottom — a little breathing room around the header bar. */}
             <Container className="d-flex align-items-center py-2" style={{ maxWidth: '1440px' }}>
             
@@ -165,7 +165,7 @@ const Header = () => {
               <img 
                 src={logo || "/PrintLogo.png"} 
                 alt="PrintMont Logo" 
-                style={{ height: "36px", objectFit: "contain" }} 
+                style={{ height: "45px", objectFit: "contain" }} 
                 onError={(e) => { e.target.src = "/PrintLogo.png"; }}
               />
             </Navbar.Brand>

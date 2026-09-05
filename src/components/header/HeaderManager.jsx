@@ -6,7 +6,6 @@ import ProductPageHeader from './ProductPageHeader';
 const PRODUCT_HEADER_PATHS = [
   '/allproducts',
   '/product',
-  '/cart',
   '/help-center',
   '/contact',
   '/quick-links',
@@ -67,8 +66,8 @@ const HeaderManager = () => {
     return 'Shop';
   };
 
-  // Check if current page is Home page
-  if (currentPath === '/') {
+  // Home and the cart use the full site header.
+  if (currentPath === '/' || currentPath === '/cart') {
     return <Header />;
   }
 

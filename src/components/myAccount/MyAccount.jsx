@@ -31,10 +31,12 @@ const MyAccount = () => {
         navigate("/login");
     };
 
-    // ✅ Redirect if screen width > 768px (desktop)
+    // Matches the compact footer / Quick Links breakpoint (.big-screen-foot is
+    // shown up to 1024px). Redirecting above 768px bounced this page to the
+    // homepage on tablets, where it is still linked from Quick Links.
     useEffect(() => {
         const handleResize = () => {
-            if (window.innerWidth > 768) {
+            if (window.innerWidth > 1024) {
                 navigate("/"); // redirect to homepage
             }
         };

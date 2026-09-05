@@ -1,19 +1,40 @@
 import React, { useState } from "react";
 import "./orders.css";
 import { useCheckout } from '../../context/CheckoutContext';
+import { useAuth } from '../../context/AuthContext';
+import { INDIAN_STATES } from '../../config/indianStates';
 
+/**
+ * Step 2 of checkout. Name and mobile used to live in a separate BuyerDetails
+ * step; the design folds them into this one form, so this component fills both
+ * buyerDetails and address in the checkout context.
+ *
+ * The design labels every control above the box and keeps street details in a
+ * single Address textarea rather than the split house-no / road pair.
+ */
 const OrderAddress = ({ onAddressSaved }) => {
-  const { address, setAddress } = useCheckout();
+  const { address, setAddress, buyerDetails, setBuyerDetails, deliveryPincode } = useCheckout();
+  const { user } = useAuth();
+
+  // Addresses saved before the form was merged still carry the split fields.
+  const seedAddressLine = address?.addressLine
+    || [address?.houseNo, address?.roadArea].filter(Boolean).join(', ')
+    || address?.addressArea
+    || "";
 
   const [formData, setFormData] = useState({
+    name: buyerDetails?.name || [user?.first_name, user?.last_name].filter(Boolean).join(' '),
+    mobile: buyerDetails?.mobile || user?.phone || "",
+    email: buyerDetails?.email || user?.email || "",
     company: address?.company || "",
-    addressArea: address?.addressArea || "",
-    city: address?.city || "",
-    state: address?.state || "",
-    pincode: address?.pincode || "",
-    landmark: address?.landmark || "",
-    altPhone: address?.altPhone || "",
     gstin: address?.gstin || "",
+    addressLine: seedAddressLine,
+    city: address?.city || "",
+    landmark: address?.landmark || "",
+    // Falls back to whatever was entered on the cart's pincode button.
+    pincode: address?.pincode || deliveryPincode || "",
+    state: address?.state || "",
+    altPhone: address?.altPhone || "",
     addressType: address?.addressType || "Home",
     orderNotes: address?.orderNotes || "",
   });
@@ -22,23 +43,42 @@ const OrderAddress = ({ onAddressSaved }) => {
   const [showCompanyInput, setShowCompanyInput] = useState(!!address?.company);
   const [showOrderNotesInput, setShowOrderNotesInput] = useState(!!address?.orderNotes);
 
-  // Validation Logic
   const validateForm = () => {
-    const newErrors = {};
+    const e = {};
 
-    if (!formData.addressArea.trim()) newErrors.addressArea = "Address is required";
-    if (!formData.city.trim()) newErrors.city = "City is required";
-    if (!formData.state.trim()) newErrors.state = "State is required";
-    if (!/^\d{6}$/.test(formData.pincode)) newErrors.pincode = "Pincode must be 6 digits";
-    if (!formData.landmark.trim()) newErrors.landmark = "Landmark is required";
+    if (!formData.name.trim()) e.name = "Full name is required";
+    if (!/^\d{10}$/.test(formData.mobile.trim())) e.mobile = "Enter a 10-digit mobile number";
+    if (!formData.addressLine.trim()) e.addressLine = "Address is required";
+    if (!formData.city.trim()) e.city = "City is required";
+    if (!/^\d{6}$/.test(formData.pincode.trim())) e.pincode = "Pincode must be 6 digits";
+    if (!formData.state.trim()) e.state = "State is required";
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    // Landmark is optional: the order API never reads it, and formatAddress
+    // filters it out of the shipping line when blank.
+
+    // Optional too, but it still has to look like a phone number if given.
+    if (formData.altPhone.trim() && !/^\d{10}$/.test(formData.altPhone.trim())) {
+      e.altPhone = "Enter a 10-digit alternate number";
+    }
+
+    // Required, because createOrder rejects a blank or malformed address.
+    // Catching it here surfaces the problem on this step instead of letting
+    // the shopper reach Payment and fail on the final submit.
+    const email = formData.email.trim();
+    if (!email) {
+      e.email = "Email address is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      e.email = "Enter a valid email address";
+    }
+
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => (prev[name] ? { ...prev, [name]: undefined } : prev));
   };
 
   const handleCompanyCheckChange = (e) => {
@@ -55,11 +95,26 @@ const OrderAddress = ({ onAddressSaved }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!validateForm()) return; 
+    if (!validateForm()) return;
 
+    setBuyerDetails({
+      name: formData.name.trim(),
+      mobile: formData.mobile.trim(),
+      email: formData.email.trim(),
+    });
+
+    // The order API composes a shipping line from address/addressArea, landmark,
+    // city, state and pincode, so keep those keys populated from the single
+    // address field.
+    const line = formData.addressLine.trim();
     const addressData = {
-        ...formData,
-        address: formData.addressArea
+      ...formData,
+      addressLine: line,
+      addressArea: line,
+      address: line,
+      locality: line,
+      phone: formData.mobile.trim(),
+      type: formData.addressType,
     };
 
     setAddress(addressData);
@@ -67,116 +122,154 @@ const OrderAddress = ({ onAddressSaved }) => {
     if (onAddressSaved) onAddressSaved(addressData);
   };
 
+  const field = (name) => `form-control checkout-input${errors[name] ? ' is-invalid' : ''}`;
+  const err = (name) => errors[name] && <div className="invalid-feedback d-block">{errors[name]}</div>;
+
   return (
-    <div className="bg-white p-4">
-      <form onSubmit={handleSubmit} id="addressForm">
-        
-        {/* Company Details */}
+    <div className="bg-white checkout-address-form px-3 py-3 p-md-4">
+      <h2 className="checkout-form-heading">ADD BILLING AND DELIVERY ADDRESS</h2>
+
+      <form onSubmit={handleSubmit} id="addressForm" noValidate>
+
+        <div className="row g-3 mb-3">
+          <div className="col-12 col-md-6">
+            <label className="checkout-label" htmlFor="addr-name">Name <span className="req">*</span></label>
+            <input
+              id="addr-name" type="text" name="name" className={field('name')}
+              placeholder="Your Good name"
+              value={formData.name} onChange={handleChange}
+            />
+            {err('name')}
+          </div>
+          <div className="col-12 col-md-6">
+            <label className="checkout-label" htmlFor="addr-mobile">Mobile number <span className="req">*</span></label>
+            <input
+              id="addr-mobile" type="tel" name="mobile" inputMode="numeric" maxLength={10} className={field('mobile')}
+              placeholder="your contact number"
+              value={formData.mobile} onChange={handleChange}
+            />
+            {err('mobile')}
+          </div>
+        </div>
+
         <div className="mb-3">
-          <div className="form-check mb-2">
-            <input className="form-check-input border-secondary shadow-none" type="checkbox" id="companyCheck" checked={showCompanyInput} onChange={handleCompanyCheckChange} style={{ marginTop: '0.3rem' }} />
-            <label className="form-check-label text-dark fw-semibold" htmlFor="companyCheck" style={{ fontSize: '14px' }}>
-              Company name (optional)
-            </label>
+          <div className="form-check checkout-check">
+            <input
+              className="form-check-input shadow-none" type="checkbox" id="companyCheck"
+              checked={showCompanyInput} onChange={handleCompanyCheckChange}
+            />
+            <label className="form-check-label" htmlFor="companyCheck">Company name (optional)</label>
           </div>
           {showCompanyInput && (
             <div className="row g-3 mt-1">
               <div className="col-12 col-md-6">
-                <input type="text" className="form-control shadow-none rounded-1 border-secondary" name="company" placeholder="Enter Company Name" value={formData.company} onChange={handleChange} />
+                <input type="text" className="form-control checkout-input" name="company"
+                  placeholder="Company name" value={formData.company} onChange={handleChange} />
               </div>
               <div className="col-12 col-md-6">
-                <input type="text" className="form-control shadow-none rounded-1 border-secondary" name="gstin" placeholder="Enter GSTIN" value={formData.gstin} onChange={handleChange} />
+                <input type="text" className="form-control checkout-input" name="gstin"
+                  placeholder="GSTIN" value={formData.gstin} onChange={handleChange} />
               </div>
             </div>
           )}
         </div>
 
-        {/* Address Field (Textarea) */}
         <div className="mb-3">
-          <label className="form-label text-dark mb-1" style={{ fontSize: '14px' }}>Address *</label>
-          <textarea className="form-control shadow-none rounded-1 border-secondary" name="addressArea" rows="2" placeholder="Address (Area and Street)" value={formData.addressArea} onChange={handleChange} required></textarea>
-          {errors.addressArea && <small className="text-danger">{errors.addressArea}</small>}
+          <label className="checkout-label" htmlFor="addr-line">Address <span className="req">*</span></label>
+          <textarea
+            id="addr-line" name="addressLine" rows="3" className={field('addressLine')}
+            placeholder="Address (Area and Street)"
+            value={formData.addressLine} onChange={handleChange}
+          />
+          {err('addressLine')}
         </div>
 
-        {/* City / State */}
         <div className="row g-3 mb-3">
           <div className="col-12 col-md-6">
-            <label className="form-label text-dark mb-1" style={{ fontSize: '14px' }}>City / District / Town *</label>
-            <input type="text" className="form-control shadow-none rounded-1 border-secondary" name="city" value={formData.city} onChange={handleChange} required />
-            {errors.city && <small className="text-danger">{errors.city}</small>}
+            <label className="checkout-label" htmlFor="addr-city">City / District / Town <span className="req">*</span></label>
+            <input id="addr-city" type="text" name="city" className={field('city')}
+              value={formData.city} onChange={handleChange} />
+            {err('city')}
           </div>
           <div className="col-12 col-md-6">
-            <label className="form-label text-dark mb-1" style={{ fontSize: '14px' }}>State *</label>
-            <select className="form-select shadow-none rounded-1 border-secondary" name="state" value={formData.state} onChange={handleChange} required>
-              <option value=""></option>
-              <option value="Delhi">Delhi</option>
-              <option value="Maharashtra">Maharashtra</option>
-              <option value="Karnataka">Karnataka</option>
+            <label className="checkout-label" htmlFor="addr-state">State <span className="req">*</span></label>
+            <select id="addr-state" name="state"
+              className={`form-select checkout-input${errors.state ? ' is-invalid' : ''}`}
+              value={formData.state} onChange={handleChange}>
+              <option value="">Select State</option>
+              {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
-            {errors.state && <small className="text-danger">{errors.state}</small>}
+            {err('state')}
           </div>
         </div>
 
-        {/* Pincode / Landmark */}
         <div className="row g-3 mb-3">
           <div className="col-12 col-md-6">
-            <label className="form-label text-dark mb-1" style={{ fontSize: '14px' }}>Pincode *</label>
-            <input type="text" className="form-control shadow-none rounded-1 border-secondary" name="pincode" value={formData.pincode} onChange={handleChange} required />
-            {errors.pincode && <small className="text-danger">{errors.pincode}</small>}
+            <label className="checkout-label" htmlFor="addr-pincode">Pincode <span className="req">*</span></label>
+            <input id="addr-pincode" type="text" name="pincode" inputMode="numeric" maxLength={6} className={field('pincode')}
+              value={formData.pincode} onChange={handleChange} />
+            {err('pincode')}
           </div>
           <div className="col-12 col-md-6">
-            <label className="form-label text-dark mb-1" style={{ fontSize: '14px' }}>Landmark *</label>
-            <input type="text" className="form-control shadow-none rounded-1 border-secondary" name="landmark" value={formData.landmark} onChange={handleChange} required />
-            {errors.landmark && <small className="text-danger">{errors.landmark}</small>}
+            <label className="checkout-label" htmlFor="addr-landmark">Landmark <span className="opt">(optional)</span></label>
+            <input id="addr-landmark" type="text" name="landmark" className={field('landmark')}
+              value={formData.landmark} onChange={handleChange} />
+            {err('landmark')}
           </div>
         </div>
 
-        {/* Alt Phone */}
-        <div className="row g-3 mb-4">
+        <div className="row g-3 mb-3">
           <div className="col-12 col-md-6">
-            <label className="form-label text-dark mb-1" style={{ fontSize: '14px' }}>Alternate Phone Number *</label>
-            <input type="tel" className="form-control shadow-none rounded-1 border-secondary" name="altPhone" value={formData.altPhone} onChange={handleChange} />
+            <label className="checkout-label" htmlFor="addr-email">Email address <span className="req">*</span></label>
+            <input id="addr-email" type="email" name="email" className={field('email')}
+              placeholder="Order confirmation is sent here" value={formData.email} onChange={handleChange} />
+            {err('email')}
+          </div>
+          <div className="col-12 col-md-6">
+            <label className="checkout-label" htmlFor="addr-alt">Alternate Phone Number <span className="opt">(optional)</span></label>
+            <input id="addr-alt" type="tel" name="altPhone" inputMode="numeric" maxLength={10} className={field('altPhone')}
+              value={formData.altPhone} onChange={handleChange} />
+            {err('altPhone')}
           </div>
         </div>
 
-        {/* Address Type */}
-        <div className="mb-4">
-          <label className="form-label text-dark mb-2" style={{ fontSize: '15px' }}>Adderss Type</label>
+        <div className="mb-3 mt-4">
+          <p className="checkout-group-label">Address Type</p>
           <div className="d-flex gap-4">
             {["Home", "Office", "Other"].map((type) => (
-              <div className="form-check d-flex align-items-center gap-1" key={type}>
-                <input className="form-check-input border-secondary shadow-none m-0" type="radio" name="addressType" id={`type-${type}`} value={type} checked={formData.addressType === type} onChange={handleChange} style={{ width: '16px', height: '16px' }} />
-                <label className="form-check-label text-dark" htmlFor={`type-${type}`} style={{fontSize: '15px'}}>{type}</label>
+              <div className="form-check checkout-check" key={type}>
+                <input
+                  className="form-check-input shadow-none" type="radio" name="addressType"
+                  id={`type-${type}`} value={type}
+                  checked={formData.addressType === type} onChange={handleChange}
+                />
+                <label className="form-check-label" htmlFor={`type-${type}`}>{type}</label>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Order Notes */}
-        <div className="mb-4">
-          <div className="form-check mb-2 d-flex align-items-center gap-1">
-            <input className="form-check-input border-secondary shadow-none m-0" type="checkbox" id="orderNotesCheck" checked={showOrderNotesInput} onChange={handleOrderNotesCheckChange} style={{ width: '16px', height: '16px' }} />
-            <label className="form-check-label text-dark fw-semibold" htmlFor="orderNotesCheck" style={{ fontSize: '14px' }}>
-              Order notes (optional)?
-            </label>
+        <div className="mb-3">
+          <div className="form-check checkout-check">
+            <input
+              className="form-check-input shadow-none" type="checkbox" id="orderNotesCheck"
+              checked={showOrderNotesInput} onChange={handleOrderNotesCheckChange}
+            />
+            <label className="form-check-label" htmlFor="orderNotesCheck">Order notes (optional)</label>
           </div>
           {showOrderNotesInput && (
-            <textarea className="form-control mt-2 shadow-none rounded-1 border-secondary" name="orderNotes" rows="2" placeholder="Enter notes here..." value={formData.orderNotes} onChange={handleChange}></textarea>
+            <textarea className="form-control checkout-input mt-2" name="orderNotes" rows="2"
+              placeholder="Enter notes here..." value={formData.orderNotes} onChange={handleChange} />
           )}
         </div>
 
-        {/* Desktop Submit Button */}
+        {/* Desktop keeps the action inline; mobile pins it to the bottom bar. */}
         <div className="d-none d-md-block mt-4">
-          <button type="submit" className="btn btn-theme text-white fw-bold px-4 py-2 rounded-1" style={{ backgroundColor: '#0b53a1', fontSize: '13px' }}>
-            SAVE AND DELIVERY HERE
-          </button>
+          <button type="submit" className="btn checkout-cta">SAVE AND DELIVERY HERE</button>
         </div>
 
-        {/* Mobile Submit Button (Fixed Bottom) */}
-        <div className="d-md-none fixed-bottom bg-white border-top shadow-lg z-3">
-          <button type="submit" className="btn btn-theme w-100 py-3 fw-bold text-uppercase text-white rounded-0" style={{ backgroundColor: '#0b53a1', fontSize: '15px' }}>
-            SAVE AND DELIVERY HERE
-          </button>
+        <div className="d-md-none checkout-bottom-bar">
+          <button type="submit" className="btn checkout-cta w-100">SAVE AND DELIVERY HERE</button>
         </div>
 
       </form>

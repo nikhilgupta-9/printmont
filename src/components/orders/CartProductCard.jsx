@@ -2,7 +2,11 @@ import React from 'react';
 import { BsCheckCircleFill, BsArchive, BsTrash } from 'react-icons/bs';
 import { useCheckout } from '../../context/CheckoutContext';
 
-const CartProductCard = ({ item, isSavedForLater = false }) => {
+/**
+ * @param readOnly  Order-summary variant: same card, without the select
+ *                  checkbox and the Save for Later / Remove row.
+ */
+const CartProductCard = ({ item, isSavedForLater = false, readOnly = false }) => {
   const { updateQuantity, removeItem, saveForLater, moveToCart } = useCheckout();
 
   return (
@@ -84,7 +88,9 @@ const CartProductCard = ({ item, isSavedForLater = false }) => {
             {/* Left Column: Image + Qty */}
             <div className="d-flex flex-column align-items-center me-3" style={{ width: '90px' }}>
               <div className="position-relative w-100">
-                <input type="checkbox" className="position-absolute form-check-input shadow-none rounded-0 border-0" style={{ top: 0, left: 0, zIndex: 1, width: '18px', height: '18px', backgroundColor: '#0084ff' }} defaultChecked />
+                {!readOnly && (
+                  <input type="checkbox" className="position-absolute form-check-input shadow-none rounded-0 border-0" style={{ top: 0, left: 0, zIndex: 1, width: '18px', height: '18px', backgroundColor: '#0084ff' }} defaultChecked />
+                )}
                 <img src={item.image || "/men_shirt/men-shirt-2.jpeg"} alt={item.name} className="img-fluid mb-2 px-1 pt-1" style={{ maxHeight: '110px', objectFit: 'contain' }} />
               </div>
               <div className="d-flex align-items-center border border-secondary rounded-0 w-100 justify-content-between mt-1">
@@ -130,7 +136,7 @@ const CartProductCard = ({ item, isSavedForLater = false }) => {
           </div>
 
           {/* Split Buttons */}
-          <div className="d-flex border-top mx-n2 mt-2">
+          <div className={`d-flex border-top mx-n2 mt-2${readOnly ? ' d-none' : ''}`}>
             {isSavedForLater ? (
               <button className="btn flex-fill py-2 rounded-0 border-end border-light text-secondary fw-semibold bg-white d-flex justify-content-center align-items-center gap-2" style={{ fontSize: '14px' }} onClick={() => moveToCart(item.id)}>
                  MOVE TO CART

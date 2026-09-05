@@ -16,6 +16,7 @@ import Orders from "./components/orders/Orders";
 import User from "./components/user/User";
 import Login from "./components/user/Login";
 import ForgotPassword from "./components/user/ForgotPassword";
+import ChangePassword from "./components/user/ChangePassword";
 import GiftCard from "./components/orders/GiftCard";
 import ProductDetails from "./components/products/ProductDetails";
 import AllProducts from "./components/products/AllProducts";
@@ -30,6 +31,7 @@ import TrackOrder from "./components/trackOrder/TrackOrder";
 import AppAnnouncement from "./components/appAnnouncement/AppAnnouncement";
 import MyAccount from "./components/myAccount/MyAccount";
 import CareerPage from "./components/pages/career/CareerPage";
+import VacancyDetails from "./components/pages/career/VacancyDetails";
 import AboutPage from "./components/about/AboutPage";
 import PolicyPage from "./components/policy/PolicyPage";
 import PrintmontFAQ from "./components/printmontFAQ/PrintmontFAQ";
@@ -95,6 +97,7 @@ function App() {
           <Route path="/track-order" element={<TrackOrder />} />
           <Route path="/app-download" element={<AppAnnouncement />} />
           <Route path="/careers" element={<CareerPage />} />
+          <Route path="/careers/:id" element={<VacancyDetails />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/faq" element={<PrintmontFAQ />} />
           <Route path="/security" element={<SecurityInfo />} />
@@ -128,6 +131,7 @@ function App() {
             <Route path="wallet" element={<PrintmontCoin />} />
             <Route path="giftcard" element={<GiftCard />} />
             <Route path="manage-address" element={<ManageAddress  />} />
+            <Route path="change-password" element={<ChangePassword />} />
           </Route>
 
           {/* Account pages are linked as /<username>/profile (see getUsernamePath in
@@ -140,6 +144,7 @@ function App() {
             <Route path="wallet" element={<PrintmontCoin />} />
             <Route path="giftcard" element={<GiftCard />} />
             <Route path="manage-address" element={<ManageAddress />} />
+            <Route path="change-password" element={<ChangePassword />} />
           </Route>
 
           <Route path="*" element={<PageNotFound />} />

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import {
   Container,
@@ -61,6 +62,7 @@ const fallbackJobData = [
 ];
 
 const CareerPage = () => {
+  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [jobSections, setJobSections] = useState([]);
@@ -130,6 +132,13 @@ const CareerPage = () => {
   }, []);
 
   const handleCardClick = (job) => {
+    // Jobs from the API have a real id and get their own page, which is
+    // linkable and shareable. The hardcoded fallback entries have no id,
+    // so those still open the inline modal.
+    if (job && job.id) {
+      navigate("/careers/" + job.id);
+      return;
+    }
     setSelectedJob(job);
     setShowModal(true);
   };

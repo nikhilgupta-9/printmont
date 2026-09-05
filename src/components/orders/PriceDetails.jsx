@@ -7,14 +7,15 @@ const PriceDetails = ({
   couponApplied = 0, 
   deliveryCharges = 0, 
   cashCoinsApplied = 0,
-  step = 1,
+  isCart = false,
   isMobile = false
 }) => {
   const totalAmount = totalPrice - discount - couponApplied + deliveryCharges - cashCoinsApplied;
   const totalSavings = discount + couponApplied + cashCoinsApplied;
-  
-  // Desktop uses "Total Amount" initially
-  const totalLabel = "Total Amount :";
+
+  // The cart shows "Total Amount"; once checkout starts it becomes what is
+  // actually being charged.
+  const totalLabel = isCart ? "Total Amount :" : "Total Payable";
 
   return (
     <div className={isMobile ? "price-details-inner" : "price-details-card bg-white p-3 mb-3 border border-light shadow-sm rounded-0"}>
@@ -72,8 +73,8 @@ const PriceDetails = ({
         <span>₹{totalAmount.toLocaleString('en-IN')}</span>
       </div>
       
-      {/* Coupon Box directly in PriceDetails (mostly for Step 1 desktop) */}
-      {step === 1 && !isMobile && (
+      {/* Coupon box lives in the cart's desktop sidebar only. */}
+      {isCart && !isMobile && (
         <div className="d-flex align-items-stretch mb-3 mt-4" style={{ border: '1px solid #ccc' }}>
           <input 
             type="text" 
@@ -81,7 +82,7 @@ const PriceDetails = ({
             className="form-control border-0 rounded-0 shadow-none px-2"
             style={{ fontSize: '14px', color: '#1a73e8' }} 
           />
-          <button className="btn btn-light rounded-0 fw-bold border-start text-secondary px-3" style={{ fontSize: '14px', backgroundColor: '#e9ecef' }}>
+          <button className="btn rounded-0 fw-bold border-start px-3" style={{ fontSize: '14px', backgroundColor: '#e7eefa', color: '#0b53a1' }}>
             APPLIED
           </button>
         </div>

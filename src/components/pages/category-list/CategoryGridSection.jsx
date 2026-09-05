@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { categoriesData as staticCategoriesData } from "../../../../data/categoriesdata";
-import { API_ENDPOINTS, resolveImageUrl } from "../../../config/apiEndpoints";
+import { API_ENDPOINTS, resolveImageUrl, getChildCategoriesUrl } from "../../../config/apiEndpoints";
 import "./CategoryGrid.css";
 
 const CategoryGridSection = ({ categorySlug }) => {
@@ -16,17 +16,20 @@ const CategoryGridSection = ({ categorySlug }) => {
         // that category's own children — resolve slug -> id first, since the
         // subcategories endpoint filters by parent_id, not slug. Without one
         // (generic /category page), fall back to the flat sitewide list.
-        let parentId = null;
+        let childrenUrl = API_ENDPOINTS.SUBCATEGORIES(null);
         if (categorySlug) {
           const catRes = await fetch(API_ENDPOINTS.CATEGORY_BY_SLUG(categorySlug));
           const catData = await catRes.json();
           if (catData?.success && catData.data?.id) {
-            parentId = catData.data.id;
+            const resolvedUrl = getChildCategoriesUrl(catData.data.id, catData.data.level);
+            // A leaf category (level 3) has no children endpoint to call — bail out
+            // to the static fallback rather than rendering the flat sitewide list.
+            if (!resolvedUrl) return;
+            childrenUrl = resolvedUrl;
           }
         }
-        console.log(parentId);
 
-        const response = await fetch(API_ENDPOINTS.SUBCATEGORIES(parentId));
+        const response = await fetch(childrenUrl);
         const data = await response.json();
         if (!data || !data.success || !Array.isArray(data.data)) throw new Error('Invalid subcategories response');
 

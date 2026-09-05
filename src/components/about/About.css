@@ -410,3 +410,166 @@
     margin: 0 auto;
   }
 }
+/* Team grid cards need a consistent height now they are no longer slides. */
+.fnp-leadership-grid-section .fnp-leader-card {
+  height: 260px;
+}
+
+@media (min-width: 768px) {
+  .fnp-leadership-grid-section .fnp-leader-card {
+    height: 300px;
+  }
+}
+
+/* ============================================================
+   Normal-size typography and flat treatment, matching FNP.
+
+   FNP's About page uses plain white bands with generous padding and no
+   card borders or shadows, and its body copy sits at normal reading
+   size rather than the small text this page previously used.
+   ============================================================ */
+
+.about-fnp-page {
+  --fnp-a-h2: 1.625rem;  /* ~26px section headings */
+  --fnp-a-text: 1rem;    /* 16px body */
+  --fnp-a-note: 0.9375rem;
+}
+
+/* Section headings: larger than before, still theme-coloured. */
+.about-fnp-page .fnp-theme-heading {
+  font-size: var(--fnp-a-h2);
+}
+
+/* Body copy at normal reading size. */
+.about-fnp-page .fnp-started-desc {
+  font-size: var(--fnp-a-text) !important;
+  line-height: 1.75;
+}
+
+/* Feature cards are flat on white — no border, shadow or radius. */
+.about-fnp-page .fnp-surprise-card {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 1rem .5rem;
+}
+
+.about-fnp-page .fnp-surprise-icon-wrap {
+  width: 72px;
+  height: 72px;
+}
+
+.about-fnp-page .fnp-surprise-title {
+  font-size: 1.125rem;
+}
+
+/* Vision & Mission: plain, no card chrome. */
+.about-fnp-page .fnp-vision-card,
+.about-fnp-page .fnp-mission-card {
+  box-shadow: none !important;
+  border: 1px solid #eceff2;
+}
+
+/* ---------- Leadership: portrait with the name underneath ---------- */
+.fnp-leader {
+  text-align: center;
+}
+
+.fnp-leader__photo {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(11, 83, 161, 0.08);
+  margin-bottom: .85rem;
+}
+
+.fnp-leader__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fnp-leader__fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fnp-leader__fallback span {
+  font-weight: 700;
+  font-size: 2rem;
+  color: rgb(11, 83, 161);
+}
+
+.fnp-leader__name {
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  margin: 0 0 .15rem;
+}
+
+.fnp-leader__role {
+  color: #6b7280;
+  font-size: var(--fnp-a-note);
+  margin: 0;
+}
+
+/* Statistics labels at readable size. */
+.about-fnp-page .fnp-stats-label-gold {
+  font-size: var(--fnp-a-note);
+}
+
+/* Trust band text at normal size. */
+@media (max-width: 575.98px) {
+  .about-fnp-page {
+    --fnp-a-h2: 1.375rem;
+  }
+}
+
+/* ============================================================
+   Accolades — award name centred between two gold laurel branches.
+   One SVG branch is drawn and mirrored, rather than hand-drawing both.
+   ============================================================ */
+
+.laurel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  max-width: 22rem;
+  margin: 0 auto;
+}
+
+.laurel__branch {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 96px;
+}
+
+.laurel__branch--flip {
+  transform: scaleX(-1);
+}
+
+.laurel__text {
+  flex: 1 1 auto;
+  text-align: center;
+  color: #2c3e50;
+  font-size: 1.0625rem;   /* normal reading size */
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+@media (max-width: 575.98px) {
+  .laurel__branch {
+    width: 40px;
+    height: 74px;
+  }
+
+  .laurel__text {
+    font-size: 1rem;
+  }
+}
