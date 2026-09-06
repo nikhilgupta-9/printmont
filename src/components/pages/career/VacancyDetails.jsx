@@ -126,7 +126,7 @@ const VacancyDetails = () => {
       // Sent as multipart so the resume file uploads. The API accepts both
       // form-data and JSON, but only form-data can carry the file.
       const body = new FormData();
-      body.append("career_id", id);
+      body.append("career_id", job?.id || id);
       Object.entries(form).forEach(([key, value]) => body.append(key, value.trim()));
       body.append("resume", resume);
 

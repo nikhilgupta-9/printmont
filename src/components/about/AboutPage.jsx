@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col } from "react-bootstrap";
+import { FaTruckFast, FaStore, FaGlobe, FaFaceSmile } from "react-icons/fa6";
 import { API_ENDPOINTS, ASSET_URL, resolveImageUrl } from "../../config/apiEndpoints";
 import BannerGrid from "../home/banners/BannerGrid";
 import useHomeBanners from "../home/hooks/useHomeBanners";
@@ -27,6 +28,24 @@ const teamImage = (member) => {
   return member.image_path.startsWith("http")
     ? member.image_path
     : `${ASSET_URL}${String(member.image_path).replace(/^\//, "")}`;
+};
+
+const renderStatIcon = (stat, idx) => {
+  const text = `${stat?.section_title || ''} ${stat?.section_content || ''}`.toLowerCase();
+  if (text.includes("deliver") || text.includes("worldwide") || text.includes("package") || text.includes("order")) {
+    return <FaTruckFast />;
+  }
+  if (text.includes("store") || text.includes("shop") || text.includes("outlet") || text.includes("india")) {
+    return <FaStore />;
+  }
+  if (text.includes("countr") || text.includes("global") || text.includes("nation")) {
+    return <FaGlobe />;
+  }
+  if (text.includes("smile") || text.includes("satisf") || text.includes("happy") || text.includes("customer")) {
+    return <FaFaceSmile />;
+  }
+  const icons = [<FaTruckFast key="1" />, <FaStore key="2" />, <FaGlobe key="3" />, <FaFaceSmile key="4" />];
+  return icons[idx % icons.length];
 };
 
 /**
@@ -95,6 +114,7 @@ const AboutPage = () => {
   const mission = one("mission");
   const features = many("feature");
   const stats = many("stat");
+  const accolade = one("accolade");
   const accolades = many("accolade");
 
   if (loading) {
@@ -135,12 +155,32 @@ const AboutPage = () => {
       {story && (
         <div className="fnp-how-it-started py-5 bg-white">
           <Container>
-            <Row className="justify-content-center">
-              <Col lg={9} className="text-center">
-                <h2 className="fnp-theme-heading mb-4">{story.section_title}</h2>
-                <Text value={story.section_content} className="fnp-started-desc mb-0" />
-              </Col>
-            </Row>
+            {imageFor(story) ? (
+              <Row className="align-items-center g-4 g-lg-5">
+                <Col lg={6} className="order-2 order-lg-1">
+                  <h2 className="fnp-theme-heading mb-4 text-start">{story.section_title}</h2>
+                  <Text value={story.section_content} className="fnp-started-desc mb-0 text-start" />
+                </Col>
+                <Col lg={6} className="order-1 order-lg-2">
+                  <div className="fnp-story-img-wrap rounded-4 overflow-hidden shadow-sm">
+                    <img
+                      src={imageFor(story)}
+                      alt={story.section_title}
+                      className="img-fluid w-100"
+                      style={{ maxHeight: "440px", objectFit: "cover" }}
+                      loading="lazy"
+                    />
+                  </div>
+                </Col>
+              </Row>
+            ) : (
+              <Row className="justify-content-center">
+                <Col lg={9} className="text-center">
+                  <h2 className="fnp-theme-heading mb-4">{story.section_title}</h2>
+                  <Text value={story.section_content} className="fnp-started-desc mb-0" />
+                </Col>
+              </Row>
+            )}
           </Container>
         </div>
       )}
@@ -149,13 +189,15 @@ const AboutPage = () => {
       {highlight && (
         <div className="fnp-beige-section py-5">
           <Container>
-            <div className="fnp-beige-card rounded-3 overflow-hidden">
+            <div className="fnp-beige-card rounded-4 overflow-hidden shadow-sm">
               <Row className="g-0 align-items-stretch">
-                <Col md={5}>
-                  <div className="fnp-beige-img-wrap">
-                    {imageFor(highlight) && (
-                      <img src={imageFor(highlight)} alt={highlight.section_title} loading="lazy" />
-                    )}
+                <Col lg={5} md={6}>
+                  <div className="fnp-beige-img-wrap position-relative">
+                    <img
+                      src={imageFor(highlight) || "/banners/worldwide_delivery.jpg"}
+                      alt={highlight.section_title}
+                      loading="lazy"
+                    />
                     <div className="fnp-delivery-badge">
                       <div className="fnp-badge-inner">
                         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -166,10 +208,30 @@ const AboutPage = () => {
                     </div>
                   </div>
                 </Col>
-                <Col md={7}>
-                  <div className="p-4 p-md-5">
+                <Col lg={7} md={6}>
+                  <div className="fnp-highlight-content p-4 p-md-5 d-flex flex-column justify-content-center h-100">
+                    <div className="fnp-highlight-tag mb-3">
+                      <span className="badge bg-primary bg-opacity-10 text-primary fw-semibold px-3 py-2 rounded-pill">
+                        <i className="ri-flight-takeoff-line me-1"></i> Global Fulfillment Network
+                      </span>
+                    </div>
                     <h2 className="fnp-theme-heading mb-3">{highlight.section_title}</h2>
-                    <Text value={highlight.section_content} className="fnp-started-desc mb-0" />
+                    <Text value={highlight.section_content} className="fnp-started-desc mb-4" />
+                    
+                    <div className="fnp-highlight-chips d-flex flex-wrap gap-2">
+                      <div className="fnp-feature-chip">
+                        <i className="ri-global-line text-primary me-2"></i>
+                        <span>100+ Countries</span>
+                      </div>
+                      <div className="fnp-feature-chip">
+                        <i className="ri-truck-line text-primary me-2"></i>
+                        <span>Express Delivery</span>
+                      </div>
+                      <div className="fnp-feature-chip">
+                        <i className="ri-shield-check-line text-primary me-2"></i>
+                        <span>Zero-Defect Promise</span>
+                      </div>
+                    </div>
                   </div>
                 </Col>
               </Row>
@@ -257,27 +319,40 @@ const AboutPage = () => {
         <BannerGrid banners={timelineBanners} columns={1} mobileColumns={1} />
       )}
 
-      {/* 🏆 ACCOLADES & MILESTONES — laurel wreaths around each award name */}
-      {(accolades.length > 0 || accoladeBanners.length > 0) && (
-        <div className="fnp-accolades-section py-5">
+      {/* 🏆 ACCOLADES & MILESTONES — Big Image Banner */}
+      {(accolade || accolades.length > 0 || accoladeBanners.length > 0) && (
+        <div className="fnp-accolades-section py-5 bg-white">
           <Container>
-            <h2 className="fnp-theme-heading text-center mb-5">Accolades &amp; Milestones</h2>
-
-            {accolades.length > 0 ? (
-              <Row className="gy-5 justify-content-center">
-                {accolades.map((a) => (
-                  <Col xs={12} md={6} lg={4} key={a.id}>
-                    <div className="laurel">
-                      <Laurel />
-                      <span className="laurel__text">{a.section_title}</span>
-                      <Laurel flip />
-                    </div>
-                  </Col>
-                ))}
-              </Row>
-            ) : (
-              <BannerGrid banners={accoladeBanners} columns={3} mobileColumns={1} />
+            <h2 className="fnp-theme-heading text-center mb-3">
+              {accolade?.section_title || "Accolades & Milestones"}
+            </h2>
+            {accolade?.section_content && (
+              <p className="fnp-started-desc text-center mb-4 mx-auto" style={{ maxWidth: "720px" }}>
+                {accolade.section_content}
+              </p>
             )}
+
+            <div className="fnp-accolades-banner-wrap text-center mt-2">
+              {imageFor(accolade) ? (
+                <img
+                  src={imageFor(accolade)}
+                  alt={accolade?.section_title || "Accolades & Milestones"}
+                  className="img-fluid rounded-4 shadow-sm w-100"
+                  style={{ maxHeight: "480px", objectFit: "contain" }}
+                  loading="lazy"
+                />
+              ) : accoladeBanners.length > 0 ? (
+                <BannerGrid banners={accoladeBanners} columns={1} mobileColumns={1} />
+              ) : (
+                <img
+                  src="/banners/accolades_milestones_banner.jpg"
+                  alt="Accolades & Milestones"
+                  className="img-fluid rounded-4 shadow-sm w-100"
+                  style={{ maxHeight: "480px", objectFit: "contain" }}
+                  loading="lazy"
+                />
+              )}
+            </div>
           </Container>
         </div>
       )}
@@ -288,10 +363,10 @@ const AboutPage = () => {
           <Container>
             <h2 className="fnp-theme-heading text-center mb-5">Meet the Team</h2>
             <Row className="g-3 g-md-4 justify-content-center">
-                {team.map((member) => (
-                  <Col xs={6} sm={4} lg={3} key={member.id}>
-                    <div className="fnp-leader">
-                      <div className="fnp-leader__photo">
+              {team.map((member) => (
+                <Col xs={6} sm={4} lg={3} key={member.id}>
+                  <div className="fnp-leader">
+                    <div className="fnp-leader__photo">
                       {teamImage(member) ? (
                         <img
                           src={teamImage(member)}
@@ -307,29 +382,36 @@ const AboutPage = () => {
                           </span>
                         </div>
                       )}
-                      </div>
-                      <h3 className="fnp-leader__name">{member.name}</h3>
-                      <p className="fnp-leader__role">{member.position}</p>
                     </div>
-                  </Col>
-                ))}
+                    <h3 className="fnp-leader__name">{member.name}</h3>
+                    <p className="fnp-leader__role">{member.position}</p>
+                  </div>
+                </Col>
+              ))}
             </Row>
           </Container>
         </div>
       )}
 
-      {/* 📊 STATS COUNTER BAR */}
+      {/* 📊 STATS COUNTER SECTION */}
       {stats.length > 0 && (
-        <div className="fnp-green-stats-bar py-5">
+        <div className="fnp-stats-section py-5">
           <Container>
-            <Row className="text-center gy-4 gy-md-0">
-              {stats.map((s) => (
-                <Col xs={6} md={12 / Math.min(stats.length, 4)} key={s.id} className="fnp-stats-col">
-                  <h3 className="fnp-stats-num-white text-white mb-2">{s.section_title}</h3>
-                  <p className="fnp-stats-label-gold mb-0">{s.section_content}</p>
-                </Col>
-              ))}
-            </Row>
+            <div className="fnp-stats-wrapper">
+              <Row className="g-4 justify-content-center align-items-stretch position-relative z-1">
+                {stats.map((s, idx) => (
+                  <Col xs={6} md={6} lg={12 / Math.min(stats.length, 4)} key={s.id} className="fnp-stats-col">
+                    <div className="fnp-stat-card">
+                      <div className="fnp-stat-icon-wrap">
+                        {renderStatIcon(s, idx)}
+                      </div>
+                      <h3 className="fnp-stats-num mb-1">{s.section_title}</h3>
+                      <p className="fnp-stats-label mb-0">{s.section_content}</p>
+                    </div>
+                  </Col>
+                ))}
+              </Row>
+            </div>
           </Container>
         </div>
       )}

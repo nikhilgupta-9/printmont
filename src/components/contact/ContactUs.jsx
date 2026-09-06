@@ -207,20 +207,22 @@ const ContactUs = () => {
             <Col xs={12} lg={6} className="cu-right">
               <h2 className="cu-h2">Have Questions?</h2>
 
-              <button
-                type="button"
-                className={`cu-btn cu-btn--accent ${activeTab === "order" ? "is-active" : ""}`}
-                onClick={() => setActiveTab("order")}
-              >
-                Order Related Issue?
-              </button>
-              <button
-                type="button"
-                className={`cu-btn cu-btn--ghost ${activeTab === "general" ? "is-active" : ""}`}
-                onClick={() => setActiveTab("general")}
-              >
-                General Query
-              </button>
+              <div className="cu-tabs">
+                <button
+                  type="button"
+                  className={`cu-tab-btn cu-tab-btn--order ${activeTab === "order" ? "is-active" : ""}`}
+                  onClick={() => setActiveTab("order")}
+                >
+                  Order Related Issue?
+                </button>
+                <button
+                  type="button"
+                  className={`cu-tab-btn cu-tab-btn--general ${activeTab === "general" ? "is-active" : ""}`}
+                  onClick={() => setActiveTab("general")}
+                >
+                  General Query
+                </button>
+              </div>
 
               {isSubmitted ? (
                 <div className="cu-sent">
@@ -283,7 +285,7 @@ const ContactUs = () => {
 
                   <Form.Label className="cu-label">Message *</Form.Label>
                   <Form.Control
-                    as="textarea" rows={3} name="message"
+                    as="textarea" rows={4} name="message"
                     value={formData.message} onChange={handleChange}
                     placeholder={activeTab === "order"
                       ? "Tell us what went wrong with your order..."

@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router';
-import { Spinner } from 'react-bootstrap';
-import { API_ENDPOINTS } from '../../config/apiEndpoints';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Container } from "react-bootstrap";
+import { API_ENDPOINTS } from "../../config/apiEndpoints";
+import "../pages/marketing-page.css";
 
 /**
- * Security page. The Q&A sections are managed in the admin panel
- * (security-management.php) and served by security-api.php, so they can be
- * edited without a release. The Privacy Policy and Contact links below stay
- * in code because they are navigation, not content.
+ * Security page redesigned with the clean marketing layout.
+ * Dynamic Q&A sections are authored in the admin panel and served by security-api.php.
  */
 const SecurityInfo = () => {
   const [sections, setSections] = useState([]);
@@ -29,7 +28,7 @@ const SecurityInfo = () => {
           setFailed(true);
         }
       } catch (err) {
-        console.error('Failed to load security sections:', err);
+        console.error("Failed to load security sections:", err);
         if (!cancelled) setFailed(true);
       } finally {
         if (!cancelled) setLoading(false);
@@ -37,58 +36,103 @@ const SecurityInfo = () => {
     };
 
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  if (loading) {
+    return (
+      <div className="mk-page">
+        <Container className="mk-article">
+          <div className="shimmer-bg rounded mb-4" style={{ height: 34, width: "40%" }} />
+          <div className="shimmer-bg rounded mb-3" style={{ height: 90 }} />
+          <div className="shimmer-bg rounded" style={{ height: 220 }} />
+        </Container>
+      </div>
+    );
+  }
+
+  if (failed) {
+    return (
+      <div className="mk-page">
+        <Container className="mk-article">
+          <h1 className="mk-page-title">
+            <span className="text-theme">Safe &amp; Secure</span> Shopping
+          </h1>
+          <p className="mk-para">This page is unavailable right now. Please refresh in a moment.</p>
+        </Container>
+      </div>
+    );
+  }
+
   return (
-    <div className="container p-4 bg-white">
+    <div className="mk-page">
+      <Container className="mk-article">
+        {/* Ruled, two-tone page title */}
+        <h1 className="mk-page-title">
+          <span className="text-theme">Safe &amp; Secure</span> Shopping
+        </h1>
 
-      <h4 className="mb-4">Safe and Secure Shopping</h4>
+        {/* Intro */}
+        <h2 className="mk-sub">Your Privacy and Payment Security is Our Highest Priority</h2>
+        <p className="mk-para">
+          At Printmont, we employ industry-standard encryption protocols, secure payment gateways, and strict data confidentiality to make your shopping experience safe, transparent, and completely worry-free.
+        </p>
 
-      {loading ? (
-        <div className="text-center py-4">
-          <Spinner animation="border" variant="primary" size="sm" />
+        {/* Security Highlights */}
+        <p className="mk-lead-in">Key security measures we uphold across all transactions:</p>
+        <ul className="mk-list">
+          <li>
+            <span className="mk-list__term">256-bit SSL/TLS Encryption</span> - All communications between your browser and our servers are fully encrypted.
+          </li>
+          <li>
+            <span className="mk-list__term">PCI-DSS Compliant Payment Gateways</span> - Credit/debit card details are processed through bank-grade secured payment networks.
+          </li>
+          <li>
+            <span className="mk-list__term">Zero Sensitive Card Storage</span> - Printmont never stores full card numbers or CVV codes on our servers.
+          </li>
+          <li>
+            <span className="mk-list__term">Multi-Factor Authentication &amp; 3D Secure</span> - OTP verification enabled for every online debit/credit card and netbanking transaction.
+          </li>
+        </ul>
+
+        {/* Dynamic Q&A Sections from Admin API */}
+        {sections.length > 0 && (
+          <>
+            <p className="mk-lead-in mt-4">Frequently asked questions regarding security and payments:</p>
+            {sections.map((section) => (
+              <div className="mk-qa" key={section.section_key || section.id}>
+                <p className="mk-qa__q">{section.heading}</p>
+                <div
+                  className="mk-para mb-0"
+                  dangerouslySetInnerHTML={{ __html: section.content || "" }}
+                />
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* Privacy Policy & Contact Closing Blocks */}
+        <div className="mt-4 pt-3 border-top">
+          <p className="mk-para mk-para--close">
+            Printmont.com respects your privacy and is committed to protecting it. For more details, please see our{" "}
+            <Link to="/privacy-policy" className="mk-mail">
+              Privacy Policy
+            </Link>.
+          </p>
+          <p className="mk-para mk-para--close mt-2">
+            Couldn&rsquo;t find the information you need? Please{" "}
+            <Link to="/contact" className="mk-mail">
+              Contact Us
+            </Link>{" "}
+            or reach out directly to our customer support team at{" "}
+            <a href="mailto:support@printmont.com" className="mk-mail">
+              support@printmont.com
+            </a>.
+          </p>
         </div>
-      ) : failed ? (
-        <p className="text-muted small mb-4">
-          We could not load this section right now. Please refresh, or{' '}
-          <Link to="/contact" className="text-decoration-none">contact us</Link> if it persists.
-        </p>
-      ) : (
-        <div className="security-faqs mb-4">
-          {sections.map((section) => (
-            <div className="mb-3" key={section.section_key || section.id}>
-              <h6 className="mb-0">{section.heading}</h6>
-              {/* Content is rich text authored in the admin CKEditor. */}
-              <div
-                className="ms-3 mb-0 small"
-                dangerouslySetInnerHTML={{ __html: section.content || '' }}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-
-      <hr className="my-3" />
-
-      {/* Privacy Policy */}
-      <div className="privacy-policy mb-3">
-        <h6 className="mb-1">Privacy Policy</h6>
-        <p className="ms-3 mb-0 small">
-          Printmont.com respects your privacy and is committed to protecting it. For more details,
-          please see our <Link to="/privacy-policy" className="text-decoration-none">Privacy Policy</Link>
-        </p>
-      </div>
-
-      {/* Contact Us */}
-      <div className="contact-us">
-        <h6 className="mb-1">Contact Us</h6>
-        <p className="ms-3 mb-0 small">
-          Couldn&rsquo;t find the information you need? Please{' '}
-          <Link to="/contact" className="text-decoration-none">Contact Us</Link>
-        </p>
-      </div>
-
+      </Container>
     </div>
   );
 };

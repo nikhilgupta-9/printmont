@@ -2,43 +2,12 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import Header from './Header'; 
 import ProductPageHeader from './ProductPageHeader'; 
-
-const PRODUCT_HEADER_PATHS = [
-  '/allproducts',
-  '/product',
-  '/help-center',
-  '/contact',
-  '/quick-links',
-  '/track-order',
-  '/my-account',
-  '/category',
-  '/support',
-  '/policy',
-  '/privacy-policy',
-  '/terms-and-conditions',
-  '/terms-of-use',
-  '/shipping-policy',
-  '/refund-policy',
-  '/return-policy',
-  '/bulk-orders',
-  '/bulk-order',
-  '/franchise',
-  '/franchises',
-  '/affiliate-program',
-  '/become-a-seller',
-  '/about',
-  '/careers',
-  '/faq',
-  '/security',
-  '/blog',
-  '/printmont-coin',
-  '/manage-address',
-  '/notification-preference'
-];
+import useHeaderSettings from './useHeaderSettings';
 
 const HeaderManager = () => {
   const location = useLocation();
   const currentPath = location.pathname;
+  const { headerType, showCategoryBar, categoryBarMode, isSticky, customBg, customTextColor } = useHeaderSettings();
 
   // 🧠 Dynamic title mapping for inner pages
   const getPageTitle = () => {
@@ -62,17 +31,40 @@ const HeaderManager = () => {
     if (currentPath.startsWith('/faq')) return 'FAQs';
     if (currentPath.startsWith('/security')) return 'Security';
     if (currentPath.startsWith('/blog')) return 'Blog';
+    if (currentPath.startsWith('/sitemap')) return 'Site Map';
     if (currentPath.startsWith('/printmont-coin') || currentPath.includes('wallet')) return 'Printmont Coins & Wallet';
     return 'Shop';
   };
 
-  // Home and the cart use the full site header.
-  if (currentPath === '/' || currentPath === '/cart') {
-    return <Header />;
+  // If configured as 'none', do not render any header
+  if (headerType === 'none') {
+    return null;
   }
 
-  // For all inner pages, render ProductPageHeader
-  return <ProductPageHeader pageTitle={getPageTitle()} />;
+  // If headerType is 'full' (or fallback for home)
+  if (headerType === 'full') {
+    return (
+      <Header 
+        showCategories={showCategoryBar}
+        showImages={categoryBarMode === 'with_images'}
+        isSticky={isSticky}
+        bg={customBg}
+        color={customTextColor}
+      />
+    );
+  }
+
+  // Otherwise render ProductPageHeader (inner page header)
+  return (
+    <ProductPageHeader 
+      pageTitle={getPageTitle()}
+      showCategories={showCategoryBar}
+      showImages={categoryBarMode === 'with_images'}
+      isSticky={isSticky}
+      bg={customBg}
+      color={customTextColor}
+    />
+  );
 };
 
 export default HeaderManager;

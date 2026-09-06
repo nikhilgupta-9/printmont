@@ -71,7 +71,7 @@ const AffiliateProgram = () => {
       <Container className="mk-article">
 
         {/* Ruled, two-tone page title */}
-        <h1 className="mk-page-title"><span>Affiliate</span> Program</h1>
+        <h1 className="mk-page-title"><span className="text-theme">Affiliate</span> Program</h1>
 
         {/* Intro */}
         {hero && (

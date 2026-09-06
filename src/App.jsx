@@ -49,6 +49,7 @@ import AffiliateProgram from "./components/pages/AffiliateProgram";
 import TermsOfUse from "./components/pages/TermsOfUse";
 import BulkOrderPage from "./components/pages/BulkOrderPage";
 import FranchisePage from "./components/pages/FranchisePage";
+import SitemapPage from "./components/pages/sitemap/SitemapPage";
 import SearchPage from "./pages/SearchPage";
 
 import { useEffect } from "react";
@@ -116,6 +117,7 @@ function App() {
           <Route path="/category" element={<CategoryPage />} />
           <Route path="/category/:id" element={<CategoryPage />} />
           <Route path="/affiliate-program" element={<AffiliateProgram />} />
+          <Route path="/sitemap" element={<SitemapPage />} />
           <Route path="/terms-of-use" element={<PolicyPage />} />
           <Route path="/terms-and-conditions" element={<PolicyPage />} />
           <Route path="/privacy-policy" element={<PolicyPage />} />

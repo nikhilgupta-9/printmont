@@ -21,7 +21,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useCheckout } from "../../context/CheckoutContext";
 import { useWishlist } from "../../context/WishlistContext";
 
-const Header = () => {
+const Header = ({ showCategories, showImages = false, isSticky = true, bg, color }) => {
   const { user, getUsernamePath } = useAuth();
   const { wishlistCount } = useWishlist();
   const checkoutContext = useCheckout();
@@ -266,9 +266,15 @@ const Header = () => {
           </Navbar>
         </div>
       </div>
-      {location.pathname !== '/' && (
+      {(showCategories !== undefined ? showCategories : (location.pathname !== '/')) && (
         <div className="d-none d-lg-block">
-          <Categories showImages={false} space="5px 0" bg="rgb(11, 83, 161)" color="white" isSticky={true} />
+          <Categories 
+            showImages={showImages} 
+            space="5px 0" 
+            bg={bg || "rgb(11, 83, 161)"} 
+            color={color || "white"} 
+            isSticky={isSticky} 
+          />
         </div>
       )}
       <div className="site-header-spacer" aria-hidden="true" />

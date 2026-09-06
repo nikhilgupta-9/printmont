@@ -15,7 +15,7 @@ export const ROOT_URL = (import.meta.env.VITE_BASE_URL || (isLocalhost ? '/' : L
 // printmont-backend serves the homepage layout (printmont_db.home_sections) — the same
 // data home-layout-manager.php edits.
 export const BACKEND_URL = (import.meta.env.VITE_BACKEND_API_URL || (isLocalhost ? '/backend-api' : LIVE_API_URL)).replace(/\/+$/, '');
-export const ASSET_URL = (import.meta.env.VITE_ASSET_URL || (isLocalhost ? LOCAL_ASSET_URL : LIVE_ASSET_URL)).replace(/\/+$/, '') + '/';
+export const ASSET_URL = (isLocalhost ? LOCAL_ASSET_URL : (import.meta.env.VITE_ASSET_URL || LIVE_ASSET_URL)).replace(/\/+$/, '') + '/';
 
 // NOTE: every path below must name a file that exists in printmont-backend/api.
 // The backend's .htaccess rewrites unknown paths to index.php, so a wrong path
@@ -122,6 +122,8 @@ export const API_ENDPOINTS = {
   HELP_CENTER: `${BASE_URL}/help-center-api.php`,
   POLICIES: `${BASE_URL}/policies-api.php`,
   SECURITY: `${BASE_URL}/security-api.php`,
+  SITEMAP: `${BASE_URL}/sitemap-api.php`,
+  HEADER_SETTINGS: `${BASE_URL}/header-settings-api.php`,
   // The backend exposes the public logo endpoint directly under /api.
   LOGO: `${BASE_URL}/logo-api.php`,
 };

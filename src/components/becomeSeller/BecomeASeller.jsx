@@ -256,19 +256,6 @@ const BecomeASeller = () => {
                     </button>
                   )}
                 </div>
-
-                {stories.length > 1 && (
-                  <div className="bs-dots">
-                    {stories.map((s, i) => (
-                      <button
-                        key={s.id} type="button"
-                        className={`bs-dot ${i === storyIndex ? "is-active" : ""}`}
-                        onClick={() => setStoryIndex(i)}
-                        aria-label={`Story ${i + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
               </Col>
             </Row>
           </Container>
@@ -393,19 +380,6 @@ const BecomeASeller = () => {
                 </button>
               )}
             </div>
-
-            {platform.length > 1 && (
-              <div className="bs-dots">
-                {platform.map((s, i) => (
-                  <button
-                    key={s.id} type="button"
-                    className={`bs-dot ${i === slideIndex ? "is-active" : ""}`}
-                    onClick={() => setSlideIndex(i)}
-                    aria-label={`Slide ${i + 1}`}
-                  />
-                ))}
-              </div>
-            )}
           </Container>
         </section>
       )}

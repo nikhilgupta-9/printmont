@@ -10,56 +10,9 @@ import {
   Form,
   Spinner,
 } from "react-bootstrap";
-import { FaClock, FaGlobe, FaDollarSign } from "react-icons/fa";
+import { FaClock, FaGlobe, FaMoneyBillWave, FaBriefcase } from "react-icons/fa";
 import { API_ENDPOINTS } from "../../../config/apiEndpoints";
 import "./Career.css";
-
-const fallbackJobData = [
-  {
-    department: "Design",
-    description: "Open positions in our design team.",
-    jobs: [
-      {
-        id: 1,
-        title: "Product Designer",
-        type: "Design",
-        location: "Delhi, India",
-        workType: "Full-time",
-        salary: "$80k – $100k",
-      },
-      {
-        id: 2,
-        title: "UX Designer",
-        type: "Design",
-        location: "Delhi, India",
-        workType: "Full-time",
-        salary: "$80k – $100k",
-      },
-    ],
-  },
-  {
-    department: "Software Development",
-    description: "Open positions in our software team.",
-    jobs: [
-      {
-        id: 3,
-        title: "Engineering Manager",
-        type: "Software",
-        location: "Pune, India",
-        workType: "Full-time",
-        salary: "$80k – $100k",
-      },
-      {
-        id: 4,
-        title: "Frontend Developer",
-        type: "Software",
-        location: "Mumbai, India",
-        workType: "Full-time",
-        salary: "$80k – $100k",
-      },
-    ],
-  },
-];
 
 const CareerPage = () => {
   const navigate = useNavigate();
@@ -106,23 +59,26 @@ const CareerPage = () => {
                 jobs: [],
               };
             }
+            const cleanSlug = j.slug || (j.job_title || j.title || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || j.id;
             grouped[dept].jobs.push({
               id: j.id,
+              slug: cleanSlug,
               title: j.job_title || j.title || "Job Position",
               type: j.department || "General",
               location: j.location || "Remote",
-              workType: j.job_type ? j.job_type.replace('_', ' ') : "Full-time",
-              salary: j.salary_range || "Competitive",
+              workType: j.job_type ? j.job_type.replace(/_/g, ' ') : "Full-time",
+              salary: j.salary_range || "",
+              description: j.description || "",
               raw: j,
             });
           });
           setJobSections(Object.values(grouped));
         } else {
-          setJobSections(fallbackJobData);
+          setJobSections([]);
         }
       } catch (err) {
         console.error("Error fetching careers:", err);
-        setJobSections(fallbackJobData);
+        setJobSections([]);
       } finally {
         setLoading(false);
       }
@@ -132,11 +88,10 @@ const CareerPage = () => {
   }, []);
 
   const handleCardClick = (job) => {
-    // Jobs from the API have a real id and get their own page, which is
-    // linkable and shareable. The hardcoded fallback entries have no id,
-    // so those still open the inline modal.
-    if (job && job.id) {
-      navigate("/careers/" + job.id);
+    // Navigate with SEO-friendly slug
+    if (job && (job.slug || job.id)) {
+      const slugOrId = job.slug || (job.title || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || job.id;
+      navigate("/careers/" + slugOrId);
       return;
     }
     setSelectedJob(job);
@@ -164,20 +119,22 @@ const CareerPage = () => {
     try {
       setIsSubmitting(true);
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
-      const payload = {
-        career_id: selectedJob.id,
-        full_name: fullName,
-        email: formData.email,
-        phone: formData.phone,
-        cover_letter: formData.bio,
-        location: formData.location,
-        company: formData.company,
-      };
+      
+      const payload = new FormData();
+      payload.append('career_id', selectedJob.id);
+      payload.append('full_name', fullName);
+      payload.append('email', formData.email);
+      payload.append('phone', formData.phone);
+      payload.append('cover_letter', formData.bio || '');
+      payload.append('location', formData.location || '');
+      payload.append('company', formData.company || '');
+      if (formData.resume) {
+        payload.append('resume', formData.resume);
+      }
 
       const res = await fetch(API_ENDPOINTS.CAREER_POST, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: payload,
       });
 
       const json = await res.json();
@@ -185,13 +142,11 @@ const CareerPage = () => {
         alert(`Thank you ${formData.firstName}! Your application for ${selectedJob.title} has been submitted successfully.`);
         handleClose();
       } else {
-        alert(`Application submitted! Thank you ${formData.firstName}.`);
-        handleClose();
+        alert(json.error || json.message || 'Failed to submit application. Please try again.');
       }
     } catch (err) {
       console.error("Error submitting application:", err);
-      alert(`Thank you ${formData.firstName}! Your application for ${selectedJob.title} has been recorded.`);
-      handleClose();
+      alert('An error occurred while submitting your application. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -213,6 +168,16 @@ const CareerPage = () => {
             <Spinner animation="border" variant="primary" />
             <p className="text-muted mt-2">Loading current career openings...</p>
           </div>
+        ) : jobSections.length === 0 ? (
+          <div className="text-center py-5 bg-white rounded-3 shadow-sm border p-4">
+            <div className="text-muted mb-3">
+              <FaBriefcase size={48} className="opacity-50 text-primary" />
+            </div>
+            <h5 className="fw-bold">No Openings Available Right Now</h5>
+            <p className="text-muted mb-0">
+              We don't have any open positions at the moment. Please check back later.
+            </p>
+          </div>
         ) : (
           jobSections.map((section, idx) => (
             <div key={idx} className="mb-5">
@@ -225,30 +190,47 @@ const CareerPage = () => {
                 <Col md={8}>
                   {section.jobs.map((job, i) => (
                     <Card
-                      className="career-card mb-3 border-0"
+                      className="career-card mb-3 border-0 shadow-sm"
                       key={i}
                       onClick={() => handleCardClick(job)}
                       style={{ cursor: "pointer" }}
                     >
                       <Card.Body className="d-flex justify-content-between align-items-center flex-wrap">
-                        <div>
-                          <h6 className="fw-bold mb-1">{job.title}</h6>
-                          <span className="badge bg-light text-dark small me-2">
+                        <div className="flex-grow-1 me-3">
+                          <h6 className="fw-bold mb-1 text-primary">{job.title}</h6>
+                          <span className="badge bg-light text-dark text-capitalize small me-2">
                             {job.type}
                           </span>
-                          <p className="text-muted small mb-2">
-                            We’re looking for a {job.title.toLowerCase()} to join
-                            our team.
-                          </p>
-                          <div className="d-flex align-items-center text-muted small">
-                            <FaClock className="me-2 text-capitalize" /> {job.workType}
-                            <FaDollarSign className="ms-4 me-1" />
-                            {job.salary}
+                          {job.description ? (
+                            <p
+                              className="text-muted small mb-2 mt-1"
+                              style={{
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                              }}
+                            >
+                              {job.description}
+                            </p>
+                          ) : null}
+                          <div className="d-flex align-items-center text-muted small flex-wrap gap-3 mt-2">
+                            <span className="d-inline-flex align-items-center">
+                              <FaClock className="me-1 text-capitalize text-secondary" /> {job.workType}
+                            </span>
+                            {job.salary ? (
+                              <span className="d-inline-flex align-items-center text-success fw-medium">
+                                <FaMoneyBillWave className="me-1" />
+                                {job.salary}
+                              </span>
+                            ) : null}
                           </div>
                         </div>
-                        <div className="text-end text-md-end text-start mt-3 mt-md-0">
-                          <FaGlobe className="text-primary me-2" />
-                          <span className="text-muted small">{job.location}</span>
+                        <div className="text-end text-md-end text-start mt-3 mt-md-0 flex-shrink-0">
+                          <span className="d-inline-flex align-items-center text-muted small">
+                            <FaGlobe className="text-primary me-1" />
+                            {job.location}
+                          </span>
                         </div>
                       </Card.Body>
                     </Card>
@@ -353,7 +335,7 @@ const CareerPage = () => {
                 <Form.Label>Current Company</Form.Label>
                 <Form.Control
                   type="text"
-                  placeholder="Your Company Name"
+                  placeholder="Company Name"
                   value={formData.company}
                   onChange={(e) =>
                     setFormData({ ...formData, company: e.target.value })
@@ -362,24 +344,26 @@ const CareerPage = () => {
               </Col>
             </Row>
 
-            <Form.Group className="mb-3 upload-section">
-              <Form.Label>Resume or CV</Form.Label>
-              <div className="upload-box text-center p-3 border rounded">
-                <Form.Control
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={(e) =>
-                    setFormData({ ...formData, resume: e.target.files[0] })
-                  }
-                />
-                <p className="text-muted small mt-2">
-                  Upload your resume (max 10MB)
-                </p>
-              </div>
+            <Form.Group className="mb-4">
+              <Form.Label>Resume (PDF/DOC)</Form.Label>
+              <Form.Control
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={(e) =>
+                  setFormData({ ...formData, resume: e.target.files[0] })
+                }
+              />
             </Form.Group>
 
             <div className="text-end">
-              <Button variant="success" type="submit" disabled={isSubmitting}>
+              <Button
+                variant="secondary"
+                onClick={handleClose}
+                className="me-2"
+              >
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Submitting..." : "Submit Application"}
               </Button>
             </div>

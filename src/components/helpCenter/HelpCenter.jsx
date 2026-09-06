@@ -18,9 +18,9 @@ const HelpCenter = () => {
         if (!response.ok) throw new Error("Network response was not ok");
         const json = await response.json();
         if (json && json.success && json.data && Array.isArray(json.data.categories)) {
-          // Filter categories that have active FAQs to only show populated categories
+          // Include all active categories
           const activeCategories = json.data.categories.filter(
-            (cat) => cat.is_active && Array.isArray(cat.faqs) && cat.faqs.length > 0
+            (cat) => cat.is_active !== false && cat.is_active !== 0
           );
           setCategories(activeCategories);
           if (activeCategories.length > 0) {

@@ -15,7 +15,15 @@ import { useWishlist } from '../../context/WishlistContext';
 import axios from 'axios';
 import { API_ENDPOINTS, ASSET_URL } from '../../config/apiEndpoints';
 
-const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCategories = true }) => {
+const ProductPageHeader = ({ 
+    pageTitle = "Cart", 
+    showBackButton = true, 
+    showCategories, 
+    showImages = false, 
+    isSticky = true, 
+    bg, 
+    color 
+}) => {
     const navigate = useNavigate();
     const location = useLocation();
     const checkoutContext = useCheckout();
@@ -43,7 +51,9 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCate
                                location.pathname.includes('wallet') ||
                                location.pathname.includes('printmont-coin');
 
-    const shouldShowCategories = showCategories && !isInfoOrPolicyPage;
+    const shouldShowCategories = showCategories !== undefined 
+        ? showCategories 
+        : (!isInfoOrPolicyPage);
 
     // State to toggle between the default header and the active search bar
     const [isSearchActive, setIsSearchActive] = useState(false);
@@ -377,7 +387,13 @@ const ProductPageHeader = ({ pageTitle = "Cart", showBackButton = true, showCate
             {/* Categories section for product pages */}
             {shouldShowCategories && (
                 <div className="d-none d-lg-block">
-                    <Categories showImages={false} space="5px 0" bg="rgb(11, 83, 161)" color="white" isSticky={true} />
+                    <Categories 
+                        showImages={showImages} 
+                        space="5px 0" 
+                        bg={bg || "rgb(11, 83, 161)"} 
+                        color={color || "white"} 
+                        isSticky={isSticky} 
+                    />
                 </div>
             )}
             <div style={{ height: "var(--site-header-height, 65px)" }} className="d-none d-lg-block"></div>

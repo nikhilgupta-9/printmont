@@ -8,7 +8,8 @@
 /* 🌸 Hero Banner styling - set to full screen height */
 .fnp-hero-banner-new {
   position: relative;
-  height: 100vh; /* Full height of the screen */
+  height: 100vh;
+  /* Full height of the screen */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -48,7 +49,8 @@
 
 /* 📜 Headers & Descriptions */
 .fnp-theme-heading {
-  color: rgb(11, 83, 161) !important; /* Printmont Theme Blue */
+  color: rgb(11, 83, 161) !important;
+  /* Printmont Theme Blue */
   font-weight: 700;
   font-size: 1.65rem;
   letter-spacing: -0.01em;
@@ -60,16 +62,38 @@
   color: #4b5563 !important;
 }
 
+.fnp-story-img-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px -10px rgba(11, 83, 161, 0.15);
+  border: 1px solid rgba(11, 83, 161, 0.08);
+}
+
+.fnp-story-img-wrap img {
+  width: 100%;
+  height: 100%;
+  max-height: 440px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.fnp-story-img-wrap:hover img {
+  transform: scale(1.02);
+}
+
 /* 📦 Beige Card changed to Soft Theme Ice-Blue */
 .fnp-beige-section {
   background-color: #fbfaf8;
 }
 
 .fnp-beige-card {
-  background-color: #f0f7ff !important; /* Soft Ice Blue */
-  border: 1px solid rgba(11, 83, 161, 0.08);
-  max-width: 1000px; /* Constrain card width for better alignment */
+  background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%) !important;
+  border: 1px solid rgba(11, 83, 161, 0.12);
+  max-width: 1040px;
   margin: 0 auto;
+  box-shadow: 0 12px 30px -10px rgba(11, 83, 161, 0.12) !important;
 }
 
 /* Flush Image styling: image fills left side completely */
@@ -78,7 +102,7 @@
   overflow: hidden;
   width: 100%;
   height: 100%;
-  min-height: 320px; /* Good default height on mobile */
+  min-height: 340px;
 }
 
 .fnp-beige-img-wrap img {
@@ -86,23 +110,53 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.5s ease;
+}
+
+.fnp-beige-card:hover .fnp-beige-img-wrap img {
+  transform: scale(1.03);
+}
+
+.fnp-feature-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid rgba(11, 83, 161, 0.14);
+  padding: 8px 14px;
+  border-radius: 9999px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #1e293b;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.fnp-feature-chip:hover {
+  background: #f8fafc;
+  border-color: rgb(11, 83, 161);
+  transform: translateY(-2px);
 }
 
 /* Delivery Worldwide Badge changed to Theme Blue */
 .fnp-delivery-badge {
   position: absolute;
-  bottom: 15px;
-  left: 15px;
-  width: 85px;
-  height: 85px;
-  background-color: rgb(11, 83, 161); /* Printmont Theme Blue */
+  bottom: 16px;
+  left: 16px;
+  width: 82px;
+  height: 82px;
+  background-color: rgb(11, 83, 161);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 1px dashed rgba(255, 255, 255, 0.4);
+  box-shadow: 0 6px 16px rgba(11, 83, 161, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.6);
   z-index: 5;
+  transition: transform 0.3s ease;
+}
+
+.fnp-beige-card:hover .fnp-delivery-badge {
+  transform: scale(1.06) rotate(5deg);
 }
 
 .fnp-badge-inner {
@@ -119,7 +173,7 @@
 }
 
 .fnp-badge-txt {
-  font-size: 6px;
+  font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.05em;
   line-height: 1.1;
@@ -163,7 +217,8 @@
   transform: scale(1.03);
 }
 
-.fnp-laurel-left, .fnp-laurel-right {
+.fnp-laurel-left,
+.fnp-laurel-right {
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -213,7 +268,8 @@
   width: 20px;
   height: 20px;
   background-color: #ffffff;
-  border: 4px solid rgb(11, 83, 161); /* Printmont Theme Blue */
+  border: 4px solid rgb(11, 83, 161);
+  /* Printmont Theme Blue */
   border-radius: 50%;
   position: relative;
   z-index: 2;
@@ -351,65 +407,176 @@
   opacity: 1;
 }
 
-/* 📊 Stats Counter Bar updated to Theme Blue */
-.fnp-green-stats-bar {
-  background-color: rgb(11, 83, 161) !important; /* Printmont Theme Blue */
+/* 📊 Modern Floating Stats Section */
+.fnp-stats-section {
+  background: #f8fafc;
+  padding: 50px 0 70px 0;
 }
 
-.fnp-stats-col {
-  padding: 20px 0;
+.fnp-stats-wrapper {
+  background: linear-gradient(135deg, #092c53 0%, #0b53a1 50%, #1d4ed8 100%);
+  border-radius: 24px;
+  padding: 48px 32px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 40px -15px rgba(11, 83, 161, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.fnp-stats-num-white {
-  font-size: 2.8rem;
+.fnp-stats-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -15%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.fnp-stats-wrapper::after {
+  content: '';
+  position: absolute;
+  bottom: -40%;
+  left: -10%;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(235, 76, 38, 0.18) 0%, rgba(235, 76, 38, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.fnp-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 16px 12px;
+  border-radius: 18px;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease;
+  position: relative;
+  height: 100%;
+}
+
+.fnp-stat-card:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.fnp-stat-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: #ffffff;
+  font-size: 1.65rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.fnp-stat-card:hover .fnp-stat-icon-wrap {
+  background: #eb4c26;
+  color: #ffffff;
+  transform: scale(1.1) rotate(6deg);
+  box-shadow: 0 8px 20px rgba(235, 76, 38, 0.4);
+}
+
+.fnp-stats-num {
+  font-size: 2.5rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  line-height: 1.15;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
 
-.fnp-stats-label-gold {
-  color: #e2ecf7 !important; /* Soft ice-blue gold fallback */
+.fnp-stats-label {
+  color: #dbeafe;
   font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.95;
+  margin-top: 6px;
+  line-height: 1.35;
 }
 
-/* Responsive Rules */
-@media (min-width: 768px) {
-  .fnp-stats-col:not(:last-child) {
-    border-right: 1px dashed rgba(255, 255, 255, 0.25);
+@media (min-width: 992px) {
+  .fnp-stats-col:not(:last-child) .fnp-stat-card::after {
+    content: '';
+    position: absolute;
+    right: -12px;
+    top: 20%;
+    height: 60%;
+    width: 1px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0) 100%);
+  }
+}
+
+@media (max-width: 767px) {
+  .fnp-stats-wrapper {
+    padding: 28px 16px;
+    border-radius: 18px;
+  }
+  .fnp-stats-num {
+    font-size: 1.9rem;
+  }
+  .fnp-stats-label {
+    font-size: 0.75rem;
+  }
+  .fnp-stat-icon-wrap {
+    width: 46px;
+    height: 46px;
+    font-size: 1.35rem;
+    margin-bottom: 12px;
   }
 }
 
 @media (max-width: 767px) {
   .fnp-hero-banner-new {
-    height: 100vh; /* Keep screen size height even on mobile as requested */
+    height: 100vh;
+    /* Keep screen size height even on mobile as requested */
   }
+
   .fnp-hero-main-title {
     font-size: 2.2rem;
   }
+
   .fnp-hero-main-title .highlight-text {
     font-size: 2.8rem;
   }
+
   .fnp-theme-heading {
     font-size: 1.4rem;
     text-align: center;
   }
+
   .fnp-started-desc {
     text-align: center;
     font-size: 0.9rem;
   }
+
   .fnp-timeline-node-circle {
     margin-bottom: 8px;
   }
+
   .fnp-timeline-year {
     font-size: 1.15rem;
   }
+
   .fnp-timeline-node-text {
     max-width: 260px;
     margin: 0 auto;
   }
 }
+
 /* Team grid cards need a consistent height now they are no longer slides. */
 .fnp-leadership-grid-section .fnp-leader-card {
   height: 260px;
@@ -430,8 +597,10 @@
    ============================================================ */
 
 .about-fnp-page {
-  --fnp-a-h2: 1.625rem;  /* ~26px section headings */
-  --fnp-a-text: 1rem;    /* 16px body */
+  --fnp-a-h2: 1.625rem;
+  /* ~26px section headings */
+  --fnp-a-text: 1rem;
+  /* 16px body */
   --fnp-a-note: 0.9375rem;
 }
 
@@ -558,7 +727,8 @@
   flex: 1 1 auto;
   text-align: center;
   color: #2c3e50;
-  font-size: 1.0625rem;   /* normal reading size */
+  font-size: 1.0625rem;
+  /* normal reading size */
   font-weight: 500;
   line-height: 1.5;
 }

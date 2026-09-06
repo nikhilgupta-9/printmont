@@ -56,7 +56,7 @@ const BusinessSolutions = () => {
     return (
       <div className="mk-page">
         <Container className="mk-article">
-          <h1 className="mk-page-title"><span>Business</span> Solutions</h1>
+          <h1 className="mk-page-title"><span className="text-theme">Business</span> Solutions</h1>
           <p className="mk-para">This page is unavailable right now. Please refresh in a moment.</p>
         </Container>
       </div>
@@ -67,7 +67,7 @@ const BusinessSolutions = () => {
     <div className="mk-page">
       <Container className="mk-article">
 
-        <h1 className="mk-page-title"><span>Business</span> Solutions</h1>
+        <h1 className="mk-page-title"><span className="text-theme">Business</span> Solutions</h1>
 
         {hero && (
           <>
