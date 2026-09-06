@@ -626,10 +626,12 @@ body {
 }
 
 .main-img-zoomable {
-  transition: transform 0.3s ease;
+  transition: opacity 0.2s ease;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 .main-img-zoomable:hover {
-  transform: scale(1.06);
+  transform: none;
 }
 
 /* Action Buttons below main image */

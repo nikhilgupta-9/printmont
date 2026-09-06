@@ -264,19 +264,19 @@ const Header = ({ showCategories, showImages = false, isSticky = true, bg, color
             </Navbar.Collapse>
             </Container>
           </Navbar>
+          {(showCategories !== undefined ? showCategories : (location.pathname !== '/')) && (
+            <div className="d-none d-lg-block">
+              <Categories 
+                showImages={showImages} 
+                space="6px 0" 
+                bg={bg || "rgb(11, 83, 161)"} 
+                color={color || "white"} 
+                isSticky={false} 
+              />
+            </div>
+          )}
         </div>
       </div>
-      {(showCategories !== undefined ? showCategories : (location.pathname !== '/')) && (
-        <div className="d-none d-lg-block">
-          <Categories 
-            showImages={showImages} 
-            space="5px 0" 
-            bg={bg || "rgb(11, 83, 161)"} 
-            color={color || "white"} 
-            isSticky={isSticky} 
-          />
-        </div>
-      )}
       <div className="site-header-spacer" aria-hidden="true" />
     </>
   );

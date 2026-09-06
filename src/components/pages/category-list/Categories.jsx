@@ -188,10 +188,19 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
     return resolveImageUrl(imagePath);
   };
 
-  const isVisible = (cat) => {
+  const isDesktopVisible = (cat) => {
     if (!cat) return false;
-    if (cat.status && (cat.status === 'inactive' || cat.status === 'deactive')) return false;
-    if (cat.desktop_menu_status === 'hide' && cat.mobile_topbar_status === 'hide') return false;
+    if (cat.status && (cat.status === 'inactive' || cat.status === 'deactive' || cat.status === 'disabled')) return false;
+    const deskStatus = cat.desktop?.status ?? cat.desktop_menu_status;
+    if (deskStatus === 'hide') return false;
+    return true;
+  };
+
+  const isMobileVisible = (cat) => {
+    if (!cat) return false;
+    if (cat.status && (cat.status === 'inactive' || cat.status === 'deactive' || cat.status === 'disabled')) return false;
+    const mobStatus = cat.mobile?.status ?? cat.mobile_topbar_status;
+    if (mobStatus === 'hide') return false;
     return true;
   };
 
@@ -221,13 +230,13 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
 
   const safeCategories = getArray(categoriesData);
   const displayCategories = (() => {
-    const visible = safeCategories.filter(isVisible);
+    const visible = safeCategories.filter(isDesktopVisible);
     return limit ? visible.slice(0, limit) : visible;
   })();
 
   const safeMobileCategories = getArray(mobileCategoriesData);
   const mobileCategories = (() => {
-    const visible = safeMobileCategories.filter(isVisible);
+    const visible = safeMobileCategories.filter(isMobileVisible);
     return limit ? visible.slice(0, limit) : visible;
   })();
   const half = Math.ceil(mobileCategories.length / 2);
@@ -333,8 +342,8 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                 }}
               >
                 <div className="d-flex flex-wrap flex-grow-1" style={{ gap: "20px" }}>
-                  {itemChildren.map((sub, i) => {
-                    const subChildren = getArray(sub.children);
+                  {itemChildren.filter(isDesktopVisible).map((sub, i) => {
+                    const subChildren = getArray(sub.children).filter(isDesktopVisible);
                     return (
                     <div key={i} className="d-flex flex-column mb-3" style={{ flex: "1 1 180px", maxWidth: "250px" }}>
                       <Link to={`/category/${sub.slug}`} className="fw-bold text-dark text-decoration-none mb-2 pb-1 border-bottom fs-6 text-wrap">
@@ -376,8 +385,8 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
                   }}
                 >
                   <div className="d-flex flex-wrap flex-grow-1" style={{ gap: "24px" }}>
-                    {itemChildren.map((sub, i) => {
-                      const subChildren = getArray(sub.children);
+                    {itemChildren.filter(isDesktopVisible).map((sub, i) => {
+                      const subChildren = getArray(sub.children).filter(isDesktopVisible);
                       return (
                         <div key={i} className="d-flex flex-column mb-3" style={{ flex: "1 1 180px", maxWidth: "220px" }}>
                           <Link to={`/category/${sub.slug}`} className="fw-bold text-dark text-decoration-none mb-2 pb-1 border-bottom fs-6 text-wrap">

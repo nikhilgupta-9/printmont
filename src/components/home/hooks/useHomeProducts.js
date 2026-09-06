@@ -67,8 +67,16 @@ export default function useHomeProducts(apiUrl, initialProducts = [], limit) {
 
         if (!isMounted) return;
 
-        const rawProducts = data && data.success && Array.isArray(data.data) 
-          ? data.data 
+        const rawProducts = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.products)
+          ? data.products
+          : Array.isArray(data?.related_products)
+          ? data.related_products
+          : Array.isArray(data?.suggestions?.products)
+          ? data.suggestions.products
+          : Array.isArray(data?.items)
+          ? data.items
           : (Array.isArray(data) ? data : []);
 
         let normalized = rawProducts.map(normalizeProduct).filter(Boolean);

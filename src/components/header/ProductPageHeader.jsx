@@ -245,11 +245,11 @@ const ProductPageHeader = ({
         );
     }
 
-    // --- Default Header View (from the image) ---
+    // --- Default Header View ---
     return (
         <>
-            <div ref={headerRef} className='theme shadow-sm position-fixed w-100 py-1 border-bottom px-0 px-lg-5' style={{ zIndex: '1030' }}>
-                <div className="d-flex align-items-center justify-content-between p-1 ">
+            <div ref={headerRef} className='theme shadow-sm position-fixed top-0 start-0 w-100 border-bottom' style={{ zIndex: '1030' }}>
+                <div className="d-flex align-items-center justify-content-between p-1 px-0 px-lg-5">
                     {/* LEFT SIDE: Back Arrow, Logo, Title */}
                     <div className="d-flex align-items-center gap-2 flex-grow-1">
 
@@ -383,19 +383,21 @@ const ProductPageHeader = ({
                         </div>
                     </div>
                 </div>
+
+                {/* Categories section for product/inner pages */}
+                {shouldShowCategories && (
+                    <div className="d-none d-lg-block border-top border-opacity-10">
+                        <Categories 
+                            showImages={showImages} 
+                            space="6px 0" 
+                            bg={bg || "rgb(11, 83, 161)"} 
+                            color={color || "white"} 
+                            isSticky={false} 
+                        />
+                    </div>
+                )}
             </div>
-            {/* Categories section for product pages */}
-            {shouldShowCategories && (
-                <div className="d-none d-lg-block">
-                    <Categories 
-                        showImages={showImages} 
-                        space="5px 0" 
-                        bg={bg || "rgb(11, 83, 161)"} 
-                        color={color || "white"} 
-                        isSticky={isSticky} 
-                    />
-                </div>
-            )}
+
             <div style={{ height: "var(--site-header-height, 65px)" }} className="d-none d-lg-block"></div>
             <div style={{ height: "var(--site-header-height, 55px)" }} className="d-block d-lg-none"></div>
         </>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Container, Row, Col, Modal, Spinner, Alert } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -102,9 +102,10 @@ const ProductDetails = () => {
 
   // Amazon/Flipkart Image Hover Zoom Lens States
   const [isZooming, setIsZooming] = useState(false);
-  const [lensPos, setLensPos] = useState({ left: 0, top: 0 });
-  const [zoomBgPos, setZoomBgPos] = useState({ x: 0, y: 0 });
+  const [lensPos, setLensPos] = useState({ left: 0, top: 0, width: 173, height: 173 });
+  const [zoomBgPos, setZoomBgPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const mainImageContainerRef = useRef(null);
+  const mainImgRef = useRef(null);
 
   const handleMouseEnterZoom = () => {
     if (window.innerWidth >= 992) setIsZooming(true);
@@ -115,34 +116,74 @@ const ProductDetails = () => {
   };
 
   const handleMouseMoveZoom = (e) => {
-    if (!mainImageContainerRef.current || window.innerWidth < 992) return;
-    const rect = mainImageContainerRef.current.getBoundingClientRect();
-    const lensWidth = 140;
-    const lensHeight = 140;
-    const zoomRatio = 3;
+    if (!mainImageContainerRef.current || !mainImgRef.current || window.innerWidth < 992) return;
+    
+    const containerRect = mainImageContainerRef.current.getBoundingClientRect();
+    const imgEl = mainImgRef.current;
+    const imgRect = imgEl.getBoundingClientRect();
+
+    // Get true rendered dimensions and offsets of the image inside its object-fit: contain box
+    const naturalWidth = imgEl.naturalWidth || imgRect.width;
+    const naturalHeight = imgEl.naturalHeight || imgRect.height;
+    const naturalAspect = naturalWidth / (naturalHeight || 1);
+    const boxAspect = imgRect.width / (imgRect.height || 1);
+
+    let renderedWidth = imgRect.width;
+    let renderedHeight = imgRect.height;
+    let renderedLeft = imgRect.left;
+    let renderedTop = imgRect.top;
+
+    if (naturalAspect > boxAspect) {
+      // Letterboxed top & bottom
+      renderedWidth = imgRect.width;
+      renderedHeight = imgRect.width / naturalAspect;
+      renderedTop = imgRect.top + (imgRect.height - renderedHeight) / 2;
+    } else {
+      // Letterboxed left & right
+      renderedHeight = imgRect.height;
+      renderedWidth = imgRect.height * naturalAspect;
+      renderedLeft = imgRect.left + (imgRect.width - renderedWidth) / 2;
+    }
+
+    // Fixed preview window size and magnification factor
     const prevWidth = 520;
     const prevHeight = 520;
+    const zoomRatio = 3;
 
-    let lensX = e.clientX - rect.left - lensWidth / 2;
-    let lensY = e.clientY - rect.top - lensHeight / 2;
+    // Lens dimension in pixels
+    const lensWidth = prevWidth / zoomRatio; // ~173.33px
+    const lensHeight = prevHeight / zoomRatio; // ~173.33px
 
-    // Boundaries
-    if (lensX < 0) lensX = 0;
-    if (lensY < 0) lensY = 0;
-    if (lensX > rect.width - lensWidth) lensX = rect.width - lensWidth;
-    if (lensY > rect.height - lensHeight) lensY = rect.height - lensHeight;
+    // Mouse coordinates relative to actual rendered image box
+    const mouseX = e.clientX - renderedLeft;
+    const mouseY = e.clientY - renderedTop;
 
-    setLensPos({ left: lensX, top: lensY });
+    // Center lens over cursor
+    let lensImgX = mouseX - lensWidth / 2;
+    let lensImgY = mouseY - lensHeight / 2;
 
-    // Exact pinpoint center of lens
-    const centerX = lensX + lensWidth / 2;
-    const centerY = lensY + lensHeight / 2;
+    // Clamp lens within rendered image boundaries
+    const maxLensX = Math.max(0, renderedWidth - lensWidth);
+    const maxLensY = Math.max(0, renderedHeight - lensHeight);
+    lensImgX = Math.min(Math.max(0, lensImgX), maxLensX);
+    lensImgY = Math.min(Math.max(0, lensImgY), maxLensY);
 
-    // Position background so (centerX, centerY) aligns exactly with center of 520x520 preview window
-    const bgX = (prevWidth / 2) - (centerX * zoomRatio);
-    const bgY = (prevHeight / 2) - (centerY * zoomRatio);
-    const bgWidth = rect.width * zoomRatio;
-    const bgHeight = rect.height * zoomRatio;
+    // Position of lens relative to container div
+    const lensLeftInContainer = (renderedLeft - containerRect.left) + lensImgX;
+    const lensTopInContainer = (renderedTop - containerRect.top) + lensImgY;
+
+    setLensPos({ 
+      left: lensLeftInContainer, 
+      top: lensTopInContainer,
+      width: Math.min(lensWidth, renderedWidth),
+      height: Math.min(lensHeight, renderedHeight)
+    });
+
+    // Background coordinates & dimensions for preview window
+    const bgX = -(lensImgX * zoomRatio);
+    const bgY = -(lensImgY * zoomRatio);
+    const bgWidth = renderedWidth * zoomRatio;
+    const bgHeight = renderedHeight * zoomRatio;
 
     setZoomBgPos({ x: bgX, y: bgY, width: bgWidth, height: bgHeight });
   };
@@ -289,6 +330,41 @@ const ProductDetails = () => {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [productId]);
+
+  // Track and persist Recently Viewed Products in localStorage
+  useEffect(() => {
+    if (!productData || !productData.id || !productData.title) return;
+    try {
+      const stored = JSON.parse(localStorage.getItem('pm_recently_viewed') || '[]');
+      const currentItem = {
+        id: productData.id,
+        name: productData.title,
+        title: productData.title,
+        price: productData.originalPrice || productData.perPiecePrice,
+        discount_price: productData.perPiecePrice,
+        image: productData.images?.[0] || '',
+        primary_image: productData.images?.[0] || '',
+        slug: productSlug || '',
+        category_name: productData.category_name,
+        rating: 4.5
+      };
+      const filtered = Array.isArray(stored) ? stored.filter(item => String(item.id) !== String(productData.id)) : [];
+      const updated = [currentItem, ...filtered].slice(0, 15);
+      localStorage.setItem('pm_recently_viewed', JSON.stringify(updated));
+    } catch (e) {
+      console.error('Error saving recently viewed:', e);
+    }
+  }, [productData?.id, productData?.title, productSlug]);
+
+  const recentlyViewed = useMemo(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('pm_recently_viewed') || '[]');
+      if (!Array.isArray(stored)) return [];
+      return stored.filter(item => String(item.id) !== String(productData?.id));
+    } catch {
+      return [];
+    }
+  }, [productData?.id]);
 
   const visibleImages = productData.images.slice(startIndex, startIndex + maxThumbnails);
 
@@ -512,8 +588,8 @@ const ProductDetails = () => {
                             style={{ 
                               left: `${lensPos.left}px`, 
                               top: `${lensPos.top}px`, 
-                              width: '140px', 
-                              height: '140px' 
+                              width: `${lensPos.width || 173}px`, 
+                              height: `${lensPos.height || 173}px` 
                             }} 
                           />
                         )}
@@ -525,13 +601,14 @@ const ProductDetails = () => {
                             style={{ 
                               backgroundImage: `url("${activeImage}")`,
                               backgroundPosition: `${zoomBgPos.x}px ${zoomBgPos.y}px`,
-                              backgroundSize: zoomBgPos.width ? `${zoomBgPos.width}px ${zoomBgPos.height}px` : '300% 300%'
+                              backgroundSize: zoomBgPos.width ? `${zoomBgPos.width}px ${zoomBgPos.height}px` : 'auto'
                             }} 
                           />
                         )}
 
                         <div className="main-image-display d-flex justify-content-center align-items-center w-100 h-100">
                           <img
+                            ref={mainImgRef}
                             src={activeImage}
                             alt="Main Product"
                             className="img-fluid main-img-zoomable"
@@ -984,12 +1061,26 @@ const ProductDetails = () => {
           </Col>
         </Row>
 
-        {/* SECTION 7: Related Products — real category-matched products, not dummy data */}
+        {/* SECTION 7: Similar & Related Products */}
         {productData.id && (
           <Row className='p-0 mx-0 my-3 w-100'>
-            <ProductCarousel apiUrl={API_ENDPOINTS.RELATED_PRODUCTS(productData.id)} title="Related Products" />
+            <ProductCarousel apiUrl={API_ENDPOINTS.RELATED_PRODUCTS(productData.id)} title="Similar & Related Products" />
           </Row>
         )}
+
+        {/* SECTION 8: Recommended / You Might Also Like */}
+        <Row className='p-0 mx-0 my-3 w-100'>
+          <ProductCarousel apiUrl={API_ENDPOINTS.TOP_RATED} title="You Might Also Like" />
+        </Row>
+
+        {/* SECTION 9: Recently Viewed Products */}
+        <Row className='p-0 mx-0 my-3 w-100'>
+          {recentlyViewed && recentlyViewed.length > 0 ? (
+            <ProductCarousel products={recentlyViewed} title="Recently Viewed Products" />
+          ) : (
+            <ProductCarousel apiUrl={API_ENDPOINTS.TOP_SELECTION} title="Recently Viewed Products" />
+          )}
+        </Row>
 
       </Container>
 

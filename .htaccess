@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Security: Block access to hidden files and directories (e.g. .git, .env)
+  RewriteRule "(^|/)\.(?!well-known)" - [F]
+
+  # Don't rewrite files or directories that exist
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Client-side routing for React SPA (react-router-dom)
+  RewriteRule ^ index.html [L]
+</IfModule>
