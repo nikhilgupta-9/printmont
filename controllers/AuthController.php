@@ -23,12 +23,12 @@ class AuthController
      */
     private function initializeSession()
     {
-        if (session_status() == PHP_SESSION_NONE) {
+        if (session_status() == PHP_SESSION_NONE && !headers_sent()) {
             $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? 80) == 443;
-            ini_set('session.cookie_httponly', 1);
-            ini_set('session.cookie_secure', $isHttps ? 1 : 0);
-            ini_set('session.use_strict_mode', 1);
-            session_start();
+            @ini_set('session.cookie_httponly', 1);
+            @ini_set('session.cookie_secure', $isHttps ? 1 : 0);
+            @ini_set('session.use_strict_mode', 1);
+            @session_start();
         }
     }
 
@@ -87,8 +87,10 @@ class AuthController
         // Set session variables
         $this->setUserSession();
 
-        // Regenerate session ID
-        session_regenerate_id(true);
+        // Regenerate session ID safely if headers not sent
+        if (session_status() == PHP_SESSION_ACTIVE && !headers_sent()) {
+            @session_regenerate_id(true);
+        }
 
         error_log("Login successful - User: " . $this->user->email);
 
@@ -180,19 +182,26 @@ class AuthController
 
         // Check if session variables exist and are valid
         if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
-            // Check if essential session variables exist
-            if (isset($_SESSION['user_id'], $_SESSION['email'], $_SESSION['username'], $_SESSION['login_time'])) {
+            if (isset($_SESSION['user_id'])) {
+                if (!isset($_SESSION['login_time'])) {
+                    $_SESSION['login_time'] = time();
+                }
+                if (!isset($_SESSION['username'])) {
+                    $_SESSION['username'] = 'Admin';
+                }
                 // Check session timeout
                 if ($this->checkSessionTimeout()) {
                     // Update activity timestamp
                     $_SESSION['login_time'] = time();
                     return true;
+                } else {
+                    // Session timed out - clear expired session
+                    $this->clearInvalidSession();
+                    return false;
                 }
             }
         }
 
-        // If any check fails, clear session
-        $this->clearInvalidSession();
         return false;
     }
 
@@ -201,9 +210,16 @@ class AuthController
      */
     private function clearInvalidSession()
     {
-        $_SESSION = [];
         if (session_status() == PHP_SESSION_ACTIVE) {
-            session_destroy();
+            $_SESSION = [];
+            if (ini_get("session.use_cookies") && !headers_sent()) {
+                $params = session_get_cookie_params();
+                @setcookie(session_name(), '', time() - 42000,
+                    $params["path"], $params["domain"],
+                    $params["secure"], $params["httponly"]
+                );
+            }
+            @session_destroy();
         }
     }
 

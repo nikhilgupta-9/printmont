@@ -36,15 +36,30 @@ class CareerModel {
         return $result->fetch_assoc();
     }
 
+    public function getCareerBySlug($slug) {
+        $stmt = $this->db->prepare("SELECT * FROM careers WHERE slug = ? LIMIT 1");
+        if (!$stmt) {
+            error_log("Prepare failed: " . $this->db->error);
+            return null;
+        }
+        
+        $stmt->bind_param("s", $slug);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->fetch_assoc();
+    }
+
     public function createCareer($data) {
-        $stmt = $this->db->prepare("INSERT INTO careers (job_title, department, job_type, location, description, requirements, responsibilities, salary_range, application_deadline, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $slug = !empty($data['slug']) ? $data['slug'] : '';
+        $stmt = $this->db->prepare("INSERT INTO careers (job_title, slug, department, job_type, location, description, requirements, responsibilities, salary_range, application_deadline, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         if (!$stmt) {
             error_log("Prepare failed: " . $this->db->error);
             return false;
         }
         
-        $stmt->bind_param("sssssssssi", 
+        $stmt->bind_param("ssssssssssi", 
             $data['job_title'],
+            $slug,
             $data['department'],
             $data['job_type'],
             $data['location'],
@@ -62,14 +77,16 @@ class CareerModel {
     }
 
     public function updateCareer($id, $data) {
-        $stmt = $this->db->prepare("UPDATE careers SET job_title = ?, department = ?, job_type = ?, location = ?, description = ?, requirements = ?, responsibilities = ?, salary_range = ?, application_deadline = ?, is_active = ? WHERE id = ?");
+        $slug = !empty($data['slug']) ? $data['slug'] : '';
+        $stmt = $this->db->prepare("UPDATE careers SET job_title = ?, slug = ?, department = ?, job_type = ?, location = ?, description = ?, requirements = ?, responsibilities = ?, salary_range = ?, application_deadline = ?, is_active = ? WHERE id = ?");
         if (!$stmt) {
             error_log("Prepare failed: " . $this->db->error);
             return false;
         }
         
-        $stmt->bind_param("sssssssssii", 
+        $stmt->bind_param("ssssssssssii", 
             $data['job_title'],
+            $slug,
             $data['department'],
             $data['job_type'],
             $data['location'],

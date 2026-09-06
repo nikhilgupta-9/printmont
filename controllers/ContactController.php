@@ -41,6 +41,22 @@ class ContactController {
             return $result;
         }
 
+        // Create admin notification for new contact inquiry
+        try {
+            require_once __DIR__ . '/NotificationController.php';
+            $notifController = new NotificationController();
+            $subjectPreview = !empty($inquiry['subject']) ? $inquiry['subject'] : substr($inquiry['message'], 0, 40) . '...';
+            $notifController->createNotification([
+                'title' => 'New Contact Inquiry',
+                'message' => 'New inquiry from ' . $inquiry['name'] . ' (' . $inquiry['email'] . '): ' . $subjectPreview,
+                'type' => 'info',
+                'icon' => 'message-square',
+                'link' => 'contact-inquiries.php'
+            ]);
+        } catch (Exception $e) {
+            error_log('Contact inquiry notification error: ' . $e->getMessage());
+        }
+
         // Acknowledge by email. Storing the enquiry is the operation that
         // matters, so a mail failure is reported alongside a successful save
         // rather than turning the whole submission into an error.

@@ -286,9 +286,11 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(refreshNotifications, 30000);
     
     // Refresh notifications when dropdown is opened
-    notificationDropdown.addEventListener('show.bs.dropdown', function() {
-        refreshNotifications();
-    });
+    if (notificationDropdown) {
+        notificationDropdown.addEventListener('show.bs.dropdown', function() {
+            refreshNotifications();
+        });
+    }
     
     function markAsRead(notificationId, element) {
         fetch('api/notifications/mark_read.php', {
@@ -354,8 +356,10 @@ document.addEventListener('DOMContentLoaded', function() {
             let html = '';
             notifications.forEach(notification => {
                 const isUnread = !notification.is_read;
+                const targetLink = notification.link || 'notifications.php';
+                const openUrl = 'api/notifications/open.php?id=' + encodeURIComponent(notification.id) + '&redirect=' + encodeURIComponent(targetLink);
                 html += `
-                    <a href="${notification.link || '#'}" 
+                    <a href="${openUrl}" 
                        class="list-group-item notification-item ${isUnread ? 'unread' : ''}" 
                        data-notification-id="${notification.id}">
                         <div class="row g-0 align-items-center">

@@ -16853,16 +16853,17 @@ aa.badge-dark-light:focus {
 
 .content {
     direction: ltr;
-    flex: 1;
-    max-width: 100vw;
+    flex: 1 1 auto;
+    max-width: 100%;
     padding: 1.5rem 1.5rem .75rem;
-    width: 100vw
+    width: 100%;
+    box-sizing: border-box
 }
 
 @media(min-width:768px) {
     .content {
-        max-width: auto;
-        width: auto
+        max-width: 100%;
+        width: 100%
     }
 }
 
@@ -16987,7 +16988,7 @@ footer.footer ul {
 
 @media(max-width:767.98px) {
     footer.footer {
-        width: 100vw
+        width: 100%
     }
 }
 
@@ -17255,7 +17256,7 @@ a.list-group-item {
 
 @media(max-width:767.98px) {
     .navbar {
-        width: 100vw
+        width: 100%
     }
 }
 
@@ -18855,7 +18856,9 @@ a {
 .wrapper {
     align-items: stretch;
     display: flex;
-    width: 100%
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden
 }
 
 .wrapper,
@@ -35630,4 +35633,8 @@ body[data-theme=colored] .simplebar-scrollbar:before {
 .logout:hover{
     background: #ff00011f;
     color: red;
+}
+
+body {
+    opacity: 1 !important;
 }

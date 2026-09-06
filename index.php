@@ -1,5 +1,8 @@
-<?php
-session_start(); // Add this at the very top
+<?php
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+ob_start();
 require_once 'config/database.php';
 require_once 'controllers/AuthController.php';
 
@@ -13,16 +16,8 @@ try {
     $authController = null;
 }
 
-// Debug: Check session status
-error_log("Login page - Session status: " . session_status());
-error_log("Login page - Session logged_in: " . ($_SESSION['logged_in'] ?? 'not set'));
-
-// Check if user is already logged in - but only redirect if properly logged in
-if (
-    isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true &&
-    isset($_SESSION['user_id']) && isset($_SESSION['email'])
-) {
-    error_log("User already logged in, redirecting to dashboard");
+// Check if user is already logged in - using AuthController to match side-navbar
+if ($authController !== null && $authController->isLoggedIn()) {
     header("Location: dashboard.php");
     exit();
 }

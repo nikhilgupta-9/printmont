@@ -42,11 +42,21 @@ try {
     // Fetch ALL products
     $allProducts = $productController->getAllProductsApi();
 
-    // Filter related products
+    // Filter related products from same category first
     $related = [];
     foreach ($allProducts as $p) {
-        if ($p['id'] != $id && $p['category_id'] == $category_id) {
+        if ($p['id'] != $id && !empty($category_id) && $p['category_id'] == $category_id) {
             $related[] = $p;
+        }
+    }
+
+    // If same category has few/no other products, backfill with other active products
+    if (count($related) < 4) {
+        foreach ($allProducts as $p) {
+            if ($p['id'] != $id && !in_array($p['id'], array_column($related, 'id'))) {
+                $related[] = $p;
+                if (count($related) >= 10) break;
+            }
         }
     }
 
@@ -54,6 +64,7 @@ try {
         "success" => true,
         "product_id" => $id,
         "category_id" => $category_id,
+        "data" => $related,
         "related_products_count" => count($related),
         "related_products" => $related
     ]);

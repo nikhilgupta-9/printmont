@@ -16,12 +16,20 @@ class NotificationController {
         return $this->notificationModel->getUnreadCount($user_id);
     }
 
+    public function getNotification($notification_id) {
+        return $this->notificationModel->getNotificationById($notification_id);
+    }
+
     public function markAsRead($notification_id, $user_id) {
         return $this->notificationModel->markAsRead($notification_id, $user_id);
     }
 
     public function markAllAsRead($user_id) {
         return $this->notificationModel->markAllAsRead($user_id);
+    }
+
+    public function deleteNotification($notification_id) {
+        return $this->notificationModel->deleteNotification($notification_id);
     }
 
     public function createNotification($data) {
@@ -78,6 +86,26 @@ class NotificationController {
         }
         
         return $types[$type]['icon'] ?? 'bell';
+    }
+
+    public function getNotificationFontAwesomeIcon($type, $custom_icon = null) {
+        $icon = $this->getNotificationIcon($type, $custom_icon);
+        $faMap = [
+            'message-square' => 'comments',
+            'shopping-cart'  => 'shopping-cart',
+            'briefcase'      => 'briefcase',
+            'user-plus'      => 'user-plus',
+            'user'           => 'user',
+            'alert-triangle' => 'exclamation-triangle',
+            'alert-circle'   => 'exclamation-circle',
+            'check-circle'   => 'check-circle',
+            'package'        => 'box',
+            'refresh-cw'     => 'sync-alt',
+            'settings'       => 'cog',
+            'bell'           => 'bell',
+            'info'           => 'info-circle'
+        ];
+        return $faMap[$icon] ?? $icon;
     }
 
     public function getNotificationColor($type) {

@@ -42,7 +42,18 @@ class ApiCareerApplication {
                 }
             }
             
-            $career_id = intval($input['career_id']);
+            $career_id_raw = $input['career_id'];
+            if (!is_numeric($career_id_raw)) {
+                $c = $this->careerController->getCareerByIdOrSlug($career_id_raw);
+                $career_id = $c ? intval($c['id']) : 0;
+            } else {
+                $career_id = intval($career_id_raw);
+            }
+            
+            if (!$career_id) {
+                throw new Exception("Invalid career specified");
+            }
+            
             $full_name = trim($input['full_name']);
             $email = trim($input['email']);
             $phone = trim($input['phone']);
@@ -88,8 +99,6 @@ class ApiCareerApplication {
                 }
             } elseif (!empty($input['resume_url'])) {
                 $resume_path = $input['resume_url']; // For external resume URLs
-            } else {
-                throw new Exception('Resume is required');
             }
             
             // Prepare application data
@@ -114,6 +123,22 @@ class ApiCareerApplication {
             
             if (!$result['success']) {
                 throw new Exception($result['message']);
+            }
+
+            // Create admin notification for new job application
+            try {
+                require_once(__DIR__ . '/../controllers/NotificationController.php');
+                $notifController = new NotificationController();
+                $jobTitle = $career['job_title'] ?? 'Job';
+                $notifController->createNotification([
+                    'title' => 'New Job Application',
+                    'message' => $full_name . ' applied for ' . $jobTitle,
+                    'type' => 'info',
+                    'icon' => 'briefcase',
+                    'link' => 'career-applications.php'
+                ]);
+            } catch (Exception $notifEx) {
+                error_log("Notification creation failed: " . $notifEx->getMessage());
             }
             
             $response = [

@@ -83,6 +83,21 @@ class AuthController {
             $userId = $this->userModel->createUser($userData, $customerData);
             $user = $this->userModel->getUserById($userId);
 
+            // Create admin notification for new registration
+            try {
+                require_once __DIR__ . '/NotificationController.php';
+                $notifController = new NotificationController();
+                $notifController->createNotification([
+                    'title' => 'New Customer Registration',
+                    'message' => "New customer registered: {$firstName} {$lastName} ({$email})",
+                    'type' => 'user',
+                    'icon' => 'user-plus',
+                    'link' => "customers.php"
+                ]);
+            } catch (Exception $notifEx) {
+                error_log("User registration notification error: " . $notifEx->getMessage());
+            }
+
             return [
                 'success' => true,
                 'message' => 'Registration successful',

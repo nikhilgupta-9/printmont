@@ -160,7 +160,25 @@ class OrderController
 
     public function updateOrderStatus($order_id, $status, $notes = '', $user_id = null)
     {
-        return $this->order->updateOrderStatus($order_id, $status, $notes, $user_id);
+        $result = $this->order->updateOrderStatus($order_id, $status, $notes, $user_id);
+        if ($result && in_array(strtolower($status), ['cancelled', 'declined', 'delivered', 'shipped'])) {
+            try {
+                require_once __DIR__ . '/NotificationController.php';
+                $notifController = new NotificationController();
+                $type = in_array(strtolower($status), ['cancelled', 'declined']) ? 'warning' : 'success';
+                $icon = in_array(strtolower($status), ['cancelled', 'declined']) ? 'alert-circle' : 'check-circle';
+                $notifController->createNotification([
+                    'title' => "Order #{$order_id} " . ucfirst($status),
+                    'message' => "Order #{$order_id} was updated to " . ucfirst($status) . ($notes ? ". Notes: {$notes}" : ""),
+                    'type' => $type,
+                    'icon' => $icon,
+                    'link' => "view-order.php?id={$order_id}"
+                ]);
+            } catch (Exception $e) {
+                error_log('Order status notification error: ' . $e->getMessage());
+            }
+        }
+        return $result;
     }
 
     public function updatePaymentStatus($order_id, $payment_status)
@@ -329,6 +347,37 @@ class OrderController
 
             if (!$mailSent) {
                 error_log('Order confirmation not sent for ' . $orderId['order_number'] . ': ' . $mailer->getLastError());
+            }
+
+            // Create admin notification for new order & check for low stock
+            try {
+                require_once __DIR__ . '/NotificationController.php';
+                $notifController = new NotificationController();
+                $orderNum = $orderId['order_number'] ?? ('#' . $orderId['id']);
+                $notifController->createNotification([
+                    'title' => 'New Order ' . $orderNum,
+                    'message' => "Order {$orderNum} received from {$customerName} for ₹" . number_format($grandTotal, 2),
+                    'type' => 'order',
+                    'icon' => 'shopping-cart',
+                    'link' => 'view-order.php?id=' . $orderId['id']
+                ]);
+
+                // Check for low stock on ordered items
+                foreach ($items as $itm) {
+                    $pId = $itm['product_id'];
+                    $prodCheck = $this->order->getProductForOrder($pId);
+                    if ($prodCheck && isset($prodCheck['stock_quantity']) && (int)$prodCheck['stock_quantity'] <= 5) {
+                        $notifController->createNotification([
+                            'title' => 'Low Stock Alert',
+                            'message' => "Product '{$prodCheck['name']}' is low on stock ({$prodCheck['stock_quantity']} remaining).",
+                            'type' => 'warning',
+                            'icon' => 'alert-triangle',
+                            'link' => 'edit-product.php?id=' . $pId
+                        ]);
+                    }
+                }
+            } catch (Exception $notifEx) {
+                error_log('Order notification error: ' . $notifEx->getMessage());
             }
 
             return [

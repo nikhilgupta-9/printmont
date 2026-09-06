@@ -23,3 +23,4 @@ node_modules/
 
 # Config / local configuration
 .config/
+scratch/

@@ -34,6 +34,40 @@ class CareerController {
         return $this->conn->query($query);
     }
 
+    // Get job applications
+    public function getJobApplications($careerId = null) {
+        $query = "SELECT ja.*, 
+                         IFNULL(c.job_title, 'General Application') AS job_title,
+                         IFNULL(c.department, 'N/A') AS department,
+                         IFNULL(c.job_type, 'N/A') AS job_type,
+                         IFNULL(c.location, 'N/A') AS location
+                  FROM job_applications ja
+                  LEFT JOIN careers c ON ja.career_id = c.id";
+        
+        if ($careerId !== null) {
+            $query .= " WHERE ja.career_id = ?";
+        }
+        
+        $query .= " ORDER BY ja.applied_at DESC";
+        
+        if ($careerId !== null) {
+            $stmt = $this->conn->prepare($query);
+            $stmt->bind_param("i", $careerId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        } else {
+            $result = $this->conn->query($query);
+        }
+        
+        $applications = [];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $applications[] = $row;
+            }
+        }
+        return $applications;
+    }
+
     // Get all careers
     public function getAllCareers($is_active = null) {
         $query = "SELECT * FROM {$this->table_name}";
@@ -65,6 +99,32 @@ class CareerController {
         return $careers;
     }
 
+    // Generate clean SEO slug
+    public function generateSlug($title, $id = null) {
+        $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $title), '-'));
+        if (empty($slug)) {
+            $slug = 'career-' . ($id ?? rand(100, 999));
+        }
+        
+        // Ensure uniqueness
+        $check_query = "SELECT id FROM {$this->table_name} WHERE slug = ?";
+        if ($id !== null) {
+            $check_query .= " AND id != ?";
+        }
+        $stmt = $this->conn->prepare($check_query);
+        if ($id !== null) {
+            $stmt->bind_param("si", $slug, $id);
+        } else {
+            $stmt->bind_param("s", $slug);
+        }
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && $res->num_rows > 0) {
+            $slug .= '-' . ($id ?? rand(10, 99));
+        }
+        return $slug;
+    }
+
     // Get career by ID
     public function getCareerById($id) {
         $query = "SELECT * FROM {$this->table_name} WHERE id = ?";
@@ -80,6 +140,48 @@ class CareerController {
         return $result->fetch_assoc();
     }
 
+    // Get career by Slug
+    public function getCareerBySlug($slug) {
+        $slug = trim($slug);
+        $query = "SELECT * FROM {$this->table_name} WHERE slug = ? LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("s", $slug);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result && $result->num_rows > 0) {
+            return $result->fetch_assoc();
+        }
+        return null;
+    }
+
+    // Get career by ID or Slug
+    public function getCareerByIdOrSlug($identifier) {
+        $identifier = trim($identifier);
+        
+        // Try exact slug first
+        $career = $this->getCareerBySlug($identifier);
+        if ($career) return $career;
+
+        // Try numeric ID
+        if (is_numeric($identifier)) {
+            $career = $this->getCareerById((int)$identifier);
+            if ($career) return $career;
+        }
+
+        // Try normalized job_title matching
+        $normalized = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $identifier), '-'));
+        $all = $this->getAllCareers();
+        foreach ($all as $c) {
+            $cSlug = !empty($c['slug']) ? $c['slug'] : $this->generateSlug($c['job_title'], $c['id']);
+            if ($cSlug === $normalized || $cSlug === $identifier) {
+                return $c;
+            }
+        }
+
+        return null;
+    }
+
     // Create career
     public function createCareer($data) {
         try {
@@ -93,6 +195,7 @@ class CareerController {
             $salary_range = trim($data['salary_range'] ?? '');
             $application_deadline = !empty($data['application_deadline']) ? $data['application_deadline'] : null;
             $is_active = isset($data['is_active']) ? 1 : 0;
+            $slug = !empty($data['slug']) ? $this->generateSlug($data['slug']) : $this->generateSlug($job_title);
 
             // Validate required fields
             if (empty($job_title) || empty($location) || empty($description) || empty($requirements)) {
@@ -100,13 +203,13 @@ class CareerController {
             }
 
             $query = "INSERT INTO {$this->table_name} 
-                     (job_title, department, job_type, location, description, requirements, 
+                     (job_title, slug, department, job_type, location, description, requirements, 
                       responsibilities, salary_range, application_deadline, is_active) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bind_param("sssssssssi", 
-                $job_title, $department, $job_type, $location, $description, $requirements,
+            $stmt->bind_param("ssssssssssi", 
+                $job_title, $slug, $department, $job_type, $location, $description, $requirements,
                 $responsibilities, $salary_range, $application_deadline, $is_active
             );
             
@@ -115,7 +218,8 @@ class CareerController {
                 return [
                     'success' => true, 
                     'message' => 'Career opportunity created successfully!',
-                    'career_id' => $career_id
+                    'career_id' => $career_id,
+                    'slug' => $slug
                 ];
             } else {
                 return ['success' => false, 'message' => 'Error creating career: ' . $stmt->error];
@@ -139,6 +243,7 @@ class CareerController {
             $salary_range = trim($data['salary_range'] ?? '');
             $application_deadline = !empty($data['application_deadline']) ? $data['application_deadline'] : null;
             $is_active = isset($data['is_active']) ? 1 : 0;
+            $slug = !empty($data['slug']) ? $this->generateSlug($data['slug'], $id) : $this->generateSlug($job_title, $id);
 
             // Validate required fields
             if (empty($job_title) || empty($location) || empty($description) || empty($requirements)) {
@@ -146,22 +251,23 @@ class CareerController {
             }
 
             $query = "UPDATE {$this->table_name} 
-                     SET job_title = ?, department = ?, job_type = ?, location = ?, 
+                     SET job_title = ?, slug = ?, department = ?, job_type = ?, location = ?, 
                          description = ?, requirements = ?, responsibilities = ?, 
                          salary_range = ?, application_deadline = ?, is_active = ?, 
                          updated_at = NOW() 
                      WHERE id = ?";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bind_param("sssssssssii", 
-                $job_title, $department, $job_type, $location, $description, $requirements,
+            $stmt->bind_param("ssssssssssii", 
+                $job_title, $slug, $department, $job_type, $location, $description, $requirements,
                 $responsibilities, $salary_range, $application_deadline, $is_active, $id
             );
             
             if ($stmt->execute()) {
                 return [
                     'success' => true, 
-                    'message' => 'Career opportunity updated successfully!'
+                    'message' => 'Career opportunity updated successfully!',
+                    'slug' => $slug
                 ];
             } else {
                 return ['success' => false, 'message' => 'Error updating career: ' . $stmt->error];
@@ -296,52 +402,52 @@ class CareerController {
     }
 
     // Create job application
-    // public function createApplication($data) {
-    //     try {
-    //         $career_id = intval($data['career_id']);
-    //         $full_name = trim($data['full_name']);
-    //         $email = trim($data['email']);
-    //         $phone = trim($data['phone']);
-    //         $cover_letter = $data['cover_letter'] ?? '';
-    //         $linkedin_url = $data['linkedin_url'] ?? '';
-    //         $portfolio_url = $data['portfolio_url'] ?? '';
-    //         $experience = $data['experience'] ?? '';
-    //         $education = $data['education'] ?? '';
-    //         $skills = $data['skills'] ?? '';
-    //         $resume_path = $data['resume_path'] ?? '';
-    //         $status = $data['status'] ?? 'pending';
-    //         $applied_at = $data['applied_at'] ?? date('Y-m-d H:i:s');
+    public function createApplication($data) {
+        try {
+            $career_id = intval($data['career_id']);
+            $applicant_name = trim($data['full_name'] ?? $data['name'] ?? $data['applicant_name'] ?? '');
+            $applicant_email = trim($data['email'] ?? $data['applicant_email'] ?? '');
+            $applicant_phone = trim($data['phone'] ?? $data['applicant_phone'] ?? '');
+            $cover_letter = $data['cover_letter'] ?? '';
+            $linkedin_url = $data['linkedin_url'] ?? '';
+            $portfolio_url = $data['portfolio_url'] ?? '';
+            $experience = $data['experience'] ?? '';
+            $education = $data['education'] ?? '';
+            $skills = $data['skills'] ?? '';
+            $resume_path = $data['resume_path'] ?? $data['resume_url'] ?? '';
+            $status = $data['status'] ?? 'pending';
+            $applied_at = $data['applied_at'] ?? date('Y-m-d H:i:s');
 
-    //         $query = "INSERT INTO job_applications 
-    //                  (career_id, full_name, email, phone, cover_letter, linkedin_url, 
-    //                   portfolio_url, experience, education, skills, resume_path, status, applied_at) 
-    //                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $query = "INSERT INTO job_applications 
+                     (career_id, applicant_name, applicant_email, applicant_phone, name, email, phone,
+                      cover_letter, linkedin_url, portfolio_url, experience, education, skills, resume_path, resume_url, status, applied_at) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
-    //         $stmt = $this->conn->prepare($query);
-    //         $stmt->bind_param("issssssssssss", 
-    //             $career_id, $full_name, $email, $phone, $cover_letter, $linkedin_url,
-    //             $portfolio_url, $experience, $education, $skills, $resume_path, $status, $applied_at
-    //         );
+            $stmt = $this->conn->prepare($query);
+            $stmt->bind_param("issssssssssssssss", 
+                $career_id, $applicant_name, $applicant_email, $applicant_phone, $applicant_name, $applicant_email, $applicant_phone,
+                $cover_letter, $linkedin_url, $portfolio_url, $experience, $education, $skills, $resume_path, $resume_path, $status, $applied_at
+            );
             
-    //         if ($stmt->execute()) {
-    //             $application_id = $stmt->insert_id;
+            if ($stmt->execute()) {
+                $application_id = $stmt->insert_id;
                 
-    //             // Increment application count
-    //             $this->incrementApplicationCount($career_id);
+                // Increment application count
+                $this->incrementApplicationCount($career_id);
                 
-    //             return [
-    //                 'success' => true, 
-    //                 'message' => 'Application submitted successfully!',
-    //                 'application_id' => $application_id
-    //             ];
-    //         } else {
-    //             return ['success' => false, 'message' => 'Error submitting application: ' . $stmt->error];
-    //         }
+                return [
+                    'success' => true, 
+                    'message' => 'Application submitted successfully!',
+                    'application_id' => $application_id
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Error submitting application: ' . $stmt->error];
+            }
             
-    //     } catch (Exception $e) {
-    //         return ['success' => false, 'message' => 'Exception: ' . $e->getMessage()];
-    //     }
-    // }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Exception: ' . $e->getMessage()];
+        }
+    }
 
     // Increment application count
     public function incrementApplicationCount($id) {
@@ -359,54 +465,28 @@ class CareerController {
         return $stmt->execute();
     }
 
-    // Get job applications
-    public function getJobApplications($careerId = null) {
-        $query = "SELECT * FROM job_applications";
-        
-        if ($careerId !== null) {
-            $query .= " WHERE career_id = ?";
-        }
-        
-        $query .= " ORDER BY applied_at DESC";
-        
-        if ($careerId !== null) {
-            $stmt = $this->conn->prepare($query);
-            $stmt->bind_param("i", $careerId);
-            $stmt->execute();
-            $result = $stmt->get_result();
-        } else {
-            $result = $this->conn->query($query);
-        }
-        
-        $applications = [];
-        while ($row = $result->fetch_assoc()) {
-            $applications[] = $row;
-        }
-        return $applications;
-    }
-
     // Get application by ID
-   public function getApplicationById($id) {
-    $query = "SELECT ja.*, 
-         IFNULL(c.job_title, 'N/A') AS job_title,
-         IFNULL(c.department, 'N/A') AS department,
-         IFNULL(c.job_type, 'N/A') AS job_type,
-         IFNULL(c.location, 'N/A') AS location
-         FROM job_applications ja
-         LEFT JOIN careers c ON ja.career_id = c.id
-         WHERE ja.id = ?";
+    public function getApplicationById($id) {
+        $query = "SELECT ja.*, 
+                         IFNULL(c.job_title, 'N/A') AS job_title,
+                         IFNULL(c.department, 'N/A') AS department,
+                         IFNULL(c.job_type, 'N/A') AS job_type,
+                         IFNULL(c.location, 'N/A') AS location
+                  FROM job_applications ja
+                  LEFT JOIN careers c ON ja.career_id = c.id
+                  WHERE ja.id = ?";
 
-    $stmt = $this->conn->prepare($query);
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows === 0) {
-        return null;
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            return null;
+        }
+        
+        return $result->fetch_assoc();
     }
-    
-    return $result->fetch_assoc();
-}
     // Update application status
     public function updateApplicationStatus($id, $status) {
         $query = "UPDATE job_applications SET status = ?, updated_at = NOW() WHERE id = ?";
@@ -422,71 +502,5 @@ class CareerController {
             return ['success' => false, 'message' => 'Error updating application status: ' . $stmt->error];
         }
     }
-
-    // In your CareerController class, update the createApplication method parameter names:
-public function createApplication($data) {
-    try {
-        $career_id = intval($data['career_id']);
-        $full_name = trim($data['full_name']);
-        $email = trim($data['email']);
-        $phone = trim($data['phone']);
-        $cover_letter = $data['cover_letter'] ?? '';
-        $linkedin_url = $data['linkedin_url'] ?? '';
-        $portfolio_url = $data['portfolio_url'] ?? '';
-        $experience = $data['experience'] ?? '';
-        $education = $data['education'] ?? '';
-        $skills = $data['skills'] ?? '';
-        $resume_path = $data['resume_path'] ?? '';
-        $status = $data['status'] ?? 'pending';
-        $applied_at = $data['applied_at'] ?? date('Y-m-d H:i:s');
-
-        // Validate required fields
-        if (empty($full_name) || empty($email) || empty($phone)) {
-            return ['success' => false, 'message' => 'Full name, email, and phone are required fields.'];
-        }
-
-        // The table carries two parallel name/email/phone column sets, and both
-        // applicant_* and name/email are NOT NULL, so each value is written to
-        // both. The previous query targeted a full_name column that does not
-        // exist, so prepare() returned false and bind_param() on it killed the
-        // request with a PHP fatal — no application could ever be submitted.
-        $query = "INSERT INTO job_applications
-                 (career_id, applicant_name, applicant_email, applicant_phone,
-                  name, email, phone, cover_letter, linkedin_url,
-                  portfolio_url, experience, education, skills,
-                  resume_path, status, applied_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        $stmt = $this->conn->prepare($query);
-        if (!$stmt) {
-            return ['success' => false, 'message' => 'Could not save your application: ' . $this->conn->error];
-        }
-
-        $stmt->bind_param("isssssssssssssss",
-            $career_id, $full_name, $email, $phone,
-            $full_name, $email, $phone, $cover_letter, $linkedin_url,
-            $portfolio_url, $experience, $education, $skills,
-            $resume_path, $status, $applied_at
-        );
-        
-        if ($stmt->execute()) {
-            $application_id = $stmt->insert_id;
-            
-            // Increment application count
-            $this->incrementApplicationCount($career_id);
-            
-            return [
-                'success' => true, 
-                'message' => 'Application submitted successfully!',
-                'application_id' => $application_id
-            ];
-        } else {
-            return ['success' => false, 'message' => 'Error submitting application: ' . $stmt->error];
-        }
-        
-    } catch (Exception $e) {
-        return ['success' => false, 'message' => 'Exception: ' . $e->getMessage()];
-    }
-}
 }
 ?>

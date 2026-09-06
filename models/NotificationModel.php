@@ -72,6 +72,16 @@ class NotificationModel {
         return 0;
     }
 
+    public function getNotificationById($notification_id) {
+        $notification_id = $this->conn->real_escape_string($notification_id);
+        $query = "SELECT * FROM notifications WHERE id = '$notification_id' LIMIT 1";
+        $result = $this->conn->query($query);
+        if ($result && $result->num_rows > 0) {
+            return $result->fetch_assoc();
+        }
+        return null;
+    }
+
     public function markAsRead($notification_id, $user_id) {
         $notification_id = $this->conn->real_escape_string($notification_id);
         $user_id = $this->conn->real_escape_string($user_id);

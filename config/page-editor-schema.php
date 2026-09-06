@@ -480,13 +480,15 @@ return [
                 ]],
             ],
             [
-                'key' => 'accolades', 'label' => 'Awards',
-                'note' => 'The laurel row of awards near the foot of the page.',
+                'key' => 'accolades', 'label' => 'Awards & Accolades',
+                'note' => 'Accolades & Milestones banner graphic shown near the foot of the page.',
                 'parts' => [[
-                    'kind' => 'list', 'type' => 'accolade', 'label' => 'Awards', 'addLabel' => 'Add award',
+                    'kind' => 'single', 'type' => 'accolade', 'label' => 'Accolades Banner',
                     'fields' => [
-                        ['name' => 'title', 'label' => 'Award', 'column' => 'title', 'input' => 'text', 'required' => true, 'primary' => true],
-                        ['name' => 'content', 'label' => 'Year or awarding body', 'column' => 'content', 'input' => 'text', 'secondary' => true],
+                        ['name' => 'title', 'label' => 'Heading', 'column' => 'title', 'input' => 'text', 'required' => true, 'primary' => true],
+                        ['name' => 'content', 'label' => 'Description (Optional)', 'column' => 'content', 'input' => 'textarea', 'rows' => 3],
+                        ['name' => 'image', 'label' => 'Banner Image', 'column' => 'image_path', 'input' => 'image',
+                         'size' => '1200 × 500 px', 'ratio' => '16:9'],
                     ],
                 ]],
             ],

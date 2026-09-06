@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_application'])
                                         <div class="col-md-8">
                                             <h2 class="card-title text-white mb-1">Job Applications</h2>
                                             <p class="card-text text-white-50 mb-0">
-                                                <?php if ($careerId && $applications): ?>
+                                                <?php if ($careerId && !empty($applications[0]['job_title'])): ?>
                                                     Applications for: <?php echo htmlspecialchars($applications[0]['job_title']); ?>
                                                 <?php else: ?>
                                                     All job applications
@@ -191,10 +191,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_application'])
                                                 </thead>
                                                 <tbody>
                                                     <?php foreach ($applications as $application): ?>
-                                                    <tr class="application-row" data-status="<?php echo $application['status']; ?>">
+                                                    <tr class="application-row" data-status="<?php echo htmlspecialchars($application['status'] ?? 'pending'); ?>">
                                                         <td>
-                                                            <strong><?php echo htmlspecialchars($application['applicant_name']); ?></strong>
-                                                            <?php if ($application['cover_letter']): ?>
+                                                            <strong><?php echo htmlspecialchars($application['applicant_name'] ?? $application['name'] ?? 'Applicant'); ?></strong>
+                                                            <?php if (!empty($application['cover_letter'])): ?>
                                                                 <br>
                                                                 <small class="text-muted">
                                                                     <i class="fas fa-file-alt"></i> Has cover letter
@@ -202,25 +202,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_application'])
                                                             <?php endif; ?>
                                                         </td>
                                                         <td>
-                                                            <?php echo htmlspecialchars($application['job_title']); ?>
+                                                            <span class="badge bg-light text-dark border">
+                                                                <?php echo htmlspecialchars($application['job_title'] ?? 'General Application'); ?>
+                                                            </span>
+                                                            <?php if (!empty($application['department']) && $application['department'] !== 'N/A'): ?>
+                                                                <br><small class="text-muted"><?php echo htmlspecialchars(ucfirst($application['department'])); ?></small>
+                                                            <?php endif; ?>
                                                         </td>
                                                         <td>
                                                             <div>
                                                                 <i class="fas fa-envelope text-muted me-1"></i>
-                                                                <?php echo htmlspecialchars($application['applicant_email']); ?>
+                                                                <?php echo htmlspecialchars($application['applicant_email'] ?? $application['email'] ?? 'N/A'); ?>
                                                             </div>
-                                                            <?php if ($application['applicant_phone']): ?>
+                                                            <?php if (!empty($application['applicant_phone']) || !empty($application['phone'])): ?>
                                                                 <div>
                                                                     <i class="fas fa-phone text-muted me-1"></i>
-                                                                    <?php echo htmlspecialchars($application['applicant_phone']); ?>
+                                                                    <?php echo htmlspecialchars($application['applicant_phone'] ?? $application['phone'] ?? ''); ?>
                                                                 </div>
                                                             <?php endif; ?>
                                                         </td>
                                                         <td>
-                                                            <?php echo date('M j, Y', strtotime($application['applied_at'])); ?>
+                                                            <?php echo !empty($application['applied_at']) ? date('M j, Y', strtotime($application['applied_at'])) : 'N/A'; ?>
                                                             <br>
                                                             <small class="text-muted">
-                                                                <?php echo date('g:i A', strtotime($application['applied_at'])); ?>
+                                                                <?php echo !empty($application['applied_at']) ? date('g:i A', strtotime($application['applied_at'])) : ''; ?>
                                                             </small>
                                                         </td>
                                                         <td>
@@ -232,9 +237,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_application'])
                                                                 'rejected' => 'danger',
                                                                 'hired' => 'success'
                                                             ];
+                                                            $appStatus = $application['status'] ?? 'pending';
                                                             ?>
-                                                            <span class="badge bg-<?php echo $statusColors[$application['status']] ?? 'secondary'; ?> status-badge">
-                                                                <?php echo $statusOptions[$application['status']] ?? ucfirst($application['status']); ?>
+                                                            <span class="badge bg-<?php echo $statusColors[$appStatus] ?? 'secondary'; ?> status-badge">
+                                                                <?php echo $statusOptions[$appStatus] ?? ucfirst($appStatus); ?>
                                                             </span>
                                                         </td>
                                                         <td>
@@ -251,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_application'])
                                                                 </button>
                                                                 <ul class="dropdown-menu">
                                                                     <?php foreach ($statusOptions as $value => $label): ?>
-                                                                        <?php if ($value !== $application['status']): ?>
+                                                                        <?php if ($value !== ($application['status'] ?? '')): ?>
                                                                             <li>
                                                                                 <form method="POST" class="d-inline">
                                                                                     <input type="hidden" name="id" value="<?php echo $application['id']; ?>">
@@ -265,12 +271,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_application'])
                                                                     <?php endforeach; ?>
                                                                 </ul>
                                                                 
-                                                                <a href="<?php echo $application['resume_path']; ?>" 
-                                                                   class="btn btn-outline-success" 
-                                                                   target="_blank"
-                                                                   title="Download Resume">
-                                                                    <i class="fas fa-download"></i>
-                                                                </a>
+                                                                <?php if (!empty($application['resume_path'])): ?>
+                                                                    <a href="<?php echo htmlspecialchars($application['resume_path']); ?>" 
+                                                                       class="btn btn-outline-success" 
+                                                                       target="_blank"
+                                                                       title="Download Resume">
+                                                                        <i class="fas fa-download"></i>
+                                                                    </a>
+                                                                <?php endif; ?>
                                                                 
                                                                 <form method="POST" class="d-inline" 
                                                                       onsubmit="return confirm('Are you sure you want to delete this application?')">

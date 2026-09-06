@@ -24,7 +24,7 @@ try {
 
 	// Get current user info
 	$current_user = $auth->getCurrentUser();
-	$user_role = $current_user['role'] ?? 'admin';
+	$user_role = (!empty($current_user['role'])) ? $current_user['role'] : 'admin';
 
 } catch (Exception $e) {
 	error_log("Authentication error: " . $e->getMessage());
@@ -63,7 +63,9 @@ $menu_access = [
 	'master_modules' => ['admin'],
 	'contact_inquiries' => ['admin', 'manager', 'staff'],
 	'cod' => ['admin'],
-	'product_filters' => ['admin', 'manager']
+	'product_filters' => ['admin', 'manager'],
+	'careers' => ['admin', 'manager'],
+	'notifications' => ['all']
 ];
 
 // Get current page URL
@@ -72,6 +74,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 // Define page groups for active state
 $page_groups = [
 	'dashboard' => ['dashboard.php'],
+	'notifications' => ['notifications.php'],
 
 	// Home Page Management
 	'home_settings' => [
@@ -118,6 +121,7 @@ $page_groups = [
 
 	// Header Category Menu
 	'header_menu' => [
+		'header-settings.php',
 		'header-menu-list.php',
 		'add-top-icon.php',
 		'add-menu-page.php',
@@ -175,10 +179,6 @@ $page_groups = [
 		'business-solutions-page.php',
 		'add-page.php',
 		'contact-view.php',
-		'careers.php',
-		'add-career.php',
-		'edit-career.php',
-		'career-applications.php',
 		'policy-management.php',
 		'policy-edit.php',
 		'faq-view-category.php',
@@ -189,6 +189,14 @@ $page_groups = [
 		'faq-view.php',
 		'help-center.php',
 		'security-management.php'
+	],
+
+	// Careers Management
+	'careers' => [
+		'careers.php',
+		'add-career.php',
+		'edit-career.php',
+		'career-applications.php'
 	],
 
 	// Watermark
@@ -273,7 +281,8 @@ $page_groups = [
 	'seo' => [
 		'google-analytics.php',
 		'facebook-pixels.php',
-		'meta-keywords.php'
+		'meta-keywords.php',
+		'sitemap-management.php'
 	],
 
 	// Payment Settings
@@ -419,6 +428,19 @@ function shouldExpand($group_name, $current_page, $page_groups)
 						<i class="align-middle" data-feather="home"></i>
 						<span class="align-middle">Dashboard</span>
 						<?php if (isActivePage('dashboard.php', $current_page)): ?>
+							<span class="sidebar-badge">●</span>
+						<?php endif; ?>
+					</a>
+				</li>
+			<?php endif; ?>
+
+			<!-- Notifications -->
+			<?php if (shouldDisplay($menu_access['notifications'], $user_role)): ?>
+				<li class="sidebar-item <?php echo isActivePage('notifications.php', $current_page) ? 'active' : ''; ?>">
+					<a class='sidebar-link' href='notifications.php'>
+						<i class="align-middle" data-feather="bell"></i>
+						<span class="align-middle">Notifications</span>
+						<?php if (isActivePage('notifications.php', $current_page)): ?>
 							<span class="sidebar-badge">●</span>
 						<?php endif; ?>
 					</a>
@@ -650,6 +672,12 @@ function shouldExpand($group_name, $current_page, $page_groups)
 						<ul id="headerMenu"
 							class="sidebar-dropdown list-unstyled collapse <?php echo isActiveGroup('header_menu', $current_page, $page_groups) ? 'show' : ''; ?>"
 							data-bs-parent="#sidebar">
+							<li class="sidebar-item <?php echo isActivePage('header-settings.php', $current_page) ? 'active' : ''; ?>">
+								<a class='sidebar-link' href='header-settings.php'>
+									<i class="align-middle" data-feather="sliders"></i>
+									<span class="align-middle">Header &amp; Category Rules</span>
+								</a>
+							</li>
 							<li class="sidebar-item <?php echo isActivePage('add-top-icon.php', $current_page) ? 'active' : ''; ?>">
 								<a class='sidebar-link' href='add-top-icon.php'>
 									<i class="align-middle" data-feather="circle"></i>
@@ -949,17 +977,46 @@ function shouldExpand($group_name, $current_page, $page_groups)
 							</a>
 						</li>
 						<li
-							class="sidebar-item <?php echo isActivePage('careers.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='careers.php'>
-								<i class="align-middle" data-feather="circle"></i>
-								<span class="align-middle">Careers</span>
-							</a>
-						</li>
-						<li
 							class="sidebar-item <?php echo isActivePage('add-page.php', $current_page) ? 'active' : ''; ?>">
 							<a class='sidebar-link' href='add-page.php'>
 								<i class="align-middle" data-feather="circle"></i>
 								<span class="align-middle">Add New Page</span>
+							</a>
+						</li>
+					</ul>
+				</li>
+
+				<li class="sidebar-item">
+					<a data-bs-target="#careers" data-bs-toggle="collapse"
+						class="sidebar-link <?php echo isActiveGroup('careers', $current_page, $page_groups) ? '' : 'collapsed'; ?>">
+						<i class="align-middle" data-feather="briefcase"></i>
+						<span class="align-middle">Careers</span>
+						<?php if (isActiveGroup('careers', $current_page, $page_groups)): ?>
+							<span class="sidebar-badge">●</span>
+						<?php endif; ?>
+					</a>
+					<ul id="careers"
+						class="sidebar-dropdown list-unstyled collapse <?php echo isActiveGroup('careers', $current_page, $page_groups) ? 'show' : ''; ?>"
+						data-bs-parent="#sidebar">
+						<li
+							class="sidebar-item <?php echo isActivePage('careers.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='careers.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Job Openings</span>
+							</a>
+						</li>
+						<li
+							class="sidebar-item <?php echo isActivePage('add-career.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='add-career.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Add Job</span>
+							</a>
+						</li>
+						<li
+							class="sidebar-item <?php echo isActivePage('career-applications.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='career-applications.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Job Applications</span>
 							</a>
 						</li>
 					</ul>
@@ -1296,6 +1353,14 @@ function shouldExpand($group_name, $current_page, $page_groups)
 								<span class="align-middle">Meta Keywords</span>
 							</a>
 						</li>
+						<li
+							class="sidebar-item <?php echo isActivePage('sitemap-management.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='sitemap-management.php'>
+								<i class="align-middle"
+									data-feather="<?php echo isActivePage('sitemap-management.php', $current_page) ? 'circle' : 'circle'; ?>"></i>
+								<span class="align-middle">Sitemap</span>
+							</a>
+						</li>
 					</ul>
 				</li>
 
@@ -1577,6 +1642,31 @@ function shouldExpand($group_name, $current_page, $page_groups)
 	/* Hover effects */
 	.sidebar-item>.sidebar-link:hover {
 		background-color: rgba(var(--bs-primary-rgb), 0.05);
+	}
+
+	/* Layout width and overflow normalization to prevent right-side extra space */
+	html, body {
+		overflow-x: hidden !important;
+		max-width: 100vw !important;
+	}
+	.wrapper {
+		overflow-x: hidden !important;
+		max-width: 100% !important;
+		width: 100% !important;
+	}
+	.main {
+		min-width: 0 !important;
+		max-width: 100% !important;
+		overflow-x: hidden !important;
+	}
+	.content {
+		max-width: 100% !important;
+		box-sizing: border-box !important;
+	}
+	.container-fluid.p-0 > .row,
+	.container.p-0 > .row {
+		margin-left: 0 !important;
+		margin-right: 0 !important;
 	}
 </style>
 

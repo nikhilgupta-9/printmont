@@ -70,16 +70,18 @@ class ApiCareer {
 
     public function getCareerById() {
         try {
-            $career_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-            if (!$career_id) $this->sendError("Career ID is required");
+            $identifier = $_GET['slug'] ?? $_GET['id'] ?? $_GET['identifier'] ?? null;
+            if (!$identifier) $this->sendError("Career ID or slug is required");
 
-            $this->careerController->incrementViewsCount($career_id);
-
-            // Should return ARRAY
-            $career = $this->careerController->getCareerById($career_id);
+            // Look up by slug or ID
+            $career = $this->careerController->getCareerByIdOrSlug($identifier);
 
             if (!$career) {
                 $this->sendError("Career not found", 404);
+            }
+
+            if (!empty($career['id'])) {
+                $this->careerController->incrementViewsCount($career['id']);
             }
 
             $this->sendSuccess([
@@ -92,9 +94,12 @@ class ApiCareer {
     }
 
     private function formatCareer($career) {
+        $slug = !empty($career['slug']) ? $career['slug'] : $this->careerController->generateSlug($career['job_title'], $career['id'] ?? null);
         return [
             'id' => intval($career['id']),
+            'slug' => $slug,
             'job_title' => $career['job_title'],
+            'title' => $career['job_title'],
             'department' => $career['department'],
             'job_type' => $career['job_type'],
             'location' => $career['location'],
@@ -135,7 +140,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'OPTIONS') $api->handleOptions();
 if ($method === 'GET') {
-    isset($_GET['id']) ? $api->getCareerById() : $api->getCareers();
+    (isset($_GET['id']) || isset($_GET['slug']) || isset($_GET['identifier'])) ? $api->getCareerById() : $api->getCareers();
     exit;
 }
 

@@ -6,7 +6,7 @@ require_once(__DIR__ . '/../controllers/NotificationController.php');
 $notificationController = new NotificationController();
 
 // Get notifications for current user
-$notifications = $notificationController->getUserNotifications($_SESSION['user_id'], 5);
+$notifications = $notificationController->getUserNotifications($_SESSION['user_id'], 10);
 $unread_count = $notificationController->getUnreadCount($_SESSION['user_id']);
 ?>
 <nav class="navbar navbar-expand navbar-light navbar-bg">
@@ -105,15 +105,6 @@ $unread_count = $notificationController->getUnreadCount($_SESSION['user_id']);
 				<a class="nav-icon dropdown-toggle" href="#" id="alertsDropdown" data-bs-toggle="dropdown">
 					<div class="position-relative">
 						<i class="align-middle" data-feather="bell"></i>
-						<span class="indicator">4</span>
-					</div>
-				</a>
-
-
-			<li class="nav-item dropdown">
-				<a class="nav-icon dropdown-toggle" href="#" id="alertsDropdown" data-bs-toggle="dropdown">
-					<div class="position-relative">
-						<i class="align-middle" data-feather="bell"></i>
 						<?php if ($unread_count > 0): ?>
 							<span class="indicator"><?php echo $unread_count > 9 ? '9+' : $unread_count; ?></span>
 						<?php endif; ?>
@@ -123,15 +114,18 @@ $unread_count = $notificationController->getUnreadCount($_SESSION['user_id']);
 					<div class="dropdown-menu-header">
 						<?php echo $unread_count; ?> New Notification<?php echo $unread_count != 1 ? 's' : ''; ?>
 					</div>
-					<div class="list-group" id="notificationList">
+					<div class="list-group" id="notificationList" style="max-height: 450px; overflow-y: auto;">
 						<?php if (empty($notifications)): ?>
 							<div class="text-center p-3 text-muted">
 								<i class="fas fa-bell-slash fa-2x mb-2"></i>
 								<div>No notifications</div>
 							</div>
 						<?php else: ?>
-							<?php foreach ($notifications as $notification): ?>
-								<a href="<?php echo $notification['link'] ?: '#'; ?>"
+							<?php foreach ($notifications as $notification): 
+								$targetLink = !empty($notification['link']) ? $notification['link'] : 'notifications.php';
+								$openUrl = "api/notifications/open.php?id=" . $notification['id'] . "&redirect=" . urlencode($targetLink);
+							?>
+								<a href="<?php echo htmlspecialchars($openUrl); ?>"
 									class="list-group-item notification-item <?php echo $notification['is_read'] ? '' : 'unread'; ?>"
 									data-notification-id="<?php echo $notification['id']; ?>">
 									<div class="row g-0 align-items-center">
@@ -164,7 +158,6 @@ $unread_count = $notificationController->getUnreadCount($_SESSION['user_id']);
 						<?php endif; ?>
 					</div>
 				</div>
-			</li>
 			</li>
 			<!-- <li class="nav-item dropdown">
 							<a class="nav-icon dropdown-toggle" href="#" id="messagesDropdown" data-bs-toggle="dropdown">

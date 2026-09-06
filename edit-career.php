@@ -32,6 +32,14 @@ if (!$career) {
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
+        $salary_raw = trim($_POST['salary_range'] ?? '');
+        $salary_formatted = '';
+        if (!empty($salary_raw)) {
+            $currency = $_POST['salary_currency'] ?? '₹';
+            $period = $_POST['salary_period'] ?? 'monthly';
+            $salary_formatted = trim($currency . ' ' . $salary_raw . ' / ' . $period);
+        }
+
         $data = [
             'job_title' => $_POST['job_title'] ?? '',
             'department' => $_POST['department'] ?? '',
@@ -40,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'description' => $_POST['description'] ?? '',
             'requirements' => $_POST['requirements'] ?? '',
             'responsibilities' => $_POST['responsibilities'] ?? '',
-            'salary_range' => $_POST['salary_range'] ?? '',
+            'salary_range' => $salary_formatted,
             'application_deadline' => $_POST['application_deadline'] ?? null,
             'is_active' => isset($_POST['is_active']) ? 1 : 0
         ];
@@ -61,6 +69,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Refresh career data after update attempt
     $career = $careerController->getCareerById($career_id);
+}
+
+// Parse existing salary_range into components
+$salary_parts = ['currency' => '₹', 'range' => '', 'period' => 'monthly'];
+if (!empty($career['salary_range'])) {
+    $sr = $career['salary_range'];
+    if (preg_match('/^([₹$€£])\s*(.+?)\s*\/\s*(monthly|yearly)$/i', $sr, $m)) {
+        $salary_parts = ['currency' => $m[1], 'range' => trim($m[2]), 'period' => strtolower($m[3])];
+    } else {
+        $salary_parts['range'] = $sr;
+    }
 }
 ?>
 
@@ -195,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             </div>
 
                                             <div class="row">
-                                                <div class="col-md-4">
+                                                <div class="col-md-6">
                                                     <div class="mb-3">
                                                         <label for="department" class="form-label form-required">Department</label>
                                                         <select class="form-select" id="department" name="department" required>
@@ -209,7 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-4">
+                                                <div class="col-md-6">
                                                     <div class="mb-3">
                                                         <label for="job_type" class="form-label form-required">Job Type</label>
                                                         <select class="form-select" id="job_type" name="job_type" required>
@@ -223,19 +242,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-4">
-                                                    <div class="mb-3">
-                                                        <label for="salary_range" class="form-label">Salary Range</label>
-                                                        <input type="text" class="form-control" id="salary_range" name="salary_range" 
-                                                               value="<?php echo htmlspecialchars($career['salary_range']); ?>"
-                                                               placeholder="e.g., $60,000 - $80,000"
-                                                               maxlength="100">
-                                                        <div class="form-text">Optional - will be displayed to candidates</div>
-                                                    </div>
-                                                </div>
                                             </div>
 
                                             <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="salary_range" class="form-label">Salary Range</label>
+                                                        <div class="input-group">
+                                                            <select class="form-select" name="salary_currency" id="salary_currency" style="max-width: 95px;">
+                                                                <option value="₹" <?php echo ($salary_parts['currency'] ?? '₹') == '₹' ? 'selected' : ''; ?>>₹ INR</option>
+                                                                <option value="$" <?php echo ($salary_parts['currency'] ?? '') == '$' ? 'selected' : ''; ?>>$ USD</option>
+                                                                <option value="€" <?php echo ($salary_parts['currency'] ?? '') == '€' ? 'selected' : ''; ?>>€ EUR</option>
+                                                                <option value="£" <?php echo ($salary_parts['currency'] ?? '') == '£' ? 'selected' : ''; ?>>£ GBP</option>
+                                                            </select>
+                                                            <input type="text" class="form-control" id="salary_range" name="salary_range" 
+                                                                   value="<?php echo htmlspecialchars($salary_parts['range'] ?? ''); ?>"
+                                                                   placeholder="e.g., 20,000 - 30,000"
+                                                                   maxlength="100">
+                                                            <select class="form-select" name="salary_period" id="salary_period" style="max-width: 120px;">
+                                                                <option value="monthly" <?php echo ($salary_parts['period'] ?? 'monthly') == 'monthly' ? 'selected' : ''; ?>>Monthly</option>
+                                                                <option value="yearly" <?php echo ($salary_parts['period'] ?? '') == 'yearly' ? 'selected' : ''; ?>>Yearly</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-text">Optional - will be displayed to candidates</div>
+                                                    </div>
+                                                </div>
                                                 <div class="col-md-6">
                                                     <div class="mb-3">
                                                         <label for="application_deadline" class="form-label">Application Deadline</label>
@@ -245,6 +276,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                         <div class="form-text">Leave empty for no deadline</div>
                                                     </div>
                                                 </div>
+                                            </div>
                                                 <div class="col-md-6">
                                                     <div class="mb-3">
                                                         <label class="form-label">Status</label>
