@@ -88,11 +88,12 @@ function App() {
           <Route path="/allproducts" element={<AllProducts />} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/banner-preview" element={<BannerPreview />} />
-          <Route path="/:productSlug" element={<ProductDetails />} />
+          {/* Static Core Pages */}
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/help-center" element={<HelpCenter />} />
           <Route path="/contact" element={<ContactUs />} />
+          <Route path="/contact-us" element={<Navigate to="/contact" replace />} />
           <Route path="/quick-links" element={<QuickLinks />} />
           <Route path="/my-account" element={<MyAccount />} />
           <Route path="/track-order" element={<TrackOrder />} />
@@ -100,6 +101,7 @@ function App() {
           <Route path="/careers" element={<CareerPage />} />
           <Route path="/careers/:id" element={<VacancyDetails />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/about-us" element={<Navigate to="/about" replace />} />
           <Route path="/faq" element={<PrintmontFAQ />} />
           <Route path="/security" element={<SecurityInfo />} />
           <Route path="/account-setting" element={<MyAccount />} />
@@ -136,10 +138,11 @@ function App() {
             <Route path="change-password" element={<ChangePassword />} />
           </Route>
 
-          {/* Account pages are linked as /<username>/profile (see getUsernamePath in
-              AuthContext). Without this block those links fell through to PageNotFound
-              whenever a user was logged in. No index route here on purpose, so a bare
-              /<something> keeps resolving to the product-slug route above. */}
+          {/* Product Detail dynamic routes */}
+          <Route path="/product/:productSlug" element={<ProductDetails />} />
+          <Route path="/:productSlug" element={<ProductDetails />} />
+
+          {/* Account pages */}
           <Route path="/:username" element={<User />}>
             <Route path="profile" element={<Profile />} />
             <Route path="wishlist" element={<Wishlist />} />
