@@ -11,6 +11,8 @@ export const getProductUrl = (product) => {
   
   // Extract title/name/slug
   const name = product.title || product.name || product.slug || 'product';
+
+  // const img = product.primary_image || product.thumbnail || product.images.image_url || 'default-img.jpg';
   
   // Create a clean URL-friendly slug
   const cleanSlug = name

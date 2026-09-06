@@ -1,6 +1,7 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { ROOT_URL } from "../../../config/apiEndpoints";
+import { Link, useParams } from "react-router-dom";
+import { API_ENDPOINTS, ROOT_URL, getChildCategoriesUrl } from "../../../config/apiEndpoints";
+import CategoryProductsView from "./CategoryProductsView";
 
 // ── Migrated homepage components ──────────
 import {
@@ -159,6 +160,80 @@ const CategoryInfoTextField = ({ initialText }) => {
 };
 
 const CategoryPage = () => {
+  // Route is /category/:id, but every <Categories>/<CategoryGridSection> link
+  // in this app builds URLs from a category's slug, not its numeric id — so
+  // this param is actually a slug (e.g. "eco-friendly-gifts").
+  const { id: categorySlug } = useParams();
+
+  // A category with no subcategories is a leaf (e.g. "Bamboo Bottles") — those
+  // show a product grid instead of this page's marketing/subcategory layout.
+  const [categoryInfo, setCategoryInfo] = React.useState(null);
+  const [isLeafCategory, setIsLeafCategory] = React.useState(false);
+  const [isResolvingCategory, setIsResolvingCategory] = React.useState(!!categorySlug);
+
+  React.useEffect(() => {
+    if (!categorySlug) {
+      setCategoryInfo(null);
+      setIsLeafCategory(false);
+      setIsResolvingCategory(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsResolvingCategory(true);
+
+    (async () => {
+      try {
+        const catRes = await fetch(API_ENDPOINTS.CATEGORY_BY_SLUG(categorySlug));
+        const catData = await catRes.json();
+        if (cancelled) return;
+
+        if (!catData?.success || !catData.data?.id) {
+          setCategoryInfo(null);
+          setIsLeafCategory(false);
+          return;
+        }
+
+        const category = catData.data;
+        const childrenUrl = getChildCategoriesUrl(category.id, category.level);
+
+        let hasChildren = false;
+        if (childrenUrl) {
+          const subRes = await fetch(childrenUrl);
+          const subData = await subRes.json();
+          if (cancelled) return;
+          hasChildren = subData?.success && Array.isArray(subData.data) && subData.data.length > 0;
+        }
+
+        setCategoryInfo({ id: category.id, name: category.name });
+        setIsLeafCategory(!hasChildren);
+      } catch (error) {
+        if (!cancelled) {
+          setCategoryInfo(null);
+          setIsLeafCategory(false);
+        }
+      } finally {
+        if (!cancelled) setIsResolvingCategory(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [categorySlug]);
+
+  if (isResolvingCategory) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "50vh" }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLeafCategory && categoryInfo) {
+    return <CategoryProductsView categoryId={categoryInfo.id} categoryName={categoryInfo.name} />;
+  }
+
   return (
     <div className="category-page">
 
@@ -189,7 +264,7 @@ const CategoryPage = () => {
 
           {/* 4.5. Categories Grid Section */}
           <div className="cp-card-section">
-            <CategoryGridSection />
+            <CategoryGridSection categorySlug={categorySlug} />
           </div>
 
 

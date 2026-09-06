@@ -1,0 +1,46 @@
+/* Desktop mega-menu category bar (Categories.jsx — LARGE SCREENS block).
+   Wraps onto multiple rows with a fixed gap instead of squeezing every
+   category into one line via justify-content-between, which is what was
+   causing long category names to overlap their neighbors. */
+.category-desktop-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 20px;
+  column-gap: 17px;
+  width: 100%;
+}
+
+.category-desktop-item {
+  flex: 0 0 auto;
+  width: 100px;
+  padding: 0 4px;
+}
+
+/* Compound selector (two classes) so this reliably wins over the
+   breakpoint-based .categoires-img-width rules in index.css regardless
+   of CSS load order, without touching those (still used by the mobile
+   category row). */
+.category-thumb-desktop.categoires-img-width {
+  width: 100%;
+  /* height: 100%; */
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+  margin: 0 auto 10px;
+}
+
+.category-label-row {
+  gap: 4px;
+  margin-top: 2px;
+  max-width: 100%;
+}
+
+.category-name {
+  font-size: 0.82rem;
+  line-height: 1.2;
+  max-width: 94px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

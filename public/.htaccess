@@ -1,0 +1,6 @@
+# Client-side routing (react-router-dom) — serve index.html for any path
+# that isn't a real file/directory, so direct URLs and refreshes work.
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]

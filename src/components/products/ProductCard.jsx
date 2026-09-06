@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { GoHeartFill } from "react-icons/go";
-import { FaStar } from "react-icons/fa";
+import { FaStar, FaShieldAlt, FaCaretDown } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { useWishlist } from "../../context/WishlistContext";
 import "./Product.css";
@@ -126,22 +126,21 @@ const ProductCard = ({ product }) => {
                 ))}
               </div>
             )}
+
+            {/* Seller Assured Badge — bottom-right corner of the image, like Flipkart's "Brand Authorized Seller" shield */}
+            {isAssured && (
+              <div className="ap-fk-assured-badge" title="Printmont Assured Quality">
+                <FaShieldAlt size={11} />
+                <span className="ap-fk-assured-sub">ASSURED</span>
+              </div>
+            )}
           </div>
 
           {/* BOTTOM SLIDE-UP INFO PANEL (Only this section slides UP on hover) */}
           <div className="ap-card-body ap-card-body-slide p-2 d-flex flex-column flex-grow-1 bg-white">
-            {/* Brand & Flipkart-style Assured Badge */}
-            <div className="d-flex justify-content-between align-items-center mb-1">
-              <span className="ap-brand-name text-uppercase text-muted fw-bold text-truncate">
-                {product.brand}
-              </span>
-              {isAssured && (
-                <div className="ap-fk-assured-badge" title="Printmont Assured Quality">
-                  <span className="ap-fk-assured-text">Printmont</span>
-                  <span className="ap-fk-assured-sub">ASSURED</span>
-                </div>
-              )}
-            </div>
+            <span className="ap-brand-name text-uppercase text-muted fw-bold text-truncate mb-1">
+              {product.brand}
+            </span>
 
             {/* Title (turns Flipkart Blue on Hover) */}
             <h3 className="ap-product-title text-dark mb-1" title={product.title}>
@@ -160,22 +159,21 @@ const ProductCard = ({ product }) => {
               </div>
             )}
 
-            {/* Price & Offer Row */}
+            {/* Price & Offer Row — discount % first, then struck-through original, then the price you pay */}
             <div className="mt-auto pt-1 d-flex align-items-baseline flex-wrap gap-1">
-              <span className="ap-price-discounted fw-bold fs-6 text-dark">
-                ₹{formatCurrency(product.discountedPrice || product.price)}
-              </span>
-
               {hasDiscount && (
                 <>
+                  <span className="ap-discount-percent fw-semibold d-inline-flex align-items-center">
+                    <FaCaretDown size={11} />{product.discountPercent}%
+                  </span>
                   <span className="ap-price-original text-muted text-decoration-line-through">
                     ₹{formatCurrency(product.originalPrice)}
                   </span>
-                  <span className="ap-discount-percent fw-semibold ms-auto">
-                    {product.discountPercent}% off
-                  </span>
                 </>
               )}
+              <span className="ap-price-discounted fw-bold fs-6 text-dark">
+                ₹{formatCurrency(product.discountedPrice || product.price)}
+              </span>
             </div>
 
             {/* Stock alert */}

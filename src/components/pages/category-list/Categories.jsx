@@ -8,6 +8,7 @@ import {
 import { IoIosArrowDown } from "react-icons/io";
 import { Link } from "react-router-dom";
 import { API_ENDPOINTS, ASSET_URL, resolveImageUrl } from "../../../config/apiEndpoints";
+import "./categories.css";
 
 // Site's blue theme (same blue used on the inner-page category bar background).
 const ICON_BLUE = "#0b53a1";
@@ -100,7 +101,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
 
           const finalDesktop = desktopList.length > 0 ? desktopList : allDesktop;
           const finalMobile = mobileList.length > 0 ? mobileList : allMobile;
-
+          
           setCategoriesData(finalDesktop);
           setMobileCategoriesData(finalMobile);
         } else {
@@ -227,7 +228,7 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
   const safeMobileCategories = getArray(mobileCategoriesData);
   const mobileCategories = (() => {
     const visible = safeMobileCategories.filter(isVisible);
-    return (limit ? visible.slice(0, limit) : visible).slice(0, 12);
+    return limit ? visible.slice(0, limit) : visible;
   })();
   const half = Math.ceil(mobileCategories.length / 2);
   const columnsData = [];
@@ -286,13 +287,13 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
 
       {/* LARGE SCREENS */}
       <div className="d-none d-lg-flex justify-content-center w-100 position-relative text-nowrap small" style={{padding:`${space}`, backgroundColor:`${bg}`}} >
-        <div className="d-flex justify-content-between w-100 mx-auto px-lg-4 position-relative" style={{ maxWidth: showImages ? '1440px' : '100%' }}>
+        <div className="category-desktop-row mx-auto px-lg-4 position-relative" style={{ maxWidth: showImages ? '1440px' : '100%' }}>
           {displayCategories.map((item, index) => {
             const itemChildren = getArray(item.children);
             return (
           <div
             key={index}
-            className={`d-flex flex-column align-items-center text-center mb-0 over ${showImages ? "position-relative" : ""}`}
+            className={`category-desktop-item d-flex flex-column align-items-center text-center mb-0 over ${showImages ? "position-relative" : ""}`}
             onMouseEnter={() => {
               setActiveCategory(index);
               if (typeof setActiveSub === 'function') setActiveSub(0);
@@ -301,12 +302,12 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
               setActiveCategory(null);
               if (typeof setActiveSub === 'function') setActiveSub(null);
             }}
-            style={{ width: "auto", minWidth: showImages ? "75px" : "auto", cursor: "pointer", padding: showImages ? "0 4px" : "0 15px" }}
+            style={{ cursor: "pointer" }}
           >
-            <Link to={`/category/${item.slug}`} className="d-flex flex-column align-items-center text-decoration-none w-100">
-              {showImages && renderCategoryThumb(item)}
-              <div className="d-flex justify-content-center align-items-center text-decoration-none over">
-                <span className="fw-semibold" style={{ color: `${color}` }}>{item.name}</span>
+            <Link to={`/category/${item.slug}`} className="d-flex flex-column align-items-center text-decoration-none w-100" title={item.name}>
+              {showImages && renderCategoryThumb(item, "category-thumb-desktop")}
+              <div className="category-label-row d-flex justify-content-center align-items-center text-decoration-none over">
+                <span className="category-name fw-semibold" style={{ color: `${color}` }}>{item.name}</span>
                 <IoIosArrowDown
                   className={`ms-1 flex-shrink-0 transition-arrow ${activeCategory === index ? "rotate-arrow" : ""
                     }`} style={{color:`${color}`}}

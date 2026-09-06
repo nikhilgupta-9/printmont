@@ -72,6 +72,14 @@ export const API_ENDPOINTS = {
   // must stay free of a query string.
   SEARCH: `${BASE_URL}/search-api.php`,
 
+  // Reviews — GET ?product_id= for approved reviews + rating stats, POST to submit
+  // a new one (goes into the same pending-approval queue the admin panel manages).
+  PRODUCT_REVIEWS: (productId) => `${BASE_URL}/product-reviews-api.php?product_id=${productId}`,
+  SUBMIT_REVIEW: `${BASE_URL}/product-reviews-api.php`,
+  // Uploads a single customization file (logo/artwork); returns { url } to attach
+  // to the cart item's `attributes` — cart-api.php's JSON field can't hold raw bytes.
+  CUSTOMIZATION_UPLOAD: `${BASE_URL}/customization-upload-api.php`,
+
   // Home Product Sections
   HOME_PRODUCT_SECTIONS: (action) => `${BASE_URL}/products/products.php?action=${action}`,
   TOP_RATED: `${BASE_URL}/products/products.php?action=top_rated`,
@@ -80,9 +88,27 @@ export const API_ENDPOINTS = {
 
   // Categories & Layout
   CATEGORIES: `${BASE_URL}/category-api.php`,
+  // Single category lookup by slug (used to resolve a URL slug to its numeric id).
+  CATEGORY_BY_SLUG: (slug) => `${BASE_URL}/category_api.php?slug=${encodeURIComponent(slug)}`,
+  // Level-2 (sub) categories, used for the plain image-grid section — pass a
+  // parentId to scope to one category's children, omit it for the flat sitewide list.
+  // NOTE: the backend only returns children here when parentId is a level-1 category.
+  // A level-2 parent's own children (level 3) must be fetched via SUBSUBCATEGORIES below.
+  SUBCATEGORIES: (parentId) => `${BASE_URL}/category_api.php?action=subcategories${parentId ? `&parent_id=${parentId}` : ''}`,
+  // Level-3 categories — children of a level-2 category (e.g. Bamboo Bottles under Eco Drinkware).
+  SUBSUBCATEGORIES: (parentId) => `${BASE_URL}/category_api.php?action=subsubcategories&parent_id=${parentId}`,
+  // Products belonging to one category-tree node (any level) — see category-products-api.php.
+  // The backend resolves category_id -> the right products column (category_id /
+  // sub_category_id / sub_sub_category_id) from that category's own level, so a
+  // mid-level id (e.g. Eco Drinkware) correctly aggregates products from all its
+  // leaf descendants too.
+  CATEGORY_PRODUCTS: (categoryId, params = {}) => {
+    const qs = new URLSearchParams({ category_id: categoryId, ...params }).toString();
+    return `${BASE_URL}/category-products-api.php?${qs}`;
+  },
   // Home page category bar (icons, shown_on_home-flagged, split desktop/mobile) vs the
   // persistent inner-page top menu (text-only, already pruned server-side). See menu_api.php.
-  HOME_MENU: `${BASE_URL}/menu_api.php?type=home`,
+  HOME_MENU: `${BASE_URL}/menu_api.php?type=home&device=desktop`,
   INNER_MENU: `${BASE_URL}/menu_api.php?type=inner`,
   HOME_LAYOUT: (target = 'desktop') => `${BACKEND_URL}/home-layout-api.php?target=${target}`,
 
@@ -126,6 +152,17 @@ export const API_ENDPOINTS = {
   HEADER_SETTINGS: `${BASE_URL}/header-settings-api.php`,
   // The backend exposes the public logo endpoint directly under /api.
   LOGO: `${BASE_URL}/logo-api.php`,
+};
+
+// Picks the right children-endpoint for a category based on its own level, since
+// the backend splits this across two actions (see SUBCATEGORIES/SUBSUBCATEGORIES
+// above): level 1 -> subcategories, level 2 -> subsubcategories, level 3+ -> leaf.
+export const getChildCategoriesUrl = (parentId, parentLevel) => {
+  const level = Number(parentLevel);
+  if (level >= 3) return null;
+  return level === 1
+    ? API_ENDPOINTS.SUBCATEGORIES(parentId)
+    : API_ENDPOINTS.SUBSUBCATEGORIES(parentId);
 };
 
 export const resolveImageUrl = (imagePath) => {

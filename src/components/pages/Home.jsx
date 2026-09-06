@@ -44,7 +44,7 @@ const Home = () => {
     <>
       {/* Desktop Home */}
       <div className='d-none d-lg-block custom-bg w-100'>
-        <Categories space={"5px 0px"} bg='white' isSticky={true} />
+        <Categories space={"5px 0px"} bg='white' isSticky={true} limit={12} />
 
         <div className='home-desktop-content mx-auto home-desktop-wrapper'>
           <div className='relative w-100 home-layout-gap'>
