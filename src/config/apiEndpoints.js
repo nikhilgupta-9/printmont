@@ -4,7 +4,7 @@ const isLocalhost = typeof window !== 'undefined' && (
   window.location.hostname.endsWith('.local')
 );
 
-const LOCAL_API_URL = '/api';
+const LOCAL_API_URL = 'http://localhost/printmont/printmont-backend/api';
 const LIVE_API_URL = 'https://mediumvioletred-pelican-783174.hostingersite.com/api';
 const LOCAL_ASSET_URL = 'http://localhost/printmont/printmont-backend/';
 const LIVE_ASSET_URL = 'https://mediumvioletred-pelican-783174.hostingersite.com/';
@@ -14,7 +14,7 @@ export const ROOT_URL = (import.meta.env.VITE_BASE_URL || (isLocalhost ? '/' : L
 
 // printmont-backend serves the homepage layout (printmont_db.home_sections) — the same
 // data home-layout-manager.php edits.
-export const BACKEND_URL = (import.meta.env.VITE_BACKEND_API_URL || (isLocalhost ? '/backend-api' : LIVE_API_URL)).replace(/\/+$/, '');
+export const BACKEND_URL = (import.meta.env.VITE_BACKEND_API_URL || (isLocalhost ? LOCAL_API_URL : LIVE_API_URL)).replace(/\/+$/, '');
 export const ASSET_URL = (isLocalhost ? LOCAL_ASSET_URL : (import.meta.env.VITE_ASSET_URL || LIVE_ASSET_URL)).replace(/\/+$/, '') + '/';
 
 // NOTE: every path below must name a file that exists in printmont-backend/api.
