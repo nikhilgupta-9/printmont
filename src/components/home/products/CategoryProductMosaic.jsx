@@ -51,8 +51,11 @@ export default function CategoryProductMosaic({
     fetchData();
   }, [apiUrl, propColumns]);
 
-  const renderGroupedColumn = (colTitle, items, idx) => {
-    // Items here are usually up to 4 items in a 2x2 grid
+  const renderGroupedColumn = (col, idx) => {
+    const colTitle = (typeof col === "string") ? col : (col?.title || col?.name || "");
+    const items = col?.items || [];
+    const categoryLink = col?.slug ? `/category/${col.slug}` : (col?.id ? `/category/${col.id}` : "#");
+
     return (
       <div
         className="border bg-white rounded-3 h-100 custom-bg-image"
@@ -65,14 +68,22 @@ export default function CategoryProductMosaic({
           className="d-flex justify-content-between align-items-center mosaic-header-container"
           style={{ padding: "10px 6px" }}
         >
-          <p className="m-0 section-title mosaic-header-title fw-semibold text-black">{colTitle}</p>
-          <button 
-            className="border-0 bg-primary text-white rounded-circle d-flex justify-content-center align-items-center shadow-sm" 
+          {categoryLink !== "#" ? (
+            <Link to={categoryLink} className="text-decoration-none">
+              <p className="m-0 section-title mosaic-header-title fw-semibold text-black">{colTitle}</p>
+            </Link>
+          ) : (
+            <p className="m-0 section-title mosaic-header-title fw-semibold text-black">{colTitle}</p>
+          )}
+
+          <Link 
+            to={categoryLink}
+            className="border-0 bg-primary text-white rounded-circle d-flex justify-content-center align-items-center shadow-sm text-decoration-none" 
             style={{ width: "26px", height: "26px" }}
             aria-label="View category"
           >
             <FaChevronRight size={13} />
-          </button>
+          </Link>
         </div>
 
         <div className="card-grid-container">
@@ -102,7 +113,7 @@ export default function CategoryProductMosaic({
         <div className="p-1 d-flex d-lg-none mt-2">
           <div className="d-flex w-100 justify-content-center align-items-center border bd rounded bg-light">
             <Link
-              to="/cart"
+              to={categoryLink !== "#" ? categoryLink : "/cart"}
               className="w-100 py-2 text-center text-decoration-none text-dark fs-6 fw-semibold"
             >
               View More <MdKeyboardArrowRight size={18} />
@@ -245,7 +256,7 @@ export default function CategoryProductMosaic({
             style={{ flex: "1 1 0px", minWidth: 0 }}
             key={index}
           >
-            {renderGroupedColumn(col.title, col.items, index)}
+            {renderGroupedColumn(col, index)}
           </div>
         ))}
 

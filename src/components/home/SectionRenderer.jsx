@@ -59,15 +59,39 @@ export default function SectionRenderer({ section, baseURL, lazyLoad = true, isM
     label,
     columns_per_row,
     api_action,
+    category_ids,
+    sub_category_ids,
+    product_ids,
     product_limit,
     badge_text,
     background_image_url,
     banners
   } = section;
 
-  // Build API URLs dynamically if an action is specified
+  // Build API URLs dynamically if an action, category, or product selection is specified
   let productApiUrl = null;
-  if (api_action) {
+  if (product_ids) {
+    productApiUrl = `${baseURL}api/products/products.php?action=category_products&product_ids=${encodeURIComponent(product_ids)}`;
+  } else if (section_type === "category_mosaic" || section_type === "featured_grid") {
+    productApiUrl = `${baseURL}api/products/products.php?action=category_mosaic`;
+    if (category_ids) {
+      productApiUrl += `&category_ids=${encodeURIComponent(category_ids)}`;
+    }
+    if (sub_category_ids) {
+      productApiUrl += `&sub_category_ids=${encodeURIComponent(sub_category_ids)}`;
+    }
+  } else if (category_ids || sub_category_ids) {
+    productApiUrl = `${baseURL}api/products/products.php?action=category_products`;
+    if (category_ids) {
+      productApiUrl += `&category_ids=${encodeURIComponent(category_ids)}`;
+    }
+    if (sub_category_ids) {
+      productApiUrl += `&sub_category_ids=${encodeURIComponent(sub_category_ids)}`;
+    }
+    if (product_limit) {
+      productApiUrl += `&limit=${product_limit}`;
+    }
+  } else if (api_action) {
     productApiUrl = `${baseURL}api/products/products.php?action=${api_action}`;
     if (product_limit) {
       productApiUrl += `&limit=${product_limit}`;
@@ -249,8 +273,8 @@ function renderSectionContent({
       return <MobileProductList apiUrl={productApiUrl} />;
 
     case "category_mosaic":
-      let mosaicColumns = columns;
-      // Setup specific columns for mobile categories
+      let mosaicColumns = undefined;
+      // Setup specific columns for legacy mobile categories if needed
       if (section_key === "mobile_tableware_dinnerware") {
         mosaicColumns = [{ title: "Tableware & Dinnerware", items: tablewareItems }];
       } else if (section_key === "mobile_womens_fashion_mosaic") {
@@ -293,7 +317,13 @@ function renderSectionContent({
       if (section_key === "mobile_section_nine") {
         return <SectionNine products={sampleProducts} />;
       }
-      return <FeaturedProductGrid data={gridData} />;
+      return (
+        <FeaturedProductGrid
+          apiUrl={productApiUrl || undefined}
+          title={label}
+          data={productApiUrl ? undefined : gridData}
+        />
+      );
 
     case "brand_directory":
       return <BrandDirectorySection />;

@@ -96,14 +96,8 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
           const allDesktop = getArray(data.data.desktop || data.data);
           const allMobile = getArray(data.data.mobile || data.data);
 
-          const desktopList = allDesktop.filter(c => c && (c.shown_on_home == 1 || c.shown_on_home === true || c.shown_on_home === "1" || c.shown_on_home === "yes"));
-          const mobileList = allMobile.filter(c => c && (c.shown_on_home == 1 || c.shown_on_home === true || c.shown_on_home === "1" || c.shown_on_home === "yes"));
-
-          const finalDesktop = desktopList.length > 0 ? desktopList : allDesktop;
-          const finalMobile = mobileList.length > 0 ? mobileList : allMobile;
-          
-          setCategoriesData(finalDesktop);
-          setMobileCategoriesData(finalMobile);
+          setCategoriesData(allDesktop);
+          setMobileCategoriesData(allMobile);
         } else {
           const response = await fetch(API_ENDPOINTS.INNER_MENU);
           const data = await response.json();
@@ -206,18 +200,19 @@ const Categories = ({ showImages = true, space="", color = '', bg = '', isSticky
 
   // No image uploaded for this category → fall back to a generic icon instead of a broken/blank tile.
   const renderCategoryThumb = (item, extraClass = "") => {
-    if (item.image) {
+    const imgSource = item?.image || item?.desktop_image || item?.mobile_image || item?.images?.image || item?.images?.desktop || item?.desktop?.image || item?.icon;
+    if (imgSource) {
       return (
         <img
-          src={getImageUrl(item.image)}
-          alt={item.name}
+          src={getImageUrl(imgSource)}
+          alt={item?.name || "Category"}
           className={`rounded mb-1 categoires-img-width ${extraClass}`}
           style={{ objectFit: "cover", aspectRatio: "1 / 1" }}
           onError={(e) => { e.target.src = '/default-img.jpg'; }}
         />
       );
     }
-    const Icon = getCategoryIcon(item.name);
+    const Icon = getCategoryIcon(item?.name || "");
     return (
       <span
         className={`rounded mb-1 categoires-img-width d-flex align-items-center justify-content-center ${extraClass}`}

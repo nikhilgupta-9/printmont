@@ -167,6 +167,13 @@ export const getChildCategoriesUrl = (parentId, parentLevel) => {
 
 export const resolveImageUrl = (imagePath) => {
   if (!imagePath) return '/default-img.jpg';
+
+  // If on localhost but image points to live Hostinger domain, rewrite to local backend
+  if (isLocalhost && (imagePath.includes('mediumvioletred-pelican-783174.hostingersite.com') || imagePath.includes('hostingersite.com'))) {
+    const relativePath = imagePath.replace(/^https?:\/\/[^\/]+\//, '');
+    return `${LOCAL_ASSET_URL}${relativePath}`;
+  }
+
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }

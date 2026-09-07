@@ -37,7 +37,7 @@ const CategoryGridSection = ({ categorySlug }) => {
           id: cat.id,
           name: cat.name,
           url: `/category/${cat.slug}`,
-          img: resolveImageUrl(cat.images?.image || cat.images?.desktop || '')
+          img: resolveImageUrl(cat.images?.image || cat.images?.desktop || cat.image || cat.desktop_image || cat.mobile_image || '')
         }));
 
         if (normalized.length > 0) setCategoriesData(normalized);

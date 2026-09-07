@@ -140,10 +140,11 @@ export default function CompactCategoryGrid({
             >
               <div className="product-card-img-wrapper" style={{ overflow: "hidden", aspectRatio: "1/1", display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0, backgroundColor: "#ffffff" }}>
                 <img 
-                  src={getImageUrl(category.image || category.icon)} 
+                  src={getImageUrl(category.image || category.desktop_image || category.mobile_image || category.images?.image || category.icon)} 
                   alt={category.name} 
                   className="product-card-img" 
                   style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                  onError={(e) => { e.target.src = '/default-img.jpg'; }}
                 />
               </div>
               <div className="p-1 text-center mt-1">

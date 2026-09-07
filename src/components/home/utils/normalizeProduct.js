@@ -1,3 +1,5 @@
+import { resolveImageUrl } from "../../../config/apiEndpoints";
+
 /**
  * Normalizes different API product shapes into a single standard format:
  * {
@@ -19,7 +21,7 @@ export default function normalizeProduct(p) {
     return {
       id: p.id || "",
       title: p.title,
-      img: p.img,
+      img: resolveImageUrl(p.img),
       price: p.price,
       originalPrice: p.originalPrice || null,
       discount: p.discount || "",
@@ -67,7 +69,7 @@ export default function normalizeProduct(p) {
   return {
     id: p.id || "",
     title: p.name || p.title || "",
-    img: primaryImg,
+    img: resolveImageUrl(primaryImg),
     price: currentPrice,
     originalPrice: originalPrice,
     discount: discountText,
