@@ -2,6 +2,7 @@ import React from 'react'
 import Categories from './category-list/Categories.jsx'
 import {
   ResponsiveHeroCarousel,
+  SmallBannerCarousel,
   MobileHeroSlider,
   BannerGrid,
   ResponsiveBannerSet,
@@ -9,6 +10,7 @@ import {
   ProductCarousel,
   CategoryProductMosaic,
   FeaturedProductGrid,
+  CustomerReviewCarousel,
   GiftFinderSection,
   BrandDirectorySection,
   BulkOrderWidget,
@@ -34,11 +36,12 @@ import {
 } from '../../../data/data'
 import useHomeLayout from '../home/hooks/useHomeLayout'
 import MobHome from './MobHome.jsx'
-import { ROOT_URL } from '../../config/apiEndpoints'
+import { BASE_URL, ROOT_URL } from '../../config/apiEndpoints'
 
 const Home = () => {
-  const baseURL = ROOT_URL;
+  const baseURL = BASE_URL;
   const { sections, loading } = useHomeLayout('desktop', baseURL);
+
 
   return (
     <>
@@ -47,7 +50,7 @@ const Home = () => {
         <Categories space={"5px 0px"} bg='white' isSticky={true} limit={12} />
 
         <div className='home-desktop-content mx-auto home-desktop-wrapper'>
-          <div className='relative w-100 home-layout-gap'>
+          <div className='relative w-100 home-layout-gap mt-1'>
             {loading ? (
               <div className="container-fluid m-0 p-0 text-center py-5">
                 <div className="shimmer-bg skeleton-banner-hero w-100" />
@@ -55,7 +58,7 @@ const Home = () => {
             ) : sections && sections.length > 0 ? (
               sections.map((section, index) => (
                 <SectionRenderer
-                  key={section.id}
+                  key={section.id || index}
                   section={section}
                   baseURL={baseURL}
                   lazyLoad={index >= 3}
@@ -66,7 +69,7 @@ const Home = () => {
               <>
                  {/* === ABOVE THE FOLD — Eager Load (no LazySection) === */}
                  <ResponsiveHeroCarousel apiUrl={`${baseURL}api/banner_api.php`} basePath={`${baseURL}uploads/banners/`} />
-                 <MobileHeroSlider apiUrl={`${baseURL}api/banner_api.php`} />
+                 <SmallBannerCarousel apiUrl={`${baseURL}api/banner_api.php?section=small_banner_slider`} isMobile={false} />
                  <BannerGrid apiUrl={`${baseURL}api/banner_api.php`} sectionKey="home_above_fold" columns={4} mobileColumns={2} />
 
                  {/* === BELOW THE FOLD — Lazy Loaded === */}
@@ -176,6 +179,10 @@ const Home = () => {
 
                  <LazySection skeleton={<CarouselSkeleton />}>
                    <ProductCarousel apiUrl={`${baseURL}api/products/products.php?action=discount_for_you`} title="Recently Viewed" />
+                 </LazySection>
+
+                 <LazySection skeleton={<CarouselSkeleton />}>
+                   <CustomerReviewCarousel />
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 3" />}>

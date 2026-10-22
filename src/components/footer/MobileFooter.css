@@ -1,0 +1,188 @@
+.mob-footer {
+  width: 100%;
+  background-color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  padding-bottom: 24px;
+}
+
+/* 1. Top Feature / Trust Bar */
+.mob-footer__trust-bar {
+  background-color: #f8fafc;
+  padding: 14px 6px;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  text-align: center;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mob-footer__trust-item {
+  flex: 1;
+  padding: 0 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mob-footer__trust-icon-wrap {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.mob-footer__trust-icon {
+  height: 30px;
+  max-width: 36px;
+  object-fit: contain;
+}
+
+.mob-footer__trust-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.mob-footer__trust-sub {
+  font-size: 9.5px;
+  color: #64748b;
+  margin-bottom: 0;
+  line-height: 1.2;
+}
+
+/* 2. Action Pill Buttons */
+.mob-footer__btn-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 14px 18px 14px;
+  flex-wrap: nowrap;
+}
+
+.mob-footer__pill-btn {
+  background-color: #0b53a1;
+  color: #ffffff !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  border-radius: 20px;
+  text-decoration: none;
+  display: inline-block;
+  white-space: nowrap;
+  transition: background-color 0.2s, transform 0.15s;
+  box-shadow: 0 2px 5px rgba(11, 83, 161, 0.2);
+}
+
+.mob-footer__pill-btn:hover {
+  background-color: #084282;
+  transform: translateY(-1px);
+}
+
+/* 3. Logo */
+.mob-footer__logo-wrap {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.mob-footer__logo {
+  height: 42px;
+  max-width: 220px;
+  object-fit: contain;
+}
+
+/* 4. Security Shield */
+.mob-footer__security {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.mob-footer__shield-icon {
+  color: #05a650;
+  font-size: 38px;
+  margin-bottom: 6px;
+  display: inline-block;
+}
+
+.mob-footer__security-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+/* 5. Follow Us */
+.mob-footer__follow {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.mob-footer__follow-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 12px;
+}
+
+.mob-footer__social-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.mob-footer__social-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff !important;
+  text-decoration: none;
+  font-size: 16px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.mob-footer__social-btn:hover {
+  transform: scale(1.1);
+  opacity: 0.9;
+}
+
+.mob-footer__social-btn.facebook {
+  background-color: #1877f2;
+}
+
+.mob-footer__social-btn.twitter {
+  background-color: #000000;
+}
+
+.mob-footer__social-btn.instagram {
+  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+}
+
+.mob-footer__social-btn.linkedin {
+  background-color: #0a66c2;
+}
+
+.mob-footer__social-btn.youtube {
+  background-color: #ff0000;
+}
+
+/* 6. Copyright */
+.mob-footer__copyright {
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 400;
+  margin: 0;
+  padding: 0 12px;
+  line-height: 1.4;
+}

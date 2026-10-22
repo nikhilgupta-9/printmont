@@ -1,161 +1,801 @@
-/* ============================================================
-   Affiliate Program and Business Solutions.
-
-   Both follow the reference layout: a centred, ruled page title over a
-   single column of plain prose — a lead paragraph, lead-in lines and
-   bulleted lists. No cards, hero images or tables.
-
-   Content comes from page_sections, so every block is optional and the
-   lists grow with however many rows the admin adds.
-   ============================================================ */
+/* ==========================================================================
+   Printmont Marketing & Affiliate Program Stylesheet
+   Strictly adheres to rule.md:
+   - Rule 7: Standard Desktop Container Max-Width 1400px
+   - Rule 8: Viewport Padding (24px Desktop, 18px Tablet, 14px Mobile),
+             Zero Horizontal Overflow, Card Padding Standards
+   - Rule 9: Breadcrumbs exclusively on Desktop (Hidden on Mobile)
+   - Brand Colors: #0b53a1 (Primary), #084282 (Dark), #ea580c (Accent)
+   ========================================================================== */
 
 :root {
-  --mk-theme: rgb(11, 83, 161);
-  --mk-theme-dark: #09447f;
-  --mk-accent: rgb(222, 61, 2);
-  --mk-ink: #1a1a1a;
-  --mk-body: #333333;
-  --mk-rule: #d9dde2;
-
-  --mk-title: 1.75rem;   /* ~28px */
-  --mk-sub: 1.25rem;     /* ~20px */
-  --mk-text: 1rem;       /* 16px — normal reading size */
+  --mk-theme: #0b53a1;
+  --mk-theme-dark: #084282;
+  --mk-theme-light: rgba(11, 83, 161, 0.08);
+  --mk-theme-border: rgba(11, 83, 161, 0.2);
+  --mk-accent: #ea580c;
+  --mk-accent-dark: #c2410c;
+  --mk-accent-light: rgba(234, 88, 12, 0.1);
+  --mk-ink: #0f172a;
+  --mk-slate: #1e293b;
+  --mk-body: #475569;
+  --mk-muted: #64748b;
+  --mk-rule: #e2e8f0;
+  --mk-border: #e2e8f0;
+  --mk-bg-subtle: #f8fafc;
+  --mk-card-radius: 14px;
 }
 
+/* Page Outer Wrapper */
 .mk-page {
-  background: #fff;
+  background: #f8fafc;
   color: var(--mk-body);
   overflow-x: hidden;
-  min-height: 70vh;
+  min-height: 80vh;
+  width: 100%;
 }
 
+/* ==========================================================================
+   Rule 7 & Rule 8: Standard 1400px Container Width & Padding
+   ========================================================================== */
+.mk-page .mk-article,
 .mk-article {
-  max-width: 1100px;
-  padding-top: 2rem;
-  padding-bottom: 3rem;
+  max-width: 1400px !important;
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+  padding-top: 36px !important;
+  padding-bottom: 60px !important;
+  box-sizing: border-box !important;
 }
 
-/* ---------- Ruled, two-tone page title ---------- */
-.mk-page-title {
+@media (max-width: 991.98px) {
+  .mk-page .mk-article,
+  .mk-article {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+    padding-top: 24px !important;
+    padding-bottom: 44px !important;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .mk-page .mk-article,
+  .mk-article {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    padding-top: 18px !important;
+    padding-bottom: 32px !important;
+  }
+}
+
+/* ==========================================================================
+   Rule 9: Breadcrumbs Display Exclusively on Desktop (Hidden on Mobile)
+   ========================================================================== */
+.mk-breadcrumb-strip {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
-  color: var(--mk-ink);
-  font-weight: 600;
-  font-size: var(--mk-title);
-  text-align: center;
-  margin: 0 0 2.25rem;
+  font-size: 0.86rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--mk-rule);
+  margin-bottom: 1.75rem;
 }
 
-/* The rules either side of the heading. */
-.mk-page-title::before,
-.mk-page-title::after {
-  content: "";
-  flex: 1 1 auto;
-  max-width: 14rem;
-  height: 1px;
-  background: var(--mk-rule);
+.mk-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-.mk-page-title span {
-  color: var(--mk-accent);
-  font-weight: 600;
+.mk-breadcrumb-link {
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.15s ease;
 }
 
-/* ---------- Prose ---------- */
-.mk-sub {
-  color: var(--mk-theme);
-  font-weight: 600;
-  font-size: var(--mk-sub);
-  margin: 0 0 .85rem;
-}
-
-.mk-para {
-  font-size: var(--mk-text);
-  line-height: 1.9;
-  margin: 0 0 1.5rem;
-}
-
-.mk-lead-in {
-  font-size: var(--mk-text);
-  line-height: 1.9;
-  margin: 0 0 .75rem;
-}
-
-.mk-list {
-  list-style: disc;
-  padding-left: 1.5rem;
-  margin: 0 0 1.75rem;
-}
-
-.mk-list li {
-  font-size: var(--mk-text);
-  line-height: 1.9;
-  margin-bottom: .35rem;
-}
-
-/* The bold half of a "Title - description" bullet. */
-.mk-list__term {
-  color: var(--mk-ink);
-  font-weight: 600;
-}
-
-/* ---------- Q&A ---------- */
-.mk-qa {
-  margin-bottom: 1.25rem;
-}
-
-.mk-qa__q {
-  color: var(--mk-ink);
-  font-weight: 600;
-  font-size: var(--mk-text);
-  line-height: 1.7;
-  margin: 0 0 .25rem;
-}
-
-/* ---------- Links ---------- */
-.mk-mail {
+.mk-breadcrumb-link:hover {
   color: var(--mk-theme);
   text-decoration: underline;
-  overflow-wrap: anywhere;
 }
 
-.mk-mail:hover {
-  color: var(--mk-theme-dark);
+.mk-breadcrumb-separator {
+  margin: 0 0.5rem;
+  color: #94a3b8;
+  font-size: 0.8rem;
 }
 
-.mk-para--close {
-  margin-top: .5rem;
-  margin-bottom: 0;
+.mk-breadcrumb-current {
+  color: var(--mk-ink);
+  font-weight: 600;
 }
 
-/* ---------- Small screens ---------- */
 @media (max-width: 767.98px) {
-  :root {
-    --mk-title: 1.4rem;
-    --mk-sub: 1.125rem;
+  .mk-breadcrumb-strip,
+  .pm-hero-breadcrumb,
+  nav[aria-label="breadcrumb"].mk-breadcrumb {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   Section Headers
+   ========================================================================== */
+.mk-section {
+  margin-bottom: 44px;
+}
+
+.mk-section-header {
+  margin-bottom: 24px;
+}
+
+.mk-section-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--mk-theme-light);
+  color: var(--mk-theme);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  margin-bottom: 8px;
+}
+
+.mk-section-title {
+  color: var(--mk-ink);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px 0;
+  line-height: 1.3;
+}
+
+.mk-section-desc {
+  color: var(--mk-body);
+  font-size: 0.96rem;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 760px;
+}
+
+/* ==========================================================================
+   1. Steps Flow Cards Grid (3 Columns)
+   ========================================================================== */
+.mk-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.mk-step-card {
+  background: #ffffff;
+  border: 1px solid var(--mk-border);
+  border-radius: var(--mk-card-radius);
+  padding: 26px 24px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.mk-step-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--mk-theme-border);
+  box-shadow: 0 12px 28px rgba(11, 83, 161, 0.08);
+}
+
+.mk-step-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.mk-step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--mk-theme) 0%, var(--mk-theme-dark) 100%);
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(11, 83, 161, 0.25);
+}
+
+.mk-step-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--mk-theme-light);
+  color: var(--mk-theme);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+}
+
+.mk-step-title {
+  color: var(--mk-ink);
+  font-size: 1.18rem;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+  line-height: 1.35;
+}
+
+.mk-step-desc {
+  color: var(--mk-body);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  margin: 0;
+  flex-grow: 1;
+}
+
+/* ==========================================================================
+   2. Highlights / Benefits Grid (4 Columns)
+   ========================================================================== */
+.mk-highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.mk-highlight-card {
+  background: #ffffff;
+  border: 1px solid var(--mk-border);
+  border-radius: var(--mk-card-radius);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.mk-highlight-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--mk-theme);
+  box-shadow: 0 10px 24px rgba(11, 83, 161, 0.08);
+}
+
+.mk-highlight-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--mk-theme-light);
+  color: var(--mk-theme);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  margin-bottom: 16px;
+}
+
+.mk-highlight-title {
+  color: var(--mk-ink);
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  line-height: 1.35;
+}
+
+.mk-highlight-desc {
+  color: var(--mk-body);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  margin: 0;
+  flex-grow: 1;
+}
+
+/* ==========================================================================
+   3. Commission Rates Grid (3 Columns)
+   ========================================================================== */
+.mk-rates-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.mk-rate-card {
+  background: #ffffff;
+  border: 1px solid var(--mk-border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+}
+
+.mk-rate-card:hover {
+  border-color: var(--mk-theme);
+  background-color: #ffffff;
+  box-shadow: 0 6px 18px rgba(11, 83, 161, 0.06);
+  transform: translateY(-1px);
+}
+
+.mk-rate-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mk-rate-cat {
+  color: var(--mk-ink);
+  font-size: 0.98rem;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  line-height: 1.35;
+}
+
+.mk-rate-note {
+  color: var(--mk-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.mk-rate-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, var(--mk-accent) 0%, var(--mk-accent-dark) 100%);
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.22);
+}
+
+/* ==========================================================================
+   4. Frequently Asked Questions (Accordion)
+   ========================================================================== */
+.mk-faqs-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mk-faq-item {
+  background: #ffffff;
+  border: 1px solid var(--mk-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+}
+
+.mk-faq-item.is-open {
+  border-color: var(--mk-theme-border);
+  box-shadow: 0 4px 14px rgba(11, 83, 161, 0.06);
+}
+
+.mk-faq-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.mk-faq-button:hover {
+  background: #f8fafc;
+}
+
+.mk-faq-item.is-open .mk-faq-button {
+  background: var(--mk-theme-light);
+}
+
+.mk-faq-q-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mk-faq-q-icon {
+  color: var(--mk-theme);
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+
+.mk-faq-q {
+  color: var(--mk-ink);
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.mk-faq-toggle {
+  color: #94a3b8;
+  font-size: 0.88rem;
+  transition: transform 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mk-faq-item.is-open .mk-faq-toggle {
+  color: var(--mk-theme);
+}
+
+.mk-faq-body {
+  padding: 16px 22px 20px 48px;
+  border-top: 1px solid var(--mk-rule);
+  color: var(--mk-slate);
+  font-size: 0.94rem;
+  line-height: 1.7;
+}
+
+@media (max-width: 767.98px) {
+  .mk-faq-body {
+    padding: 14px 16px 16px 16px;
+  }
+}
+
+/* ==========================================================================
+   5. Closing CTA Box (#band-contact)
+   ========================================================================== */
+.mk-closing-cta {
+  background: linear-gradient(135deg, #0b53a1 0%, #084282 100%);
+  border-radius: 16px;
+  color: #ffffff;
+  padding: 38px 40px;
+  box-shadow: 0 12px 36px rgba(11, 83, 161, 0.22);
+  position: relative;
+  overflow: hidden;
+  margin-top: 48px;
+}
+
+.mk-closing-cta::after {
+  content: "";
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.mk-cta-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.mk-cta-text-col {
+  flex: 1 1 auto;
+  max-width: 780px;
+}
+
+.mk-cta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.mk-cta-title {
+  color: #ffffff;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px 0;
+  line-height: 1.3;
+}
+
+.mk-cta-desc {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  margin: 0 0 14px 0;
+}
+
+.mk-cta-features {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.mk-cta-feat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mk-cta-feat-item svg {
+  color: #4ade80;
+}
+
+.mk-cta-actions {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.btn-mk-cta-white {
+  background-color: #ffffff !important;
+  color: var(--mk-theme) !important;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border-radius: 9999px;
+  padding: 12px 26px;
+  transition: all 0.2s ease;
+  border: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.btn-mk-cta-white:hover {
+  background-color: #f8fafc !important;
+  color: var(--mk-theme-dark) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.btn-mk-cta-outline {
+  border: 1.5px solid rgba(255, 255, 255, 0.75) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 0.88rem;
+  border-radius: 9999px;
+  padding: 10px 22px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.btn-mk-cta-outline:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   Shimmer Loaders
+   ========================================================================== */
+.shimmer-bg {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: mk-shimmer 1.5s infinite;
+}
+
+@keyframes mk-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ==========================================================================
+   Mobile & Tablet Responsiveness (Rule 8 Standards)
+   ========================================================================== */
+@media (max-width: 1199.98px) {
+  .mk-highlights-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .mk-article {
-    padding-top: 1.5rem;
-    padding-bottom: 2rem;
+  .mk-rates-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 991.98px) {
+  .mk-section {
+    margin-bottom: 32px;
   }
 
-  /* Shorter rules so the title keeps its share of a narrow screen. */
-  .mk-page-title {
-    gap: .75rem;
-    margin-bottom: 1.75rem;
+  .mk-section-title {
+    font-size: 1.5rem;
   }
 
-  .mk-page-title::before,
-  .mk-page-title::after {
-    max-width: 3rem;
+  .mk-steps-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 
-  .mk-para,
-  .mk-lead-in,
-  .mk-list li {
-    line-height: 1.8;
+  .mk-step-card {
+    padding: 20px 18px;
+  }
+
+  .mk-highlights-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .mk-highlight-card {
+    padding: 20px 18px;
+  }
+
+  .mk-rates-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .mk-closing-cta {
+    padding: 28px 24px;
+    margin-top: 36px;
+  }
+
+  .mk-cta-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 22px;
+  }
+
+  .mk-cta-actions {
+    align-items: stretch;
+  }
+
+  .btn-mk-cta-white,
+  .btn-mk-cta-outline {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .mk-section {
+    margin-bottom: 24px;
+  }
+
+  .mk-section-header {
+    margin-bottom: 16px;
+  }
+
+  .mk-section-tag {
+    font-size: 0.72rem;
+    padding: 3px 10px;
+  }
+
+  .mk-section-title {
+    font-size: 1.28rem;
+    line-height: 1.35;
+  }
+
+  .mk-section-desc {
+    font-size: 0.88rem;
+  }
+
+  .mk-step-card {
+    padding: 16px 14px;
+  }
+
+  .mk-step-badge {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+    border-radius: 10px;
+  }
+
+  .mk-step-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+    border-radius: 8px;
+  }
+
+  .mk-step-title {
+    font-size: 1.05rem;
+    margin-bottom: 6px;
+  }
+
+  .mk-step-desc {
+    font-size: 0.86rem;
+  }
+
+  .mk-highlights-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .mk-highlight-card {
+    padding: 16px 14px;
+  }
+
+  .mk-highlight-icon-box {
+    width: 38px;
+    height: 38px;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+
+  .mk-highlight-title {
+    font-size: 0.98rem;
+  }
+
+  .mk-highlight-desc {
+    font-size: 0.84rem;
+  }
+
+  .mk-rate-card {
+    padding: 14px 14px;
+    gap: 12px;
+  }
+
+  .mk-rate-cat {
+    font-size: 0.92rem;
+  }
+
+  .mk-rate-pill {
+    font-size: 0.82rem;
+    padding: 5px 12px;
+  }
+
+  .mk-faq-button {
+    padding: 14px 14px;
+  }
+
+  .mk-faq-q {
+    font-size: 0.92rem;
+  }
+
+  .mk-closing-cta {
+    padding: 22px 16px;
+    margin-top: 28px;
+  }
+
+  .mk-cta-title {
+    font-size: 1.25rem;
+  }
+
+  .mk-cta-desc {
+    font-size: 0.86rem;
+    margin-bottom: 12px;
+  }
+
+  .mk-cta-features {
+    gap: 10px;
+    font-size: 0.78rem;
+  }
+
+  .btn-mk-cta-white,
+  .btn-mk-cta-outline {
+    font-size: 0.88rem;
+    padding: 11px 18px;
+    min-height: 44px; /* Rule 8 touch target */
   }
 }

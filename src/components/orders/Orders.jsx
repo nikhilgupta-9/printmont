@@ -1,479 +1,572 @@
 import React, { useState, useEffect } from 'react';
-import { IoSearch } from "react-icons/io5";
-import { BsBagX } from "react-icons/bs";
+import { 
+  FaArrowLeft, 
+  FaBoxOpen, 
+  FaChevronRight, 
+  FaCheckCircle, 
+  FaClock, 
+  FaTruck, 
+  FaTimesCircle 
+} from "react-icons/fa";
 import { Spinner, Alert } from 'react-bootstrap';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { API_ENDPOINTS, resolveImageUrl } from '../../config/apiEndpoints';
-import './orders.css';
-/**
- * Order statuses, keyed by the value the backend actually stores.
- *
- * The old list read 'On the way', 'Delivered', 'Cancelled', 'Returned' — labels
- * that matched no column value, so even once wired up they would have filtered
- * nothing. These keys mirror the enum used by the admin order screens.
- */
-const STATUS_FILTERS = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'processing', label: 'Processing' },
-  { value: 'shipped', label: 'Shipped' },
-  { value: 'delivered', label: 'Delivered' },
-  { value: 'cancelled', label: 'Cancelled' },
-  { value: 'refunded', label: 'Refunded' },
-];
+import OrderDetailModal from './OrderDetailModal';
+import OrderReviewModal from './OrderReviewModal';
+import CancelOrderModal from './CancelOrderModal';
+import ReturnReplacementModal from './ReturnReplacementModal';
+import OrdersBannerCarousel from './OrdersBannerCarousel';
+import AccountSidebar from '../user/AccountSidebar';
+import './OrdersWireframe.css';
 
 /**
- * Time ranges resolved to real dates at request time.
- *
- * The years used to be hardcoded ('2024', '2023', '2022', '2021'), which both
- * went stale and offered ranges the shopper may have no orders in. These are
- * computed from the current date, and the year options are derived from the
- * orders themselves.
+ * Format order delivery status matching the wireframe text:
+ * - "Processing your order"
+ * - "Delivered on 10 February 2026."
  */
-const TIME_FILTERS = [
-  { value: 'last30', label: 'Last 30 days' },
-  { value: 'last6m', label: 'Last 6 months' },
-  { value: 'thisyear', label: 'This year' },
-];
+const formatDeliveryStatus = (order) => {
+  const status = (order.status || 'pending').toLowerCase();
+  const dateStr = order.updated_at || order.created_at;
+  let formattedDate = '';
+  
+  if (dateStr) {
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        formattedDate = d.toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        }); // e.g. "10 February 2026"
+      }
+    } catch {
+      formattedDate = dateStr;
+    }
+  }
 
-const pad = (n) => String(n).padStart(2, '0');
-const toSqlDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-/** Turn a time selection into the date_from / date_to the API expects. */
-const resolveTimeRange = (value) => {
-  const now = new Date();
-
-  if (value === 'last30') {
-    const from = new Date(now);
-    from.setDate(from.getDate() - 30);
-    return { date_from: toSqlDate(from), date_to: toSqlDate(now) };
+  if (status === 'delivered') {
+    return formattedDate ? `Delivered on ${formattedDate}.` : 'Delivered.';
   }
-  if (value === 'last6m') {
-    const from = new Date(now);
-    from.setMonth(from.getMonth() - 6);
-    return { date_from: toSqlDate(from), date_to: toSqlDate(now) };
+  if (status === 'cancelled') {
+    return formattedDate ? `Cancelled on ${formattedDate}.` : 'Cancelled.';
   }
-  if (value === 'thisyear') {
-    return { date_from: `${now.getFullYear()}-01-01`, date_to: toSqlDate(now) };
+  if (status === 'shipped') {
+    return 'Shipped • In Transit';
   }
-  // A bare year, e.g. "2025".
-  if (/^\d{4}$/.test(value)) {
-    return { date_from: `${value}-01-01`, date_to: `${value}-12-31` };
+  if (status === 'confirmed') {
+    return 'Order Confirmed - Preparing';
   }
-  return {};
+  return 'Processing your order';
 };
 
-const STATUS_COLOR = {
-  delivered: '#198754',
-  shipped: '#0b53a1',
-  processing: '#fd7e14',
-  pending: '#fd7e14',
-  cancelled: '#dc3545',
-  refunded: '#6c757d',
-};
-
-const OrderCard = ({ order }) => {
-  const items = Array.isArray(order.items) ? order.items : [];
-  const first = items[0] || {};
-
-  // The list endpoint returns order-level rows plus their line items. Fall back
-  // through the older field names so an order without items still renders.
-  const title = first.product_name || order.title || order.product_name || `Order ${order.order_number || `#${order.id}`}`;
-  const image = first.product_image
-    ? resolveImageUrl(first.product_image)
-    : (order.image || order.product_image || '/default-img.jpg');
-
-  // grand_total is what the customer actually paid; total_amount is the
-  // pre-shipping subtotal and was previously shown here instead.
-  const price = Number(order.grand_total ?? order.total_amount ?? order.price ?? 0);
-
-  const status = (order.status || order.order_status || 'pending').toLowerCase();
-  const tone = STATUS_COLOR[status] || '#fd7e14';
-  const extraCount = items.length - 1;
-
-  return (
-    <div className="card mb-3 p-3">
-      <div className="row g-3 align-items-center">
-        <div className="col-auto">
-          <img
-            src={image}
-            alt={title}
-            style={{ width: '70px', height: '70px', objectFit: 'contain' }}
-            onError={(e) => { e.target.src = '/default-img.jpg'; }}
-          />
-        </div>
-
-        <div className="col">
-          <div className="fw-semibold text-truncate" style={{ maxWidth: '320px' }}>{title}</div>
-          {extraCount > 0 && (
-            <div className="text-muted" style={{ fontSize: '0.8rem' }}>
-              + {extraCount} more item{extraCount > 1 ? 's' : ''}
-            </div>
-          )}
-          <div className="text-muted" style={{ fontSize: '0.8rem' }}>
-            Order ID: <span className="fw-semibold text-dark">{order.order_number || `#${order.id}`}</span>
-          </div>
-          {order.tracking_number && (
-            <div className="text-muted" style={{ fontSize: '0.8rem' }}>
-              Tracking ID: <span className="fw-semibold text-dark">{order.tracking_number}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="col-auto fw-semibold">₹{price.toLocaleString('en-IN')}</div>
-
-        <div className="col-auto text-end">
-          <span className="me-1" style={{ fontSize: '1.2em', color: tone }}>●</span>
-          <span className="fw-bold text-capitalize" style={{ color: tone }}>{status}</span>
-          {order.tracking_number && (
-            <div className="mt-1">
-              <Link
-                to={`/track-order?order=${encodeURIComponent(order.order_number || '')}`}
-                className="text-primary text-decoration-none"
-                style={{ fontWeight: 600, fontSize: '0.85rem' }}
-              >
-                Track this order →
-              </Link>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+const formatOrderDate = (dateStr) => {
+  if (!dateStr) return 'Recent';
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+  } catch (e) {
+    // fallback
+  }
+  return dateStr;
 };
 
 const Orders = () => {
-  const { user, token } = useAuth();
+  const { user, token, getUsernamePath } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const usernamePath = getUsernamePath ? getUsernamePath() : 'user';
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showFilterModal, setShowFilterModal] = useState(false);
-  // time is single-select: two date ranges at once cannot both apply.
-  const [selectedFilters, setSelectedFilters] = useState({ status: [], time: '' });
-  // Remembers whether the account has any orders at all, so selecting a filter
-  // that matches none still shows the filter UI instead of the "no orders" state.
-  const [everHadOrders, setEverHadOrders] = useState(false);
-  const [yearOptions, setYearOptions] = useState([]);
+  // Modals for Order Detail, Cancel, Return & Review
+  const [activeOrderDetail, setActiveOrderDetail] = useState(null);
+  const [activeReviewItem, setActiveReviewItem] = useState(null);
+  const [reviewContextOrder, setReviewContextOrder] = useState(null);
+  const [activeCancelOrder, setActiveCancelOrder] = useState(null);
+  const [activeReturnOrder, setActiveReturnOrder] = useState(null);
 
-  const statusKey = selectedFilters.status.join(',');
-
+  // If logged in and browsing /orders directly, redirect to clean /:username/orders
   useEffect(() => {
+    if (user && location.pathname === '/orders') {
+      navigate(`/${usernamePath}/orders`, { replace: true });
+    }
+  }, [user, usernamePath, location.pathname, navigate]);
+
+  const fetchOrders = async () => {
     if (!user?.id) {
       setLoading(false);
       return;
     }
 
-    let cancelled = false;
+    try {
+      setLoading(true);
+      setError(null);
 
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Everything is filtered server-side. getOrdersForUser already accepts
-        // status / date_from / date_to / search — the UI simply never sent them.
-        const params = {
-          ...resolveTimeRange(selectedFilters.time),
-          status: statusKey,
-          search: searchTerm.trim(),
-          // There is no pagination UI, and the API defaults to 10 — which
-          // silently hid orders 11+ from anyone with a longer history.
-          limit: 200,
-        };
-
-        const res = await fetch(API_ENDPOINTS.GET_CUSTOMER_ORDERS(params), {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (cancelled) return;
-
-        if (data.success || data.status === 'success') {
-          const rows = data.data || data.orders || [];
-          setOrders(rows);
-
-          const filtersActive = statusKey !== '' || selectedFilters.time !== '' || searchTerm.trim() !== '';
-          if (rows.length > 0) {
-            setEverHadOrders(true);
-            // Offer only years the shopper actually has orders in.
-            if (!filtersActive) {
-              const years = [...new Set(
-                rows.map(o => String(o.created_at || '').slice(0, 4)).filter(y => /^\d{4}$/.test(y))
-              )].sort((a, b) => b.localeCompare(a));
-              setYearOptions(years);
-            }
-          }
-        } else {
-          // A 401 means the stored token has expired or is invalid, which is
-          // by far the most common failure here. The API reports it in
-          // `error`, not `message`, so reading only `message` always fell
-          // through to the generic text and hid the real cause.
-          if (res.status === 401) {
-            setSessionExpired(true);
-            setError("Your session has expired. Please sign in again to see your orders.");
-          } else {
-            setError(data.error || data.message || "Failed to load orders.");
-          }
-        }
-      } catch (err) {
-        if (cancelled) return;
-        console.error(err);
-        setError("An error occurred while fetching orders.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    // Debounced so typing in the search box does not fire a request per keystroke.
-    const timer = setTimeout(fetchOrders, searchTerm ? 350 : 0);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [user, token, statusKey, selectedFilters.time, searchTerm]);
-
-  const handleFilterToggle = (type, value) => {
-    setSelectedFilters((prev) => {
-      if (type === 'time') {
-        // Clicking the selected range again clears it.
-        return { ...prev, time: prev.time === value ? '' : value };
-      }
-      const alreadySelected = prev.status.includes(value);
-      return {
-        ...prev,
-        status: alreadySelected
-          ? prev.status.filter(item => item !== value)
-          : [...prev.status, value],
+      const params = {
+        limit: 100,
       };
-    });
+
+      const res = await fetch(API_ENDPOINTS.GET_CUSTOMER_ORDERS(params), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+
+      if (data.success || data.status === 'success') {
+        const rows = data.data || data.orders || [];
+        setOrders(rows);
+      } else {
+        if (res.status === 401) {
+          setSessionExpired(true);
+          setError("Your session has expired. Please sign in again to view your orders.");
+        } else {
+          setError(data.error || data.message || "Failed to load orders.");
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setError("An error occurred while fetching orders.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const clearFilters = () => {
-    setSelectedFilters({ status: [], time: '' });
-    setSearchTerm('');
+  useEffect(() => {
+    fetchOrders();
+  }, [user, token]);
+
+  const handleOpenReview = (item, order, isReviewed) => {
+    const prodId = item?.product_id || item?.id;
+    if (isReviewed) {
+      navigate(`/${usernamePath}/reviews?product_id=${prodId}&tab=reviewed&open=edit`);
+    } else {
+      navigate(`/${usernamePath}/reviews?product_id=${prodId}&order_id=${order?.id}&open_review=1`);
+    }
   };
 
-  const filtersActive = statusKey !== '' || selectedFilters.time !== '' || searchTerm.trim() !== '';
+  const handleReviewSuccess = () => {
+    fetchOrders();
+  };
 
-  // The server has already applied every filter.
-  const filteredOrders = orders;
+  // Helper to extract flat item entries for display matching the wireframe
+  // In Wireframe 1 & 2, each purchased product item is displayed with its own thumbnail & title
+  const displayItems = [];
+  orders.forEach((order) => {
+    const items = Array.isArray(order.items) && order.items.length > 0 ? order.items : [];
+    if (items.length > 0) {
+      items.forEach((item, itemIdx) => {
+        displayItems.push({
+          key: `${order.id}-${item.id || itemIdx}`,
+          order,
+          item,
+          title: item.product_name || order.title || order.product_name || `Order #${order.order_number || order.id}`,
+          image: item.product_image 
+            ? resolveImageUrl(item.product_image) 
+            : (order.image || order.product_image ? resolveImageUrl(order.image || order.product_image) : '/default-img.jpg'),
+          statusText: formatDeliveryStatus(order),
+          statusClass: (order.status || 'pending').toLowerCase(),
+          orderNumber: order.order_number || `#${order.id}`,
+          orderDate: order.created_at,
+          orderTotal: Number(order.grand_total ?? order.total_amount ?? 0),
+          quantity: item.quantity || 1
+        });
+      });
+    } else {
+      displayItems.push({
+        key: `ord-${order.id}`,
+        order,
+        item: null,
+        title: order.title || order.product_name || `Order #${order.order_number || order.id}`,
+        image: order.image || order.product_image ? resolveImageUrl(order.image || order.product_image) : '/default-img.jpg',
+        statusText: formatDeliveryStatus(order),
+        statusClass: (order.status || 'pending').toLowerCase(),
+        orderNumber: order.order_number || `#${order.id}`,
+        orderDate: order.created_at,
+        orderTotal: Number(order.grand_total ?? order.total_amount ?? 0),
+        quantity: order.total_quantity || 1
+      });
+    }
+  });
 
-  // Filters and search only make sense once there is something to filter.
-  // Keyed off everHadOrders, not the current result set: a filter that matches
-  // nothing must still leave the controls on screen, or the shopper is stranded
-  // with no way to undo the selection that emptied the page.
-  const hasOrders = orders.length > 0 || everHadOrders;
+  const allCount = displayItems.length;
+  const deliveredCount = displayItems.filter(e => e.statusClass === 'delivered' || e.statusClass === 'completed').length;
+  const inProgressCount = displayItems.filter(e => ['pending', 'processing', 'confirmed', 'shipped', 'transit'].includes(e.statusClass)).length;
+  const cancelledCount = displayItems.filter(e => ['cancelled', 'refunded'].includes(e.statusClass)).length;
 
-  // Time options: fixed ranges, plus whichever years this account has orders in.
-  const timeOptions = [
-    ...TIME_FILTERS,
-    ...yearOptions
-      .filter(y => y !== String(new Date().getFullYear()))
-      .map(y => ({ value: y, label: y })),
-  ];
+  const filteredDisplayItems = displayItems.filter(entry => {
+    if (statusFilter === 'delivered') return entry.statusClass === 'delivered' || entry.statusClass === 'completed';
+    if (statusFilter === 'inprogress') return ['pending', 'processing', 'confirmed', 'shipped', 'transit'].includes(entry.statusClass);
+    if (statusFilter === 'cancelled') return ['cancelled', 'refunded'].includes(entry.statusClass);
+    return true;
+  });
+
+  // Check if we are inside User.jsx wrapper
+  const isInsideUserWrapper = location.pathname.startsWith(`/${usernamePath}`) || location.pathname.startsWith('/user');
 
   return (
-    <div className="container-fluid pt-3 custom-bg">
-      <nav aria-label="breadcrumb" className="mb-3">
-        <ol className="breadcrumb">
-          <li className="breadcrumb-item"><a href="/">Home</a></li>
-          <li className="breadcrumb-item"><a href="/user/profile">My Account</a></li>
-          <li className="breadcrumb-item active" aria-current="page">My Orders</li>
-        </ol>
-      </nav>
-
-      {/* Mobile Filter Button */}
-      {hasOrders && (
-        <div className="d-md-none d-flex justify-content-end mb-2">
-          <button className="btn btn-outline-secondary btn-sm" onClick={() => setShowFilterModal(true)}>
-            Filters
+    <>
+      {/* ─────────────────────────────────────────────────────────── */}
+      {/* 1. DESKTOP VIEW (Wireframe Image 1: >= 992px)               */}
+      {/* ─────────────────────────────────────────────────────────── */}
+      <div className="d-none d-lg-block desktop-orders-container">
+        {/* 1. Desktop Breadcrumbs (Rule 9) */}
+        <div className="orders-breadcrumb-wrapper">
+          <button
+            type="button"
+            className="orders-back-link"
+            onClick={() => navigate(`/${usernamePath}/profile`)}
+            aria-label="Back to Account"
+          >
+            <FaArrowLeft size={12} /> Back to My Account
           </button>
+          <nav aria-label="breadcrumb">
+            <ol className="orders-breadcrumb">
+              <li><Link to="/">Home</Link></li>
+              <span>/</span>
+              <li><Link to={`/${usernamePath}/profile`}>My Account</Link></li>
+              <span>/</span>
+              <li className="active" aria-current="page">My Orders</li>
+            </ol>
+          </nav>
         </div>
-      )}
 
-      <div className="row">
-        {/* Desktop Sidebar Filters */}
-        {hasOrders && (
-        <aside className="col-md-3 d-none d-md-block mb-4">
-          <div className="border rounded p-3 bg-white">
-            <div className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Filters</h5>
-              {filtersActive && (
-                <button className="btn btn-link btn-sm p-0 text-decoration-none" onClick={clearFilters}>
-                  Clear all
-                </button>
-              )}
+        {/* 2. Desktop Orders Header Banner Card */}
+        <div className="desktop-orders-header-card">
+          <div className="desktop-orders-header-left">
+            <div className="desktop-orders-header-icon-box">
+              <FaBoxOpen />
             </div>
-            <hr />
-            <div>
-              <h6>ORDER STATUS</h6>
-              {STATUS_FILTERS.map(({ value, label }) => (
-                <div className="form-check" key={value}>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id={`status-${value}`}
-                    checked={selectedFilters.status.includes(value)}
-                    onChange={() => handleFilterToggle('status', value)}
-                  />
-                  <label className="form-check-label" htmlFor={`status-${value}`}>{label}</label>
-                </div>
-              ))}
-            </div>
-            <hr />
-            <div>
-              <h6>ORDER TIME</h6>
-              {timeOptions.map(({ value, label }) => (
-                <div className="form-check" key={value}>
-                  {/* Radio: two date ranges cannot both apply. */}
-                  <input
-                    className="form-check-input"
-                    type="radio"
-                    name="order-time"
-                    id={`time-${value}`}
-                    checked={selectedFilters.time === value}
-                    onChange={() => handleFilterToggle('time', value)}
-                    onClick={() => handleFilterToggle('time', value)}
-                  />
-                  <label className="form-check-label" htmlFor={`time-${value}`}>{label}</label>
-                </div>
-              ))}
+            <div className="desktop-orders-header-meta">
+              <h4 className="desktop-orders-header-title">My Orders</h4>
+              <p className="desktop-orders-header-sub">
+                Manage, track, and reorder all your custom print purchases
+              </p>
             </div>
           </div>
-        </aside>
+          <div className="desktop-orders-total-badge">
+            <FaBoxOpen size={13} /> Total {orders.length} {orders.length === 1 ? 'Order' : 'Orders'}
+          </div>
+        </div>
+
+        {/* 3. Status Filter Chips */}
+        {orders.length > 0 && (
+          <div className="desktop-orders-filter-chips">
+            <button
+              type="button"
+              className={`desktop-orders-filter-chip ${statusFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('all')}
+            >
+              <span>All Orders</span>
+              <span className="chip-count">{allCount}</span>
+            </button>
+            <button
+              type="button"
+              className={`desktop-orders-filter-chip ${statusFilter === 'delivered' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('delivered')}
+            >
+              <FaCheckCircle size={12} className={statusFilter === 'delivered' ? 'text-white' : 'text-success'} />
+              <span>Delivered</span>
+              <span className="chip-count">{deliveredCount}</span>
+            </button>
+            <button
+              type="button"
+              className={`desktop-orders-filter-chip ${statusFilter === 'inprogress' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('inprogress')}
+            >
+              <FaClock size={12} className={statusFilter === 'inprogress' ? 'text-white' : 'text-warning'} />
+              <span>In Progress</span>
+              <span className="chip-count">{inProgressCount}</span>
+            </button>
+            <button
+              type="button"
+              className={`desktop-orders-filter-chip ${statusFilter === 'cancelled' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('cancelled')}
+            >
+              <FaTimesCircle size={12} className={statusFilter === 'cancelled' ? 'text-white' : 'text-danger'} />
+              <span>Cancelled</span>
+              <span className="chip-count">{cancelledCount}</span>
+            </button>
+          </div>
         )}
 
-        {/* Main Orders Area — spans the full row once the sidebar is hidden. */}
-        <main className={hasOrders ? 'col-md-9' : 'col-12'}>
-          {hasOrders && (
-            <form className="d-flex mb-3" onSubmit={(e) => e.preventDefault()}>
-              <div className='d-flex w-100 justify-content-center align-items-center border border-sm-0 bg-white border-bd rounded'>
-                <IoSearch className='text-muted ms-2 d-flex d-lg-none' size={25}/>
-
-                <input
-                  type="text"
-                  className="form-control  px-2 rounded-0 rounded-start border-0"
-                  placeholder="Search your orders here"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <div className='d-none d-sm-none d-lg-flex'>
-                  <button className="btn btn-primary rounded-0 rounded-end px-3 text-nowrap d-flex align-items-center justify-content-center gap-1" type="submit">
-                    <IoSearch size={18}/> <span>Search Orders</span>
-                  </button>
-                </div>
+        {/* 4. Orders Card List */}
+        <div className="desktop-orders-card">
+          <div className="desktop-orders-list">
+            {loading ? (
+              <div className="text-center py-5">
+                <Spinner animation="border" variant="primary" />
+                <p className="mt-3 text-muted small mb-0">Loading your orders...</p>
               </div>
-            </form>
-          )}
+            ) : error ? (
+              <Alert variant={sessionExpired ? "warning" : "danger"} className="m-3 rounded-3">
+                <h6 className="fw-bold mb-1">{sessionExpired ? "Session Expired" : "Notice"}</h6>
+                <div>{error}</div>
+                {sessionExpired && (
+                  <button
+                    className="btn btn-sm btn-primary mt-3 rounded-pill px-4"
+                    onClick={() => navigate("/login?redirect=/orders")}
+                  >
+                    Sign In to Continue
+                  </button>
+                )}
+              </Alert>
+            ) : !user?.id ? (
+              <div className="text-center py-5">
+                <FaBoxOpen size={48} className="text-primary mb-3" />
+                <h5 className="fw-bold text-dark">Please Log In</h5>
+                <p className="text-muted small mb-3">Sign in to track orders, manage purchases and invoices.</p>
+                <button
+                  className="btn btn-primary rounded-pill px-4 fw-bold"
+                  onClick={() => navigate('/login?redirect=/orders')}
+                >
+                  Sign In
+                </button>
+              </div>
+            ) : filteredDisplayItems.length > 0 ? (
+              filteredDisplayItems.map((entry) => (
+                <div
+                  key={entry.key}
+                  className="desktop-order-card-item"
+                  onClick={() => {
+                    const orderId = entry.order?.order_number || entry.order?.id;
+                    if (orderId) {
+                      navigate(`/${usernamePath}/orders/${orderId}`);
+                    } else {
+                      setActiveOrderDetail(entry.order);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { 
+                    if (e.key === 'Enter') {
+                      const orderId = entry.order?.order_number || entry.order?.id;
+                      if (orderId) {
+                        navigate(`/${usernamePath}/orders/${orderId}`);
+                      } else {
+                        setActiveOrderDetail(entry.order);
+                      }
+                    } 
+                  }}
+                >
+                  <div className="desktop-order-card-left">
+                    <div className="desktop-order-card-thumb-wrap">
+                      <img
+                        src={entry.image}
+                        alt={entry.title}
+                        className="desktop-order-card-thumb"
+                        onError={(e) => { e.target.src = '/default-img.jpg'; }}
+                      />
+                    </div>
+                    <div className="desktop-order-card-info">
+                      <span className="desktop-order-card-product-title" title={entry.title}>
+                        {entry.title}
+                      </span>
+                      <div className="desktop-order-card-meta-line">
+                        <span>Order #{String(entry.orderNumber).replace(/^#+/, '')}</span>
+                        <span>•</span>
+                        <span>Placed on {formatOrderDate(entry.orderDate)}</span>
+                        {entry.orderTotal > 0 && (
+                          <>
+                            <span>•</span>
+                            <span className="desktop-order-card-price">₹{entry.orderTotal.toLocaleString('en-IN')}</span>
+                          </>
+                        )}
+                      </div>
+                      <span className={`desktop-order-status-badge ${entry.statusClass}`}>
+                        {entry.statusClass === 'delivered' && <FaCheckCircle size={10} />}
+                        {['pending', 'processing', 'confirmed'].includes(entry.statusClass) && <FaClock size={10} />}
+                        {['shipped', 'transit'].includes(entry.statusClass) && <FaTruck size={10} />}
+                        {['cancelled', 'refunded'].includes(entry.statusClass) && <FaTimesCircle size={10} />}
+                        {entry.statusText}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="desktop-order-card-right">
+                    <button type="button" className="desktop-order-view-btn" tabIndex={-1}>
+                      View Details <FaChevronRight size={11} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-5">
+                <div className="text-muted mb-3">
+                  <FaBoxOpen size={42} />
+                </div>
+                <h6 className="fw-bold text-dark">
+                  {statusFilter === 'all' ? 'No Orders Placed Yet' : `No ${statusFilter} orders found`}
+                </h6>
+                <p className="text-muted small mb-3">
+                  {statusFilter === 'all'
+                    ? "You haven't placed any orders yet. Explore our products to start!"
+                    : `You don't have any orders under "${statusFilter}".`}
+                </p>
+                {statusFilter !== 'all' ? (
+                  <button 
+                    type="button" 
+                    className="btn btn-outline-primary rounded-pill px-4 fw-bold"
+                    onClick={() => setStatusFilter('all')}
+                  >
+                    View All Orders
+                  </button>
+                ) : (
+                  <Link to="/allproducts" className="btn btn-primary rounded-pill px-4 fw-bold">
+                    Start Shopping
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
 
+        {/* If rendered outside User.jsx wrapper (e.g. standalone /orders), render full-width bottom banner here */}
+        {!isInsideUserWrapper && (
+          <div className="mt-4">
+            <OrdersBannerCarousel isMobile={false} />
+          </div>
+        )}
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────── */}
+      {/* 2. MOBILE VIEW (Wireframe Image 2: < 992px)                 */}
+      {/* ─────────────────────────────────────────────────────────── */}
+      <div className="d-lg-none mobile-orders-page">
+        {/* Mobile Orders List with Dividers (Wireframe 2) */}
+        <div className="mobile-orders-list">
           {loading ? (
-            <div className="text-center p-5">
+            <div className="text-center py-5">
               <Spinner animation="border" variant="primary" />
+              <p className="mt-3 text-muted small mb-0">Loading your orders...</p>
             </div>
           ) : error ? (
-            <Alert variant={sessionExpired ? "warning" : "danger"}>
+            <Alert variant={sessionExpired ? "warning" : "danger"} className="m-3 rounded-3">
+              <h6 className="fw-bold mb-1">{sessionExpired ? "Session Expired" : "Notice"}</h6>
               <div>{error}</div>
               {sessionExpired && (
                 <button
-                  className="btn btn-sm btn-primary mt-2"
+                  className="btn btn-sm btn-primary mt-3 rounded-pill px-4"
                   onClick={() => navigate("/login?redirect=/orders")}
                 >
-                  Sign in again
+                  Sign In to Continue
                 </button>
               )}
             </Alert>
           ) : !user?.id ? (
-            <Alert variant="warning">Please log in to view your orders.</Alert>
-          ) : filteredOrders.length ? (
-            filteredOrders.map((order, idx) => (
-              <OrderCard key={order.id || idx} order={order} />
-            ))
-          ) : orders.length ? (
-            /* There are orders, the search just did not match any of them —
-               offering "start shopping" here would be the wrong exit. */
-            <div className="orders-empty bg-white text-center p-5 my-3 shadow-sm rounded">
-              <IoSearch size={44} className="text-secondary mb-3" />
-              <h5 className="fw-bold text-dark mb-2">No matching orders</h5>
-              <p className="text-muted mb-4">
-                Nothing matched &ldquo;{searchTerm}&rdquo;. Try a different search.
-              </p>
-              <button className="btn btn-outline-secondary" onClick={() => setSearchTerm('')}>
-                Clear search
+            <div className="text-center py-5 px-3">
+              <FaBoxOpen size={44} className="text-primary mb-3" />
+              <h5 className="fw-bold text-dark">Please Log In</h5>
+              <p className="text-muted small mb-3">Sign in to track your orders and view past purchases.</p>
+              <button
+                className="btn btn-primary rounded-pill px-4 fw-bold"
+                onClick={() => navigate('/login?redirect=/orders')}
+              >
+                Sign In
               </button>
             </div>
+          ) : displayItems.length > 0 ? (
+            displayItems.map((entry) => (
+              <div
+                key={entry.key}
+                className="mobile-order-row-item"
+                onClick={() => {
+                  const orderId = entry.order?.order_number || entry.order?.id;
+                  if (orderId) {
+                    navigate(`/${usernamePath}/orders/${orderId}`);
+                  } else {
+                    setActiveOrderDetail(entry.order);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
+                <div className="mobile-order-row-left">
+                  <div className="mobile-order-row-thumb-wrap">
+                    <img
+                      src={entry.image}
+                      alt={entry.title}
+                      className="mobile-order-row-thumb"
+                      onError={(e) => { e.target.src = '/default-img.jpg'; }}
+                    />
+                  </div>
+                  <div className="mobile-order-row-info">
+                    <span className="mobile-order-row-product-title">
+                      {entry.title}
+                    </span>
+                    <span className={`mobile-order-row-status ${entry.statusClass}`}>
+                      {entry.statusText}
+                    </span>
+                  </div>
+                </div>
+                <FaChevronRight className="mobile-order-row-chevron" />
+              </div>
+            ))
           ) : (
-            <div className="orders-empty bg-white text-center p-5 my-3 shadow-sm rounded">
-              <BsBagX size={44} className="text-secondary mb-3" />
-              <h5 className="fw-bold text-dark mb-2">No Orders Yet</h5>
-              <p className="text-muted mb-4">
-                You haven&rsquo;t placed any orders. Start shopping and they will show up here.
+            <div className="text-center py-5 px-3">
+              <FaBoxOpen size={40} className="text-muted mb-3" />
+              <h6 className="fw-bold text-dark">No Orders Found</h6>
+              <p className="text-muted small mb-3">
+                You haven't placed any orders yet. Explore our products to start!
               </p>
-              <button className="btn checkout-cta" onClick={() => navigate('/allproducts')}>
+              <Link to="/allproducts" className="btn btn-primary rounded-pill px-4 fw-bold">
                 Start Shopping
-              </button>
+              </Link>
             </div>
           )}
-        </main>
+        </div>
+
+        {/* Mobile Banner Carousel (Banner management support for orders page on mobile) */}
+        <div className="mt-2 pb-4">
+          <OrdersBannerCarousel isMobile={true} />
+        </div>
       </div>
 
-      {/* Filter Modal for Mobile */}
-      {showFilterModal && (
-        <div className="filter-modal-overlay" onClick={() => setShowFilterModal(false)}>
-          <div className="filter-modal bg-white p-4 rounded-top" onClick={(e) => e.stopPropagation()}>
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5 className="mb-0">Filters</h5>
-              <button className="btn btn-link text-muted p-0" onClick={clearFilters}>Clear Filter</button>
-            </div>
-
-            <div className="mb-3">
-              <h6>Order Status</h6>
-              <div className="d-flex flex-wrap gap-2">
-                {STATUS_FILTERS.map(({ value, label }) => {
-                  const on = selectedFilters.status.includes(value);
-                  return (
-                    <button
-                      key={value}
-                      className={`filter-pill ${on ? 'selected' : ''}`}
-                      onClick={() => handleFilterToggle('status', value)}
-                    >
-                      {label} <span>{on ? '×' : '+'}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <h6>Order Time</h6>
-              <div className="d-flex flex-wrap gap-2">
-                {timeOptions.map(({ value, label }) => {
-                  const on = selectedFilters.time === value;
-                  return (
-                    <button
-                      key={value}
-                      className={`filter-pill ${on ? 'selected' : ''}`}
-                      onClick={() => handleFilterToggle('time', value)}
-                    >
-                      {label} <span>{on ? '×' : '+'}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="d-flex justify-content-between">
-              <button className="btn btn-outline-secondary w-45" onClick={() => setShowFilterModal(false)}>
-                Cancel
-              </button>
-              {/* Filters apply as they are picked, so this just closes the sheet. */}
-              <button className="btn btn-warning w-45" onClick={() => setShowFilterModal(false)}>
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* ─────────────────────────────────────────────────────────── */}
+      {/* 3. MODALS (Detail, Cancel, Return, Review)                  */}
+      {/* ─────────────────────────────────────────────────────────── */}
+      {activeOrderDetail && (
+        <OrderDetailModal
+          order={activeOrderDetail}
+          onClose={() => setActiveOrderDetail(null)}
+          onOpenReview={(item, ord) => handleOpenReview(item, ord)}
+          onOrderUpdated={() => fetchOrders()}
+        />
       )}
-    </div>
+
+      {activeCancelOrder && (
+        <CancelOrderModal
+          order={activeCancelOrder}
+          onClose={() => setActiveCancelOrder(null)}
+          onSuccess={() => fetchOrders()}
+        />
+      )}
+
+      {activeReturnOrder && (
+        <ReturnReplacementModal
+          order={activeReturnOrder}
+          onClose={() => setActiveReturnOrder(null)}
+          onSuccess={() => fetchOrders()}
+        />
+      )}
+
+      {activeReviewItem && (
+        <OrderReviewModal
+          item={activeReviewItem}
+          order={reviewContextOrder}
+          onClose={() => { setActiveReviewItem(null); setReviewContextOrder(null); }}
+          onSuccess={handleReviewSuccess}
+        />
+      )}
+    </>
   );
 };
 

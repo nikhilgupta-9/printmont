@@ -12,13 +12,14 @@ export default function BannerImage({ large, small, target, alt, className = "",
     width: "100%",
     borderRadius: borderRadius,
     overflow: "hidden",
-    ...(aspectRatio ? { aspectRatio } : {})
+    ...(isSquare ? { aspectRatio: "1 / 1" } : (aspectRatio ? { aspectRatio } : {}))
   };
   const imgStyle = {
     width: "100%",
     height: (className.includes("h-100") || isSquare || aspectRatio) ? "100%" : "auto",
     objectFit: "cover",
-    borderRadius: borderRadius
+    borderRadius: borderRadius,
+    ...(isSquare ? { aspectRatio: "1 / 1" } : (aspectRatio ? { aspectRatio } : {}))
   };
 
   const imageElement = (

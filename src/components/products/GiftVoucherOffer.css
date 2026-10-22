@@ -1,0 +1,43 @@
+/* Gift voucher offer under the price (product page, desktop + mobile) */
+.gvo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.gvo-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px dashed #0c53a1;
+  border-radius: 8px;
+  background: #eef4fd;
+  color: #212121;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.gvo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0c53a1;
+  color: #fff;
+  font-size: 13px;
+}
+
+.gvo-text b { color: #0c53a1; }
+
+.gvo-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.gvo--compact .gvo-row { font-size: 13px; }

@@ -1,109 +1,87 @@
 import React from "react";
-import { Container } from "react-bootstrap";
-import usePageSections from "../pages/usePageSections";
-import "../pages/marketing-page.css";
+import { Container, Spinner } from "react-bootstrap";
+import useLandingPage from "./useLandingPage";
+import BusinessSolutionsMobile from "./BusinessSolutionsMobile";
+import BusinessSolutionsDesktop from "./BusinessSolutionsDesktop";
+import { ASSET_URL } from "../../config/apiEndpoints";
+import "./business-solutions.css";
 
-/**
- * One prose block: an optional lead-in line, then a bulleted list where each
- * row reads "Title - content".
- */
-const BulletBlock = ({ lead, rows }) => {
-  if (!rows.length) return null;
+export default function BusinessSolutions() {
+  // Fetch device-tailored landing page data
+  const { 
+    page: mobilePage, 
+    sections: mobileSections, 
+    faqs: mobileFaqs, 
+    loading: mobileLoading,
+    error: mobileError
+  } = useLandingPage("business-solutions", "mobile");
 
-  return (
-    <>
-      {lead && <p className="mk-lead-in">{lead}</p>}
-      <ul className="mk-list">
-        {rows.map((r) => (
-          <li key={r.id}>
-            {r.content ? (
-              <>
-                <span className="mk-list__term">{r.title}</span>
-                {" - "}
-                {r.content}
-              </>
-            ) : (
-              r.title
-            )}
-          </li>
-        ))}
-      </ul>
-    </>
-  );
-};
+  const { 
+    page: desktopPage, 
+    sections: desktopSections, 
+    faqs: desktopFaqs, 
+    loading: desktopLoading,
+    error: desktopError
+  } = useLandingPage("business-solutions", "desktop");
 
-const BusinessSolutions = () => {
-  const { many, one, loading, failed } = usePageSections("business-solutions");
+  // Helper to format image paths
+  const resolveImg = (img) => {
+    if (!img) return "/default-img.jpg";
+    if (img.startsWith("http://") || img.startsWith("https://")) return img;
+    if (img.startsWith("/")) return img;
+    return `${ASSET_URL}${img}`;
+  };
 
-  const hero = one("hero");
-  const features = many("feature");
-  const steps = many("step");
-  const contact = one("contact");
+  const isLoading = mobileLoading || desktopLoading;
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="mk-page">
-        <Container className="mk-article">
-          <div className="shimmer-bg rounded mb-4" style={{ height: 34, width: "45%" }} />
-          <div className="shimmer-bg rounded mb-3" style={{ height: 90 }} />
-          <div className="shimmer-bg rounded" style={{ height: 220 }} />
+      <div className="bs-page-wrapper py-5 text-center">
+        <Container>
+          <Spinner animation="border" variant="primary" />
+          <p className="text-muted mt-3 small">Loading Business Solutions &amp; Corporate Offerings...</p>
         </Container>
       </div>
     );
   }
 
-  if (failed) {
+  if (mobileError && desktopError) {
     return (
-      <div className="mk-page">
-        <Container className="mk-article">
-          <h1 className="mk-page-title"><span className="text-theme">Business</span> Solutions</h1>
-          <p className="mk-para">This page is unavailable right now. Please refresh in a moment.</p>
+      <div className="bs-page-wrapper py-5 text-center">
+        <Container>
+          <h4 className="fw-bold text-danger mb-2">Unable to load Business Solutions</h4>
+          <p className="text-muted small mb-3">Please check your connection or refresh the page.</p>
+          <button 
+            type="button" 
+            className="btn btn-primary btn-sm rounded-pill px-4" 
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
         </Container>
       </div>
     );
   }
 
   return (
-    <div className="mk-page">
-      <Container className="mk-article">
-
-        <h1 className="mk-page-title"><span className="text-theme">Business</span> Solutions</h1>
-
-        {hero && (
-          <>
-            <h2 className="mk-sub">{hero.title}</h2>
-            {hero.content && <p className="mk-para">{hero.content}</p>}
-          </>
-        )}
-
-        <BulletBlock
-          lead={features.length ? "What we do for businesses:" : null}
-          rows={features}
+    <div className="bs-page-wrapper">
+      {/* 📱 Mobile Layout: Rendered strictly on screens < lg (1024px) */}
+      <div className="d-block d-lg-none">
+        <BusinessSolutionsMobile
+          sections={mobileSections}
+          faqs={mobileFaqs}
+          resolveImg={resolveImg}
         />
+      </div>
 
-        <BulletBlock
-          lead={steps.length ? `${steps.length} Simple Steps to Get Started:` : null}
-          rows={steps}
+      {/* 💻 Desktop Layout: Rendered strictly on screens >= lg (1024px) */}
+      <div className="d-none d-lg-block">
+        <BusinessSolutionsDesktop
+          sections={desktopSections}
+          faqs={desktopFaqs}
+          resolveImg={resolveImg}
         />
-
-        {contact ? (
-          <p className="mk-para mk-para--close">
-            {contact.title}
-            {contact.extra && (
-              <>
-                {" "}
-                <a href={`mailto:${contact.extra}`} className="mk-mail">{contact.extra}</a>
-              </>
-            )}
-          </p>
-        ) : (
-          <p className="mk-para mk-para--close">
-            To discuss a bulk requirement, please <a href="/contact" className="mk-mail">contact our team</a>.
-          </p>
-        )}
-      </Container>
+      </div>
     </div>
   );
-};
-
-export default BusinessSolutions;
+}

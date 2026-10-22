@@ -10,10 +10,19 @@ export { default as FormatDesignBanner } from "./banners/FormatDesignBanner";
 export { default as SquareSingleImageMobileSlider } from "./banners/SquareSingleImageMobileSlider";
 export { default as SmallHeightStaticBanner } from "./banners/SmallHeightStaticBanner";
 export { default as SmallHeightCarouselSlider } from "./banners/SmallHeightCarouselSlider";
+export { default as SmallBannerCarousel } from "./banners/SmallBannerCarousel";
+export { default as BannerCategorySlider } from "./banners/BannerCategorySlider";
+export { default as CategorySlideRow } from "./categories/CategorySlideRow";
+
+
 
 export { default as ProductCard } from "./products/ProductCard";
+export { default as ThreeColProductCard } from "./products/ThreeColProductCard";
 export { default as ProductCarousel } from "./products/ProductCarousel";
+export { default as MultiRowProductCarousel } from "./products/MultiRowProductCarousel";
 export { default as CompactProductGrid } from "./products/CompactProductGrid";
+export { default as RecentlyViewedProducts } from "../products/RecentlyViewedProducts";
+
 export { default as CompactCategoryGrid } from "./products/CompactCategoryGrid";
 export { default as MobileProductList } from "./products/MobileProductList";
 export { default as CategoryProductMosaic } from "./products/CategoryProductMosaic";

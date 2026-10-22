@@ -1,22 +1,26 @@
 import React from 'react';
-import { BsShieldCheck } from 'react-icons/bs';
+import { BsShieldFillCheck } from 'react-icons/bs';
 
 const TrustBar = () => {
   return (
-    <div className="trust-bar bg-transparent py-3 text-start">
-      <div className="d-flex align-items-center mb-2 gap-2 text-secondary fw-semibold">
-        <BsShieldCheck size={28} className="text-secondary" />
-        <span className="small lh-sm" style={{ fontSize: '13px' }}>
-          100% Safe and secure payments. Easy returns. 100% Authentic products.
-        </span>
+    <div className="trust-bar bg-transparent py-1 text-center text-md-start">
+      {/* 100% Safe and Secure Badge */}
+      <div className="d-flex align-items-center justify-content-center justify-content-md-start mb-2 gap-2">
+        <BsShieldFillCheck size={28} style={{ color: '#475569' }} className="flex-shrink-0" />
+        <div className="text-start" style={{ fontSize: '12px', color: '#475569', lineHeight: '1.3', fontWeight: '600' }}>
+          <div>100% Safe and secure payments Easy</div>
+          <div>returns.100% Authentic products.</div>
+        </div>
       </div>
-      <div className="payment-logos d-flex gap-2 align-items-center mt-3 opacity-75">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png" alt="Visa" height="12" />
-        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a4/Mastercard_2019_logo.svg" alt="MasterCard" height="16" />
-        {/* Placeholder images for other cards. We can use real icons later */}
-        <span className="small border rounded px-1 fw-bold" style={{ fontSize: '10px' }}>RuPay</span>
-        <span className="small border rounded px-1 fw-bold" style={{ fontSize: '10px' }}>UPI</span>
-        <span className="small border rounded px-1 fw-bold" style={{ fontSize: '10px' }}>NetBanking</span>
+      
+      {/* Payment Logos Image Strip */}
+      <div className="payment-logos d-flex justify-content-center justify-content-md-start mt-2 px-1">
+        <img 
+          src="/payment-method.svg" 
+          alt="Supported Payment Methods - Visa, MasterCard, Maestro, Amex, Discover, RuPay, NetBanking, Cash on Delivery, EMI Options" 
+          className="img-fluid w-100"
+          style={{ maxWidth: '360px', height: 'auto', objectFit: 'contain' }}
+        />
       </div>
     </div>
   );

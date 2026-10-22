@@ -1,49 +1,42 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Navbar, Container, Nav } from "react-bootstrap";
-import { Link, useLocation } from "react-router-dom"; // ✅ React Router Link
+import { Link, useLocation } from "react-router-dom";
 import Categories from "../pages/category-list/Categories";
 import { GoHeart } from "react-icons/go";
 import { PiDotsThreeOutlineVerticalFill, PiHeadsetBold } from "react-icons/pi";
 import { LuChartNoAxesCombined } from "react-icons/lu";
-import { IoIosSearch, IoMdNotificationsOutline } from "react-icons/io";
-import { IoSearch } from "react-icons/io5";
-import { BsCart4, BsDownload } from "react-icons/bs";
-import { CiBullhorn } from "react-icons/ci";
-import { FaBell, FaHandshake, FaShoppingBag } from "react-icons/fa";
-import { AiOutlineClockCircle, AiOutlineClose } from "react-icons/ai";
+import { BsCart4 } from "react-icons/bs";
+import { FaBell, FaHandshake, FaChevronRight } from "react-icons/fa";
+import { RiDownload2Line } from "react-icons/ri";
+import { IoChevronDown } from "react-icons/io5";
 import LoginDropdown from "./LoginDropdown";
+import HeaderPreferencesDropdown from "./HeaderPreferencesDropdown";
 import MobileHeader from "./MobileHeader";
 import SearchBar from "../search/SearchBar";
-import axios from "axios";
-import { RiDownload2Line } from "react-icons/ri";
 import { API_ENDPOINTS, ASSET_URL } from "../../config/apiEndpoints";
 import { useAuth } from "../../context/AuthContext";
 import { useCheckout } from "../../context/CheckoutContext";
 import { useWishlist } from "../../context/WishlistContext";
+import { useLocationContext } from "../../context/LocationContext";
+import "./Header.css";
 
-const Header = ({ showCategories, showImages = false, isSticky = true, bg, color }) => {
+const Header = ({ showCategories, showImages = false, isSticky = true, bg, color, desktopDesign = 'design1', mobileDesign = 'design1' }) => {
   const { user, getUsernamePath } = useAuth();
   const { wishlistCount } = useWishlist();
+  const { location, openLocationModal } = useLocationContext();
   const checkoutContext = useCheckout();
+  
   const cartItems = checkoutContext?.cartItems || [];
   const cartCount = cartItems.reduce((acc, item) => acc + (item.quantity || 1), 0);
   const usernamePath = getUsernamePath();
-  const location = useLocation();
+  const locationPath = useLocation();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
   const [showPreferences, setShowPreferences] = useState(false);
   const [showLoginDropdown, setShowLoginDropdown] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-  const [recentSearches, setRecentSearches] = useState(["T-Shirt", "Mug", "Notebook"]);
   const [logo, setLogo] = useState(null);
-  
-  // Search API States
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
 
   const preferenceRef = useRef();
   const loginRef = useRef();
-  const searchRef = useRef();
   const headerRef = useRef();
 
   // Handle mobile view
@@ -52,56 +45,6 @@ const Header = ({ showCategories, showImages = false, isSticky = true, bg, color
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  // Close search dropdown if clicked outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
-        setShowSearchDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const selectKeyword = (keyword) => {
-    setSearchQuery(keyword);
-    setShowSearchDropdown(false);
-    if (!recentSearches.includes(keyword)) {
-      setRecentSearches([keyword, ...recentSearches].slice(0, 10));
-    }
-  };
-
-  const removeRecent = (index) => {
-    setRecentSearches((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  // Search API Effect
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const response = await fetch(`${API_ENDPOINTS.SEARCH}?type=suggestions&q=${encodeURIComponent(searchQuery)}`);
-        const data = await response.json();
-        // search-api.php returns { success, query, suggestions: { products, categories, ... } }
-        if (data.success && Array.isArray(data.suggestions?.products)) {
-          setSearchResults(data.suggestions.products);
-        } else {
-          setSearchResults([]);
-        }
-      } catch (error) {
-        console.error("Search API Error:", error);
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   useEffect(() => {
     const fetchLogo = async () => {
@@ -133,6 +76,7 @@ const Header = ({ showCategories, showImages = false, isSticky = true, bg, color
     if (isMobile || !headerRef.current) return;
 
     const updateHeaderHeight = () => {
+      if (!headerRef.current) return;
       document.documentElement.style.setProperty(
         "--site-header-height",
         `${headerRef.current.getBoundingClientRect().height}px`
@@ -150,133 +94,171 @@ const Header = ({ showCategories, showImages = false, isSticky = true, bg, color
     };
   }, [isMobile, logo]);
 
-  if (isMobile) return <MobileHeader />;
+  if (isMobile) return <MobileHeader design={mobileDesign} />;
 
   return (
     <>
       <div ref={headerRef} className="container-fluid p-0 sticky-navbar">
-        <div className="container-fluid bg-white">
+        {/* Flipkart / FNP Clean White Main Header */}
+        <div className="container-fluid bg-white fnp-main-navbar">
           <Navbar expand="lg" className="border-bottom py-2 container-fluid px-4 px-xl-5">
-            {/* py-2 = 8px top/bottom — a little breathing room around the header bar. */}
-            <Container className="d-flex align-items-center py-2" style={{ maxWidth: '1440px' }}>
-            
-            {/* ✅ React Router Link for Logo */}
-            <Navbar.Brand as={Link} to="/" className="me-3 p-0">
-              <img 
-                src={logo || "/PrintLogo.png"} 
-                alt="PrintMont Logo" 
-                style={{ height: "45px", objectFit: "contain" }} 
-                onError={(e) => { e.target.src = "/PrintLogo.png"; }}
-              />
-            </Navbar.Brand>
-
-            <Navbar.Toggle aria-controls="main-navbar" />
-            <Navbar.Collapse id="main-navbar" className="flex-grow-1 d-flex">
+            <Container className="d-flex align-items-center justify-content-between py-1" style={{ maxWidth: '1440px' }}>
               
-              {/* Searchbar */}
-              <div className="col-lg-7 me-4">
+              {/* Brand Logo, Vertical Divider & Exact FNP Location Block */}
+              <div className="d-flex align-items-center me-2">
+                <Navbar.Brand as={Link} to="/" className="m-0 p-0 d-flex flex-column">
+                  <img 
+                    src={logo || "/PrintLogo.png"} 
+                    alt="PrintMont Logo" 
+                    style={{ height: "42px", objectFit: "contain" }} 
+                    onError={(e) => { e.target.src = "/PrintLogo.png"; }}
+                  />
+                </Navbar.Brand>
+
+                {/* Vertical Divider Line */}
+                <div style={{ width: "1px", height: "36px", backgroundColor: "#e2e8f0", margin: "0 16px" }} />
+
+                {/* Location Trigger (Flag + Where to deliver? + City / Pincode) */}
+                <div
+                  className="d-flex align-items-center text-nowrap pm-location-trigger"
+                  onClick={openLocationModal}
+                  title="Click to select delivery location"
+                >
+                  {/* Indian Flag */}
+                  <span
+                    className="d-inline-flex align-items-center justify-content-center overflow-hidden flex-shrink-0"
+                    style={{
+                      width: "22px",
+                      height: "15px",
+                      borderRadius: "2.5px",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
+                      border: "1px solid rgba(0,0,0,0.08)"
+                    }}
+                  >
+                    <svg viewBox="0 0 640 480" width="100%" height="100%">
+                      <path fill="#f93" d="M0 0h640v160H0z"/>
+                      <path fill="#fff" d="M0 160h640v160H0z"/>
+                      <path fill="#128807" d="M0 320h640v160H0z"/>
+                      <g transform="matrix(3.2 0 0 3.2 320 240)">
+                        <circle r="20" fill="#008"/>
+                        <circle r="17.5" fill="#fff"/>
+                        <circle r="3.5" fill="#008"/>
+                        <g id="d">
+                          <g id="c">
+                            <g id="b">
+                              <g id="a">
+                                <path fill="#008" d="M0-17.5L.6-3.5 0 0l-.6-3.5z"/>
+                              </g>
+                              <use href="#a" transform="rotate(15)"/>
+                            </g>
+                            <use href="#b" transform="rotate(30)"/>
+                          </g>
+                          <use href="#c" transform="rotate(60)"/>
+                        </g>
+                        <use href="#d" transform="rotate(120)"/>
+                        <use href="#d" transform="rotate(240)"/>
+                      </g>
+                    </svg>
+                  </span>
+
+                  {/* Text Column */}
+                  <div className="d-flex flex-column text-start" style={{ lineHeight: "1.2" }}>
+                    <span style={{ fontSize: "11px", fontWeight: "600", color: "#64748b", letterSpacing: "0.2px", textTransform: "uppercase" }}>
+                      Deliver to
+                    </span>
+                    {location?.is_set ? (
+                      <span
+                        className="d-flex align-items-center gap-1"
+                        style={{ fontSize: "12.5px", fontWeight: "700", color: "#00529b" }}
+                      >
+                        <span className="text-truncate" style={{ maxWidth: "120px" }}>
+                          {location.city_name}{location.pincode ? `, ${location.pincode}` : ''}
+                        </span>
+                        <IoChevronDown size={11} style={{ color: "#00529b" }} />
+                      </span>
+                    ) : (
+                      <span
+                        className="d-flex align-items-center gap-1"
+                        style={{ fontSize: "12px", fontWeight: "600", color: "#ea580c" }}
+                      >
+                        Select Location
+                        <IoChevronDown size={11} style={{ color: "#ea580c" }} />
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Centered Wide Flipkart Search Bar */}
+              <div className="flex-grow-1 mx-3 mx-xl-4 fnp-search-wrapper">
                 <SearchBar />
               </div>
 
-              {/* Nav Links */}
-              <Nav className="col-lg-5 d-flex align-items-center justify-content-evenly text-center gap-4">
-                <div className="d-flex align-items-center justify-content-evenly w-100">
-
-                  {/* ✅ Wishlist */}
-                  <Link
-                    to={`/${usernamePath}/wishlist`}
-                    className="d-flex align-items-center gap-3 text-decoration-none text-dark"
-                  >
-                    <div className="position-relative">
-                      <GoHeart size={25} color="#007bff" />
-                      {wishlistCount > 0 && (
-                        <div className="notify-mes">
-                          <span className="notify-num">{wishlistCount}</span>
-                        </div>
-                      )}
-                    </div>
-                    <span className="fs-7">Wishlist</span>
-                  </Link>
-
-                  {/* ✅ Cart */}
-                  <Link
-                    to="/cart"
-                    className="d-flex align-items-center gap-3 text-decoration-none text-dark"
-                  >
-                    <div className="position-relative">
-                      <FaShoppingBag size={22} color="#007bff" />
-                      {cartCount > 0 && (
-                        <div className="notify-mes">
-                          <span className="notify-num">{cartCount}</span>
-                        </div>
-                      )}
-                    </div>
-                    <span className="fs-7">Cart</span>
-                  </Link>
-
-                  {/* Login Dropdown */}
-                  <div
-                    className="d-flex flex-column align-items-center gap-1 nav-link text-dark p-0"
-                    ref={loginRef}
-                    onMouseEnter={() => setShowLoginDropdown(true)}
-                    onMouseLeave={() => setShowLoginDropdown(false)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <LoginDropdown isHovered={showLoginDropdown} />
+              {/* Action Icons & Links (Flipkart Layout) */}
+              <Nav className="d-flex align-items-center gap-3 gap-xl-4 flex-row flex-nowrap">
+                {/* Wishlist */}
+                <Link
+                  to={`/${usernamePath}/wishlist`}
+                  className="fnp-header-action-item"
+                  title="My Wishlist"
+                >
+                  <div className="position-relative d-flex align-items-center">
+                    <GoHeart size={21} color="#0b53a1" />
+                    {wishlistCount > 0 && (
+                      <span className="fnp-badge-counter">{wishlistCount}</span>
+                    )}
                   </div>
-                </div>
+                  <span className="fnp-header-action-text">Wishlist</span>
+                </Link>
 
-                {/* ✅ Preferences Dropdown */}
+                {/* Cart */}
+                <Link
+                  to="/cart"
+                  className="fnp-header-action-item"
+                  title="Shopping Cart"
+                >
+                  <div className="position-relative d-flex align-items-center">
+                    <BsCart4 size={20} color="#0b53a1" />
+                    {cartCount > 0 && (
+                      <span className="fnp-badge-counter">{cartCount}</span>
+                    )}
+                  </div>
+                  <span className="fnp-header-action-text">Cart</span>
+                </Link>
+
+                {/* User Sign In / Account Dropdown */}
                 <div
-                  className="position-relative rounded d-flex flex-column align-items-center"
-                  ref={preferenceRef}
-                  onMouseEnter={() => setShowPreferences(true)}
-                  onMouseLeave={() => setShowPreferences(false)}
+                  className="d-flex flex-column align-items-center gap-1 nav-link text-dark p-0"
+                  ref={loginRef}
+                  onMouseEnter={() => setShowLoginDropdown(true)}
+                  onMouseLeave={() => setShowLoginDropdown(false)}
                   style={{ cursor: "pointer" }}
                 >
-                  <PiDotsThreeOutlineVerticalFill size={27} className="p-1 text-dark" />
-                  {showPreferences && (
-                    <div className="dropdown-menu show preference-menu position-absolute end-0 top-100 z-3 d-block min-w-200 p-2 shadow rounded bg-white border-0">
-                      
-                      <Link to={user ? "/notification-preference" : "/login"} className="dropdown-item d-flex align-items-center gap-2">
-                        <FaBell size={23}  className="text-warning  pa"/> Notification Preferences
-                      </Link>
-
-                      <Link to={user ? "/support" : "/login"} className="dropdown-item d-flex align-items-center gap-2">
-                        <PiHeadsetBold size={21} className="me-1 rounded-circle bg-theme pa"/> Support
-                      </Link>
-
-                      <Link to={user ? "/business-solutions" : "/login"} className="dropdown-item d-flex align-items-center gap-2">
-                        <LuChartNoAxesCombined size={21} className="me-1 rounded-circle bg-theme pa" /> Business Solutions
-                      </Link>
-
-                      <Link to={user ? "/become-a-seller" : "/login"} className="dropdown-item d-flex align-items-center gap-2">
-                        <FaHandshake size={21} className="me-1 rounded-circle bg-theme pa" /> Become a Seller
-                      </Link>
-
-                      <Link to={user ? "/app-download" : "/login"} className="dropdown-item d-flex align-items-center gap-2">
-                        <RiDownload2Line size={21} className="me-1 rounded-circle bg-theme pa" /> Download the App
-                      </Link>
-                    </div>
-                  )}
+                  <LoginDropdown isHovered={showLoginDropdown} />
                 </div>
+
+                {/* Three-Dots More Preferences Dropdown */}
+                <HeaderPreferencesDropdown />
               </Nav>
-            </Navbar.Collapse>
+
             </Container>
           </Navbar>
-          {(showCategories !== undefined ? showCategories : (location.pathname !== '/')) && (
+
+          {/* Category Navigation Bar on Inner Pages if configured */}
+          {(showCategories !== undefined ? showCategories : (locationPath.pathname !== '/')) && (
             <div className="d-none d-lg-block">
               <Categories 
                 showImages={showImages} 
-                space="6px 0" 
-                bg={bg || "rgb(11, 83, 161)"} 
-                color={color || "white"} 
+                space="0" 
+                bg={bg || "#ffffff"} 
+                color={color || "#212121"} 
                 isSticky={false} 
               />
             </div>
           )}
         </div>
       </div>
+
       <div className="site-header-spacer" aria-hidden="true" />
     </>
   );

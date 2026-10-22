@@ -1,0 +1,403 @@
+/* AfterDeliveryOrderCard.css - Themed to Printmont Design Standards */
+
+.after-delivery-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  margin-bottom: 24px;
+  width: 100%;
+  font-family: inherit;
+  position: relative;
+}
+
+.after-delivery-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: #00529b;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* TOP HEADER STRIP (ORDER PLACE | SHIP TO | TOTAL | ORDER ID) */
+/* ─────────────────────────────────────────────────────────── */
+.after-delivery-header {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.after-delivery-header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 36px;
+  flex-wrap: wrap;
+}
+
+.after-delivery-meta-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.after-delivery-meta-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.after-delivery-meta-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.after-delivery-shipto-trigger {
+  cursor: pointer;
+  color: #00529b;
+  transition: color 0.15s ease;
+  position: relative;
+  font-weight: 700;
+}
+
+.after-delivery-shipto-trigger:hover {
+  color: #003e75;
+  text-decoration: underline;
+}
+
+/* Address Popover */
+.after-delivery-address-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  width: 280px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  z-index: 50;
+  color: #0f172a;
+  font-weight: normal;
+  text-decoration: none !important;
+}
+
+.after-delivery-address-popover h6 {
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: #0f172a;
+}
+
+.after-delivery-address-popover p {
+  font-size: 12px;
+  line-height: 1.45;
+  margin-bottom: 3px;
+  color: #475569;
+}
+
+.after-delivery-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.after-delivery-order-id {
+  font-size: 12px;
+  font-weight: 700;
+  color: #00529b;
+  background: #f0f7ff;
+  border: 1px solid #b9d8ff;
+  border-radius: 20px;
+  padding: 3px 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.after-delivery-header-links,
+.after-delivery-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.after-delivery-header-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #00529b;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  transition: color 0.15s ease;
+}
+
+.after-delivery-header-link:hover {
+  color: #003e75;
+  text-decoration: underline;
+}
+
+.after-delivery-header-divider {
+  color: #cbd5e1;
+  font-weight: 400;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* CARD BODY: ITEM ROW (IMAGE | TITLE, PRICE, BUTTONS | REVIEW)*/
+/* ─────────────────────────────────────────────────────────── */
+.after-delivery-body {
+  padding: 24px 28px;
+  background: #ffffff;
+}
+
+.after-delivery-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding-bottom: 20px;
+}
+
+.after-delivery-item-row:not(:last-child) {
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 20px;
+}
+
+.after-delivery-item-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.after-delivery-item-thumb-wrap {
+  width: 96px;
+  height: 96px;
+  border: 1.5px solid #eef2f6;
+  border-radius: 12px;
+  padding: 6px;
+  background-color: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.after-delivery-item-thumb-wrap:hover {
+  border-color: #d0e4ff;
+  transform: scale(1.02);
+}
+
+.after-delivery-item-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.after-delivery-item-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.after-delivery-product-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.4;
+  margin-bottom: 6px;
+  text-decoration: none !important;
+  transition: color 0.15s ease;
+}
+
+.after-delivery-product-title:hover {
+  color: #00529b;
+}
+
+.after-delivery-price-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.after-delivery-price-current {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.after-delivery-price-mrp {
+  font-size: 0.92rem;
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+.after-delivery-discount-tag {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 2px 8px;
+}
+
+.after-delivery-qty-line {
+  font-size: 0.84rem;
+  color: #475569;
+  margin-top: 4px;
+}
+
+.after-delivery-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.after-delivery-btn-buy-again {
+  background-color: #00529b;
+  color: #ffffff !important;
+  border: 1px solid #00529b;
+  border-radius: 20px;
+  padding: 6px 18px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(0, 82, 155, 0.2);
+}
+
+.after-delivery-btn-buy-again:hover {
+  background-color: #003e75;
+  border-color: #003e75;
+  box-shadow: 0 4px 10px rgba(0, 82, 155, 0.3);
+}
+
+.after-delivery-btn-view-item {
+  background-color: #ffffff;
+  color: #00529b !important;
+  border: 1.5px solid #d0e4ff;
+  border-radius: 20px;
+  padding: 6px 18px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.after-delivery-btn-view-item:hover {
+  background-color: #f0f7ff;
+  border-color: #00529b;
+  color: #00529b !important;
+}
+
+/* Right Side: Write a product review */
+.after-delivery-item-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.after-delivery-btn-review {
+  background-color: #f0f7ff;
+  color: #00529b;
+  border: 1.5px solid #b9d8ff;
+  border-radius: 22px;
+  padding: 9px 24px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 82, 155, 0.08);
+}
+
+.after-delivery-btn-review:hover {
+  background-color: #00529b;
+  color: #ffffff;
+  border-color: #00529b;
+  box-shadow: 0 3px 10px rgba(0, 82, 155, 0.2);
+}
+
+.after-delivery-btn-review.after-delivery-btn-reviewed {
+  background-color: #fefce8;
+  border-color: #fef08a;
+  color: #a16207;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.after-delivery-btn-review.after-delivery-btn-reviewed:hover {
+  background-color: #fef9c3;
+  border-color: #fde047;
+  color: #854d0e;
+  box-shadow: 0 2px 8px rgba(234, 179, 8, 0.2);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* EXPANDABLE ORDER DETAILS SECTION                            */
+/* ─────────────────────────────────────────────────────────── */
+.after-delivery-expanded-details {
+  border-top: 1px solid #e2e8f0;
+  padding: 24px 28px;
+  background: #f8fafc;
+}
+
+.after-delivery-expanded-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+}
+
+.after-delivery-detail-block h6 {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 8px;
+}
+
+.after-delivery-detail-block p {
+  font-size: 0.88rem;
+  color: #334155;
+  margin-bottom: 4px;
+  line-height: 1.5;
+}

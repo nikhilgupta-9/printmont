@@ -1,14 +1,23 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useDebounce } from './useDebounce';
 import { fetchSuggestions } from '../services/searchApi';
 
 const HISTORY_STORAGE_KEY = 'pm_search_history';
 const MAX_HISTORY_ITEMS = 6;
-const DEFAULT_POPULAR_SEARCHES = ['Custom T-Shirt', 'Coffee Mug', 'Photo Frame', 'Notebook', 'Corporate Gift', 'Custom Cap'];
+const DEFAULT_POPULAR_SEARCHES = [
+  'Custom T-Shirt',
+  'Coffee Mug',
+  'Photo Frame',
+  'Visiting Cards',
+  'Corporate Gift',
+  'Hoodies',
+  'Water Bottle',
+  'Keychains'
+];
 
 export const useSearch = (initialQuery = '') => {
   const [query, setQuery] = useState(initialQuery);
-  const debouncedQuery = useDebounce(query, 300);
+  const debouncedQuery = useDebounce(query, 250);
 
   const [suggestions, setSuggestions] = useState({
     products: [],
@@ -36,7 +45,8 @@ export const useSearch = (initialQuery = '') => {
 
   // Save query to localStorage history
   const saveSearch = useCallback((term) => {
-    const cleanTerm = term.trim();
+    if (!term) return;
+    const cleanTerm = typeof term === 'string' ? term.trim() : (term.name || '').trim();
     if (!cleanTerm) return;
 
     setHistory((prev) => {
@@ -113,20 +123,98 @@ export const useSearch = (initialQuery = '') => {
     };
   }, [debouncedQuery]);
 
-  // Flatten all suggestion items into a single array for keyboard arrow navigation
-  const flattenedItems = [
-    ...suggestions.categories.map((c) => ({ ...c, itemType: 'category' })),
-    ...suggestions.subCategories.map((sc) => ({ ...sc, itemType: 'subCategory' })),
-    ...suggestions.subSubCategories.map((ssc) => ({ ...ssc, itemType: 'subSubCategory' })),
-    ...suggestions.productTypes.map((pt) => ({ ...pt, itemType: 'productType' })),
-    ...suggestions.products.map((p) => ({ ...p, itemType: 'product' }))
-  ];
+  // Build Flipkart / Amazon style structured keyword suggestions & category qualifiers
+  const structuredKeywords = useMemo(() => {
+    const cleanQ = query.trim();
+    if (!cleanQ) return [];
+
+    const items = [];
+
+    // 1. Direct search row: Search for "{query}"
+    items.push({
+      id: 'direct-query',
+      itemType: 'direct_query',
+      name: cleanQ,
+      queryText: cleanQ
+    });
+
+    // 2. Category Qualifiers (Flipkart signature: "mug in Personalised Gifts")
+    const categoryMap = new Map();
+    (suggestions.products || []).forEach((p) => {
+      if (p.category_name && !categoryMap.has(p.category_name)) {
+        categoryMap.set(p.category_name, p.category_id);
+      }
+    });
+
+    // Take top 2 unique categories
+    let catCount = 0;
+    categoryMap.forEach((catId, catName) => {
+      if (catCount < 2) {
+        items.push({
+          id: `cat-filter-${catId || catName}`,
+          itemType: 'category_filter',
+          queryText: cleanQ,
+          categoryName: catName,
+          categoryId: catId,
+          name: `${cleanQ} in ${catName}`
+        });
+        catCount++;
+      }
+    });
+
+    // 3. Sub-subcategories (e.g. "Photo Mugs", "T-shirts")
+    (suggestions.subSubCategories || []).forEach((ssc) => {
+      if (!items.some((it) => it.name.toLowerCase() === ssc.name.toLowerCase())) {
+        items.push({
+          ...ssc,
+          itemType: 'subSubCategory'
+        });
+      }
+    });
+
+    // 4. Product Types (e.g. "Custom Coffee Mugs")
+    (suggestions.productTypes || []).forEach((pt) => {
+      if (!items.some((it) => it.name.toLowerCase() === pt.name.toLowerCase())) {
+        items.push({
+          ...pt,
+          itemType: 'productType'
+        });
+      }
+    });
+
+    // 5. Parent Categories & Subcategories
+    (suggestions.categories || []).forEach((c) => {
+      if (!items.some((it) => it.name.toLowerCase() === c.name.toLowerCase())) {
+        items.push({
+          ...c,
+          itemType: 'category'
+        });
+      }
+    });
+
+    (suggestions.subCategories || []).forEach((sc) => {
+      if (!items.some((it) => it.name.toLowerCase() === sc.name.toLowerCase())) {
+        items.push({
+          ...sc,
+          itemType: 'subCategory'
+        });
+      }
+    });
+
+    return items;
+  }, [query, suggestions]);
+
+  // Flattened items used by keyboard navigation (Up/Down arrow keys)
+  const flattenedItems = useMemo(() => {
+    return structuredKeywords;
+  }, [structuredKeywords]);
 
   return {
     query,
     setQuery,
     debouncedQuery,
     suggestions,
+    structuredKeywords,
     flattenedItems,
     isLoading,
     showDropdown,

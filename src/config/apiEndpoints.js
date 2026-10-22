@@ -23,7 +23,11 @@ export const ASSET_URL = (isLocalhost ? LOCAL_ASSET_URL : (import.meta.env.VITE_
 // res.json() as "Unexpected token '<'" rather than surfacing as a 404.
 export const API_ENDPOINTS = {
   // Authentication
+  AUTH_SETTINGS: `${BASE_URL}/auth-settings-api.php`,
   REGISTER: `${BASE_URL}/user-api.php?action=register`,
+  SEND_REGISTRATION_OTP: `${BASE_URL}/user-api.php?action=send_registration_otp`,
+  VERIFY_REGISTRATION_OTP: `${BASE_URL}/user-api.php?action=verify_registration_otp`,
+  RESEND_REGISTRATION_OTP: `${BASE_URL}/user-api.php?action=resend_registration_otp`,
   LOGIN: `${BASE_URL}/user-api.php?action=login`,
   PROFILE: `${BASE_URL}/user-api.php?action=profile`,
   UPDATE_PROFILE: `${BASE_URL}/user-api.php?action=update_profile`,
@@ -46,6 +50,8 @@ export const API_ENDPOINTS = {
   GET_ORDERS: `${BASE_URL}/user-api.php?action=get_orders`,
   GET_ORDER: (id) => `${BASE_URL}/user-api.php?action=get_order&id=${id}`,
   CREATE_ORDER: `${BASE_URL}/user-api.php?action=create_order`,
+  CHECKOUT_QUOTE: `${BASE_URL}/user-api.php?action=checkout_quote`,
+  VERIFY_PAYMENT: `${BASE_URL}/user-api.php?action=verify_payment`,
   // The id is ignored server-side — orders come from the verified token, so a
   // customer cannot read another customer's orders by changing it.
   // Optional params: status (csv), date_from, date_to, search, page, limit.
@@ -60,12 +66,16 @@ export const API_ENDPOINTS = {
   // Public, no token: takes { order_number, contact } where contact is the
   // email or mobile the order was placed with.
   TRACK_ORDER: `${BASE_URL}/user-api.php?action=track_order`,
+  CANCEL_ORDER: `${BASE_URL}/user-api.php?action=cancel_order`,
+  REQUEST_RETURN_REPLACEMENT: `${BASE_URL}/user-api.php?action=request_return_replacement`,
   // Admin-only actions; not exposed through the public API yet.
   // UPDATE_ORDER_STATUS, UPDATE_PAYMENT_STATUS, GET_DASHBOARD_STATS
 
   // Products
   PRODUCTS: `${BASE_URL}/product-api.php`,
   PRODUCT_BY_ID: (id) => `${BASE_URL}/product-api.php?id=${id}`,
+  PRODUCT_DETAILS: (idOrSlug) => isNaN(idOrSlug) ? `${BASE_URL}/product-api.php?slug=${encodeURIComponent(idOrSlug)}` : `${BASE_URL}/product-api.php?id=${idOrSlug}`,
+  PRODUCT_BY_SLUG: (slug) => `${BASE_URL}/product-api.php?slug=${encodeURIComponent(slug)}`,
   PRODUCTS_DEACTIVE: `${BASE_URL}/product-api.php?status=deactive`,
   RELATED_PRODUCTS: (id) => `${BASE_URL}/related_products.php?id=${id}`,
   // product-api.php has no search handler. Callers append "?q=...", so this
@@ -75,7 +85,9 @@ export const API_ENDPOINTS = {
   // Reviews — GET ?product_id= for approved reviews + rating stats, POST to submit
   // a new one (goes into the same pending-approval queue the admin panel manages).
   PRODUCT_REVIEWS: (productId) => `${BASE_URL}/product-reviews-api.php?product_id=${productId}`,
+  CATEGORY_BANNER_TEXTS: (productId) => `${BASE_URL}/category-banner-text-api.php?product_id=${productId}`,
   SUBMIT_REVIEW: `${BASE_URL}/product-reviews-api.php`,
+  USER_REVIEWS: `${BASE_URL}/user-reviews-api.php`,
   // Uploads a single customization file (logo/artwork); returns { url } to attach
   // to the cart item's `attributes` — cart-api.php's JSON field can't hold raw bytes.
   CUSTOMIZATION_UPLOAD: `${BASE_URL}/customization-upload-api.php`,
@@ -108,13 +120,26 @@ export const API_ENDPOINTS = {
   },
   // Home page category bar (icons, shown_on_home-flagged, split desktop/mobile) vs the
   // persistent inner-page top menu (text-only, already pruned server-side). See menu_api.php.
-  HOME_MENU: `${BASE_URL}/menu_api.php?type=home&device=desktop`,
+  HOME_MENU: `${BASE_URL}/menu_api.php?type=home`,
   INNER_MENU: `${BASE_URL}/menu_api.php?type=inner`,
   HOME_LAYOUT: (target = 'desktop') => `${BACKEND_URL}/home-layout-api.php?target=${target}`,
+  PRODUCT_LAYOUT: (target = 'mobile') => `${BACKEND_URL}/product-layout-api.php?target=${target}`,
+  LAYOUT_SUBCATEGORIES: (parentId = 0, ids = '') => `${BACKEND_URL}/home-layout-api.php?action=get_subcategories${ids ? `&ids=${encodeURIComponent(ids)}` : (parentId ? `&parent_id=${parentId}` : '')}`,
 
   // Cart
   CART: `${BASE_URL}/cart-api.php`,
   CART_DELETE: (id) => `${BASE_URL}/cart-api.php?item_id=${id}`,
+
+  // Gift Finder
+  GIFT_FINDER: `${BASE_URL}/gift-finder-api.php`,
+  GIFT_VOUCHERS_MY: `${BASE_URL}/gift-voucher-api.php?action=my`,
+  GIFT_VOUCHER_OFFERS: `${BASE_URL}/gift-voucher-api.php?action=offers`,
+  GIFT_VOUCHER_PRODUCT: (id) => `${BASE_URL}/gift-voucher-api.php?action=product&id=${id}`,
+
+  // Coupons & Discounts (Admin coupons.php / Storefront Flipkart-style coupon system)
+  COUPONS_AVAILABLE: `${BASE_URL}/coupon-api.php?action=available`,
+  COUPONS_ALL: `${BASE_URL}/coupon-api.php?action=all`,
+  VALIDATE_COUPON: `${BASE_URL}/coupon-api.php?action=validate`,
 
   // Wishlist
   WISHLIST: `${BASE_URL}/wishlist-api.php`,
@@ -142,16 +167,56 @@ export const API_ENDPOINTS = {
   PAGE_SECTIONS: (pageKey) => `${BASE_URL}/page-sections-api.php?page=${pageKey}`,
 
   // CMS & Content (Logo, Header, Footer, etc.)
+  BLOG_POSTS: `${BASE_URL}/blog-api.php/posts`,
+  BLOG_POST_BY_SLUG: (slug) => `${BASE_URL}/blog-api.php/posts/${encodeURIComponent(slug)}`,
+  BLOG_CATEGORIES: `${BASE_URL}/blog-api.php/categories`,
+  BLOG_CATEGORY_POSTS: (id) => `${BASE_URL}/blog-api.php/categories/${id}`,
+  BLOG_RECENT: (limit = 6) => `${BASE_URL}/blog-api.php/recent?limit=${limit}`,
+  BLOG_POPULAR: (limit = 6) => `${BASE_URL}/blog-api.php/popular?limit=${limit}`,
   ABOUT: `${BASE_URL}/about-api.php`,
   CONTACT: `${BASE_URL}/contact-api.php`,
   FAQ: `${BASE_URL}/faq-api.php`,
   HELP_CENTER: `${BASE_URL}/help-center-api.php`,
+  WALLET: `${BASE_URL}/wallet-api.php`,
+  COINS: `${BASE_URL}/wallet-coins-api.php`,
   POLICIES: `${BASE_URL}/policies-api.php`,
   SECURITY: `${BASE_URL}/security-api.php`,
   SITEMAP: `${BASE_URL}/sitemap-api.php`,
+  QUICK_LINKS: `${BASE_URL}/quick-links-api.php`,
   HEADER_SETTINGS: `${BASE_URL}/header-settings-api.php`,
+  PRODUCT_FILTERS: `${BASE_URL}/product-filter-api.php`,
+  FOOTER: `${BASE_URL}/footer-api.php`,
   // The backend exposes the public logo endpoint directly under /api.
   LOGO: `${BASE_URL}/logo-api.php`,
+
+  // Delivery Locations
+  LOCATIONS_POPULAR: `${BASE_URL}/locations-api.php?action=popular`,
+  LOCATIONS_SEARCH: (q) => `${BASE_URL}/locations-api.php?action=search&q=${encodeURIComponent(q)}`,
+  LOCATIONS_CHECK: (pincode) => `${BASE_URL}/locations-api.php?action=check_pincode&pincode=${encodeURIComponent(pincode)}`,
+
+  // Dynamic Landing Pages & Leads
+  LANDING_PAGE: (slug, device = 'desktop') => `${BASE_URL}/landing-page-api.php?slug=${encodeURIComponent(slug)}&device=${device}`,
+  LEADS_SUBMIT: `${BASE_URL}/leads-api.php`,
+  CUSTOMER_NOTIFICATIONS: `${BASE_URL}/customer-notifications-api.php`,
+
+  // Reviews
+  REVIEWS: `${BASE_URL}/reviews-api.php`,
+  GET_REVIEWS: (params = {}) => {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') qs.append(k, v);
+    });
+    const tail = qs.toString();
+    return `${BASE_URL}/reviews-api.php${tail ? `?${tail}` : ''}`;
+  },
+
+  // Website Maintenance, Error, Loader & Payment Settings
+  MAINTENANCE: `${BASE_URL}/maintenance-api.php`,
+  ERROR_SETTINGS: `${BASE_URL}/error-settings-api.php`,
+  LOADER_SETTINGS: `${BASE_URL}/loader-api.php`,
+  PAYMENT_SETTINGS: `${BASE_URL}/payment-settings-api.php`,
+  PRODUCT_QA: (productId) => `${BASE_URL}/product-qa-api.php${productId ? `?product_id=${productId}` : ''}`,
+  PRODUCT_QA_SUBMIT: `${BASE_URL}/product-qa-api.php`,
 };
 
 // Picks the right children-endpoint for a category based on its own level, since
@@ -167,11 +232,18 @@ export const getChildCategoriesUrl = (parentId, parentLevel) => {
 
 export const resolveImageUrl = (imagePath) => {
   if (!imagePath) return '/default-img.jpg';
+  if (typeof imagePath === 'object') {
+    imagePath = imagePath.image || imagePath.desktop || imagePath.mobile || imagePath.large || imagePath.small || imagePath.url || '';
+  }
+  if (!imagePath || typeof imagePath !== 'string') return '/default-img.jpg';
+
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
 
-  const normPath = imagePath.startsWith('/') ? imagePath : '/' + imagePath;
+  const cleanRelative = imagePath.replace(/^(\.\.\/|\.\/|\/)+/, '');
+  const normPath = '/' + cleanRelative;
+
   const localAssetPrefixes = [
     '/electro/', '/men_shirt/', '/women-dress/', '/girl-product-img/',
     '/banners/', '/card/', '/crouselimages/', '/first-carousel-img/',
@@ -183,6 +255,5 @@ export const resolveImageUrl = (imagePath) => {
     return normPath;
   }
 
-  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
-  return `${ASSET_URL}${cleanPath}`;
+  return `${ASSET_URL}${cleanRelative}`;
 };

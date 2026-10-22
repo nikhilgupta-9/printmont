@@ -1,263 +1,433 @@
-/* Sitemap Page Styles */
-.sitemap-page {
-  background: #f8fafc;
-  min-height: 80vh;
-  padding: 40px 0 80px 0;
+/* ==========================================================================
+   Printmont Sitemap Directory - Flipkart Clean Theme
+   Matches https://www.flipkart.com/sitemap exact look, typography & structure
+   ========================================================================== */
+
+.fk-sitemap-page {
+  background-color: #f1f3f6;
+  min-height: 100vh;
+  font-family: Roboto, Arial, sans-serif;
+  color: #212121;
+  padding-bottom: 50px;
 }
 
-.sitemap-hero {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 16px;
-  padding: 48px 32px;
-  color: #fff;
-  margin-bottom: 40px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+/* Wide Container (Flipkart standard 1280px / 1360px container) */
+.fk-sitemap-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* 1. Flipkart Header Bar with Logo and Search */
+.fk-sitemap-topbar {
+  background-color: #0b53a1; /* Printmont Deep Blue (Flipkart blue #2874f0 compatible) */
+  padding: 14px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.fk-sitemap-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.fk-sitemap-logo-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.fk-sitemap-logo {
+  height: 38px;
+  max-width: 160px;
+  object-fit: contain;
+}
+
+.fk-sitemap-brand-fallback {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.fk-sitemap-brand-accent {
+  color: #eb4c26; /* Printmont Orange / Flipkart Yellow */
+}
+
+/* Search Form */
+.fk-sitemap-search-form {
+  display: flex;
+  align-items: center;
+  max-width: 620px;
+  width: 100%;
   position: relative;
-  overflow: hidden;
 }
 
-.sitemap-hero::after {
-  content: '';
+.fk-sitemap-search-input {
+  width: 100%;
+  height: 38px;
+  padding: 8px 16px;
+  padding-right: 40px;
+  border-radius: 2px 0 0 2px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #212121;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.fk-sitemap-search-input::placeholder {
+  color: #878787;
+  font-size: 13px;
+}
+
+.fk-sitemap-search-clear {
   position: absolute;
-  top: -50%;
-  right: -20%;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(235, 76, 38, 0.15) 0%, rgba(235, 76, 38, 0) 70%);
-  border-radius: 50%;
-  pointer-events: none;
+  right: 120px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #878787;
+  cursor: pointer;
+  padding: 4px;
 }
 
-.sitemap-badge {
+.fk-sitemap-search-btn {
+  background-color: #eb4c26; /* Orange brand button */
+  border: 1px solid #eb4c26;
+  border-radius: 0 2px 2px 0;
+  color: #ffffff;
+  height: 38px;
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fca5a5;
-  font-size: 0.82rem;
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.fk-sitemap-search-btn:hover {
+  background-color: #d83f19;
+}
+
+.fk-sitemap-xml-badge {
+  color: #ffffff;
+  font-size: 12px;
   font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 9999px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 16px;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 6px 12px;
+  border-radius: 2px;
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
 }
 
-.sitemap-hero-title {
-  font-size: 2.5rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin-bottom: 12px;
+.fk-sitemap-xml-badge:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
 }
 
-.sitemap-hero-title span {
-  color: #eb4c26;
+/* 2. Breadcrumb / Quick Stats Strip */
+.fk-sitemap-strip {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 10px 0;
 }
 
-.sitemap-hero-desc {
-  font-size: 1.05rem;
-  color: #cbd5e1;
-  max-width: 600px;
-  margin-bottom: 28px;
-  line-height: 1.6;
-}
-
-.sitemap-search-wrap {
-  position: relative;
-  max-width: 540px;
-}
-
-.sitemap-search-input {
-  width: 100%;
-  padding: 14px 20px 14px 46px;
-  background: #ffffff;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  font-size: 0.98rem;
-  color: #1e293b;
-  outline: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transition: all 0.2s ease;
-}
-
-.sitemap-search-input:focus {
-  border-color: #eb4c26;
-  box-shadow: 0 0 0 4px rgba(235, 76, 38, 0.2);
-}
-
-.sitemap-search-icon {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  font-size: 1.15rem;
-}
-
-.sitemap-quick-nav {
+.fk-sitemap-strip-inner {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 24px;
+  gap: 12px;
 }
 
-.sitemap-quick-btn {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #f1f5f9;
-  font-size: 0.85rem;
+.fk-breadcrumb {
+  font-size: 12px;
+  color: #878787;
+  margin: 0;
+}
+
+.fk-breadcrumb a {
+  color: #878787;
+  text-decoration: none;
+}
+
+.fk-breadcrumb a:hover {
+  color: #0b53a1;
+  text-decoration: underline;
+}
+
+.fk-breadcrumb-sep {
+  margin: 0 6px;
+  color: #878787;
+}
+
+.fk-breadcrumb-cur {
+  color: #212121;
   font-weight: 500;
+}
+
+.fk-stats-tags {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #878787;
+}
+
+.fk-stat-count {
+  color: #0b53a1;
+  font-weight: 700;
+}
+
+/* 3. Filter Nav Pills (Flipkart Section Tabs) */
+.fk-tab-pills-wrap {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0;
+  scrollbar-width: thin;
+}
+
+.fk-tab-pill {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
   padding: 6px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
-}
-
-.sitemap-quick-btn:hover {
-  background: #eb4c26;
-  border-color: #eb4c26;
-  color: #fff;
-  transform: translateY(-2px);
-}
-
-.sitemap-xml-card {
-  background: #ffffff;
-  border: 1px dashed #cbd5e1;
-  border-radius: 12px;
-  padding: 18px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 36px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.sitemap-xml-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.sitemap-xml-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: #fff1ee;
-  color: #eb4c26;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.35rem;
-}
-
-.sitemap-section-card {
-  background: #ffffff;
-  border-radius: 14px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.sitemap-section-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.08);
-  border-color: #cbd5e1;
-}
-
-.sitemap-card-header {
-  padding: 18px 20px;
-  border-bottom: 1px solid #f1f5f9;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.sitemap-card-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.sitemap-card-count {
-  font-size: 0.75rem;
-  font-weight: 700;
-  background: #f1f5f9;
-  color: #475569;
-  padding: 3px 10px;
-  border-radius: 999px;
-}
-
-.sitemap-card-body {
-  padding: 16px 20px;
-  flex-grow: 1;
-}
-
-.sitemap-links-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.sitemap-link-item {
-  margin-bottom: 8px;
-}
-
-.sitemap-link-item:last-child {
-  margin-bottom: 0;
-}
-
-.sitemap-link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-radius: 8px;
-  color: #334155;
-  text-decoration: none;
-  font-size: 0.92rem;
+  font-size: 12px;
   font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
   transition: all 0.15s ease;
 }
 
-.sitemap-link:hover {
-  background: #f8fafc;
-  color: #eb4c26;
-  padding-left: 16px;
+.fk-tab-pill:hover {
+  background: #eff6ff;
+  color: #0b53a1;
+  border-color: #0b53a1;
 }
 
-.sitemap-link-icon {
-  font-size: 0.8rem;
-  color: #94a3b8;
-  opacity: 0;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+.fk-tab-pill.active {
+  background: #0b53a1;
+  color: #ffffff;
+  border-color: #0b53a1;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(11, 83, 161, 0.3);
 }
 
-.sitemap-link:hover .sitemap-link-icon {
-  opacity: 1;
-  transform: translateX(3px);
-  color: #eb4c26;
+/* 4. Flipkart Tree Card (White Container with clean directory layout) */
+.fk-tree-card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  padding: 8px 8px 16px 8px;
+  margin-top: 20px;
 }
 
-.sitemap-empty-state {
+.fk-section-group {
+  margin-bottom: 36px;
+  border-bottom: 1px dashed #e0e0e0;
+  padding-bottom: 28px;
+}
+
+.fk-section-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* H1 exact styling: 30px, line-height 1.38, font-weight 400 */
+.fk-tree-card h1.fk-main-title {
+  font-size: 28px;
+  line-height: 1.38;
+  font-weight: 500;
+  color: #212121;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* H2 exact styling: 22px, line-height 1.38, font-weight 400, margin 16px 0 8px 0 */
+.fk-tree-card h2.fk-sub-heading {
+  font-size: 20px;
+  line-height: 1.38;
+  font-weight: 500;
+  margin: 20px 0 8px 0;
+  color: #212121;
+}
+
+.fk-tree-card h2.fk-sub-heading a {
+  color: #212121;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.fk-tree-card h2.fk-sub-heading a:hover {
+  color: #0b53a1;
+  text-decoration: underline;
+}
+
+/* Flipkart Pipe-Separated Links Container */
+.fk-links-cluster {
+  line-height: 24px;
+  margin-bottom: 14px;
+}
+
+/* Link exact styling: font-size 14px, font-weight 400 with pipe pseudo-element */
+.fk-links-cluster a.link {
+  font-size: 14px;
+  font-weight: 400;
+  color: #212121;
+  text-decoration: none;
+  display: inline-block;
+  line-height: 22px;
+  transition: color 0.12s ease;
+}
+
+.fk-links-cluster a.link:hover {
+  color: #0b53a1;
+  text-decoration: underline;
+}
+
+.fk-links-cluster a.link::after {
+  content: "|";
+  color: #999999;
+  margin: 0 6px 0 6px;
+  display: inline-block;
+}
+
+.fk-links-cluster a.link:last-child::after {
+  content: "";
+  margin: 0;
+}
+
+.fk-links-cluster a.link:hover::after {
+  text-decoration: none;
+}
+
+/* Sub-group row (Level 2 heading inside cluster) */
+.fk-subgroup-row {
+  margin-top: 10px;
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+
+.fk-subgroup-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0b53a1;
+  margin-bottom: 4px;
+}
+
+.fk-subgroup-title a {
+  color: #0b53a1;
+  text-decoration: none;
+}
+
+.fk-subgroup-title a:hover {
+  text-decoration: underline;
+}
+
+/* Empty Search State */
+.fk-sitemap-empty {
   text-align: center;
   padding: 60px 20px;
-  background: #fff;
-  border-radius: 12px;
-  border: 1px dashed #cbd5e1;
 }
 
-.sitemap-empty-icon {
-  font-size: 3rem;
-  color: #94a3b8;
+.fk-sitemap-empty h3 {
+  font-size: 20px;
+  font-weight: 500;
+  color: #212121;
+  margin-bottom: 8px;
+}
+
+.fk-sitemap-empty p {
+  font-size: 14px;
+  color: #878787;
   margin-bottom: 16px;
+}
+
+.fk-reset-btn {
+  background-color: #0b53a1;
+  color: #ffffff;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 2px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.fk-reset-btn:hover {
+  background-color: #094282;
+}
+
+/* Responsive Rules */
+@media (max-width: 991.98px) {
+  .fk-tree-card {
+    padding: 8px 8px 16px 16px;
+  }
+
+  .fk-tree-card h1.fk-main-title {
+    font-size: 24px;
+  }
+
+  .fk-tree-card h2.fk-sub-heading {
+    font-size: 18px;
+  }
+
+  .fk-sitemap-search-form {
+    max-width: 100%;
+  }
+
+  .fk-sitemap-brand-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .fk-sitemap-search-clear {
+    right: 105px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .fk-sitemap-container {
+    padding: 8px 8px 16px;
+  }
+
+  .fk-sitemap-search-btn {
+    padding: 0 14px;
+    font-size: 12px;
+  }
+
+  .fk-sitemap-search-input {
+    font-size: 13px;
+  }
+
+  .fk-links-cluster a.link {
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  .fk-tree-card h1.fk-main-title {
+    font-size: 20px;
+  }
+
+  .fk-tree-card h2.fk-sub-heading {
+    font-size: 16px;
+    margin: 14px 0 6px 0;
+  }
 }

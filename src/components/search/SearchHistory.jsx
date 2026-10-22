@@ -1,29 +1,56 @@
 import React from 'react';
 import { AiOutlineClockCircle, AiOutlineClose } from 'react-icons/ai';
 import { HiOutlineFire } from 'react-icons/hi';
+import { BiTrendingUp } from 'react-icons/bi';
+import { IoGridOutline } from 'react-icons/io5';
+
+const POPULAR_PRINTMONT_TAGS = [
+  'Custom T-Shirts',
+  'Photo Mugs',
+  'Corporate Gift Kits',
+  'Personalized Frames',
+  'Visiting Cards',
+  'Insulated Bottles',
+  'Sweatshirts & Hoodies',
+  'Custom Keychains',
+  'Engraved Pens'
+];
+
+const QUICK_CATEGORIES = [
+  { name: 'Apparel & Clothing', slug: 'apparel' },
+  { name: 'Tableware & Mugs', slug: 'tableware-drinkware' },
+  { name: 'Personalized Gifts', slug: 'personalised-gifts' },
+  { name: 'Corporate Gifts', slug: 'corporate-gifting' },
+  { name: 'Office Stationery', slug: 'stationery-stamps' }
+];
 
 const SearchHistory = ({
   history = [],
-  popularSearches = [],
+  popularSearches = POPULAR_PRINTMONT_TAGS,
   onSelectTerm,
   onRemoveHistoryItem,
   onClearHistory
 }) => {
+  const displayTags = popularSearches && popularSearches.length > 0 ? popularSearches : POPULAR_PRINTMONT_TAGS;
+
   return (
     <div className="p-3">
-      {/* Recent Searches Section */}
-      {history.length > 0 && (
+      {/* 1. Recent Searches (Flipkart Style) */}
+      {history && history.length > 0 && (
         <div className="mb-3">
-          <div className="d-flex align-items-center justify-content-between mb-2">
-            <div className="d-flex align-items-center gap-1.5 text-secondary fw-semibold uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-              <AiOutlineClockCircle style={{ fontSize: '0.9rem' }} />
+          <div className="d-flex align-items-center justify-content-between mb-1.5 px-1">
+            <div className="d-flex align-items-center gap-1.5 text-secondary fw-bold" style={{ fontSize: '11px', letterSpacing: '0.05em' }}>
+              <AiOutlineClockCircle size={14} className="text-secondary" />
               <span>RECENT SEARCHES</span>
             </div>
             <button
               type="button"
-              className="btn btn-link text-primary p-0 border-0 text-decoration-none small"
-              onClick={onClearHistory}
-              style={{ fontSize: '0.75rem', fontWeight: 500 }}
+              className="btn btn-link text-primary p-0 border-0 text-decoration-none"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClearHistory();
+              }}
+              style={{ fontSize: '11.5px', fontWeight: 600 }}
             >
               Clear All
             </button>
@@ -33,25 +60,24 @@ const SearchHistory = ({
             {history.map((term, idx) => (
               <div
                 key={idx}
-                className="d-flex align-items-center justify-content-between py-1.5 px-2.5 rounded-2 hover-bg-light cursor-pointer"
+                className="pm-search-history-row"
                 onClick={() => onSelectTerm(term)}
-                style={{ cursor: 'pointer', transition: 'background-color 0.15s ease' }}
               >
-                <div className="d-flex align-items-center gap-2 text-dark" style={{ fontSize: '0.875rem' }}>
-                  <AiOutlineClockCircle className="text-secondary" style={{ fontSize: '0.85rem' }} />
-                  <span>{term}</span>
+                <div className="d-flex align-items-center gap-2.5 text-dark">
+                  <AiOutlineClockCircle className="text-muted flex-shrink-0" size={15} />
+                  <span style={{ fontSize: '13.5px', fontWeight: 500 }}>{term}</span>
                 </div>
                 <button
                   type="button"
-                  className="btn btn-link text-secondary p-0 border-0"
+                  className="pm-search-history-del"
                   onClick={(e) => {
                     e.stopPropagation();
                     onRemoveHistoryItem(term);
                   }}
                   title="Remove from history"
-                  style={{ fontSize: '0.85rem' }}
+                  aria-label="Remove search history item"
                 >
-                  <AiOutlineClose />
+                  <AiOutlineClose size={13} />
                 </button>
               </div>
             ))}
@@ -59,26 +85,41 @@ const SearchHistory = ({
         </div>
       )}
 
-      {/* Popular Trending Searches Section */}
-      <div>
-        <div className="d-flex align-items-center gap-1.5 text-secondary fw-semibold uppercase mb-2" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-          <HiOutlineFire className="text-danger" style={{ fontSize: '0.95rem' }} />
-          <span>POPULAR SEARCHES</span>
+      {/* 2. Trending Searches (Flipkart Pill Style) */}
+      <div className="mb-2">
+        <div className="d-flex align-items-center gap-1.5 text-secondary fw-bold mb-2 px-1" style={{ fontSize: '11px', letterSpacing: '0.05em' }}>
+          <HiOutlineFire className="text-danger" size={16} />
+          <span>TRENDING SEARCHES</span>
         </div>
-        <div className="d-flex flex-wrap gap-1.5">
-          {popularSearches.map((term, idx) => (
+        <div className="pm-search-trending-chips">
+          {displayTags.map((term, idx) => (
             <span
               key={idx}
-              className="badge bg-light text-dark border py-1.5 px-3 rounded-pill hover-bg-primary hover-text-white cursor-pointer"
+              className="pm-search-trending-chip"
               onClick={() => onSelectTerm(term)}
-              style={{
-                cursor: 'pointer',
-                fontSize: '0.8rem',
-                fontWeight: 400,
-                transition: 'all 0.15s ease'
-              }}
             >
-              {term}
+              <BiTrendingUp size={14} className="text-primary pm-trending-icon" />
+              <span>{term}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* 3. Discover Top Categories */}
+      <div className="pt-2 border-top">
+        <div className="d-flex align-items-center gap-1.5 text-secondary fw-bold mb-2 px-1" style={{ fontSize: '11px', letterSpacing: '0.05em' }}>
+          <IoGridOutline size={14} className="text-secondary" />
+          <span>EXPLORE POPULAR DEPARTMENTS</span>
+        </div>
+        <div className="d-flex flex-wrap gap-1.5">
+          {QUICK_CATEGORIES.map((cat, cIdx) => (
+            <span
+              key={cIdx}
+              className="badge bg-light text-secondary border px-2.5 py-1.5 rounded-2 cursor-pointer hover-bg-primary hover-text-white"
+              style={{ fontSize: '12px', fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s ease' }}
+              onClick={() => onSelectTerm({ name: cat.name, slug: cat.slug, itemType: 'category' })}
+            >
+              {cat.name}
             </span>
           ))}
         </div>
@@ -87,4 +128,4 @@ const SearchHistory = ({
   );
 };
 
-export default SearchHistory;
+export default React.memo(SearchHistory);

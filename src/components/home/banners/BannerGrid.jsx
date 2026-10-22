@@ -10,25 +10,35 @@ import normalizeBanner from "../utils/normalizeBanner";
  * @param {number} [columns=2] Number of columns on desktop.
  * @param {number} [mobileColumns=1] Number of columns on mobile.
  */
-export default function BannerGrid({ apiUrl, sectionKey, banners: propBanners, columns = 2, mobileColumns = 1 }) {
-  const { banners: fetchedBanners, loading, error } = useHomeBanners(apiUrl, sectionKey);
-  const rawBanners = propBanners || fetchedBanners || [];
+export default function BannerGrid({
+  apiUrl,
+  sectionKey,
+  banners: propBanners,
+  columns = 2,
+  mobileColumns = 1,
+  aspectRatio
+}) {
+  const hasPropBanners = Array.isArray(propBanners) && propBanners.length > 0;
+  const effectiveApiUrl = !hasPropBanners && apiUrl && sectionKey ? `${apiUrl}?section=${sectionKey}` : (!hasPropBanners ? apiUrl : null);
+  const { banners: fetchedBanners, loading, error } = useHomeBanners(effectiveApiUrl, sectionKey);
+
+  const rawBanners = hasPropBanners ? propBanners : (fetchedBanners || []);
   const banners = rawBanners.map(b => normalizeBanner(b)).filter(Boolean);
 
-  if (loading && !propBanners) {
-    const skeletonCount = propBanners ? propBanners.length : columns;
+  if (loading && !hasPropBanners) {
+    const skeletonCount = columns;
     return (
       <section className="home-banner-section">
         <div className="home-banner-grid" data-columns={columns} data-mobile-columns={mobileColumns}>
           {Array.from({ length: skeletonCount }).map((_, i) => (
-            <div key={i} className="shimmer-bg skeleton-banner-hero w-100" />
+            <div key={i} className="shimmer-bg skeleton-banner-hero w-100" style={aspectRatio ? { aspectRatio } : {}} />
           ))}
         </div>
       </section>
     );
   }
 
-  if (error && !propBanners) {
+  if (error && !hasPropBanners) {
     return <div className="text-center p-3 text-danger">Error loading banners: {error}</div>;
   }
 
@@ -46,6 +56,7 @@ export default function BannerGrid({ apiUrl, sectionKey, banners: propBanners, c
             small={banner.small}
             target={banner.target}
             alt={banner.alt}
+            aspectRatio={aspectRatio}
           />
         ))}
       </div>

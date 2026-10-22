@@ -17,15 +17,20 @@ export default function LazySection({
   rootMargin = "300px",
   minHeight = "120px",
   className = "",
+  eager = false,
 }) {
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(eager);
   const ref = useRef(null);
 
   useEffect(() => {
+    if (eager) {
+      setIsVisible(true);
+      return;
+    }
+
     const el = ref.current;
     if (!el) return;
 
-    // If IntersectionObserver is not supported, just render immediately
     if (!("IntersectionObserver" in window)) {
       setIsVisible(true);
       return;
@@ -49,7 +54,7 @@ export default function LazySection({
     return () => {
       observer.unobserve(el);
     };
-  }, [rootMargin]);
+  }, [rootMargin, eager]);
 
   return (
     <div

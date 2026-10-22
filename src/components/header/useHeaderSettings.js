@@ -15,97 +15,166 @@ const DEFAULT_RULES = [
     show_category_bar: 0,
     category_bar_mode: 'with_images',
     is_sticky: 0,
-    custom_bg: 'rgb(11, 83, 161)',
-    custom_text_color: 'white',
-    sort_order: 1
+    custom_bg: '#ffffff',
+    custom_text_color: '#212121',
+    sort_order: 1,
+    is_active: 1
   },
   {
     page_key: 'shop_products',
     route_patterns: '/allproducts,/search,/products',
-    header_type: 'inner',
+    header_type: 'full',
     show_category_bar: 1,
     category_bar_mode: 'text_only',
     is_sticky: 1,
     custom_bg: 'rgb(11, 83, 161)',
-    custom_text_color: 'white',
-    sort_order: 2
+    custom_text_color: '#ffffff',
+    sort_order: 2,
+    is_active: 1
   },
   {
     page_key: 'categories_page',
     route_patterns: '/category,/category/.*',
-    header_type: 'inner',
+    header_type: 'full',
     show_category_bar: 1,
     category_bar_mode: 'text_only',
     is_sticky: 1,
     custom_bg: 'rgb(11, 83, 161)',
-    custom_text_color: 'white',
-    sort_order: 3
+    custom_text_color: '#ffffff',
+    sort_order: 3,
+    is_active: 1
   },
   {
     page_key: 'product_details',
     route_patterns: '/product/.*,/[a-z0-9\\-]+-p[0-9]+',
+    header_type: 'full',
+    show_category_bar: 1,
+    category_bar_mode: 'text_only',
+    is_sticky: 1,
+    custom_bg: 'rgb(11, 83, 161)',
+    custom_text_color: '#ffffff',
+    sort_order: 4,
+    is_active: 1
+  },
+  {
+    page_key: 'cart_checkout',
+    route_patterns: '/cart,/checkout',
+    header_type: 'inner',
+    show_category_bar: 0,
+    category_bar_mode: 'text_only',
+    is_sticky: 0,
+    custom_bg: 'rgb(11, 83, 161)',
+    custom_text_color: '#ffffff',
+    sort_order: 5,
+    is_active: 1
+  },
+  {
+    page_key: 'blog_pages',
+    route_patterns: '/blog,/blog/.*',
     header_type: 'inner',
     show_category_bar: 1,
     category_bar_mode: 'text_only',
     is_sticky: 1,
     custom_bg: 'rgb(11, 83, 161)',
-    custom_text_color: 'white',
-    sort_order: 4
+    custom_text_color: '#ffffff',
+    sort_order: 6,
+    is_active: 1
   },
   {
-    page_key: 'cart_checkout',
-    route_patterns: '/cart,/checkout',
-    header_type: 'full',
-    show_category_bar: 0,
+    page_key: 'affiliate_program',
+    route_patterns: '/affiliate-program,/affiliate',
+    header_type: 'inner',
+    show_category_bar: 1,
     category_bar_mode: 'text_only',
-    is_sticky: 0,
+    is_sticky: 1,
     custom_bg: 'rgb(11, 83, 161)',
-    custom_text_color: 'white',
-    sort_order: 5
+    custom_text_color: '#ffffff',
+    sort_order: 6.5,
+    is_active: 1
   },
   {
     page_key: 'company_about',
-    route_patterns: '/about,/careers,/careers/.*,/franchise,/franchises,/become-a-seller,/affiliate-program,/business-solutions,/bulk-order,/bulk-orders,/blog,/blog/.*',
+    route_patterns: '/about,/careers,/careers/.*,/franchise,/franchises,/become-a-seller,/business-solutions,/bulk-order,/bulk-orders',
     header_type: 'inner',
     show_category_bar: 0,
     category_bar_mode: 'text_only',
     is_sticky: 0,
     custom_bg: 'rgb(11, 83, 161)',
-    custom_text_color: 'white',
-    sort_order: 7
+    custom_text_color: '#ffffff',
+    sort_order: 7,
+    is_active: 1
+  },
+  {
+    page_key: 'contact_us',
+    route_patterns: '/contact',
+    header_type: 'inner',
+    show_category_bar: 1,
+    category_bar_mode: 'text_only',
+    is_sticky: 1,
+    custom_bg: 'rgb(11, 83, 161)',
+    custom_text_color: '#ffffff',
+    sort_order: 8,
+    is_active: 1
+  },
+  {
+    page_key: 'help_center',
+    route_patterns: '/help,/help-center',
+    header_type: 'inner',
+    show_category_bar: 1,
+    category_bar_mode: 'text_only',
+    is_sticky: 0,
+    custom_bg: 'rgb(11, 83, 161)',
+    custom_text_color: '#ffffff',
+    sort_order: 7.9,
+    is_active: 1
   },
   {
     page_key: 'support_help',
-    route_patterns: '/help-center,/faq,/contact,/support,/track-order,/quick-links',
+    route_patterns: '/faq,/support,/track-order,/quick-links',
     header_type: 'inner',
     show_category_bar: 0,
     category_bar_mode: 'text_only',
     is_sticky: 0,
     custom_bg: 'rgb(11, 83, 161)',
-    custom_text_color: 'white',
-    sort_order: 8
+    custom_text_color: '#ffffff',
+    sort_order: 8,
+    is_active: 1
+  },
+  {
+    page_key: 'info_security_sitemap',
+    route_patterns: '/sitemap,/security',
+    header_type: 'inner',
+    show_category_bar: 0,
+    category_bar_mode: 'text_only',
+    is_sticky: 0,
+    custom_bg: 'rgb(11, 83, 161)',
+    custom_text_color: '#ffffff',
+    sort_order: 8.8,
+    is_active: 1
   },
   {
     page_key: 'policies_legal',
-    route_patterns: '/security,/policy/.*,/privacy-policy,/terms-of-use,/terms-and-conditions,/shipping-policy,/refund-policy,/return-policy,/sitemap',
+    route_patterns: '/policy/.*,/privacy-policy,/terms-of-use,/terms-and-conditions,/shipping-policy,/refund-policy,/return-policy',
     header_type: 'inner',
-    show_category_bar: 0,
+    show_category_bar: 1,
     category_bar_mode: 'text_only',
-    is_sticky: 0,
+    is_sticky: 1,
     custom_bg: 'rgb(11, 83, 161)',
-    custom_text_color: 'white',
-    sort_order: 9
+    custom_text_color: '#ffffff',
+    sort_order: 9,
+    is_active: 1
   },
   {
     page_key: 'default_fallback',
     route_patterns: '.*',
-    header_type: 'inner',
+    header_type: 'full',
     show_category_bar: 0,
     category_bar_mode: 'text_only',
     is_sticky: 1,
     custom_bg: 'rgb(11, 83, 161)',
-    custom_text_color: 'white',
-    sort_order: 99
+    custom_text_color: '#ffffff',
+    sort_order: 99,
+    is_active: 1
   }
 ];
 
@@ -115,11 +184,22 @@ export const useHeaderSettings = () => {
 
   const [rules, setRules] = useState(cachedRules || DEFAULT_RULES);
   const [menuDesign, setMenuDesign] = useState(cachedMenuDesign);
+  const [homeDesktopDesign, setHomeDesktopDesign] = useState('design1');
+  const [homeMobileDesign, setHomeMobileDesign] = useState('design1');
+  const [innerDesktopDesign, setInnerDesktopDesign] = useState('design1');
+  const [innerMobileDesign, setInnerMobileDesign] = useState('design1');
+  const [categoryImageShape, setCategoryImageShape] = useState('circle');
+  const [categoryImageSize, setCategoryImageSize] = useState(56);
   const [loading, setLoading] = useState(!cachedRules);
 
   useEffect(() => {
     const loadSettings = () => {
-      fetch(API_ENDPOINTS.HEADER_SETTINGS)
+      const cacheBuster = `_t=${Date.now()}`;
+      const url = API_ENDPOINTS.HEADER_SETTINGS.includes('?')
+        ? `${API_ENDPOINTS.HEADER_SETTINGS}&${cacheBuster}`
+        : `${API_ENDPOINTS.HEADER_SETTINGS}?${cacheBuster}`;
+
+      fetch(url, { cache: 'no-store' })
         .then((res) => res.json())
         .then((json) => {
           if (json?.success && json.data?.rules && Array.isArray(json.data.rules)) {
@@ -127,6 +207,12 @@ export const useHeaderSettings = () => {
             cachedMenuDesign = json.data.menu_design || 'design1';
             setRules(cachedRules);
             setMenuDesign(cachedMenuDesign);
+            setHomeDesktopDesign(json.data.home_desktop_design || 'design1');
+            setHomeMobileDesign(json.data.home_mobile_design || 'design1');
+            setInnerDesktopDesign(json.data.inner_desktop_design || 'design1');
+            setInnerMobileDesign(json.data.inner_mobile_design || 'design1');
+            setCategoryImageShape(json.data.category_image_shape || json.data.header_config?.category_image_shape || 'circle');
+            setCategoryImageSize(Number(json.data.category_image_size || json.data.header_config?.category_image_size) || 56);
           }
         })
         .catch((err) => {
@@ -139,10 +225,27 @@ export const useHeaderSettings = () => {
 
     loadSettings();
 
-    // Re-fetch automatically when window regains focus (e.g. user toggles setting in admin tab and switches back to frontend tab)
-    const handleFocus = () => loadSettings();
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    // Re-fetch automatically when window regains focus or becomes visible
+    const handleSync = () => {
+      if (document.visibilityState === 'visible') {
+        loadSettings();
+      }
+    };
+    window.addEventListener('focus', handleSync);
+    document.addEventListener('visibilitychange', handleSync);
+
+    // Periodic sync every 5 seconds so layout changes reflect immediately
+    const syncInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadSettings();
+      }
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('focus', handleSync);
+      document.removeEventListener('visibilitychange', handleSync);
+      clearInterval(syncInterval);
+    };
   }, [currentPath]);
 
   // Match the current pathname against active rules
@@ -173,7 +276,7 @@ export const useHeaderSettings = () => {
     // Fallback rule if no patterns match
     return (
       activeRules.find((r) => r.page_key === 'default_fallback') || {
-        header_type: currentPath === '/' || currentPath === '/cart' ? 'full' : 'inner',
+        header_type: currentPath === '/' ? 'full' : 'inner',
         show_category_bar: 0,
         category_bar_mode: 'text_only',
         is_sticky: 1,
@@ -191,6 +294,12 @@ export const useHeaderSettings = () => {
     customBg: activeRule?.custom_bg || 'rgb(11, 83, 161)',
     customTextColor: activeRule?.custom_text_color || 'white',
     menuDesign,
+    homeDesktopDesign,
+    homeMobileDesign,
+    innerDesktopDesign,
+    innerMobileDesign,
+    categoryImageShape,
+    categoryImageSize,
     loading,
     activeRule
   };

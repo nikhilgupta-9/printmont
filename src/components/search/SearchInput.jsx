@@ -1,6 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoSearch } from 'react-icons/io5';
 import { AiOutlineClose } from 'react-icons/ai';
+
+const FLIPKART_SEARCH_PLACEHOLDERS = [
+  'Search for Customized T-Shirts, Hoodies & Polos...',
+  'Search for Photo Mugs, Magic Mugs & Drinkware...',
+  'Search for Corporate Joining Kits & Gift Combos...',
+  'Search for Personalized Photo Frames & Canvas...',
+  'Search for Visiting Cards, Diaries & Engraved Pens...',
+  'Search for Stickers, Labels, Badges & Signages...'
+];
 
 const SearchInput = ({
   query,
@@ -9,48 +18,41 @@ const SearchInput = ({
   onKeyDown,
   onFocus,
   isLoading,
-  placeholder = 'Search for products, brands and more',
+  placeholder,
   inputRef
 }) => {
-  return (
-    <div 
-      className="position-relative w-100 d-flex align-items-center rounded-3 border transition-all search-input-container"
-      style={{
-        backgroundColor: '#f0f5ff',
-        borderColor: '#e2e8f0',
-        borderRadius: '8px',
-        padding: '2px 4px'
-      }}
-    >
-      {/* Left Search Icon (Subtle Gray) */}
-      <IoSearch 
-        className="ms-3 flex-shrink-0" 
-        style={{ fontSize: '1.2rem', color: '#64748b', pointerEvents: 'none' }} 
-      />
+  const [currentPlaceholderIdx, setCurrentPlaceholderIdx] = useState(0);
 
+  useEffect(() => {
+    if (placeholder) return;
+    const interval = setInterval(() => {
+      setCurrentPlaceholderIdx((prev) => (prev + 1) % FLIPKART_SEARCH_PLACEHOLDERS.length);
+    }, 3200);
+    return () => clearInterval(interval);
+  }, [placeholder]);
+
+  const activePlaceholder = placeholder || FLIPKART_SEARCH_PLACEHOLDERS[currentPlaceholderIdx];
+
+  return (
+    <div className="d-flex align-items-center w-100 pm-search-input-box position-relative">
       {/* Input Field */}
       <input
         ref={inputRef}
         type="text"
-        className="form-control border-0 bg-transparent px-3 py-1 text-dark shadow-none"
+        className="form-control border-0 bg-transparent ps-3 pe-1 py-1 flex-grow-1 pm-search-input-field"
         value={query}
         onChange={onChange}
         onKeyDown={onKeyDown}
         onFocus={onFocus}
-        placeholder={placeholder}
-        aria-label="Search"
+        placeholder={activePlaceholder}
+        aria-label="Search products, brands and personalized gifts"
         autoComplete="off"
-        style={{
-          color: '#1e293b',
-          fontSize: '0.92rem',
-          fontWeight: 400,
-          boxShadow: 'none'
-        }}
+        spellCheck="false"
       />
 
-      {/* Right Action Container: Loading, Clear, or Blue Search Icon */}
-      <div className="me-3 d-flex align-items-center gap-2 flex-shrink-0" style={{ zIndex: 5 }}>
-        {isLoading ? (
+      {/* Middle Action: Loading Spinner OR Clear Button */}
+      {isLoading ? (
+        <div className="me-2 d-flex align-items-center flex-shrink-0">
           <div 
             className="spinner-border spinner-border-sm text-primary" 
             role="status" 
@@ -58,25 +60,30 @@ const SearchInput = ({
           >
             <span className="visually-hidden">Loading...</span>
           </div>
-        ) : query ? (
-          <button
-            type="button"
-            className="btn btn-link text-secondary p-0 border-0"
-            onClick={onClear}
-            title="Clear Search"
-            style={{ fontSize: '1rem', cursor: 'pointer', lineHeight: 1 }}
-          >
-            <AiOutlineClose />
-          </button>
-        ) : null}
+        </div>
+      ) : query ? (
+        <button
+          type="button"
+          className="pm-search-clear-btn me-1"
+          onClick={onClear}
+          title="Clear Search"
+          aria-label="Clear Search Input"
+        >
+          <AiOutlineClose size={15} />
+        </button>
+      ) : null}
 
-        {/* Right Search Icon (Vibrant Blue) */}
-        <IoSearch 
-          style={{ fontSize: '1.25rem', color: '#2563eb', cursor: 'pointer' }}
-        />
-      </div>
+      {/* Right Search Button (Flipkart / Amazon Signature CTA) */}
+      <button
+        type="submit"
+        className="pm-search-submit-btn flex-shrink-0"
+        title="Search Printmont"
+        aria-label="Search"
+      >
+        <IoSearch size={18} />
+      </button>
     </div>
   );
 };
 
-export default SearchInput;
+export default React.memo(SearchInput);

@@ -1,122 +1,120 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { API_ENDPOINTS } from '../config/apiEndpoints';
+import { useAuth } from './AuthContext';
+import useRequireLogin from '../hooks/useRequireLogin';
 
 const WishlistContext = createContext();
+
+// Old guest wishlist kept in the browser before login became compulsory. It is no longer used:
+// the wishlist always comes from the server (wishlist-api.php) for the logged-in account.
+const LEGACY_LOCAL_KEY = 'printmont_wishlist';
 
 export const WishlistProvider = ({ children }) => {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { token } = useAuth();
+  const requireLogin = useRequireLogin();
 
-  const fetchWishlist = async () => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    if (token) {
-      try {
-        setLoading(true);
-        const res = await fetch(API_ENDPOINTS.WISHLIST, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && Array.isArray(data.data)) {
-            setWishlist(data.data);
-            return;
-          }
-        }
-      } catch (e) {
-        console.error("Wishlist API Fetch Error:", e);
-      } finally {
-        setLoading(false);
-      }
+  const fetchWishlist = useCallback(async () => {
+    try { localStorage.removeItem(LEGACY_LOCAL_KEY); } catch { /* storage blocked */ }
+
+    if (!token) {
+      setWishlist([]);
+      return;
     }
-
-    // Guest fallback from localStorage
     try {
-      const localData = localStorage.getItem('printmont_wishlist');
-      if (localData) {
-        setWishlist(JSON.parse(localData));
+      setLoading(true);
+      const res = await fetch(API_ENDPOINTS.WISHLIST, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success && Array.isArray(data.data)) {
+        setWishlist(data.data);
       } else {
-        setWishlist([]);
+        console.error('Wishlist API error:', data?.error || res.status);
       }
     } catch (e) {
-      setWishlist([]);
+      console.error('Wishlist API fetch error:', e);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [token]);
 
+  // Reload on login / logout so the wishlist always belongs to the current account
   useEffect(() => {
     fetchWishlist();
-  }, []);
-
-  const saveLocalWishlist = (items) => {
-    setWishlist(items);
-    try {
-      localStorage.setItem('printmont_wishlist', JSON.stringify(items));
-    } catch (e) {}
-  };
+  }, [fetchWishlist]);
 
   const isInWishlist = (productId) => {
     return wishlist.some(item => (item.id == productId || item.product_id == productId));
   };
 
+  // Login is compulsory to add to the wishlist
   const addToWishlist = async (product) => {
+    if (!requireLogin('Please login to add items to your wishlist')) return;
     const productId = product.id || product.product_id;
-    if (isInWishlist(productId)) return;
+    if (!productId || isInWishlist(productId)) return;
 
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    if (token) {
-      try {
-        const res = await fetch(API_ENDPOINTS.WISHLIST, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ product_id: productId })
-        });
-        const data = await res.json();
-        if (data.success) {
-          toast.success("Added to Wishlist!");
-          fetchWishlist();
-          return;
-        }
-      } catch (e) {
-        console.error("AddToWishlist API Error:", e);
+    try {
+      const res = await fetch(API_ENDPOINTS.WISHLIST, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ product_id: productId })
+      });
+      const data = await res.json().catch(() => null);
+      if (data?.success) {
+        toast.success('Added to Wishlist!');
+        fetchWishlist();
+      } else {
+        toast.error(data?.error || 'Could not add to wishlist. Please try again.');
       }
+    } catch (e) {
+      console.error('AddToWishlist API error:', e);
+      toast.error('Could not add to wishlist. Please check your connection.');
     }
-
-    // Local fallback
-    const updated = [...wishlist, product];
-    saveLocalWishlist(updated);
-    toast.success("Added to Wishlist!");
   };
 
-  const removeFromWishlist = async (productId) => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    if (token) {
-      try {
-        const deleteUrl = typeof API_ENDPOINTS.WISHLIST_DELETE === 'function'
-          ? API_ENDPOINTS.WISHLIST_DELETE(productId)
-          : `${API_ENDPOINTS.WISHLIST}?product_id=${productId}`;
+  const removeFromWishlist = async (productId, options = {}) => {
+    if (!token) return false;
+    const { silent = false } = options;
 
-        const res = await fetch(deleteUrl, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (data.success) {
-          toast.error("Removed from Wishlist!");
-          fetchWishlist();
-          return;
+    // Optimistically remove from state immediately for snappy UI
+    setWishlist(prev => prev.filter(item => (item.id != productId && item.product_id != productId)));
+
+    try {
+      const deleteUrl = typeof API_ENDPOINTS.WISHLIST_DELETE === 'function'
+        ? API_ENDPOINTS.WISHLIST_DELETE(productId)
+        : `${API_ENDPOINTS.WISHLIST}?product_id=${productId}`;
+      const res = await fetch(deleteUrl, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json().catch(() => null);
+      if (data?.success) {
+        if (!silent) {
+          toast.success('Removed from Wishlist!');
         }
-      } catch (e) {
-        console.error("RemoveFromWishlist API Error:", e);
+        fetchWishlist();
+        return true;
+      } else {
+        if (!silent) {
+          toast.error(data?.error || 'Could not remove from wishlist. Please try again.');
+        }
+        fetchWishlist();
+        return false;
       }
+    } catch (e) {
+      console.error('RemoveFromWishlist API error:', e);
+      if (!silent) {
+        toast.error('Could not remove from wishlist. Please check your connection.');
+      }
+      fetchWishlist();
+      return false;
     }
-
-    // Local fallback
-    const updated = wishlist.filter(item => (item.id != productId && item.product_id != productId));
-    saveLocalWishlist(updated);
-    toast.error("Removed from Wishlist!");
   };
 
   const toggleWishlist = (product) => {

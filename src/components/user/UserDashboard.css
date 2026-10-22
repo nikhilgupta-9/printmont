@@ -1,0 +1,12 @@
+/* ============================================================
+   USER DASHBOARD APP SHELL CANVAS (Rule 7 & Rule 8 Standards)
+   Applied consistently across all /:username/* user pages
+   ============================================================ */
+.user-dashboard-canvas {
+  max-width: 1400px !important;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0;
+  box-sizing: border-box;
+}

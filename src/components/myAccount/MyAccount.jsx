@@ -1,10 +1,6 @@
-import React, { useEffect } from "react";
-import { Container } from "react-bootstrap";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { IoIosArrowForward } from "react-icons/io";
-import "./MyAccount.css";
-import { FiEdit } from "react-icons/fi";
-import { useAuth } from "../../context/AuthContext";
 import {
   FaBoxOpen,
   FaHeart,
@@ -18,33 +14,71 @@ import {
   FaShoppingCart,
   FaStore,
   FaUserPlus,
-  FaEnvelope
+  FaEnvelope,
+  FaCoins
 } from "react-icons/fa";
+import { RiEditBoxLine } from "react-icons/ri";
+import "./MyAccount.css";
+import { useAuth } from "../../context/AuthContext";
+import { API_ENDPOINTS } from "../../config/apiEndpoints";
 
-const MyAccount = () => {
-    const navigate = useNavigate();
-    const { user, logout } = useAuth();
+const MyAccount = ({ onEditProfile }) => {
+    const { user, logout, getUsernamePath } = useAuth();
+    const usernamePath = getUsernamePath ? getUsernamePath() : "user";
+
+    const [walletBalance, setWalletBalance] = useState(user?.wallet_balance !== undefined ? Number(user.wallet_balance) : 0);
+    const [coinBalance, setCoinBalance] = useState(user?.coins !== undefined ? Number(user.coins) : 100);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchBalances = async () => {
+            try {
+                const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                const res = await fetch(API_ENDPOINTS.WALLET || "/api/wallet-api.php", { headers });
+                const json = await res.json();
+                if (isMounted && json && json.success && json.data) {
+                    if (json.data.wallet?.balance !== undefined) {
+                        setWalletBalance(Number(json.data.wallet.balance));
+                    }
+                    if (json.data.coins?.balance !== undefined) {
+                        setCoinBalance(Number(json.data.coins.balance));
+                    }
+                }
+            } catch (e) {
+                // fallback
+            }
+        };
+        if (user) {
+            fetchBalances();
+        }
+        return () => { isMounted = false; };
+    }, [user]);
 
     const handleLogout = (e) => {
         e.preventDefault();
         logout();
-        navigate("/login");
     };
 
-    // Matches the compact footer / Quick Links breakpoint (.big-screen-foot is
-    // shown up to 1024px). Redirecting above 768px bounced this page to the
-    // homepage on tablets, where it is still linked from Quick Links.
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth > 1024) {
-                navigate("/"); // redirect to homepage
-            }
-        };
+    // Helper to get initials (e.g., "NK" or "AK")
+    const getUserInitials = () => {
+        if (!user) return "PM";
+        const first = (user.firstName || user.first_name || user.name || "U").trim();
+        const last = (user.lastName || user.last_name || "").trim();
+        if (first && last) {
+            return (first[0] + last[0]).toUpperCase();
+        }
+        return first.slice(0, 2).toUpperCase();
+    };
 
-        handleResize();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, [navigate]);
+    // Helper to get display name
+    const getUserDisplayName = () => {
+        if (!user) return "Buyer Name";
+        if (user.firstName || user.first_name) {
+            return `${user.firstName || user.first_name} ${user.lastName || user.last_name || ""}`.trim();
+        }
+        return user.name || (user.email ? user.email.split("@")[0] : "Printmont Customer");
+    };
 
     const sections = [
         {
@@ -52,60 +86,54 @@ const MyAccount = () => {
             links: [
                 {
                     img: "/printmont-coin.png",
-                    text: "Cash Coins ₹20",
-                    subtext: "Quick Checkout, Easy Adjust Coins.",
-                    tag: "New",
-                    arrow: true,
-                    to: "/printmont-coin"
+                    fallbackIcon: <FaCoins className="text-warning fs-5" />,
+                    text: `Printmont SuperCoins (${coinBalance} Coins)`,
+                    subtext: "Earn on every purchase, redeem reward vouchers.",
+                    tag: `${coinBalance} Coins`,
+                    to: user ? `/${usernamePath}/coins` : "/login?redirect=/user/coins"
                 },
                 {
-                    icon: <FaBoxOpen className="text-primary fs-5" />,
+                    icon: <FaBoxOpen className="theme-icon fs-5" />,
                     text: "My Orders",
-                    subtext: "Order related issues, Track Order & Download invoice.",
-                    arrow: true,
+                    subtext: "Order related Issues, Track Order & Download invoice.",
                     to: "/orders"
                 },
                 {
-                    icon: <FaHeart className="text-primary fs-5" />,
+                    icon: <FaHeart className="fs-5 text-danger" />,
                     text: "Collection & Wishlist",
                     subtext: "All your curated product collections.",
-                    arrow: true,
-                    to: "/user/wishlist"
+                    to: user ? `/${usernamePath}/wishlist` : "/login?redirect=/user/wishlist"
                 },
                 {
-                    icon: <FaWallet className="text-primary fs-5" />,
-                    text: "My Wallets",
-                    subtext: "Manage all your refund & gift cards.",
-                    arrow: true,
-                    to: "/user/giftcard"
+                    icon: <FaWallet className="fs-5 text-success" />,
+                    text: `My Wallet (₹${walletBalance.toFixed(2)})`,
+                    subtext: "Add money, instant refunds & order cancellation reversals.",
+                    tag: `₹${walletBalance.toFixed(2)} Cash`,
+                    to: user ? `/${usernamePath}/wallet` : "/login?redirect=/user/wallet"
                 },
                 {
-                    icon: <FaMapMarkerAlt className="text-primary fs-5" />,
+                    icon: <FaMapMarkerAlt className="theme-icon fs-5" />,
                     text: "Saved Addresses",
                     subtext: "Save address for a hassle-free checkout.",
-                    arrow: true,
-                    to: "/user/manage-address"
+                    to: user ? `/${usernamePath}/manage-address` : "/login?redirect=/user/manage-address"
                 },
                 {
-                    icon: <FaGift className="text-primary fs-5" />,
-                    text: "Coupons",
-                    subtext: "Manage coupons for additional discounts.",
-                    arrow: true,
-                    to: "/user/giftcard"
+                    icon: <FaGift className="fs-5 text-primary" />,
+                    text: "Gift Cards & Coupons",
+                    subtext: "Manage discount coupons & gift vouchers.",
+                    to: user ? `/${usernamePath}/giftcard` : "/login?redirect=/user/giftcard"
                 },
                 {
-                    icon: <FaShieldAlt className="text-primary fs-5" />,
+                    icon: <FaShieldAlt className="theme-icon fs-5" />,
                     text: "Privacy Center",
                     subtext: "The security for your personal information is important.",
-                    arrow: true,
-                    to: "/policy/privacy"
+                    to: "/privacy-policy"
                 },
                 {
-                    icon: <FaLock className="text-primary fs-5" />,
+                    icon: <FaLock className="theme-icon fs-5" />,
                     text: "Change Password",
                     subtext: "Change your password.",
-                    arrow: true,
-                    to: "/user/profile"
+                    to: user ? "/user/change-password" : "/login?redirect=/user/change-password"
                 },
             ],
         },
@@ -113,17 +141,15 @@ const MyAccount = () => {
             title: "My Activity",
             links: [
                 {
-                    icon: <FaStar className="text-primary fs-5" />,
-                    text: "Review",
+                    icon: <FaStar className="fs-5 text-warning" />,
+                    text: "Review & Ratings",
                     subtext: "Write reviews and feedback for purchased products.",
-                    arrow: true,
-                    to: "/orders"
+                    to: user ? `/${usernamePath}/reviews` : "/login?redirect=/user/reviews"
                 },
                 {
-                    icon: <FaQuestionCircle className="text-primary fs-5" />,
+                    icon: <FaQuestionCircle className="theme-icon fs-5" />,
                     text: "Questions and Answers",
                     subtext: "Find answers or ask questions about services.",
-                    arrow: true,
                     to: "/faq"
                 },
             ],
@@ -132,127 +158,122 @@ const MyAccount = () => {
             title: "Enquiries",
             links: [
                 {
-                    icon: <FaShoppingCart className="text-primary fs-5" />,
+                    icon: <FaShoppingCart className="theme-icon fs-5" />,
                     text: "Bulk Orders",
                     subtext: "Best discount to all product on bulk orders.",
-                    arrow: true,
                     to: "/bulk-orders"
                 },
                 {
-                    icon: <FaStore className="text-primary fs-5" />,
+                    icon: <FaStore className="theme-icon fs-5" />,
                     text: "Franchise",
                     subtext: "Own a PrintMont express outlet or kiosk in your city.",
-                    arrow: true,
                     to: "/franchise"
                 },
                 {
-                    icon: <FaUserPlus className="text-primary fs-5" />,
+                    icon: <FaUserPlus className="theme-icon fs-5" />,
                     text: "Become a seller",
                     subtext: "Sell online to crores of customers at 0% Commission.",
-                    arrow: true,
                     to: "/become-a-seller"
                 },
                 {
-                    icon: <FaEnvelope className="text-primary fs-5" />,
+                    icon: <FaEnvelope className="theme-icon fs-5" />,
                     text: "Contact Us",
                     subtext: "Contact Details and General Queries.",
-                    arrow: true,
                     to: "/contact"
                 },
             ],
         },
     ];
 
-    // Helper to get initials
-    const getUserInitials = () => {
-        if (!user) return "G";
-        const first = user.firstName || user.first_name || user.name || "U";
-        const last = user.lastName || user.last_name || "";
-        return (first[0] + (last ? last[0] : "")).toUpperCase();
-    };
-
-    // Helper to get display name
-    const getUserDisplayName = () => {
-        if (!user) return "Guest";
-        if (user.firstName || user.first_name) {
-            return `${user.firstName || user.first_name} ${user.lastName || user.last_name || ""}`.trim();
-        }
-        return user.name || (user.email ? user.email.split("@")[0] : "User");
-    };
-
     return (
-        <Container fluid className="account-container p-0">
-
-            {/* 👤 Profile */}
-            <div className="profile-section d-flex align-items-center justify-content-between p-3 border-bottom">
-                <div className="d-flex align-items-center gap-3">
-                    <div className="profile-icon rounded-circle d-flex align-items-center justify-content-center">
-                        <span className="text-white fw-bold">{getUserInitials()}</span>
-                    </div>
-                    <div className="fw-semibold text-dark small">{getUserDisplayName()}</div>
+        <div className="account-container">
+            {/* 1. Buyer Profile Header Card (Avatar + Buyer Name + Edit Pen Icon) */}
+            <div className="buyer-profile-card">
+                <div className="buyer-avatar-circle">
+                    {getUserInitials()}
                 </div>
-                <Link to={'/user/profile'}><FiEdit className="text-secondary fs-5" /></Link>
+                <div className="buyer-name-info">
+                    <div className="buyer-name-text">{getUserDisplayName()}</div>
+                    <div className="buyer-subtext">{user?.email || user?.mobile || 'Printmont Member'}</div>
+                </div>
+                {onEditProfile ? (
+                    <button 
+                        type="button" 
+                        className="buyer-edit-btn" 
+                        onClick={onEditProfile} 
+                        aria-label="Edit Profile"
+                    >
+                        <RiEditBoxLine size={24} />
+                    </button>
+                ) : (
+                    <Link 
+                        to={user ? `/${getUsernamePath ? getUsernamePath() : 'user'}/profile-edit` : '/login?redirect=/user/profile-edit'} 
+                        className="buyer-edit-btn" 
+                        aria-label="Edit Profile"
+                    >
+                        <RiEditBoxLine size={24} />
+                    </Link>
+                )}
             </div>
 
-            {/* 🧾 Menu Sections */}
-            {sections.map((section, i) => (
-                <div key={i}>
+            {/* 2. Grouped Menu Sections */}
+            {sections.map((section, sIdx) => (
+                <div key={sIdx}>
                     {section.title && (
-                        <div className="section-title px-3 py-2 text-uppercase small fw-bold border-bottom">
+                        <div className="account-section-bar">
                             {section.title}
                         </div>
                     )}
-                    {section.links.map((link, idx) => (
-                        <Link
-                            key={idx}
-                            to={link.to || "#"}
-                            className="link-item d-flex align-items-center justify-content-between px-3 py-2 border-bottom text-decoration-none"
-                        >
-                            <div className="d-flex align-items-center gap-3">
-                                <div className="link-icon rounded-circle d-flex align-items-center justify-content-center">
-                                    {link.img ? (
-                                        <img
-                                            src={link.img}
-                                            alt="icon"
-                                            className="account-icon-img"
-                                            style={{ width: 25, height: 25, objectFit: "contain" }}
-                                        />
-                                    ) : (
-                                        link.icon
-                                    )}
-                                </div>
-                                <div>
-                                    <div className="fw-normal small text-dark d-flex align-items-center gap-1">
-                                        {link.text}
+                    <div className="account-menu-list">
+                        {section.links.map((link, lIdx) => (
+                            <Link
+                                key={lIdx}
+                                to={link.to}
+                                className="account-menu-row"
+                            >
+                                <div className="account-menu-left">
+                                    <div className="account-icon-badge">
+                                        {link.img ? (
+                                            <img
+                                                src={link.img}
+                                                alt="icon"
+                                                className="account-img-icon"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                }}
+                                            />
+                                        ) : (
+                                            link.icon
+                                        )}
                                     </div>
-                                    {link.subtext && (
-                                        <div className="text-muted xsmall">{link.subtext}</div>
-                                    )}
+                                    <div className="account-menu-text">
+                                        <div className="account-menu-title">{link.text}</div>
+                                        <div className="account-menu-subtext">{link.subtext}</div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div>
-                                {link.tag && (
-                                    <span className=" new-text ms-1">
-                                        {link.tag}
-                                    </span>
-                                )}
-                                {link.arrow && <IoIosArrowForward className="text-secondary" />}
-                            </div>
-                        </Link>
-                    ))}
+                                <div className="account-menu-right">
+                                    {link.tag && (
+                                        <span className="account-new-pill">{link.tag}</span>
+                                    )}
+                                    <IoIosArrowForward className="account-chevron" />
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
                 </div>
             ))}
 
-            {/* 🚪 Logout */}
-            <div className="logout-container">
-                <button 
+            {/* 3. Sticky Bottom Theme-Matched Logout Button */}
+            <div className="account-logout-wrapper">
+                <button
+                    type="button"
                     onClick={handleLogout}
-                    className="logout-btn w-100 py-2 fw-semibold text-white border-0"
+                    className="account-logout-btn"
                 >
                     LOGOUT
                 </button>
             </div>
-        </Container>
+        </div>
     );
 };
 

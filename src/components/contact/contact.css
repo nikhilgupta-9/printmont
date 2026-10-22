@@ -1,430 +1,328 @@
 /* ============================================================
-   Contact page — FNP's layout, in Printmont colours.
-
-   A white card straddling a tinted band, split into a pale left panel
-   holding the contact directory and a white right panel holding the
-   enquiry form. FNP's green map band becomes a soft theme-blue band, and
-   their blue/orange accents map onto the two brand colours this project
-   already defines in App.css.
+   Contact Page Styles — Orange & Blue action buttons, Printmont blue (#0b53a1)
    ============================================================ */
 
 :root {
-  --cu-theme: rgb(11, 83, 161);
-  --cu-theme-dark: #09447f;
-  --cu-accent: rgb(222, 61, 2);   /* the existing .bg-org accent */
-  --cu-accent-dark: #b83102;
-  --cu-ink: #1a1a1a;
-  --cu-body: #4b5563;
-  --cu-line: #e2e6ea;
-
-  --cu-h2: 1.25rem;      /* ~20px */
-  --cu-h3: 1rem;         /* 16px */
-  --cu-text: 0.9375rem;  /* 15px */
-  --cu-note: 0.875rem;
+  --contact-orange: #d9531e;
+  --contact-orange-hover: #b83e0e;
+  --contact-blue: #0b53a1;
+  --contact-blue-hover: #083b70;
+  --contact-text-dark: #1e293b;
+  --contact-text-muted: #64748b;
+  --contact-border: #e2e8f0;
+  --contact-bg-light: #f8fafc;
 }
 
-.cu-page {
-  position: relative;
-  background: #f5f6f7;
-  color: var(--cu-body);
+.contact-main-wrapper {
+  background-color: #ffffff;
+  min-height: 80vh;
+  color: var(--contact-text-dark);
+  font-family: inherit;
   overflow-x: hidden;
-  min-height: calc(100vh - var(--site-header-height, 104px));
-  padding-bottom: 2.5rem;
 }
 
-/* Band behind the top of the card. */
-.cu-band {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 170px;
-  background: linear-gradient(180deg, rgba(11, 83, 161, .85) 0%, rgba(11, 83, 161, .65) 100%);
+
+/* ============================================================
+   TYPOGRAPHY & HEADINGS
+   ============================================================ */
+
+.contact-heading {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.2px;
 }
 
-.cu-shell {
-  position: relative;
-  z-index: 1;
-  padding-top: 1.25rem;
+.contact-subheading {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
 }
 
-.cu-card {
-  background: #fff;
-  border-radius: .25rem;
-  box-shadow: 0 .5rem 1.75rem rgba(0, 0, 0, .12);
-  overflow: hidden;
+.contact-orange-title {
+  color: var(--contact-orange);
+  font-weight: 700;
+  font-size: 14.5px;
+  margin-bottom: 2px;
 }
 
-/* ---------- Panels ---------- */
-.cu-left {
-  background: #f2f7fc;
-  padding: 1.25rem 1.5rem;
-}
-
-.cu-right {
-  background: #fff;
-  padding: 1.5rem 1.75rem;
-}
-
-.cu-h2 {
-  color: var(--cu-ink);
-  font-weight: 600;
-  font-size: var(--cu-h2);
-  margin: 0 0 .7rem;
-}
-
-.cu-h3 {
-  color: var(--cu-ink);
-  font-weight: 600;
-  font-size: var(--cu-h3);
-  margin: .9rem 0 .55rem;
-}
-
-/* ---------- Directory header buttons ---------- */
-.cu-actions {
-  display: flex;
-  gap: .75rem;
-  flex-wrap: wrap;
-  margin-bottom: .9rem;
-}
-
-.cu-btn {
-  display: inline-block;
-  background: var(--cu-theme);
-  color: #fff;
-  border: none;
-  font-weight: 600;
-  font-size: var(--cu-note);
-  letter-spacing: .02em;
-  text-transform: uppercase;
-  padding: .5rem 1rem;
-  border-radius: .25rem;
-  text-decoration: none;
-}
-
-.cu-btn:hover,
-.cu-btn:focus {
-  background: var(--cu-theme-dark);
-  color: #fff;
-}
-
-/* ---------- Form switch tabs ---------- */
-.cu-tabs {
-  display: flex;
-  gap: .75rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.cu-tab-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: var(--cu-note);
-  letter-spacing: .02em;
-  text-transform: uppercase;
-  padding: .5rem 1.15rem;
-  border-radius: .25rem;
-  cursor: pointer;
-  transition: all .2s ease-in-out;
-  border: 1.5px solid transparent;
-  text-decoration: none;
-}
-
-/* Order button - inactive (outline) */
-.cu-tab-btn--order {
-  background: #fff;
-  color: var(--cu-accent);
-  border-color: var(--cu-accent);
-}
-
-.cu-tab-btn--order:hover {
-  background: rgba(222, 61, 2, .08);
-  color: var(--cu-accent-dark);
-  border-color: var(--cu-accent-dark);
-}
-
-/* Order button - active (solid fill highlight) */
-.cu-tab-btn--order.is-active {
-  background: var(--cu-accent);
-  color: #fff;
-  border-color: var(--cu-accent);
-  box-shadow: 0 2px 6px rgba(222, 61, 2, .3);
-}
-
-.cu-tab-btn--order.is-active:hover {
-  background: var(--cu-accent-dark);
-  border-color: var(--cu-accent-dark);
-  color: #fff;
-}
-
-/* General button - inactive (outline) */
-.cu-tab-btn--general {
-  background: #fff;
-  color: var(--cu-theme);
-  border-color: var(--cu-theme);
-}
-
-.cu-tab-btn--general:hover {
-  background: rgba(11, 83, 161, .08);
-  color: var(--cu-theme-dark);
-  border-color: var(--cu-theme-dark);
-}
-
-/* General button - active (solid fill highlight) */
-.cu-tab-btn--general.is-active {
-  background: var(--cu-theme);
-  color: #fff;
-  border-color: var(--cu-theme);
-  box-shadow: 0 2px 6px rgba(11, 83, 161, .3);
-}
-
-.cu-tab-btn--general.is-active:hover {
-  background: var(--cu-theme-dark);
-  border-color: var(--cu-theme-dark);
-  color: #fff;
-}
-
-/* ---------- Directory rows ---------- */
-.cu-row {
-  display: flex;
-  gap: .7rem;
-  margin-bottom: .7rem;
-}
-
-.cu-row__icon {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  color: #4a5560;
-  margin-top: .15rem;
-}
-
-/* Map pins carry the accent colour, as on the reference. */
-.cu-row__pin {
-  flex-shrink: 0;
-  width: 17px;
-  height: 17px;
-  color: var(--cu-accent);
-  margin-top: .2rem;
-}
-
-.cu-row__body {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.cu-row__lead {
-  color: var(--cu-theme);
-  font-size: var(--cu-h3);
+.contact-text-primary {
+  font-size: 15px;
   font-weight: 500;
-  text-decoration: none;
-}
-
-.cu-row__lead:hover {
-  color: var(--cu-theme-dark);
-  text-decoration: underline;
-}
-
-.cu-row__note {
-  color: #6b7280;
-  font-size: var(--cu-text);
-  line-height: 1.6;
-}
-
-.cu-row__label {
-  color: var(--cu-accent);
-  font-size: var(--cu-text);
-  margin-bottom: .1rem;
-}
-
-.cu-row__mail {
-  color: var(--cu-theme);
-  font-size: var(--cu-text);
-  text-decoration: underline;
+  color: #1e293b;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
-.cu-row__mail:hover {
-  color: var(--cu-theme-dark);
+.contact-text-muted {
+  font-size: 13.5px;
+  color: var(--contact-text-muted);
+  margin-top: 2px;
 }
 
-/* ---------- Offices ---------- */
-.cu-office__name {
-  color: var(--cu-ink);
-  font-weight: 600;
-  font-size: var(--cu-text);
-  margin-bottom: .15rem;
+.contact-phone-link {
+  color: #1e293b;
+  font-weight: 700;
+  text-decoration: none;
 }
 
-.cu-office__addr {
-  color: var(--cu-body);
-  font-size: var(--cu-text);
-  line-height: 1.6;
-  font-style: normal;
-  margin: 0 0 .5rem;
-}
-
-.cu-office__map {
-  color: var(--cu-theme);
-  font-size: var(--cu-text);
+.contact-phone-link:hover {
+  color: var(--contact-orange);
   text-decoration: underline;
-  align-self: flex-start;
 }
 
-.cu-office__map:hover {
-  color: var(--cu-theme-dark);
+.contact-email-link {
+  color: var(--contact-blue);
+  text-decoration: underline;
+  font-weight: 500;
 }
 
-.cu-row--hours {
-  margin-top: .85rem;
-  padding-top: .75rem;
-  border-top: 1px solid #dde5ee;
+.contact-email-link:hover {
+  color: var(--contact-orange);
 }
 
-/* ---------- Form ---------- */
-.cu-form {
-  margin-top: .75rem;
+/* ============================================================
+   ACTION BUTTONS (ORANGE & BLUE THEME)
+   ============================================================ */
+
+.contact-btn-orange {
+  background-color: var(--contact-orange) !important;
+  color: #ffffff !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-radius: 4px !important;
+  border: 1px solid var(--contact-orange) !important;
+  padding: 8px 18px !important;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.cu-label {
-  display: block;
-  font-size: var(--cu-note);
+.contact-btn-orange:hover,
+.contact-btn-orange:focus {
+  background-color: var(--contact-orange-hover) !important;
+  border-color: var(--contact-orange-hover) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(217, 83, 30, 0.3);
+}
+
+.contact-btn-orange-outline {
+  background-color: #ffffff !important;
+  color: var(--contact-orange) !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-radius: 4px !important;
+  border: 1px solid var(--contact-orange) !important;
+  padding: 8px 18px !important;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none !important;
+}
+
+.contact-btn-orange-outline:hover {
+  background-color: var(--contact-orange) !important;
+  color: #ffffff !important;
+}
+
+.contact-btn-blue {
+  background-color: var(--contact-blue) !important;
+  color: #ffffff !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-radius: 4px !important;
+  border: 1px solid var(--contact-blue) !important;
+  padding: 8px 18px !important;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.contact-btn-blue:hover,
+.contact-btn-blue:focus {
+  background-color: var(--contact-blue-hover) !important;
+  border-color: var(--contact-blue-hover) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(11, 83, 161, 0.3);
+}
+
+.contact-btn-blue-outline {
+  background-color: #ffffff !important;
+  color: var(--contact-blue) !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-radius: 4px !important;
+  border: 1px solid var(--contact-blue) !important;
+  padding: 8px 18px !important;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none !important;
+}
+
+.contact-btn-blue-outline:hover {
+  background-color: var(--contact-blue) !important;
+  color: #ffffff !important;
+}
+
+.contact-btn-orange.active-tab {
+  box-shadow: 0 0 0 3px rgba(217, 83, 30, 0.35) !important;
+}
+
+.contact-btn-blue.active-tab {
+  box-shadow: 0 0 0 3px rgba(11, 83, 161, 0.35) !important;
+}
+
+/* ============================================================
+   CONTACT ITEMS & ICONS
+   ============================================================ */
+
+.contact-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.contact-icon-wrap {
+  width: 36px;
+  min-width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 2px;
+}
+
+.contact-main-icon {
+  font-size: 26px;
+  color: #334155;
+}
+
+.contact-text-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.contact-address-section {
+  margin-top: 10px;
+}
+
+/* ============================================================
+   FORM CONTROLS & PANEL
+   ============================================================ */
+
+.contact-form-panel {
+  background-color: #ffffff;
+  border: 1px solid var(--contact-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.contact-label {
+  font-size: 12.5px;
   font-weight: 600;
-  color: var(--cu-ink);
-  margin: 0 0 .2rem;
+  color: #334155;
+  margin-bottom: 4px;
 }
 
-.cu-field.form-control,
-.cu-field.form-select {
-  border: 1px solid #ccd2d9;
-  border-radius: .25rem;
-  padding: .45rem .65rem;
-  font-size: var(--cu-text);
-  color: var(--cu-ink);
-  margin-bottom: .6rem;
-  box-shadow: none;
+.contact-input {
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 13.5px;
+  color: #1e293b;
+  transition: all 0.2s ease;
 }
 
-.cu-field.form-control:focus,
-.cu-field.form-select:focus {
-  border-color: var(--cu-theme);
-  box-shadow: 0 0 0 .2rem rgba(11, 83, 161, .12);
+.contact-input:focus {
+  border-color: var(--contact-blue);
+  box-shadow: 0 0 0 3px rgba(11, 83, 161, 0.2);
+  outline: none;
 }
 
-.cu-submit.btn {
-  background: var(--cu-theme);
-  border: none;
-  color: #fff;
-  font-weight: 600;
-  font-size: var(--cu-text);
-  padding: .55rem 1.2rem;
-  border-radius: .25rem;
+.contact-input::placeholder {
+  color: #94a3b8;
+  font-size: 13px;
 }
 
-.cu-submit.btn:hover,
-.cu-submit.btn:focus {
-  background: var(--cu-theme-dark);
+/* ============================================================
+   MOBILE DETAILS BOX
+   ============================================================ */
+
+.contact-details-card {
+  background-color: #f1f8fc;
+  border: 1px solid #e0edf7;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
 }
 
-.cu-submit.btn:disabled {
-  background: #7c9ec4;
-}
-
-/* ---------- Submitted ---------- */
-.cu-sent {
-  text-align: center;
-  padding: 1.25rem 0;
-}
-
-.cu-sent__icon {
-  color: #198754;
-  width: 46px;
-  height: 46px;
-  margin-bottom: 1rem;
-}
-
-.cu-sent__note {
-  font-size: var(--cu-text);
-  line-height: 1.7;
-}
-
-/* ---------- Small screens ---------- */
 @media (max-width: 991.98px) {
-  .cu-band {
-    height: 200px;
+  .contact-heading {
+    font-size: 20px;
   }
 
-  .cu-left,
-  .cu-right {
-    padding: 1.5rem;
+  .contact-btn-orange,
+  .contact-btn-blue,
+  .contact-btn-orange-outline,
+  .contact-btn-blue-outline {
+    font-size: 12px !important;
+    padding: 7px 12px !important;
+  }
+}
+
+/* ============================================================
+   MOBILE FIXES (< 992px)
+   - global `.container { padding: 0 !important }` stripped the page gutters,
+     so everything touched the screen edges
+   - buttons wrap cleanly instead of overflowing, long emails break nicely
+   ============================================================ */
+@media (max-width: 991.98px) {
+  .contact-main-wrapper .container {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .contact-main-wrapper .btn {
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .contact-form-panel {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .contact-details-card .contact-main-icon,
+  .contact-address-section .contact-main-icon {
+    font-size: 22px;
+  }
+
+  .contact-details-card .contact-icon-wrap {
+    width: 30px;
+    min-width: 30px;
+  }
+
+  .contact-details-card .contact-item-row {
+    gap: 12px;
+  }
+
+  .contact-email-link {
+    overflow-wrap: anywhere;
   }
 }
 
 @media (max-width: 575.98px) {
-  :root {
-    --cu-h2: 1.3rem;
-    --cu-h3: 1.0625rem;
+  .contact-main-wrapper .container {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
   }
 
-  .cu-shell {
-    padding-top: 1.5rem;
-  }
-
-  .cu-left,
-  .cu-right {
-    padding: 1.25rem;
-  }
-
-  .cu-actions .cu-btn,
-  .cu-tab-btn {
-    flex: 1 1 100%;
-    text-align: center;
-    margin-right: 0;
-  }
-}
-
-/* Desktop layout: columns stretch equally to natural height without inner scrollbars */
-@media (min-width: 992px) {
-  .cu-left,
-  .cu-right {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow-y: visible;
-  }
-}
-
-/* Short laptop screens: trim further rather than force scrolling */
-@media (min-width: 992px) and (max-height: 780px) {
-  :root {
-    --cu-h2: 1.15rem;
-    --cu-text: 0.9rem;
-    --cu-note: 0.85rem;
-  }
-
-  .cu-shell {
-    padding-top: .85rem;
-  }
-
-  .cu-band {
-    height: 140px;
-  }
-
-  .cu-left,
-  .cu-right {
-    padding: .9rem 1.15rem;
-  }
-
-  .cu-row {
-    margin-bottom: .55rem;
-  }
-
-  .cu-field.form-control,
-  .cu-field.form-select {
-    margin-bottom: .5rem;
-    padding: .4rem .6rem;
+  .contact-address-section {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 }

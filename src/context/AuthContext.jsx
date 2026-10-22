@@ -37,9 +37,11 @@ export const AuthProvider = ({ children }) => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
 
-  const login = (userData, authToken) => {
+  // refreshToken (30 days) lets the app renew the 1-hour access token without a new login
+  const login = (userData, authToken, refreshToken) => {
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('token', authToken);
+    if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
     setUser(userData);
     setToken(authToken);
   };
@@ -51,6 +53,7 @@ export const AuthProvider = ({ children }) => {
   const confirmLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     setUser(null);
     setToken(null);
     setShowLogoutModal(false);
@@ -66,6 +69,7 @@ export const AuthProvider = ({ children }) => {
   const clearSession = useCallback(() => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     setUser(null);
     setToken(null);
   }, []);
@@ -77,14 +81,24 @@ export const AuthProvider = ({ children }) => {
         if (current) {
           localStorage.removeItem('user');
           localStorage.removeItem('token');
+          localStorage.removeItem('refresh_token');
           setToken(null);
         }
         return null;
       });
     };
 
+    // fetchInterceptor renewed the access token
+    const onRefreshed = (e) => {
+      if (e.detail?.token) setToken(e.detail.token);
+    };
+
     window.addEventListener('auth:unauthorized', onUnauthorized);
-    return () => window.removeEventListener('auth:unauthorized', onUnauthorized);
+    window.addEventListener('auth:token-refreshed', onRefreshed);
+    return () => {
+      window.removeEventListener('auth:unauthorized', onUnauthorized);
+      window.removeEventListener('auth:token-refreshed', onRefreshed);
+    };
   }, []);
 
   const getUsernamePath = () => {

@@ -1,74 +1,62 @@
 import React from 'react';
-import { ASSET_URL, resolveImageUrl } from '../../config/apiEndpoints';
+import { IoSearch } from 'react-icons/io5';
+import { FiArrowUpRight, FiPackage } from 'react-icons/fi';
 import { BiCategory } from 'react-icons/bi';
-import { FiPackage } from 'react-icons/fi';
+import SearchHighlight from './SearchHighlight';
 
-const SearchSuggestion = ({ item, isSelected, onClick, onMouseEnter }) => {
-  const isProduct = item.itemType === 'product';
-  
-  // Format Image URL
-  let imageUrl = item.image ? resolveImageUrl(item.image) : null;
-
-  // Type Badge Color styling
-  const getTypeBadgeClass = (type) => {
-    switch (type) {
-      case 'product': return 'bg-primary-subtle text-primary border-primary-subtle';
-      case 'category': return 'bg-success-subtle text-success border-success-subtle';
-      case 'subCategory': return 'bg-info-subtle text-info border-info-subtle';
-      case 'productType': return 'bg-warning-subtle text-warning border-warning-subtle';
-      default: return 'bg-secondary-subtle text-secondary border-secondary-subtle';
-    }
-  };
-
-  const typeLabel = item.type || (isProduct ? 'Product' : 'Category');
+const SearchSuggestion = ({ item, isSelected, onClick, onMouseEnter, query }) => {
+  const isCategoryFilter = item.itemType === 'category_filter';
+  const isDirectCategory = item.itemType === 'category' || item.itemType === 'subCategory' || item.itemType === 'subSubCategory';
+  const isProductType = item.itemType === 'productType';
 
   return (
     <div
-      className={`d-flex align-items-center justify-content-between p-2.5 rounded-3 transition-colors cursor-pointer ${
-        isSelected ? 'bg-primary bg-opacity-10' : 'hover-bg-light'
-      }`}
+      className={`pm-search-suggestion-item ${isSelected ? 'is-selected' : ''}`}
       onClick={() => onClick(item)}
       onMouseEnter={onMouseEnter}
-      style={{
-        cursor: 'pointer',
-        transition: 'background-color 0.15s ease',
-        borderLeft: isSelected ? '3px solid #3b7ddd' : '3px solid transparent'
-      }}
+      role="option"
+      aria-selected={isSelected}
     >
-      <div className="d-flex align-items-center gap-3 overflow-hidden me-2">
-        {/* Thumbnail Image or Icon */}
-        <div 
-          className="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0 bg-light border"
-          style={{ width: '42px', height: '42px', overflow: 'hidden' }}
-        >
-          {imageUrl ? (
-            <img 
-              src={imageUrl} 
-              alt={item.name} 
-              className="w-100 h-100 object-fit-cover"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
-              }}
-            />
-          ) : null}
-          <div 
-            className="text-secondary align-items-center justify-content-center w-100 h-100"
-            style={{ display: imageUrl ? 'none' : 'flex' }}
-          >
-            {isProduct ? <FiPackage style={{ fontSize: '1.2rem' }} /> : <BiCategory style={{ fontSize: '1.2rem' }} />}
-          </div>
-        </div>
+      <div className="d-flex align-items-center gap-2.5 overflow-hidden flex-grow-1 me-2">
+        {/* Leading Icon */}
+        <span className="pm-search-item-icon">
+          {isDirectCategory ? (
+            <BiCategory size={16} />
+          ) : isProductType ? (
+            <FiPackage size={15} />
+          ) : (
+            <IoSearch size={16} />
+          )}
+        </span>
 
-        {/* Text Content: Name */}
-        <div className="text-truncate">
-          <div className="fw-medium text-dark text-truncate" style={{ fontSize: '0.9rem' }}>
-            {item.name}
-          </div>
+        {/* Suggestion Text */}
+        <div className="pm-search-item-text">
+          {isCategoryFilter ? (
+            <>
+              <SearchHighlight text={item.queryText || query} query={query} />
+              <span className="pm-search-category-qualifier">
+                in <strong>{item.categoryName}</strong>
+              </span>
+            </>
+          ) : (
+            <SearchHighlight text={item.name} query={query} />
+          )}
+
+          {/* Breadcrumb path for deeper categories */}
+          {item.path && item.path !== item.name && (
+            <small className="d-block text-muted" style={{ fontSize: '11px', lineHeight: 1.1 }}>
+              {item.path}
+            </small>
+          )}
         </div>
       </div>
+
+      {/* Trailing Arrow */}
+      <span className="pm-search-arrow-hint">
+        <FiArrowUpRight size={15} />
+      </span>
     </div>
   );
 };
 
-export default SearchSuggestion;
+export default React.memo(SearchSuggestion);

@@ -37,7 +37,7 @@ const CategoryGridSection = ({ categorySlug }) => {
           id: cat.id,
           name: cat.name,
           url: `/category/${cat.slug}`,
-          img: resolveImageUrl(cat.images?.image || cat.images?.desktop || '')
+          img: resolveImageUrl(cat.image || cat.images?.image || cat.images?.desktop || cat.desktop_menu?.image || '')
         }));
 
         if (normalized.length > 0) setCategoriesData(normalized);
@@ -50,21 +50,20 @@ const CategoryGridSection = ({ categorySlug }) => {
 
   return (
     <div className="container-fluid category-grid-section py-4 bg-white">
-      <div className="row justify-content-center g-4 mx-auto" style={{ maxWidth: '1440px' }}>
+      <div className="row justify-content-center g-3 g-md-4 mx-auto" style={{ maxWidth: '1440px' }}>
         {categoriesData.map((cat, idx) => (
           <div key={idx} className="col-4 col-md-3 col-lg-2 d-flex flex-column align-items-center text-center">
-            <Link to={cat.url || "#"} className="text-decoration-none text-dark w-100 d-flex flex-column align-items-center">
+            <Link to={cat.url || "#"} className="text-decoration-none text-dark w-100 cg-card d-flex flex-column align-items-center">
               <div className="cg-image-wrapper mb-2">
-                {/* The pill shape background */}
-                <div className="cg-bg-shape"></div>
                 {/* The category image */}
                 <img 
-                  src={cat.img && cat.img.startsWith('./') ? cat.img.substring(1) : cat.img} 
+                  src={cat.img || '/default-img.jpg'} 
                   alt={cat.name} 
                   className="cg-image" 
+                  onError={(e) => { e.target.src = 'https://placehold.co/200x200?text=' + encodeURIComponent(cat.name); }}
                 />
               </div>
-              <span className="fw-medium cg-title text-truncate w-100 px-1">{cat.name}</span>
+              <span className="cg-title text-truncate w-100 px-1">{cat.name}</span>
             </Link>
           </div>
         ))}

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import useSearch from '../../hooks/useSearch';
 import SearchInput from './SearchInput';
 import SearchDropdown from './SearchDropdown';
+import { getProductUrl } from '../../utils/seo';
+import './search.css';
 
 const SearchBar = ({ isMobileOverlay = false, onCloseMobile = null }) => {
   const navigate = useNavigate();
@@ -13,6 +15,7 @@ const SearchBar = ({ isMobileOverlay = false, onCloseMobile = null }) => {
     query,
     setQuery,
     suggestions,
+    structuredKeywords,
     flattenedItems,
     isLoading,
     showDropdown,
@@ -37,9 +40,9 @@ const SearchBar = ({ isMobileOverlay = false, onCloseMobile = null }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [setShowDropdown]);
 
-  // Execute Search Navigation
+  // Execute Search Navigation (Search results list)
   const executeSearch = (searchTerm) => {
-    const cleanTerm = searchTerm.trim();
+    const cleanTerm = (searchTerm || '').trim();
     if (!cleanTerm) return;
 
     saveSearch(cleanTerm);
@@ -48,10 +51,22 @@ const SearchBar = ({ isMobileOverlay = false, onCloseMobile = null }) => {
     navigate(`/allproducts?q=${encodeURIComponent(cleanTerm)}`);
   };
 
-  // Select item handler (product, category, subcategory, or term string)
+  // Direct Product Navigation (Clicking product card in right column or dropdown)
+  const handleSelectProduct = (product) => {
+    if (!product) return;
+    saveSearch(product.name);
+    setShowDropdown(false);
+    if (onCloseMobile) onCloseMobile();
+    const productUrl = getProductUrl(product);
+    navigate(productUrl);
+  };
+
+  // Select Item Handler (keywords, category filters, categories, products)
   const handleSelectItem = (item) => {
     setShowDropdown(false);
     if (onCloseMobile) onCloseMobile();
+
+    if (!item) return;
 
     if (typeof item === 'string') {
       executeSearch(item);
@@ -59,17 +74,43 @@ const SearchBar = ({ isMobileOverlay = false, onCloseMobile = null }) => {
     }
 
     if (item.itemType === 'product') {
-      saveSearch(item.name);
-      navigate(`/allproducts?q=${encodeURIComponent(item.name)}`);
-    } else if (item.slug) {
-      saveSearch(item.name);
-      navigate(`/allproducts?category=${encodeURIComponent(item.name)}`);
-    } else {
-      executeSearch(item.name);
+      handleSelectProduct(item);
+      return;
     }
+
+    if (item.itemType === 'category_filter') {
+      saveSearch(item.queryText);
+      const catParam = encodeURIComponent(item.categoryName);
+      const qParam = encodeURIComponent(item.queryText);
+      navigate(`/allproducts?q=${qParam}&category=${catParam}`);
+      return;
+    }
+
+    if (item.itemType === 'category' || item.itemType === 'subCategory' || item.itemType === 'subSubCategory') {
+      saveSearch(item.name);
+      if (item.slug) {
+        navigate(`/category/${item.slug}`);
+      } else {
+        navigate(`/allproducts?category=${encodeURIComponent(item.name)}`);
+      }
+      return;
+    }
+
+    if (item.itemType === 'productType') {
+      saveSearch(item.name);
+      if (item.slug) {
+        navigate(`/category/${item.slug}`);
+      } else {
+        navigate(`/allproducts?q=${encodeURIComponent(item.name)}`);
+      }
+      return;
+    }
+
+    // Default: execute search with item.name
+    executeSearch(item.name || item.queryText || query);
   };
 
-  // Keyboard navigation handler
+  // Keyboard navigation handler (Arrows, Enter, Escape)
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       setShowDropdown(false);
@@ -81,15 +122,21 @@ const SearchBar = ({ isMobileOverlay = false, onCloseMobile = null }) => {
       return;
     }
 
+    const itemsCount = flattenedItems ? flattenedItems.length : 0;
+
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev < flattenedItems.length - 1 ? prev + 1 : 0));
+      if (itemsCount > 0) {
+        setSelectedIndex((prev) => (prev < itemsCount - 1 ? prev + 1 : 0));
+      }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : flattenedItems.length - 1));
+      if (itemsCount > 0) {
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : itemsCount - 1));
+      }
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (selectedIndex >= 0 && selectedIndex < flattenedItems.length) {
+      if (selectedIndex >= 0 && selectedIndex < itemsCount) {
         handleSelectItem(flattenedItems[selectedIndex]);
       } else if (query.trim()) {
         executeSearch(query);
@@ -105,44 +152,60 @@ const SearchBar = ({ isMobileOverlay = false, onCloseMobile = null }) => {
   };
 
   return (
-    <div ref={searchRef} className="position-relative w-100">
-      <form onSubmit={handleSubmit} className="w-100 mb-0">
-        <SearchInput
-          inputRef={inputRef}
-          query={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setShowDropdown(true);
-          }}
-          onClear={() => {
-            setQuery('');
-            setShowDropdown(false);
-            if (inputRef.current) inputRef.current.focus();
-          }}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setShowDropdown(true)}
-          isLoading={isLoading}
-        />
-      </form>
-
-      {/* Live Suggestion Dropdown */}
+    <>
+      {/* Amazon Focus Backdrop Dimming: Dims page when search dropdown is active */}
       {showDropdown && (
-        <SearchDropdown
-          query={query}
-          suggestions={suggestions}
-          flattenedItems={flattenedItems}
-          isLoading={isLoading}
-          selectedIndex={selectedIndex}
-          onSelectSuggestion={handleSelectItem}
-          onViewAllResults={executeSearch}
-          history={history}
-          popularSearches={popularSearches}
-          onRemoveHistoryItem={removeSearch}
-          onClearHistory={clearHistory}
-          onHoverIndex={(idx) => setSelectedIndex(idx)}
+        <div
+          className="pm-search-backdrop"
+          onClick={() => setShowDropdown(false)}
+          aria-hidden="true"
         />
       )}
-    </div>
+
+      <div
+        ref={searchRef}
+        className={`pm-search-bar-container ${showDropdown ? 'is-active' : ''}`}
+      >
+        <form onSubmit={handleSubmit} className="w-100 mb-0" role="search">
+          <SearchInput
+            inputRef={inputRef}
+            query={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setShowDropdown(true);
+            }}
+            onClear={() => {
+              setQuery('');
+              setShowDropdown(true);
+              if (inputRef.current) inputRef.current.focus();
+            }}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setShowDropdown(true)}
+            isLoading={isLoading}
+          />
+        </form>
+
+        {/* Live Flipkart & Amazon Style Suggestion Dropdown */}
+        {showDropdown && (
+          <SearchDropdown
+            query={query}
+            suggestions={suggestions}
+            structuredKeywords={structuredKeywords}
+            flattenedItems={flattenedItems}
+            isLoading={isLoading}
+            selectedIndex={selectedIndex}
+            onSelectSuggestion={handleSelectItem}
+            onSelectProduct={handleSelectProduct}
+            onViewAllResults={executeSearch}
+            history={history}
+            popularSearches={popularSearches}
+            onRemoveHistoryItem={removeSearch}
+            onClearHistory={clearHistory}
+            onHoverIndex={(idx) => setSelectedIndex(idx)}
+          />
+        )}
+      </div>
+    </>
   );
 };
 

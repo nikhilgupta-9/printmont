@@ -1,0 +1,317 @@
+/* FNP Style Location Modal & Drawer Styles */
+
+.location-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: locFadeIn 0.2s ease-out;
+}
+
+@keyframes locFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.location-modal-container {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 540px;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  animation: locScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes locScaleUp {
+  from {
+    transform: scale(0.95) translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Mobile Bottom Sheet Layout */
+@media (max-width: 767.98px) {
+  .location-modal-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .location-modal-container {
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 85vh;
+    animation: locSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes locSlideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Header */
+.loc-modal-header {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background-color: #ffffff;
+}
+
+.loc-modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.loc-modal-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin: 2px 0 0;
+}
+
+.loc-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.loc-close-btn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Body */
+.loc-modal-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Search Box */
+.loc-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  background-color: #f8fafc;
+  padding: 8px 12px;
+  transition: all 0.2s ease;
+}
+
+.loc-search-box:focus-within {
+  border-color: #0b53a1;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(11, 83, 161, 0.12);
+}
+
+.loc-search-box > svg {
+  flex-shrink: 0;
+}
+
+.loc-search-input {
+  border: none;
+  background: transparent;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 10px;
+  padding-right: 8px;
+  font-size: 13.5px;
+  color: #0f172a;
+  outline: none;
+  box-shadow: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.loc-search-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.loc-search-input::placeholder {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.loc-search-box .btn,
+.loc-search-box .spinner-border {
+  flex-shrink: 0;
+}
+
+/* Autocomplete Results */
+.loc-search-results {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.loc-result-item {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  border-bottom: 1px solid #f8fafc;
+  transition: background-color 0.15s ease;
+}
+
+.loc-result-item:last-child {
+  border-bottom: none;
+}
+
+.loc-result-item:hover {
+  background-color: #f0f7ff;
+}
+
+/* GPS Button */
+.loc-gps-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background-color: #f0f7ff;
+  border: 1px dashed #93c5fd;
+  border-radius: 10px;
+  color: #0b53a1;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.loc-gps-btn:hover {
+  background-color: #e0f2fe;
+  border-color: #60a5fa;
+}
+
+/* Popular Cities Section */
+.loc-popular-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 4px 0 10px;
+}
+
+.loc-cities-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 576px) {
+  .loc-cities-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+}
+
+.loc-city-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background-color: #ffffff;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.loc-city-card:hover {
+  border-color: #0b53a1;
+  background-color: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.loc-city-card.active {
+  border-color: #0b53a1;
+  background-color: #eff6ff;
+  box-shadow: 0 0 0 2px rgba(11, 83, 161, 0.2);
+}
+
+.loc-city-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+  color: #0b53a1;
+  transition: all 0.2s ease;
+}
+
+.loc-city-card.active .loc-city-icon-wrapper,
+.loc-city-card:hover .loc-city-icon-wrapper {
+  background-color: #0b53a1;
+  color: #ffffff;
+}
+
+.loc-city-name {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.loc-city-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: #e0f2fe;
+  color: #0369a1;
+  font-weight: 600;
+  margin-top: 3px;
+}

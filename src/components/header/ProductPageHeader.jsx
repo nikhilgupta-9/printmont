@@ -3,17 +3,29 @@ import { IoSearchSharp } from "react-icons/io5";
 import { BsArrowLeft, BsXLg } from "react-icons/bs"; // BsXLg is the close icon
 import { GiShoppingCart } from "react-icons/gi";
 import { FaRegCircleUser } from "react-icons/fa6";
-import { FaHeart, FaShoppingBag } from 'react-icons/fa';
+import { FaHeart, FaShoppingBag, FaBell } from 'react-icons/fa';
+import { GoHeart } from "react-icons/go";
+import { BsCart4 } from "react-icons/bs";
+import { PiDotsThreeOutlineVerticalFill, PiHeadsetBold } from "react-icons/pi";
+import { LuChartNoAxesCombined } from "react-icons/lu";
+import { RiDownload2Line } from "react-icons/ri";
+import { IoChevronDown } from "react-icons/io5";
+import { Navbar, Container, Nav } from "react-bootstrap";
 import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Categories from '../pages/category-list/Categories';
 import SearchBar from '../search/SearchBar';
+import LoginDropdown from './LoginDropdown';
+import HeaderPreferencesDropdown from './HeaderPreferencesDropdown';
 import { useCheckout } from '../../context/CheckoutContext';
 import { useAuth } from '../../context/AuthContext';
+import useAccountNavigation from '../../hooks/useAccountNavigation';
 import { useWishlist } from '../../context/WishlistContext';
+import { useLocationContext } from '../../context/LocationContext';
 import axios from 'axios';
 import { API_ENDPOINTS, ASSET_URL } from '../../config/apiEndpoints';
+import './Header.css';
 
 const ProductPageHeader = ({ 
     pageTitle = "Cart", 
@@ -22,13 +34,17 @@ const ProductPageHeader = ({
     showImages = false, 
     isSticky = true, 
     bg, 
-    color 
+    color,
+    desktopDesign = 'design1',
+    mobileDesign = 'design1'
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const checkoutContext = useCheckout();
     const { wishlistCount } = useWishlist();
     const { user, logout, getUsernamePath } = useAuth();
+    const { accountPath, goToAccount } = useAccountNavigation();
+    const { location: deliveryLocation, openLocationModal } = useLocationContext();
     const usernamePath = getUsernamePath();
     const cartItems = checkoutContext ? checkoutContext.cartItems : [];
     const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
@@ -39,21 +55,34 @@ const ProductPageHeader = ({
                                location.pathname.includes('privacy') || 
                                location.pathname.includes('shipping') || 
                                location.pathname.includes('refund') ||
-                               location.pathname.includes('bulk') ||
-                               location.pathname.includes('franchise') ||
-                               location.pathname.includes('affiliate') ||
-                               location.pathname.includes('blog') ||
-                               location.pathname.includes('seller') ||
-                               location.pathname.includes('about') ||
-                               location.pathname.includes('careers') ||
-                               location.pathname.includes('faq') ||
-                               location.pathname.includes('security') ||
-                               location.pathname.includes('wallet') ||
-                               location.pathname.includes('printmont-coin');
-
-    const shouldShowCategories = showCategories !== undefined 
-        ? showCategories 
-        : (!isInfoOrPolicyPage);
+                               location.pathname.includes('bulk');
+    const isContactPage = location.pathname.startsWith('/contact');
+    const isBlogPage = location.pathname.startsWith('/blog');
+    const isAffiliatePage = location.pathname.startsWith('/affiliate');
+    const isBusinessSolutionsPage = location.pathname.startsWith('/business-solutions');
+    const isSitemapPage = location.pathname.startsWith('/sitemap');
+    const isSecurityPage = location.pathname.startsWith('/security');
+    const isCareersPage = location.pathname.startsWith('/careers');
+    const isFaqPage = location.pathname.startsWith('/faq');
+    const isHelpCenterPage = location.pathname.startsWith('/help-center') || location.pathname === '/help' || location.pathname.startsWith('/help/');
+    const isCoinsPage = location.pathname.startsWith('/printmont-coin') || location.pathname.startsWith('/wallet');
+    const isQuickLinksPage = location.pathname.startsWith('/quick-links');
+    const isAuthPage = location.pathname.startsWith('/login') || 
+                       location.pathname.startsWith('/signup') || 
+                       location.pathname.startsWith('/register') || 
+                       location.pathname.startsWith('/forgot-password');
+    const isPolicyPage = location.pathname.includes('policy') || 
+                         location.pathname.includes('terms') || 
+                         location.pathname.includes('privacy') || 
+                         location.pathname.includes('shipping') || 
+                         location.pathname.includes('refund');
+    const isCategoryPage = location.pathname.startsWith('/category');
+    const isAllProductsPage = location.pathname.startsWith('/allproducts');
+    const shouldShowCategories = (isAuthPage || isSitemapPage || isSecurityPage) ? false : (
+        showCategories !== undefined 
+            ? Boolean(showCategories) 
+            : (!isInfoOrPolicyPage || isContactPage || isBlogPage || isAffiliatePage || isPolicyPage || isBusinessSolutionsPage || isCareersPage || isFaqPage || isHelpCenterPage || isCoinsPage || isQuickLinksPage || isCategoryPage || isAllProductsPage || isProductPage)
+    );
 
     // State to toggle between the default header and the active search bar
     const [isSearchActive, setIsSearchActive] = useState(false);
@@ -61,9 +90,13 @@ const ProductPageHeader = ({
     const [showSearchDropdown, setShowSearchDropdown] = useState(false);
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [showPreferences, setShowPreferences] = useState(false);
+    const [showLoginDropdown, setShowLoginDropdown] = useState(false);
     const [logo, setLogo] = useState("/PrintLogo.png");
     const headerRef = React.useRef(null);
     const searchRef = React.useRef(null);
+    const preferenceRef = React.useRef(null);
+    const loginRef = React.useRef(null);
 
     React.useEffect(() => {
         const fetchLogo = async () => {
@@ -129,6 +162,7 @@ const ProductPageHeader = ({
         if (!headerRef.current) return;
 
         const updateHeaderHeight = () => {
+            if (!headerRef.current) return;
             document.documentElement.style.setProperty(
                 "--site-header-height",
                 `${headerRef.current.getBoundingClientRect().height}px`
@@ -146,14 +180,136 @@ const ProductPageHeader = ({
         };
     }, []);
 
+    // Desktop category bar: hides while scrolling down, comes back on scroll up / at top
+    // (same behaviour as the home page category bar).
+    const [showCategoryBar, setShowCategoryBar] = useState(true);
+    const lastScrollYRef = React.useRef(0);
+    const scrollFrameRef = React.useRef(null);
+
+    React.useEffect(() => {
+        setShowCategoryBar(true);
+        lastScrollYRef.current = window.scrollY;
+    }, [location.pathname]);
+
+    React.useEffect(() => {
+        if (!shouldShowCategories) return undefined;
+
+        const handleScroll = () => {
+            if (scrollFrameRef.current) return;
+            scrollFrameRef.current = window.requestAnimationFrame(() => {
+                const currentY = window.scrollY;
+                const threshold = 150;
+
+                if (currentY <= 10) {
+                    setShowCategoryBar(true);
+                } else if (currentY > lastScrollYRef.current && currentY > threshold) {
+                    setShowCategoryBar(false);
+                } else if (currentY < lastScrollYRef.current) {
+                    setShowCategoryBar(true);
+                }
+
+                lastScrollYRef.current = currentY;
+                scrollFrameRef.current = null;
+            });
+        };
+
+        lastScrollYRef.current = window.scrollY;
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+            if (scrollFrameRef.current) {
+                window.cancelAnimationFrame(scrollFrameRef.current);
+                scrollFrameRef.current = null;
+            }
+        };
+    }, [shouldShowCategories]);
+
     const handleBackClick = () => {
         // If search is active, close the search view first
         if (isSearchActive) {
             setIsSearchActive(false);
             setSearchTerm(''); // Clear the search term
-        } else {
-            // Otherwise, navigate back
+            return;
+        }
+
+        // If on /cart or /checkout with an active checkout step > 0 (e.g. on Address or Summary), navigate back one step
+        if ((location.pathname.startsWith('/cart') || location.pathname.startsWith('/checkout')) && checkoutContext?.checkoutStep > 0) {
+            checkoutContext.setCheckoutStep(checkoutContext.checkoutStep - 1);
+            window.scrollTo(0, 0);
+            return;
+        }
+
+        // If on edit profile page, navigate back to profile hub
+        if (location.pathname.includes('profile-edit')) {
+            navigate(`/${usernamePath}/profile`);
+            return;
+        }
+
+        // If on account subpages, navigate back to profile hub
+        if (location.pathname.includes('manage-address') || location.pathname.includes('change-password') || location.pathname.includes('pan-gst') || location.pathname.includes('pan-card')) {
+            navigate(`/${usernamePath}/profile`);
+            return;
+        }
+
+        // If on signup or register page, go back to login
+        if (location.pathname.startsWith('/signup') || location.pathname.startsWith('/register')) {
+            navigate('/login');
+            return;
+        }
+
+        // If on forgot-password page, go back to login
+        if (location.pathname.startsWith('/forgot-password')) {
+            navigate('/login');
+            return;
+        }
+
+        // If on auth pages (login), return to origin page, not loop into protected redirectParam
+        if (isAuthPage) {
+            const lastPage = sessionStorage.getItem('pm_last_visited_page');
+            const isProtected = (url) => url && (url.startsWith('/user') || url.includes('profile-edit'));
+
+            if (window.history.length > 1) {
+                navigate(-1);
+                return;
+            }
+
+            if (
+                lastPage &&
+                lastPage !== location.pathname &&
+                !lastPage.startsWith('/login') &&
+                !lastPage.startsWith('/signup') &&
+                !lastPage.startsWith('/register') &&
+                !lastPage.startsWith('/forgot-password') &&
+                (!isProtected(lastPage) || user)
+            ) {
+                navigate(lastPage, { replace: true });
+                return;
+            }
+
+            navigate('/', { replace: true });
+            return;
+        }
+
+        // Check if redirect query param or location state exists
+        const searchParams = new URLSearchParams(location.search);
+        const redirectParam = searchParams.get('redirect') || location.state?.from;
+        if (redirectParam && redirectParam !== location.pathname) {
+            navigate(redirectParam);
+            return;
+        }
+
+        // Check tracked origin page in sessionStorage
+        const lastPage = sessionStorage.getItem('pm_last_visited_page');
+        if (lastPage && lastPage !== location.pathname && !lastPage.startsWith('/login') && !lastPage.startsWith('/signup')) {
+            navigate(lastPage);
+            return;
+        }
+
+        // Fallback to browser history if available
+        if (window.history.length > 1) {
             navigate(-1);
+        } else {
+            navigate('/');
         }
     };
 
@@ -215,32 +371,12 @@ const ProductPageHeader = ({
     // --- Active Search Bar View ---
     if (isSearchActive) {
         return (
-            <div className='bg-white sticky-top z-3'>
-                <div className="d-flex align-items-center px-3 py-2 border-bottom">
-
-                    {/* Back Arrow / Close Search */}
-                    <BsArrowLeft size={24} onClick={handleBackClick} style={{ cursor: 'pointer' }} className="me-2 " />
-
-                    {/* Search Input */}
-                    <input
-                        type="search"
-                        id='product-search'
-                        placeholder="Search for products, Brands and more"
-                        className="form-control border-0 flex-grow-1"
-                        autoFocus // Automatically focus the input when search opens
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                console.log("Searching for:", searchTerm);
-                                setIsSearchActive(false);
-                            }
-                        }}
-                    />
-
+            <div className='bg-white sticky-top z-3 px-3 py-2 border-bottom d-flex align-items-center gap-2 shadow-sm'>
+                {/* Back Arrow / Close Search */}
+                <BsArrowLeft size={24} onClick={handleBackClick} style={{ cursor: 'pointer' }} className="text-dark flex-shrink-0" />
+                <div className="flex-grow-1">
+                    <SearchBar isMobileOverlay={true} onCloseMobile={() => setIsSearchActive(false)} />
                 </div>
-                {/* Search Suggestions Box */}
-                {showSearchDropdown && searchTerm && <div className="position-relative w-100" ref={searchRef}><SearchSuggestions /></div>}
             </div>
         );
     }
@@ -248,158 +384,254 @@ const ProductPageHeader = ({
     // --- Default Header View ---
     return (
         <>
-            <div ref={headerRef} className='theme shadow-sm position-fixed top-0 start-0 w-100 border-bottom' style={{ zIndex: '1030' }}>
-                <div className="d-flex align-items-center justify-content-between p-1 px-0 px-lg-5">
-                    {/* LEFT SIDE: Back Arrow, Logo, Title */}
-                    <div className="d-flex align-items-center gap-2 flex-grow-1">
-
-                        <div className='d-flex d-lg-none align-items-center'>
+            <div ref={headerRef} className='position-fixed top-0 start-0 w-100 pm-inner-header-fixed' style={{ zIndex: '1030' }}>
+                {/* 1. MOBILE VIEW NAVBAR (Deep Blue #0a54a0) */}
+                <div className="d-block d-lg-none header-inner-mobile-wrap" style={{ minHeight: "56px" }}>
+                    <div className='d-flex align-items-center w-100 justify-content-between'>
+                        <div className="d-flex align-items-center">
                             {showBackButton && (
-                                <BsArrowLeft
-                                    size={24}
+                                <button
+                                    type="button"
                                     onClick={handleBackClick}
-                                    style={{ cursor: 'pointer' }}
-                                    color='white'
-                                    className='me-3'
-                                />
+                                    onTouchEnd={(e) => {
+                                        e.preventDefault();
+                                        handleBackClick();
+                                    }}
+                                    className="btn btn-link p-0 text-white border-0 d-flex align-items-center justify-content-center me-2"
+                                    style={{ 
+                                        minWidth: '44px', 
+                                        minHeight: '44px', 
+                                        textDecoration: 'none',
+                                        touchAction: 'manipulation',
+                                        WebkitTapHighlightColor: 'rgba(255, 255, 255, 0.2)'
+                                    }}
+                                    title="Go Back"
+                                    aria-label="Go Back"
+                                >
+                                    <BsArrowLeft
+                                        size={24}
+                                        color='#ffffff'
+                                    />
+                                </button>
                             )}
-                            {/* Logo/Icon */}
-                            <Link to="/" className="d-flex align-items-center">
-                                <img src="/PrintwhiteLogo.png" alt="Logo" style={{ height: "24px", marginRight: '5px', objectFit: "contain" }} />
+                            {/* Mobile White PM Icon Logo */}
+                            <Link to="/" className="d-flex align-items-center me-2">
+                                <img 
+                                    src="/pm-white-icon.png" 
+                                    alt="Printmont Logo" 
+                                    style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "contain" }} 
+                                    onError={(e) => { e.target.src = "/PrintLogo.png"; }} 
+                                />
                             </Link>
 
-                            {/* Page Title - Hidden on Product Details mobile page */}
+                            {/* Page Title */}
                             {!isProductPage && (
-                                <span className="fw-medium text-uppercase text-light text-truncate" style={{ fontSize: '15px' }}>
+                                <span className="fw-bold text-white text-truncate ms-1" style={{ fontSize: '17px', letterSpacing: '0.2px' }}>
                                     {pageTitle}
                                 </span>
                             )}
                         </div>
-                        <div className='d-none d-lg-flex align-items-center gap-5 w-100'>
-                            <Link to={'/'}>
-                                <img src={logo || "/PrintLogo.png"} alt="PrintMont Logo" height={45} style={{ objectFit: "contain" }} onError={(e) => { e.target.src = "/PrintLogo.png"; }} />
-                            </Link>
-                            <div className="flex-grow-1 mx-4" style={{ maxWidth: '650px' }}>
-                                <SearchBar />
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* RIGHT SIDE: Icons (Search, Cart, Login) */}
-                    <div className="">
-                        <div className='d-flex align-items-center gap-3 px-3 d-lg-none'>
-                            {/* Search Icon - Toggles the search state */}
-                            <div onClick={() => setIsSearchActive(true)} style={{ cursor: 'pointer' }} className="text-dark">
-                                <IoSearchSharp color='white' size={22} />
-                            </div>
-
-                            {isProductPage ? (
+                        {/* Mobile Right: Wishlist, Cart, Login */}
+                        <div className="d-flex align-items-center gap-3">
+                            {!isQuickLinksPage && !isPolicyPage && !isAuthPage && (
                                 <>
-                                    {/* Wishlist Heart Icon with Badge */}
-                                    <Link to="/wishlist" className="position-relative text-dark d-flex align-items-center">
-                                        <FaHeart color='white' size={20} />
-                                        {wishlistCount > 0 && (
-                                            <span className="position-absolute rounded-circle bg-white text-primary fw-bold d-flex align-items-center justify-content-center" 
-                                                  style={{ 
-                                                      top: '-8px', 
-                                                      right: '-8px', 
-                                                      fontSize: '9px', 
-                                                      width: '15px', 
-                                                      height: '15px', 
-                                                      border: '1px solid rgb(11, 83, 161)' 
-                                                  }}>
-                                                {wishlistCount}
-                                            </span>
-                                        )}
+                                    {/* Wishlist */}
+                                    <Link to={`/${usernamePath}/wishlist`} className="text-white text-decoration-none position-relative d-flex align-items-center" title="Wishlist">
+                                        <GoHeart color="#ffffff" size={21} />
+                                        <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '9px', padding: '2px 4px', lineHeight: 1 }}>
+                                            {wishlistCount || 0}
+                                        </span>
                                     </Link>
 
-                                    {/* Cart Icon with Badge */}
-                                    <Link to="/cart" className="position-relative text-dark d-flex align-items-center">
-                                        <FaShoppingBag color='white' size={22} />
-                                        {cartCount > 0 && (
-                                            <span className="position-absolute rounded-circle bg-danger text-white fw-bold d-flex align-items-center justify-content-center" 
-                                                  style={{ 
-                                                      top: '-8px', 
-                                                      right: '-8px', 
-                                                      fontSize: '9px', 
-                                                      width: '16px', 
-                                                      height: '16px', 
-                                                      border: '1px solid white' 
-                                                  }}>
-                                                {cartCount}
-                                            </span>
-                                        )}
-                                    </Link>
-                                </>
-                            ) : (
-                                <>
-                                    {/* Cart Icon */}
-                                    <Link to="/cart" className="position-relative text-dark d-flex align-items-center">
-                                        <FaShoppingBag color='white' size={22} />
-                                        {cartCount > 0 && (
-                                            <span className="position-absolute rounded-circle bg-danger text-white fw-bold d-flex align-items-center justify-content-center" 
-                                                  style={{ 
-                                                      top: '-8px', 
-                                                      right: '-8px', 
-                                                      fontSize: '9px', 
-                                                      width: '16px', 
-                                                      height: '16px', 
-                                                      border: '1px solid white' 
-                                                  }}>
-                                                {cartCount}
-                                            </span>
-                                        )}
-                                    </Link>
-
-                                    {/* Login/User Text */}
-                                    <Link to="/login" className="text-light fw-medium text-decoration-none d-flex align-items-center gap-1 ">
-                                        Login
+                                    {/* Cart */}
+                                    <Link to="/cart" className="text-white text-decoration-none position-relative d-flex align-items-center" title="Cart">
+                                        <BsCart4 color="#ffffff" size={20} />
+                                        <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '9px', padding: '2px 4px', lineHeight: 1 }}>
+                                            {cartCount || 0}
+                                        </span>
                                     </Link>
                                 </>
                             )}
-                        </div>
-                        <div className='d-none d-lg-flex align-items-center '>
-                            <DropdownButton id="dropdown-button-dark-example2"  title={<>
-                                <FaRegCircleUser size={20} className="me-1"/> 
-                                {user ? (user.first_name || user.firstName || user.name || (user.email ? user.email.split('@')[0] : 'User')) : 'Buyer Name'}
-                                </>} className="mt-2 custom-dropdown" data-bs-theme>
-                                
-                                <Dropdown.Item as={Link} to={user ? `/${usernamePath}/profile` : "/login"}>My Profile</Dropdown.Item>
-                                <Dropdown.Item as={Link} to={user ? "/orders" : "/login"}>Orders</Dropdown.Item>
-                                <Dropdown.Item as={Link} to="/track-order">Track your Orders</Dropdown.Item>
-                                <Dropdown.Item as={Link} to={user ? "/printmont-coin" : "/login"}>Printmont Coins</Dropdown.Item>
-                                {user ? (
-                                    <>
-                                        <Dropdown.Divider />
-                                        <Dropdown.Item as="button" onClick={logout} className="text-danger">Log Out</Dropdown.Item>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Dropdown.Divider />
-                                        <Dropdown.Item as={Link} to="/login">Login / Signup</Dropdown.Item>
-                                    </>
-                                )}
-                            </DropdownButton>
+
+                            {/* Login / Profile */}
+                            <Link to={accountPath} onClick={goToAccount} className="text-white text-decoration-none d-flex align-items-center" title={user ? "My Account" : "Login"}>
+                                <FaRegCircleUser color='#ffffff' size={21} />
+                            </Link>
                         </div>
                     </div>
                 </div>
 
-                {/* Categories section for product/inner pages */}
+                {/* 2. DESKTOP VIEW NAVBAR - Clean White enclosed in Container like on Home Page Navbar */}
+                <div className="d-none d-lg-block container-fluid bg-white fnp-main-navbar p-0 position-relative" style={{ zIndex: 2 }}>
+                    <Navbar expand="lg" className="border-bottom py-2 container-fluid px-4 px-xl-5">
+                        <Container className="d-flex align-items-center justify-content-between py-1" style={{ maxWidth: '1440px' }}>
+                            {/* Brand Logo, Vertical Divider & Exact FNP Location Block */}
+                            <div className="d-flex align-items-center me-2">
+                                <Navbar.Brand as={Link} to="/" className="m-0 p-0 d-flex flex-column">
+                                    <img 
+                                        src={logo || "/PrintLogo.png"} 
+                                        alt="PrintMont Logo" 
+                                        style={{ height: "42px", objectFit: "contain" }} 
+                                        onError={(e) => { e.target.src = "/PrintLogo.png"; }}
+                                    />
+                                </Navbar.Brand>
+
+                                {/* Vertical Divider Line */}
+                                <div style={{ width: "1px", height: "36px", backgroundColor: "#e2e8f0", margin: "0 16px" }} />
+
+                                {/* Location Trigger (Flag + Deliver to + City / Pincode) */}
+                                <div 
+                                    className="d-flex align-items-center text-nowrap pm-location-trigger"
+                                    onClick={openLocationModal}
+                                    title="Click to select delivery location"
+                                >
+                                    {/* Indian Flag */}
+                                    <span 
+                                        className="d-inline-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" 
+                                        style={{ 
+                                            width: "22px", 
+                                            height: "15px", 
+                                            borderRadius: "2.5px", 
+                                            boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
+                                            border: "1px solid rgba(0,0,0,0.08)"
+                                        }}
+                                    >
+                                        <svg viewBox="0 0 640 480" width="100%" height="100%">
+                                            <path fill="#f93" d="M0 0h640v160H0z"/>
+                                            <path fill="#fff" d="M0 160h640v160H0z"/>
+                                            <path fill="#128807" d="M0 320h640v160H0z"/>
+                                            <g transform="matrix(3.2 0 0 3.2 320 240)">
+                                                <circle r="20" fill="#008"/>
+                                                <circle r="17.5" fill="#fff"/>
+                                                <circle r="3.5" fill="#008"/>
+                                                <g id="d">
+                                                    <g id="c">
+                                                        <g id="b">
+                                                            <g id="a">
+                                                                <path fill="#008" d="M0-17.5L.6-3.5 0 0l-.6-3.5z"/>
+                                                            </g>
+                                                            <use href="#a" transform="rotate(15)"/>
+                                                        </g>
+                                                        <use href="#b" transform="rotate(30)"/>
+                                                    </g>
+                                                    <use href="#c" transform="rotate(60)"/>
+                                                </g>
+                                                <use href="#d" transform="rotate(120)"/>
+                                                <use href="#d" transform="rotate(240)"/>
+                                            </g>
+                                        </svg>
+                                    </span>
+
+                                    {/* Text Column */}
+                                    <div className="d-flex flex-column text-start" style={{ lineHeight: "1.2" }}>
+                                        <span style={{ fontSize: "11px", fontWeight: "600", color: "#64748b", letterSpacing: "0.2px", textTransform: "uppercase" }}>
+                                            Deliver to
+                                        </span>
+                                        {deliveryLocation?.is_set ? (
+                                            <span 
+                                                className="d-flex align-items-center gap-1" 
+                                                style={{ fontSize: "12.5px", fontWeight: "700", color: "#00529b" }}
+                                            >
+                                                <span className="text-truncate" style={{ maxWidth: "120px" }}>
+                                                    {deliveryLocation.city_name}{deliveryLocation.pincode ? `, ${deliveryLocation.pincode}` : ''}
+                                                </span>
+                                                <IoChevronDown size={11} style={{ color: "#00529b" }} />
+                                            </span>
+                                        ) : (
+                                            <span 
+                                                className="d-flex align-items-center gap-1" 
+                                                style={{ fontSize: "12px", fontWeight: "600", color: "#ea580c" }}
+                                            >
+                                                Select Location
+                                                <IoChevronDown size={11} style={{ color: "#ea580c" }} />
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Centered Wide Flipkart Search Bar */}
+                            <div className="flex-grow-1 mx-3 mx-xl-4 fnp-search-wrapper">
+                                <SearchBar />
+                            </div>
+
+                            {/* Action Icons & Links (Flipkart Layout) */}
+                            <Nav className="d-flex align-items-center gap-3 gap-xl-4 flex-row flex-nowrap">
+                                {/* Wishlist */}
+                                <Link
+                                    to={`/${usernamePath}/wishlist`}
+                                    className="fnp-header-action-item"
+                                    title="My Wishlist"
+                                >
+                                    <div className="position-relative d-flex align-items-center">
+                                        <GoHeart size={21} color="#0b53a1" />
+                                        {wishlistCount > 0 && (
+                                            <span className="fnp-badge-counter">{wishlistCount}</span>
+                                        )}
+                                    </div>
+                                    <span className="fnp-header-action-text">Wishlist</span>
+                                </Link>
+
+                                {/* Cart */}
+                                <Link
+                                    to="/cart"
+                                    className="fnp-header-action-item"
+                                    title="Shopping Cart"
+                                >
+                                    <div className="position-relative d-flex align-items-center">
+                                        <BsCart4 size={20} color="#0b53a1" />
+                                        {cartCount > 0 && (
+                                            <span className="fnp-badge-counter">{cartCount}</span>
+                                        )}
+                                    </div>
+                                    <span className="fnp-header-action-text">Cart</span>
+                                </Link>
+
+                                {/* User Sign In / Account Dropdown */}
+                                <div
+                                    className="d-flex flex-column align-items-center gap-1 nav-link text-dark p-0"
+                                    ref={loginRef}
+                                    onMouseEnter={() => setShowLoginDropdown(true)}
+                                    onMouseLeave={() => setShowLoginDropdown(false)}
+                                    style={{ cursor: "pointer" }}
+                                >
+                                    <LoginDropdown isHovered={showLoginDropdown} />
+                                </div>
+
+                                {/* Three-Dots More Preferences Dropdown */}
+                                <HeaderPreferencesDropdown />
+                            </Nav>
+
+                        </Container>
+                    </Navbar>
+                </div>
+
+                {/* Category Navbar - Theme Blue Background with White Text */}
                 {shouldShowCategories && (
-                    <div className="d-none d-lg-block border-top border-opacity-10">
+                    <div
+                        className="d-none d-lg-block w-100 shadow-sm position-relative"
+                        style={{
+                            backgroundColor: "#0b53a1",
+                            zIndex: 1,
+                            transform: showCategoryBar ? "translateY(0)" : "translateY(-100%)",
+                            transition: "transform 0.3s ease-in-out",
+                            pointerEvents: showCategoryBar ? "auto" : "none"
+                        }}
+                    >
                         <Categories 
                             showImages={showImages} 
-                            space="6px 0" 
-                            bg={bg || "rgb(11, 83, 161)"} 
-                            color={color || "white"} 
+                            space="0" 
+                            bg="#0b53a1" 
+                            color="#ffffff" 
                             isSticky={false} 
                         />
                     </div>
                 )}
             </div>
 
-            <div style={{ height: "var(--site-header-height, 65px)" }} className="d-none d-lg-block"></div>
-            <div style={{ height: "var(--site-header-height, 55px)" }} className="d-block d-lg-none"></div>
+            <div style={{ height: "var(--site-header-height, 104px)" }} className="d-none d-lg-block" aria-hidden="true"></div>
+            <div style={{ height: "var(--site-header-height, 56px)" }} className="d-block d-lg-none" aria-hidden="true"></div>
         </>
     );
 };

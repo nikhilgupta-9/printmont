@@ -20,12 +20,39 @@ export default function ProductCarousel({
   title = "Products",
   badgeText = "",
   backgroundImageUrl,
-  cardsToShowMobile = 2.25
+  cardsToShowMobile = 2.25,
+  viewAllUrl
 }) {
   const scrollRef = useRef(null);
   const { products, loading, error } = useHomeProducts(apiUrl, initialProducts);
   const { canScrollLeft, canScrollRight, scroll } = useHorizontalScroll(scrollRef, [products]);
   const breakpoint = useBreakpoint();
+
+  const computedViewAllUrl = React.useMemo(() => {
+    if (viewAllUrl) return viewAllUrl;
+    const lowerTitle = (title || "").toLowerCase().trim();
+    if (lowerTitle.includes("bestseller") || lowerTitle.includes("best seller")) {
+      return "/allproducts?filter=bestseller";
+    }
+    if (lowerTitle.includes("top rated") || lowerTitle.includes("top-rated")) {
+      return "/allproducts?filter=top_rated";
+    }
+    if (lowerTitle.includes("top deal") || lowerTitle.includes("deals")) {
+      return "/allproducts?filter=top_deal";
+    }
+    if (lowerTitle.includes("discount") || lowerTitle.includes("special offer") || lowerTitle.includes("flash sale")) {
+      return "/allproducts?filter=discount";
+    }
+    if (apiUrl) {
+      if (apiUrl.includes("action=bestseller")) return "/allproducts?filter=bestseller";
+      if (apiUrl.includes("action=top_rated")) return "/allproducts?filter=top_rated";
+      if (apiUrl.includes("action=top_deal")) return "/allproducts?filter=top_deal";
+      if (apiUrl.includes("action=discount") || apiUrl.includes("action=special_offer")) return "/allproducts?filter=discount";
+      if (apiUrl.includes("action=women_outfit") || apiUrl.includes("action=women_clothing") || apiUrl.includes("action=women")) return "/allproducts?category=Women%27s+Fashion";
+      if (apiUrl.includes("action=men_clothing") || apiUrl.includes("action=men")) return "/allproducts?category=Men%27s+Fashion";
+    }
+    return `/allproducts?q=${encodeURIComponent(title)}`;
+  }, [viewAllUrl, title, apiUrl]);
 
   const getResponsiveCardStyle = (size) => {
     let cardsToShow;
@@ -43,9 +70,9 @@ export default function ProductCarousel({
 
   if (loading && products.length === 0) {
     return (
-      <div className="horizontal-scroll-wrapper bg-white m-0 border home-layout-gap">
-        <div className="d-flex justify-content-between align-items-center">
-          <p className="fw-semibold fs-5 fs-lg-4 my-2 ms-0">{title}</p>
+      <div className="horizontal-scroll-wrapper bg-white m-0 p-0">
+        <div className="pm-home-section-header">
+          <h3 className="pm-home-section-title">{title}</h3>
         </div>
         <div 
           className="d-flex flex-nowrap overflow-x-hidden py-1"
@@ -75,24 +102,25 @@ export default function ProductCarousel({
 
   return (
     <div
-      className={`horizontal-scroll-wrapper position-relative m-0 border home-layout-gap product-carousel-wrapper ${
+      className={`horizontal-scroll-wrapper position-relative m-0 p-0 product-carousel-wrapper ${
         backgroundImageUrl ? "custom-bg-image" : ""
       }`}
       style={{
         backgroundImage: backgroundImageUrl ? `url(${backgroundImageUrl})` : "none",
         backgroundColor: backgroundImageUrl ? "transparent" : "white",
         backgroundSize: "cover",
-        backgroundRepeat: "no-repeat"
+        backgroundRepeat: "no-repeat",
+        border: "none",
+        padding: 0
       }}
     >
-      <div className="d-flex justify-content-between align-items-center">
-        <p className="fw-semibold fs-5 fs-lg-4 mt-1 mb-0 ms-0">{title}</p>
+      <div className="pm-home-section-header">
+        <h3 className="pm-home-section-title">{title}</h3>
 
         {/* View All Button */}
         <Link
-          to="/cart"
-          className="d-flex align-items-center justify-content-center rounded bg-theme px-2 py-1 text-white text-decoration-none me-1"
-          style={{ fontSize: '0.75rem', height: '24px', whiteSpace: 'nowrap' }}
+          to={computedViewAllUrl}
+          className="pm-home-view-all-btn"
         >
           View All <MdKeyboardArrowRight size={16} />
         </Link>
@@ -140,7 +168,8 @@ export default function ProductCarousel({
             
           return (
             <ProductCard
-              key={index}
+              key={product.id || index}
+              index={index}
               product={mappedProduct}
               variant="carousel"
               badgeText={badgeText}

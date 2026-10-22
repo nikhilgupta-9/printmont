@@ -1,0 +1,137 @@
+/* ============================================================
+   BulkProductCard Styles
+   Matches the exact clean layout with crisp shadow & spacing
+   ============================================================ */
+
+.bk-clean-card {
+  background: #ffffff;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e9ecef;
+  height: 100%;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.bk-clean-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12), 0 3px 8px rgba(0, 0, 0, 0.06);
+  border-color: #cbd5e1;
+}
+
+.bk-card-link,
+.bk-card-clickable {
+  text-decoration: none !important;
+  color: inherit !important;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  cursor: pointer;
+  outline: none;
+}
+
+.bk-card-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Image wrapper with light soft backdrop */
+.bk-card-img-wrap {
+  width: 100%;
+  background-color: #f8fafc;
+  padding: 5px 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  aspect-ratio: 1 / 0.95;
+  overflow: hidden;
+}
+
+.bk-card-img {
+  width: 100%;
+  height: 100%;
+  max-height: 170px;
+  object-fit: contain;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.04));
+}
+
+.bk-clean-card:hover .bk-card-img {
+  transform: scale(1.04);
+}
+
+/* Content block below image */
+.bk-card-info {
+  background-color: #ffffff;
+  padding: 14px 12px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-grow: 1;
+}
+
+.bk-card-title {
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 6px 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .bk-card-title {
+    font-size: 1rem;
+  }
+}
+
+.bk-card-price {
+  font-size: 0.86rem;
+  color: #64748b;
+  line-height: 1.35;
+  margin: 0;
+  text-align: center;
+}
+
+.bk-card-price-val {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.98rem;
+}
+
+.bk-card-price-sub {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 0.84rem;
+}
+
+@media (max-width: 767.98px) {
+  .bk-clean-card {
+    /* box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04); */
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;
+    border: 1px solid #edf2f7;
+  }
+  .bk-card-img-wrap {
+    padding: 5px 5px;
+  }
+  .bk-card-info {
+    padding: 12px 8px 14px 8px;
+  }
+  .bk-card-title {
+    font-size: 0.88rem;
+    margin-bottom: 4px;
+  }
+  .bk-card-price {
+    font-size: 0.82rem;
+  }
+}

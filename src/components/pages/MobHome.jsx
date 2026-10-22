@@ -24,6 +24,7 @@ import {
   MosaicSkeleton,
   ProductListSkeleton,
   SmallHeightCarouselSlider,
+  SmallBannerCarousel,
   SquareSingleImageMobileSlider,
   SmallHeightStaticBanner,
   OneAndHalfCarousel,
@@ -48,7 +49,8 @@ import {
   imageColumn
 } from '../../../data/data'
 import useHomeLayout from '../home/hooks/useHomeLayout'
-import { ROOT_URL } from '../../config/apiEndpoints'
+import { BASE_URL, ROOT_URL } from '../../config/apiEndpoints'
+
 
 // Static dummy categories matching the Figma category circles
 const dummyCategories = [
@@ -290,12 +292,13 @@ const womensOutfitsProducts = [
 ];
 
 const MobHome = () => {
-  const baseURL = ROOT_URL;
+  const baseURL = BASE_URL;
 
   // Mobile layout is managed from the admin panel (home-layout-manager.php -> Mobile tab).
   // Mirrors the desktop behaviour in Home.jsx: when the API returns sections we render
   // those, otherwise the hardcoded markup below is used as the fallback.
   const { sections, loading } = useHomeLayout('mobile', baseURL);
+
 
   return (
     <>
@@ -305,20 +308,12 @@ const MobHome = () => {
         {/* 1. Categories Circles — Normal flow below header */}
         <Categories isSticky={false} />
 
-        {/* Top Mobile Banners Sequence with Unique Static Images */}
-        <SmallHeightCarouselSlider banners={staticWidescreenBanners} maxHeight="85px" isMobileOnly={true} />
-        <SquareSingleImageMobileSlider banners={staticSquareBanners} isMobileOnly={true} />
-        <SmallHeightCarouselSlider banners={staticWidescreenBanners} maxHeight="85px" isMobileOnly={true} />
-        <FormatDesignBanner format="desktop_format_6" banners={staticSquareBanners} />
-        <SmallHeightStaticBanner banners={staticWidescreenBanners.slice(3, 4)} maxHeight="85px" />
-        <OneAndHalfCarousel banners={staticWidescreenBanners.slice(1, 4)} isMobileOnly={true} />
-
         {loading ? (
-          <div className="shimmer-bg skeleton-banner-hero w-100" />
+          <div className="shimmer-bg skeleton-banner-hero w-100" style={{ height: "180px", margin: "8px 0" }} />
         ) : sections && sections.length > 0 ? (
           sections.map((section, index) => (
             <SectionRenderer
-              key={section.id}
+              key={section.id || index}
               section={section}
               baseURL={baseURL}
               lazyLoad={index >= 3}
@@ -330,11 +325,11 @@ const MobHome = () => {
 
             {/* === ABOVE THE FOLD — Eager Load (no LazySection) === */}
 
-            {/* 2. Banner and slider small size */}
-            <MobileHeroSlider banners={dummyBanners} />
+            {/* 2. Top Hero Slider (Mobile only, single) */}
+            <MobileHeroSlider apiUrl={`${baseURL}api/banner_api.php?section=home_hero`} banners={dummyBanners} />
 
-            {/* 3. Home page slider */}
-            <ResponsiveHeroCarousel banners={dummyBanners} />
+            {/* 3. Small Banner Carousel (after category navbar / hero) */}
+            <SmallBannerCarousel apiUrl={`${baseURL}api/banner_api.php?section=small_banner_slider`} isMobile={true} />
 
             {/* 4. Banner and slider small size */}
             <BannerGrid banners={sectiontwoimg} columns={1} mobileColumns={1} />
@@ -747,7 +742,7 @@ const MobHome = () => {
             <LazySection skeleton={<CarouselSkeleton mobile={true} />}>
               <ProductCarousel
                 apiUrl={`${baseURL}api/products/products.php?action=discount_for_you`}
-                title="Your Recently Viewed (Carousel)"
+                title="Your Recently Viewed"
                 products={dummyProducts}
               />
             </LazySection>

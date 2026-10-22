@@ -1,0 +1,1245 @@
+/* ==========================================================================
+   User SuperCoins & Wallet Component CSS (Flipkart Style Theme)
+   ========================================================================== */
+
+.uw-wrapper {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1e293b;
+}
+
+/* 1. Flipkart Hero Header - Dark Slate Midnight with Gold Accents */
+.uw-hero-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 14px;
+  padding: 22px 24px;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  margin-bottom: 20px;
+}
+
+.uw-hero-ambient-glow {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, rgba(15, 23, 42, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.uw-hero-pattern {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 16px 16px;
+  pointer-events: none;
+}
+
+.uw-badge-tier {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.uw-badge-live {
+  background: rgba(34, 197, 94, 0.16);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #86efac;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.uw-badge-rate {
+  background: #fef08a;
+  color: #78350f;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+
+.uw-pulse-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #4ade80;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* 3D Gold Coin Badge */
+.uw-coin-badge-3d {
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fef08a, #f59e0b 65%, #92400e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+  border: 2px solid #fef08a;
+}
+
+.uw-coin-icon-svg {
+  font-size: 1.6rem;
+  color: #451a03;
+}
+
+.uw-balance-amount {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.uw-balance-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-left: 6px;
+}
+
+.uw-balance-sub {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  margin-top: 3px;
+}
+
+.uw-action-btn {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s ease;
+  border: none;
+}
+
+.uw-action-btn.primary {
+  background: #f59e0b;
+  color: #1e293b;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.uw-action-btn.primary:hover {
+  background: #d97706;
+  color: #ffffff;
+}
+
+.uw-action-btn.secondary {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.uw-action-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.uw-action-btn.ghost {
+  background: transparent;
+  color: #94a3b8;
+}
+
+.uw-action-btn.ghost:hover {
+  color: #ffffff;
+}
+
+.uw-hero-mini-box {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 14px 16px;
+  backdrop-filter: blur(6px);
+}
+
+.uw-rule-chip {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 2. Metric Cards */
+.uw-metric-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  height: 100%;
+}
+
+.uw-metric-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.uw-metric-card.active-balance {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.uw-metric-icon {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.uw-metric-icon.gold {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.uw-metric-icon.green {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.uw-metric-icon.orange {
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+.uw-metric-icon.blue {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.uw-metric-info {
+  min-width: 0;
+}
+
+.uw-metric-title {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #64748b;
+  display: block;
+}
+
+.uw-metric-num {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.uw-metric-sub {
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: block;
+}
+
+/* 3. Navigation Tabs */
+.uw-tabs-header {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.uw-tabs-header::-webkit-scrollbar {
+  display: none;
+}
+
+.uw-tab-pill {
+  background: transparent;
+  border: none;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #64748b;
+  padding: 8px 16px;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.uw-tab-pill:hover {
+  color: #0c53a1;
+  background: #f1f5f9;
+}
+
+.uw-tab-pill.active {
+  color: #0c53a1;
+  background: #ffffff;
+  border-bottom: 3px solid #0c53a1;
+  margin-bottom: -2px;
+}
+
+/* 4. Passbook Component */
+.uw-passbook-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.uw-passbook-filter-bar {
+  background: #f8fafc;
+  padding: 12px 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.uw-filter-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.uw-filter-btn:hover {
+  border-color: #0c53a1;
+  color: #0c53a1;
+}
+
+.uw-filter-btn.active {
+  background: #0c53a1;
+  border-color: #0c53a1;
+  color: #ffffff;
+}
+
+.uw-tx-list {
+  divide-y: 1px solid #f1f5f9;
+}
+
+.uw-tx-item {
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.12s ease;
+}
+
+.uw-tx-item:last-child {
+  border-bottom: none;
+}
+
+.uw-tx-item:hover {
+  background-color: #f8fafc;
+}
+
+.uw-tx-icon-circle {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.88rem;
+}
+
+.uw-tx-icon-circle.credit {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.uw-tx-icon-circle.debit {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.uw-tx-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.uw-tx-desc {
+  font-size: 0.78rem;
+}
+
+.uw-tx-meta {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.uw-tx-amount {
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.uw-tx-amount.credit {
+  color: #16a34a;
+}
+
+.uw-tx-amount.debit {
+  color: #ea580c;
+}
+
+.uw-tx-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.uw-tx-badge.credit {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.uw-tx-badge.debit {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.uw-checkout-notice {
+  background: #fffbeb;
+  border-top: 1px solid #fde68a;
+  padding: 12px 18px;
+}
+
+/* 5. Voucher Ticket Cards */
+.uw-voucher-ticket {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 16px;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.uw-voucher-ticket:hover {
+  transform: translateY(-2px);
+  border-color: #f59e0b;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+}
+
+.uw-ticket-notch {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #f8fafc;
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.uw-ticket-notch.left {
+  left: -8px;
+  border-right: 1px dashed #cbd5e1;
+}
+
+.uw-ticket-notch.right {
+  right: -8px;
+  border-left: 1px dashed #cbd5e1;
+}
+
+.uw-voucher-tag {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.uw-voucher-cost {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #b45309;
+}
+
+.uw-voucher-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.3;
+}
+
+.uw-voucher-code {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0c53a1;
+  background: #f1f5f9;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+.uw-claim-btn {
+  background: #0c53a1;
+  color: #ffffff;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.uw-claim-btn:hover:not(:disabled) {
+  background: #002b66;
+}
+
+.uw-claim-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.uw-coins-available-pill {
+  background: #fef3c7;
+  color: #78350f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid #fde68a;
+  display: flex;
+  align-items: center;
+}
+
+/* 6. Earn Cards */
+.uw-earn-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  gap: 14px;
+  height: 100%;
+}
+
+.uw-earn-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.uw-earn-icon.blue {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.uw-earn-icon.green {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.uw-earn-icon.orange {
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+.uw-earn-icon.purple {
+  background: #f3e8ff;
+  color: #9333ea;
+}
+
+@media (max-width: 767px) {
+  .uw-hero-card {
+    padding: 18px 16px;
+  }
+  .uw-balance-amount {
+    font-size: 1.6rem;
+  }
+  .uw-coin-badge-3d {
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+  }
+  .uw-coin-icon-svg {
+    font-size: 1.3rem;
+  }
+}
+
+/* ==========================================================================
+   Cash Wallet & Dual Switcher Styles
+   ========================================================================== */
+
+.uw-main-switcher {
+  display: flex;
+  background: #f1f5f9;
+  padding: 5px;
+  border-radius: 14px;
+  gap: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.uw-switch-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.uw-switch-tab:hover {
+  color: #1e293b;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.uw-switch-tab.active-wallet {
+  background: #ffffff;
+  color: #065f46;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.uw-switch-tab.active-coins {
+  background: #ffffff;
+  color: #854d0e;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Cash Wallet Emerald Hero */
+.uw-hero-card.cash-wallet {
+  background: linear-gradient(135deg, #064e3b 0%, #022c22 100%);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  box-shadow: 0 8px 24px rgba(6, 78, 59, 0.22);
+}
+
+.uw-wallet-badge-3d {
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #a7f3d0, #10b981 65%, #064e3b 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+  border: 2px solid #a7f3d0;
+}
+
+.uw-action-btn.emerald {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+}
+
+.uw-action-btn.emerald:hover {
+  background: #059669;
+}
+
+/* Quick Chip Selector */
+.uw-quick-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.uw-quick-chip:hover, .uw-quick-chip.active {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #065f46;
+}
+
+/* Reversal Banner */
+.uw-reversal-alert {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+
+.uw-tx-badge.reversal {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+
+/* ==========================================================================
+   Printmont theme (#0c53a1) — wallet & coins follow the site colour.
+   Green is kept only for money credited / success states.
+   ========================================================================== */
+.uw-tc { color: #0c53a1 !important; }
+.uw-bg { background-color: #0c53a1 !important; }
+
+.uw-btn {
+  background: #0c53a1;
+  border: 1px solid #0c53a1;
+  color: #fff;
+}
+.uw-btn:hover,
+.uw-btn:focus {
+  background: #09427f;
+  border-color: #09427f;
+  color: #fff;
+}
+.uw-btn-outline {
+  background: #fff;
+  border: 1px solid #0c53a1;
+  color: #0c53a1;
+}
+.uw-btn-outline:hover,
+.uw-btn-outline:focus {
+  background: #0c53a1;
+  color: #fff;
+}
+
+.uw-pay-opt-active {
+  border-color: #0c53a1 !important;
+  background: #eef4fd !important;
+  color: #0c53a1;
+}
+
+/* Hero cards: theme blue instead of emerald / midnight slate */
+.uw-hero-card,
+.uw-hero-card.cash-wallet {
+  background: linear-gradient(135deg, #0c53a1 0%, #083b73 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(12, 83, 161, 0.25);
+}
+.uw-hero-ambient-glow {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.14) 0%, rgba(12, 83, 161, 0) 70%);
+}
+.uw-hero-chip {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+}
+.uw-hero-active { color: #9fd0ff; }
+
+.uw-wallet-badge-3d {
+  background: radial-gradient(circle at 30% 30%, #ffffff, #dbe8f8 65%, #a9c6ea 100%);
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+}
+
+/* Hero buttons: white primary, outlined secondary */
+.uw-action-btn.emerald {
+  background: #ffffff;
+  color: #0c53a1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.uw-action-btn.emerald:hover { background: #eef4fd; }
+.uw-action-btn.primary {
+  background: transparent;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.7);
+}
+.uw-action-btn.primary:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+
+/* Tabs, metric cards, chips, banner */
+.uw-switch-tab.active-wallet { color: #0c53a1; }
+
+.uw-metric-card.active-balance {
+  background: #eef4fd;
+  border-color: #0c53a1;
+}
+.uw-metric-icon.green,
+.uw-metric-icon.blue {
+  background: #eef4fd;
+  color: #0c53a1;
+}
+
+.uw-quick-chip:hover,
+.uw-quick-chip.active {
+  background: #eef4fd;
+  border-color: #0c53a1;
+  color: #0c53a1;
+}
+
+.uw-reversal-alert {
+  background: #eef4fd;
+  border-color: #cfe0f5;
+}
+
+/* ── Mobile layout ─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .uw-wrapper {
+    padding: 12px;
+  }
+  .uw-switch-tab {
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 6px;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+  .uw-switch-tab > svg { margin: 0 !important; }
+  .uw-switch-tab .badge { margin: 0 !important; }
+  .uw-hero-card { padding: 16px; }
+  .uw-reversal-alert {
+    flex-wrap: wrap;
+  }
+  .uw-reversal-alert > .flex-grow-1 {
+    flex: 1 1 calc(100% - 56px) !important;
+  }
+  .uw-reversal-alert > button {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   ADD MONEY MODAL (Flipkart / Razorpay Modern Theme & 100% Mobile Responsive)
+   ========================================================================== */
+
+.uw-add-money-modal-dialog {
+  max-width: 490px;
+  margin: 1.75rem auto;
+}
+
+.uw-add-money-modal-content {
+  border-radius: 18px !important;
+  overflow: hidden;
+  border: 1px solid rgba(12, 83, 161, 0.12) !important;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  background: #ffffff;
+}
+
+/* Header */
+.uw-add-money-header {
+  background: linear-gradient(135deg, #0c53a1 0%, #07386c 100%);
+  color: #ffffff;
+  padding: 16px 20px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: none;
+}
+
+.uw-add-money-header-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.uw-add-money-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  border: none;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.uw-add-money-close-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: rotate(90deg);
+}
+
+/* Body */
+.uw-add-money-body {
+  padding: 20px 22px;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+/* Available Balance Strip */
+.uw-add-money-balance-card {
+  background: linear-gradient(135deg, #f0f6ff 0%, #e6effc 100%);
+  border: 1px solid #cfe0f5;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.uw-add-money-balance-val {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0c53a1;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-top: 2px;
+}
+
+/* Hero Amount Input Box */
+.uw-amount-input-box {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.uw-amount-input-box:focus-within {
+  border-color: #0c53a1;
+  box-shadow: 0 0 0 4px rgba(12, 83, 161, 0.12);
+}
+
+.uw-amount-currency {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0c53a1;
+  user-select: none;
+}
+
+.uw-amount-input-field {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  font-size: 1.65rem !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  padding: 0 !important;
+  width: 100%;
+  background: transparent;
+}
+
+.uw-amount-input-field::placeholder {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.uw-amount-clear-btn {
+  background: #f1f5f9;
+  border: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  padding: 0;
+}
+
+.uw-amount-clear-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Chips Grid */
+.uw-quick-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+.uw-quick-chip-btn {
+  padding: 8px 4px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  touch-action: manipulation;
+}
+
+.uw-quick-chip-btn:hover {
+  background: #eef4fd;
+  border-color: #0c53a1;
+  color: #0c53a1;
+}
+
+.uw-quick-chip-btn.active {
+  background: #0c53a1;
+  border-color: #0c53a1;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(12, 83, 161, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Payment Methods */
+.uw-payment-methods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.uw-payment-method-card {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  background: #ffffff;
+  transition: all 0.18s ease;
+  position: relative;
+  user-select: none;
+}
+
+.uw-payment-method-card:hover {
+  border-color: #94c2fa;
+  background: #fbfdff;
+}
+
+.uw-payment-method-card.active {
+  border-color: #0c53a1;
+  background: #f0f6ff;
+  box-shadow: 0 4px 12px rgba(12, 83, 161, 0.08);
+}
+
+.uw-pay-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.uw-pay-icon-box.upi {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.uw-pay-icon-box.card {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.uw-pay-icon-box.bank {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.uw-custom-radio-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.uw-payment-method-card.active .uw-custom-radio-circle {
+  border-color: #0c53a1;
+}
+
+.uw-custom-radio-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #0c53a1;
+  display: block;
+}
+
+/* Security Trust Strip */
+.uw-security-trust-strip {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.76rem;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+/* Modal Footer */
+.uw-add-money-footer {
+  padding: 16px 22px 20px 22px;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+}
+
+.uw-add-money-submit-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0c53a1 0%, #09427f 100%);
+  border: none;
+  border-radius: 12px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(12, 83, 161, 0.3);
+  transition: all 0.2s ease;
+  min-height: 48px;
+}
+
+.uw-add-money-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #09427f 0%, #073466 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(12, 83, 161, 0.38);
+}
+
+.uw-add-money-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.uw-razorpay-trust-note {
+  font-size: 0.72rem;
+  color: #64748b;
+  text-align: center;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Mobile Responsiveness (< 576px) */
+@media (max-width: 576px) {
+  .uw-add-money-modal-dialog {
+    margin: 0;
+    max-width: 100%;
+    min-height: 100%;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .uw-add-money-modal-content {
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 90vh;
+    width: 100%;
+  }
+
+  .uw-add-money-header {
+    padding: 14px 16px;
+  }
+
+  .uw-add-money-body {
+    padding: 14px 16px;
+  }
+
+  .uw-amount-input-box {
+    padding: 6px 12px;
+  }
+
+  .uw-amount-currency {
+    font-size: 1.35rem;
+  }
+
+  .uw-amount-input-field {
+    font-size: 1.4rem !important;
+  }
+
+  .uw-quick-chips-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+
+  .uw-quick-chip-btn {
+    font-size: 0.78rem;
+    padding: 6px 2px;
+    min-height: 38px;
+  }
+
+  .uw-payment-method-card {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .uw-pay-icon-box {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+
+  .uw-add-money-footer {
+    padding: 12px 16px 16px 16px;
+  }
+
+  .uw-add-money-submit-btn {
+    font-size: 0.95rem;
+    min-height: 46px;
+  }
+}

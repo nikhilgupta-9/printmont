@@ -35,6 +35,14 @@ const toProductCardShape = (prod) => {
     // app-wide rather than showing it on one listing and not another.
     rating: 4.2 + ((parseInt(prod.id, 10) || 1) % 8) * 0.1,
     ratingCount: 15 + ((parseInt(prod.id, 10) || 1) % 50) * 12,
+    isCustomizable: Boolean(
+      prod.show_customization_label ||
+      prod.customization_label_status ||
+      prod.is_customizable ||
+      prod.customization_fields ||
+      (prod.customization_label && prod.customization_label.trim() !== '')
+    ),
+    customizationLabel: prod.customization_label || 'Customizable',
   };
 };
 

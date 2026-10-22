@@ -1,163 +1,350 @@
-import React from "react";
-import { Container, Row, Col, Badge } from "react-bootstrap";
+import React, { useState, useEffect } from "react";
+import { Container, Row, Col, Badge, Spinner, Button } from "react-bootstrap";
+import { Link, useParams } from "react-router-dom";
+import {
+  FaRegClock, FaRegUser, FaArrowLeft, FaArrowRight, FaShareNodes,
+  FaFacebookF, FaTwitter, FaLinkedinIn, FaWhatsapp, FaLink,
+  FaRegCalendar, FaFolderOpen, FaTag
+} from "react-icons/fa6";
+import { toast } from "react-hot-toast";
+import { API_ENDPOINTS, resolveImageUrl } from "../../../config/apiEndpoints";
+import { updatePageSEO } from "../../../utils/seo";
+import useHomeBanners from "../../home/hooks/useHomeBanners";
+import BlogCard from "./BlogCard";
 import "./blog.css";
-import Categories from "../category-list/Categories";
-import { Link } from "react-router-dom";
-import { MdOutlineKeyboardArrowRight, MdAccessTime, MdPerson, MdCalendarToday } from "react-icons/md";
+
+const formatDate = (value) => {
+  if (!value) return "Recently Published";
+  const d = new Date(String(value).replace(" ", "T"));
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+};
+
+const stripHtml = (html) => String(html || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+const readingTime = (post) => {
+  const words = stripHtml(post?.content || post?.excerpt || "").split(" ").filter(Boolean).length;
+  return `${Math.max(3, Math.round(words / 160))} min read`;
+};
 
 const BlogPostPage = () => {
-  const recentPosts = [
-    {
-      id: 1,
-      title: "Unique Children's Day Gifts for School",
-      img: "/blog/blog-img-1.png",
-      date: "Nov 10, 2025"
-    },
-    {
-      id: 2,
-      title: "How to Plan a Memorable Kids Fair for National Vise Day",
-      img: "/blog/blog-img-1.png",
-      date: "Nov 08, 2025"
-    },
-    {
-      id: 3,
-      title: "Beautiful Ganesh Decoration Ideas for Home",
-      img: "/blog/blog-img-1.png",
-      date: "Nov 05, 2025"
-    },
-    {
-      id: 4,
-      title: "Creative Ways to Decorate Your Home for Janmashtami",
-      img: "/blog/blog-img-1.png",
-      date: "Oct 28, 2025"
-    },
-    {
-      id: 5,
-      title: "Top 10 Romantic Gifts to Surprise Your Partner",
-      img: "/blog/blog-img-1.png",
-      date: "Oct 20, 2025"
-    },
-  ];
+  const { slug } = useParams();
+  const [post, setPost] = useState(null);
+  const [recentPosts, setRecentPosts] = useState([]);
+  const [relatedPosts, setRelatedPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Dynamic admin breadcrumb background banner
+  const { banners: breadcrumbBanners } = useHomeBanners(API_ENDPOINTS.BLOG_BANNER, "blog_page_banner");
+  const breadcrumbBg = breadcrumbBanners[0]?.image || breadcrumbBanners[0]?.image_url_desktop;
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    let cancelled = false;
+
+    const fetchPostDetails = async () => {
+      try {
+        setLoading(true);
+        const [postRes, recentRes, allRes] = await Promise.allSettled([
+          fetch(API_ENDPOINTS.BLOG_POST_BY_SLUG(slug)).then((r) => r.json()),
+          fetch(API_ENDPOINTS.BLOG_RECENT(5)).then((r) => r.json()),
+          fetch(API_ENDPOINTS.BLOG_POSTS).then((r) => r.json())
+        ]);
+
+        if (cancelled) return;
+
+        if (postRes.status === "fulfilled" && postRes.value?.success && postRes.value?.data) {
+          setPost(postRes.value.data);
+        } else if (allRes.status === "fulfilled" && allRes.value?.success && Array.isArray(allRes.value.data)) {
+          // Fallback search in all posts by slug or id
+          const found = allRes.value.data.find(
+            (p) => String(p.slug) === String(slug) || String(p.id) === String(slug)
+          );
+          if (found) setPost(found);
+        }
+
+        if (recentRes.status === "fulfilled" && recentRes.value?.success && Array.isArray(recentRes.value.data)) {
+          setRecentPosts(recentRes.value.data);
+        }
+
+        if (allRes.status === "fulfilled" && allRes.value?.success && Array.isArray(allRes.value.data)) {
+          const others = allRes.value.data.filter((p) => String(p.slug) !== String(slug)).slice(0, 3);
+          setRelatedPosts(others);
+        }
+      } catch (err) {
+        console.error("Failed to load post:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchPostDetails();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  // Update dynamic SEO for post
+  useEffect(() => {
+    if (post) {
+      updatePageSEO({
+        title: post.meta_title || post.title || "Printmont Blog Article",
+        description: post.meta_description || post.excerpt || stripHtml(post.content).slice(0, 160),
+        keywords: post.meta_keywords || `${post.category_name || 'gifts'}, printmont blog, corporate gifting`,
+        image: post.featured_image ? resolveImageUrl(post.featured_image) : "/PrintLogo.png",
+        url: window.location.href,
+        type: "article",
+      });
+    } else {
+      updatePageSEO({
+        title: "Printmont Blog - Article Details",
+        description: "Read curated corporate and personalized gifting articles and insights on Printmont.",
+      });
+    }
+  }, [post]);
+
+  const handleCopyLink = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success("Article link copied to clipboard!");
+    }
+  };
+
+  // Fallback default article content if API returns minimal description
+  const articleContent = post?.content || `
+    <p>Corporate and personalized gifting is one of the most effective ways to build lasting relationships with employees, clients, and loved ones. A well-curated personalized gift not only expresses gratitude but also elevates brand presence and strengthens emotional connections.</p>
+    
+    <h3>1. Why Personalization Matters in Modern Gifting</h3>
+    <p>Standard generic items often get forgotten. When a product is thoughtfully personalized with a recipient's name, custom company monogram, or a heartfelt message, it transforms an ordinary object into a memorable keepsake.</p>
+    
+    <h3>2. Quality Meets Aesthetics</h3>
+    <p>From premium matte-finish executive notebooks and engraved metal pens to customized vacuum-insulated drinkware and high-grade canvas bags, material quality defines the entire gifting experience. Investing in durable, high-utility products ensures your gift stays in daily use for years to come.</p>
+    
+    <h3>3. Choosing the Right Gift for Every Milestone</h3>
+    <p>Whether it's onboarding a new employee, celebrating work anniversaries, festive Diwali gifting, or sending bespoke client hampers, curating the right set of items tailored to the milestone makes all the difference.</p>
+  `;
 
   return (
-    <div className="bg-light py-2 py-md-4">
-      <div className="d-block d-lg-none mb-3">
-        <Categories bg="rgb(11, 83, 161)" color="white" showImages={false} space="10px 0"/>
-      </div>
+    <div className="blog-master-container pb-5">
+      <Container className="py-4 py-lg-5">
+        {loading ? (
+          <div className="text-center py-5 bg-white rounded-3 border p-5">
+            <Spinner animation="border" variant="primary" />
+            <p className="text-muted mt-2 mb-0">Loading article...</p>
+          </div>
+        ) : (
+          <Row className="g-4 g-lg-5">
+            {/* Left Column (8 cols): Article Content */}
+            <Col lg={8}>
+              <article className="blog-post-wrapper bg-white p-3 p-md-4 p-lg-5 rounded-3 border shadow-xs">
+                
+                {/* Back Link */}
+                <Link to="/blog" className="text-primary small fw-semibold text-decoration-none d-inline-flex align-items-center gap-1.5 mb-3 hover-primary">
+                  <FaArrowLeft size={11} /> Back to all articles
+                </Link>
 
-      <Container className="blog-page">
-        <Row className="g-3 g-lg-4">
-          {/* LEFT — Blog Content */}
-          <Col lg={9} md={12} xs={12}>
-            <div className="blog-content bg-white p-3 p-md-4 p-lg-5 rounded-3 shadow-sm border">
-              <Badge bg="primary-subtle" className="text-primary fw-bold px-3 py-1 mb-2 fs-7 rounded-pill text-uppercase">
-                Other Occasions
-              </Badge>
+                {/* Category Badge */}
+                <div className="mb-2">
+                  <span className="badge badge-theme-subtle px-3 py-1.5 rounded-pill text-uppercase">
+                    {post?.category_name || "Gifting Inspiration"}
+                  </span>
+                </div>
 
-              <h1 className="fw-bold mb-3 text-dark fs-3 fs-md-2" style={{ lineHeight: "1.3" }}>
-                10 Creative Classroom Activities for Children’s Day
-              </h1>
+                {/* Post Title */}
+                <h1 className="blog-post-title">
+                  {post?.title || "10 Creative Classroom Activities for Children's Day"}
+                </h1>
 
-              <div className="d-flex flex-wrap align-items-center text-muted small mb-4 gap-3 border-bottom pb-3">
-                <span className="d-flex align-items-center gap-1">
-                  <MdCalendarToday className="text-primary" size={15} /> November 5, 2025
-                </span>
-                <span className="d-flex align-items-center gap-1">
-                  <MdPerson className="text-primary" size={16} /> Priya Lamba
-                </span>
-                <span className="d-flex align-items-center gap-1">
-                  <MdAccessTime className="text-primary" size={15} /> 5 min read
-                </span>
-              </div>
+                {/* Metadata Row */}
+                <div className="blog-post-meta border-bottom pb-3 mb-4">
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <FaRegCalendar size={13} className="text-primary" /> {formatDate(post?.published_at || post?.created_at)}
+                  </span>
+                  <span>•</span>
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <FaRegClock size={13} className="text-primary" /> {readingTime(post)}
+                  </span>
+                  {post?.author_name && (
+                    <>
+                      <span>•</span>
+                      <span className="d-inline-flex align-items-center gap-1">
+                        <FaRegUser size={12} className="text-primary" /> {post.author_name}
+                      </span>
+                    </>
+                  )}
+                </div>
 
-              {/* Main Banner Image */}
-              <div className="mb-4 overflow-hidden rounded-3 shadow-sm" style={{ maxHeight: "420px" }}>
-                <img
-                  src="/blog/blog-img-2.png"
-                  alt="Children's Day Activities"
-                  className="w-100 h-100 img-fluid rounded-3"
-                  style={{ objectFit: "cover", width: "100%", maxHeight: "420px" }}
+                {/* Featured Image */}
+                <div className="mb-4 overflow-hidden rounded-3 shadow-xs" style={{ maxHeight: "420px", backgroundColor: "#f1f5f9" }}>
+                  <img
+                    src={post?.featured_image ? resolveImageUrl(post.featured_image) : "/banners/banner-30.jpg"}
+                    alt={post?.title || "Article Banner"}
+                    className="w-100 h-100 object-fit-cover rounded-3"
+                    style={{ maxHeight: "420px" }}
+                    onError={(e) => {
+                      e.currentTarget.src = "/banners/banner-30.jpg";
+                    }}
+                  />
+                </div>
+
+                {/* Article Body */}
+                <div
+                  className="blog-post-body"
+                  dangerouslySetInnerHTML={{ __html: articleContent }}
                 />
-              </div>
 
-              <p className="text-secondary lh-lg fs-6 mb-3">
-                Teachers and students look forward to the day as a break from
-                routine learning. Children’s day is just that: decorating the
-                classroom, playing games, and having fun to make this day
-                memorable. Children’s day celebration in school appreciates
-                curiosity and innocence that shape young minds. The event is often
-                a blend of fun and thought, to entertain but to create memories
-                within learning spaces. In this blog, you will find some creative
-                classroom activities to help you organise a fun celebration for
-                kids.
-              </p>
+                {/* Share Strip */}
+                <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 pt-4 mt-5 border-top">
+                  <div className="d-flex align-items-center gap-2">
+                    <FaShareNodes className="text-primary" size={16} />
+                    <span className="fw-bold text-dark small">Share this article:</span>
+                  </div>
+                  <div className="d-flex gap-2">
+                    <a
+                      href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${post?.title || 'Printmont Blog'} - ${window.location.href}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="blog-share-btn text-success"
+                      title="Share on WhatsApp"
+                    >
+                      <FaWhatsapp size={15} />
+                    </a>
+                    <a
+                      href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="blog-share-btn text-primary"
+                      title="Share on Facebook"
+                    >
+                      <FaFacebookF size={13} />
+                    </a>
+                    <a
+                      href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(post?.title || '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="blog-share-btn text-info"
+                      title="Share on Twitter"
+                    >
+                      <FaTwitter size={13} />
+                    </a>
+                    <a
+                      href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="blog-share-btn text-primary"
+                      title="Share on LinkedIn"
+                    >
+                      <FaLinkedinIn size={13} />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      className="blog-share-btn"
+                      title="Copy Link"
+                    >
+                      <FaLink size={13} />
+                    </button>
+                  </div>
+                </div>
 
-              <p className="text-secondary lh-lg fs-6 mb-4">
-                Every classroom carries its own rhythm. Some teachers prefer calm,
-                reflective sessions; others, playful chaos. Either way, children’s
-                day ideas for school work best when they balance fun and meaning.
-                Below are ten activity concepts designed for flexible classrooms,
-                adaptable, inexpensive, and full of participation.
-              </p>
+              </article>
+            </Col>
 
-              <h4 className="fw-bold text-dark mt-4 mb-3 fs-5">Art Wall Extravaganza</h4>
+            {/* Right Column (4 cols): Sticky Sidebar */}
+            <Col lg={4}>
+              <div className="sticky-top" style={{ top: "135px", zIndex: 10 }}>
+                
+                {/* Promo Card */}
+                <div className="blog-promo-card">
+                  <span className="badge bg-white text-dark fw-bold text-uppercase mb-2" style={{ fontSize: "0.7rem" }}>
+                    Corporate Discount
+                  </span>
+                  <h5 className="fw-bold mb-1.5 text-white fs-6">Custom Printing &amp; Gifting</h5>
+                  <p className="small mb-3 text-white-50" style={{ fontSize: "0.82rem" }}>
+                    Order corporate merch &amp; personalized employee kits with zero setup fee.
+                  </p>
+                  <Link to="/bulk-orders" className="btn btn-light text-primary btn-sm fw-bold w-100 rounded-pill py-2 shadow-xs">
+                    Get Custom Quote
+                  </Link>
+                </div>
 
-              <div className="d-flex justify-content-center my-3">
-                <img
-                  src="/blog/blog-img-3.webp"
-                  alt="Art Wall"
-                  className="img-fluid rounded-3 shadow-sm"
-                  style={{ maxHeight: "240px", width: "100%", maxWidth: "400px", objectFit: "cover" }}
-                />
-              </div>
-
-              <p className="text-secondary lh-lg fs-6">
-                An entire wall, dedicated to imagination. Give students coloured
-                paper, markers, and free rein to depict what joy means to them.
-                This activity not only brightens the classroom but lets art speak
-                louder than words. Such children’s day activities often reveal
-                unexpected talent and foster teamwork as children learn to combine
-                their small ideas into something collective.
-              </p>
-            </div>
-          </Col>
-
-          {/* RIGHT — Sidebar */}
-          <Col lg={3} md={12} xs={12}>
-            <div className="right-contain sticky-top" style={{ top: "135px", zIndex: 10 }}>
-              {/* Ad Banner */}
-              <div className="sidebar mb-3 text-center">
-                <img
-                  src="/blog/banner.webp"
-                  alt="Ad Banner"
-                  className="img-fluid rounded-3 shadow-sm border w-100"
-                  style={{ maxHeight: "200px", objectFit: "cover" }}
-                />
-              </div>
-
-              {/* Recent Posts */}
-              <div className="recent-posts p-3 bg-white rounded-3 shadow-sm border">
-                <h6 className="fw-bold mb-3 text-dark border-bottom pb-2">Recent Posts</h6>
-                {recentPosts.map((post) => (
-                  <div key={post.id} className="d-flex align-items-center mb-3">
-                    <img
-                      src={post.img}
-                      alt={post.title}
-                      className="recent-img rounded-2 flex-shrink-0 me-3"
-                      style={{ width: "70px", height: "55px", objectFit: "cover" }}
-                    />
-                    <div className="flex-grow-1 min-w-0">
-                      <Link to="#" className="small mb-1 text-dark fw-semibold d-block text-decoration-none text-truncate hover-primary" title={post.title}>
-                        {post.title}
-                      </Link>
-                      <span className="text-muted" style={{ fontSize: "0.72rem" }}>{post.date}</span>
+                {/* Recent Posts Widget */}
+                {recentPosts.length > 0 && (
+                  <div className="blog-sidebar-widget">
+                    <div className="blog-sidebar-title">
+                      <FaRegClock className="text-primary" size={15} />
+                      <span>Recent Articles</span>
+                    </div>
+                    <div className="d-flex flex-column gap-3">
+                      {recentPosts.map((p) => (
+                        <div key={p.id} className="d-flex align-items-center gap-3">
+                          <div className="flex-shrink-0 rounded-2 overflow-hidden" style={{ width: "70px", height: "55px", backgroundColor: "#f1f5f9" }}>
+                            <Link to={`/blog/${p.slug || p.id}`}>
+                              <img
+                                src={p.featured_image ? resolveImageUrl(p.featured_image) : "/default-img.jpg"}
+                                alt={p.title}
+                                className="w-100 h-100 object-fit-cover zoom-hover"
+                              />
+                            </Link>
+                          </div>
+                          <div className="flex-grow-1 min-w-0">
+                            <h6 className="small fw-bold mb-1 line-clamp-2" style={{ lineHeight: "1.35" }}>
+                              <Link to={`/blog/${p.slug || p.id}`} className="hover-primary">
+                                {p.title}
+                              </Link>
+                            </h6>
+                            <span className="text-muted" style={{ fontSize: "0.72rem" }}>
+                              {formatDate(p.published_at || p.created_at)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
+
+                {/* Explore Categories Link */}
+                <div className="blog-sidebar-widget text-center">
+                  <FaFolderOpen className="text-primary mb-2" size={26} />
+                  <h6 className="fw-bold text-dark mb-1">Explore More Topics</h6>
+                  <p className="small text-muted mb-3" style={{ fontSize: "0.8rem" }}>
+                    Find inspiration across employee gifting, promotional gear &amp; DIY craft ideas.
+                  </p>
+                  <Link to="/blog" className="btn btn-outline-primary btn-sm rounded-pill fw-bold px-4">
+                    Browse All Blogs
+                  </Link>
+                </div>
+
               </div>
-            </div>
-          </Col>
-        </Row>
+            </Col>
+          </Row>
+        )}
+
+        {/* Related Posts Section */}
+        {relatedPosts.length > 0 && (
+          <section className="mt-5 pt-4 border-top">
+            <h4 className="fw-bold text-dark fs-5 mb-3 d-flex align-items-center gap-2">
+              <FaTag className="text-primary" /> You Might Also Like
+            </h4>
+            <Row className="g-3.5">
+              {relatedPosts.map((rel) => ({
+                id: rel.id,
+                slug: rel.slug,
+                category: rel.category_name || "Inspiration",
+                title: rel.title,
+                imageSrc: rel.featured_image ? resolveImageUrl(rel.featured_image) : "/default-img.jpg",
+                author: rel.author_name || "Printmont Team",
+                date: formatDate(rel.published_at || rel.created_at),
+                tags: rel.category_name,
+                summary: rel.excerpt || stripHtml(rel.content).slice(0, 120),
+              })).map((cardData) => (
+                <Col md={4} key={cardData.id}>
+                  <BlogCard cardData={cardData} />
+                </Col>
+              ))}
+            </Row>
+          </section>
+        )}
       </Container>
     </div>
   );

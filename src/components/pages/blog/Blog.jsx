@@ -1,579 +1,828 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { Row, Col, Container, Badge, Button, Form, InputGroup, Spinner } from "react-bootstrap";
-import BlogCard from "./BlogCard";
-import Categories from "../category-list/Categories";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Spinner } from "react-bootstrap";
 import {
-  FaFire, FaRegClock, FaNewspaper, FaArrowRight, FaCheckCircle, FaTag,
-  FaMobileAlt, FaBuilding, FaSearch, FaEye, FaFolderOpen, FaRegFileAlt,
+  FaChevronLeft,
+  FaChevronRight,
+  FaUser,
+  FaCalendarAlt,
+  FaTag,
+  FaArrowRight
 } from "react-icons/fa";
 import { API_ENDPOINTS, resolveImageUrl } from "../../../config/apiEndpoints";
+import { updatePageSEO } from "../../../utils/seo";
+import useHomeBanners from "../../home/hooks/useHomeBanners";
 import "./blog.css";
 
-/** Site theme blue, as used across the header, carousels and inner pages. */
-const THEME = "rgb(11, 83, 161)";
+// Helper to strip HTML tags for excerpt preview
+const stripHtml = (html) =>
+  String(html || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
-/** How many articles to show before "Load more". */
-const PAGE_SIZE = 6;
-
+// Format date nicely (e.g. October 1, 2024)
 const formatDate = (value) => {
-  if (!value) return "";
+  if (!value) return "October 1, 2024";
   const d = new Date(String(value).replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric"
+  });
 };
 
-const formatDayMonth = (value) => {
-  if (!value) return "";
-  const d = new Date(String(value).replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
-};
+// Fallback curated banners for top slider
+const DEFAULT_TOP_SLIDERS = [
+  {
+    id: 1,
+    title: "Corporate Gift Hampers",
+    image: "/banners/blog-banner-1.png",
+    link: "/category/corporate-gifts"
+  },
+  {
+    id: 2,
+    title: "Personalised Print Kits",
+    image: "/banners/blog-banner-2.png",
+    link: "/category/personalised-gifts"
+  },
+  {
+    id: 3,
+    title: "Promotional Drinkware & Pens",
+    image: "/banners/banner-901.png",
+    link: "/category/drinkware"
+  },
+  {
+    id: 4,
+    title: "Doctor & Healthcare Gifts",
+    image: "/banners/banner-902.png",
+    link: "/category/doctor-gifts"
+  },
+  {
+    id: 5,
+    title: "Event Merch & Trophies",
+    image: "/banners/banner-904.png",
+    link: "/category/trophies"
+  },
+  {
+    id: 6,
+    title: "Customized Festive Packaging",
+    image: "/banners/banner-905.png",
+    link: "/category/gift-sets"
+  }
+];
 
-const stripHtml = (html) => String(html || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+// Reusable Wireframe Blog Card (Matches exact PDF specification)
+const WireframeBlogCard = ({ post }) => {
+  if (!post) return null;
 
-/** Rough reading time from the post body, at ~200 words per minute. */
-const readingTime = (post) => {
-  const words = stripHtml(post.content || post.excerpt || "").split(" ").filter(Boolean).length;
-  return `${Math.max(1, Math.round(words / 200))} min read`;
-};
-
-/** Map an API post onto the shape BlogCard expects. */
-const toCardData = (post) => ({
-  id: post.id,
-  slug: post.slug,
-  category: post.category_name || "Blog",
-  title: post.title,
-  imageSrc: post.featured_image ? resolveImageUrl(post.featured_image) : "/default-img.jpg",
-  author: post.author_name || "",
-  date: formatDate(post.published_at || post.created_at),
-  tags: post.category_name || "Article",
-  summary: post.excerpt || stripHtml(post.content).slice(0, 160),
-});
-
-/**
- * Panel wrapper. Every block sits in the same white card the rest of the site
- * uses (blog post page, category page, product sections).
- */
-const Panel = ({ className = "", children, ...rest }) => (
-  <div className={`bg-white rounded-3 shadow-sm border ${className}`} {...rest}>
-    {children}
-  </div>
-);
-
-/** Section heading, matching the product carousels on the homepage. */
-const SectionHeading = ({ title, aside }) => (
-  <div className="d-flex justify-content-between align-items-center mb-2">
-    <p className="fw-semibold fs-5 fs-lg-4 my-2 ms-0 text-dark">{title}</p>
-    {aside && <span className="text-muted small">{aside}</span>}
-  </div>
-);
-
-const CardSkeleton = () => (
-  <div className="border rounded p-3 h-100">
-    <div className="shimmer-bg rounded mb-3" style={{ aspectRatio: "16/9" }} />
-    <div className="shimmer-bg rounded mb-2" style={{ height: 14, width: "85%" }} />
-    <div className="shimmer-bg rounded mb-2" style={{ height: 14, width: "60%" }} />
-    <div className="shimmer-bg rounded" style={{ height: 30, width: "45%" }} />
-  </div>
-);
-
-// --- SIDEBAR ---
-const Sidebar = ({ trending, categories, postCountFor, onPickCategory, activeCategory }) => {
-  const [subscribed, setSubscribed] = useState(false);
+  const targetUrl = post.slug ? `/blog/${post.slug}` : `/blog/${post.id || 1}`;
+  const imgUrl = post.featured_image
+    ? resolveImageUrl(post.featured_image)
+    : "/banners/banner-30.jpg";
+  const authorName = post.author_name || "John Doe";
+  const catName = post.category_name || "Design Trends";
+  const postDate = formatDate(post.published_at || post.created_at);
+  const excerptText =
+    post.excerpt ||
+    stripHtml(post.content).slice(0, 130) ||
+    "A brief introduction or summary of the blog post that gives readers an idea of what it is about.";
 
   return (
-    <div className="h-100">
-      <div className="sticky-top" style={{ top: "135px", zIndex: 10 }}>
+    <article className="pm-wf-blog-card">
+      <Link to={targetUrl} className="pm-wf-card-img-box">
+        <img
+          src={imgUrl}
+          alt={post.title}
+          className="pm-wf-card-img"
+          onError={(e) => {
+            e.currentTarget.src = "/banners/banner-30.jpg";
+          }}
+        />
+        {catName && <span className="pm-wf-card-tag">{catName}</span>}
+      </Link>
 
-        {/* PROMO COUPON */}
-        <Panel className="p-3 mb-3 text-white overflow-hidden position-relative" style={{ background: THEME }}>
-          <div className="d-flex align-items-center gap-2 mb-2">
-            <FaTag size={16} />
-            <span className="badge bg-white text-dark fw-bold text-uppercase">Exclusive Offer</span>
-          </div>
-          <h5 className="fw-bold mb-1 text-white fs-6">Save 15% on First Bulk Order</h5>
-          <p className="small mb-3 text-white-50" style={{ fontSize: "0.8rem" }}>
-            Use code <strong className="text-white">PRINT2026</strong> at checkout.
-          </p>
-          <Link to="/bulk-orders" className="btn btn-light text-dark btn-sm fw-bold">Claim Offer</Link>
-        </Panel>
+      <div className="pm-wf-card-body">
+        <h3 className="pm-wf-card-title">
+          <Link to={targetUrl}>{post.title}</Link>
+        </h3>
 
-        {/* BROWSE BY CATEGORY */}
-        {categories.length > 0 && (
-          <Panel className="p-3 mb-3">
-            <div className="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
-              <FaFolderOpen size={15} style={{ color: THEME }} />
-              <h6 className="fw-bold text-dark m-0">Browse by Category</h6>
-            </div>
-            <div className="d-flex flex-column">
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => onPickCategory(String(cat.id))}
-                  className={`btn btn-sm text-start d-flex justify-content-between align-items-center px-2 py-2 border-0 ${
-                    activeCategory === String(cat.id) ? "fw-bold" : "text-secondary"
-                  }`}
-                  style={activeCategory === String(cat.id) ? { color: THEME } : undefined}
-                >
-                  <span className="text-truncate">{cat.name}</span>
-                  <Badge bg="light" text="dark" className="ms-2 flex-shrink-0">
-                    {postCountFor(cat.id)}
-                  </Badge>
-                </button>
-              ))}
-            </div>
-          </Panel>
-        )}
+        <div className="pm-wf-card-meta">
+          <span className="pm-wf-meta-item">
+            <FaUser className="pm-wf-meta-icon" /> {authorName}
+          </span>
+          <span className="pm-wf-meta-item">
+            <FaCalendarAlt className="pm-wf-meta-icon" /> {postDate}
+          </span>
+          <span className="pm-wf-meta-item">
+            <FaTag className="pm-wf-meta-icon" /> {catName}
+          </span>
+        </div>
 
-        {/* TRENDING ARTICLES */}
-        <Panel className="p-3 mb-3">
-          <div className="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
-            <FaFire className="text-danger" size={16} />
-            <h6 className="fw-bold text-dark m-0">Trending Articles</h6>
-          </div>
-          {trending.length === 0 ? (
-            <p className="text-muted small mb-0">Nothing trending yet.</p>
-          ) : (
-            <div className="d-flex flex-column gap-3">
-              {trending.map((post) => (
-                <Link
-                  key={post.id}
-                  to={`/blog/${post.slug}`}
-                  className="text-decoration-none text-dark d-flex align-items-center gap-3"
-                >
-                  <div className="flex-shrink-0 rounded overflow-hidden border" style={{ width: "60px", height: "55px" }}>
-                    <img
-                      src={post.featured_image ? resolveImageUrl(post.featured_image) : "/default-img.jpg"}
-                      alt={post.title}
-                      className="w-100 h-100"
-                      style={{ objectFit: "cover" }}
-                    />
-                  </div>
-                  <div className="flex-grow-1 min-w-0">
-                    <h6 className="small fw-bold text-dark mb-1 line-clamp-2" style={{ lineHeight: "1.4" }}>
-                      {post.title}
-                    </h6>
-                    <span className="text-muted" style={{ fontSize: "0.72rem" }}>
-                      <FaRegClock size={11} className="me-1" />
-                      {formatDayMonth(post.published_at || post.created_at)}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </Panel>
+        <p className="pm-wf-card-excerpt">{excerptText}</p>
 
-        {/* APP DOWNLOAD */}
-        <Panel className="p-3 mb-3 text-center">
-          <FaMobileAlt size={30} className="mb-2" style={{ color: THEME }} />
-          <h6 className="fw-bold text-dark mb-2">Download PrintMont App</h6>
-          <p className="small text-secondary mb-3" style={{ fontSize: "0.82rem", lineHeight: "1.5" }}>
-            Get ₹500 Welcome PrintCoins &amp; track your orders live on your phone.
-          </p>
-          <Link to="/app-download" className="btn btn-sm fw-bold w-100 text-white" style={{ backgroundColor: THEME }}>
-            Download App
-          </Link>
-        </Panel>
-
-        {/* NEWSLETTER */}
-        <Panel className="p-3 mb-3 text-center">
-          <FaNewspaper size={26} className="mb-2 text-secondary" />
-          <h6 className="fw-bold text-dark mb-2">PrintMont Insights</h6>
-          <p className="small text-secondary mb-3" style={{ fontSize: "0.82rem", lineHeight: "1.5" }}>
-            Subscribe for free weekly printing tips &amp; merchandise guides.
-          </p>
-          {subscribed ? (
-            <div className="p-2 rounded bg-success text-white small fw-bold d-flex align-items-center justify-content-center gap-1">
-              <FaCheckCircle /> Subscribed!
-            </div>
-          ) : (
-            <Form onSubmit={(e) => { e.preventDefault(); setSubscribed(true); }}>
-              <Form.Control type="email" placeholder="Your email address" required className="form-control-sm mb-2 text-center" />
-              <Button type="submit" size="sm" className="w-100 fw-bold border-0 text-white" style={{ backgroundColor: THEME }}>
-                Subscribe Free
-              </Button>
-            </Form>
-          )}
-        </Panel>
+        <Link to={targetUrl} className="pm-wf-card-readmore">
+          Read More <FaArrowRight size={10} />
+        </Link>
       </div>
-    </div>
+    </article>
   );
 };
 
-// --- MAIN BLOG PAGE ---
 const Blog = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedCategoryParam = searchParams.get("category") || "all";
+
   const [posts, setPosts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [popular, setPopular] = useState([]);
+  const [recentPosts, setRecentPosts] = useState([]);
+  const [popularPosts, setPopularPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
 
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  // Sub-Slider Index States
+  const [latestIdx, setLatestIdx] = useState(0);
+  const [popularIdx, setPopularIdx] = useState(0);
+  const [printingIdx, setPrintingIdx] = useState(0);
+
+  // Dynamic Banners from API (scoping to page=blog via BLOG_BANNER endpoint)
+  const { banners: blogHeroBanners } = useHomeBanners(API_ENDPOINTS.BLOG_BANNER, "blog_hero");
+  const { banners: blogTopBanners } = useHomeBanners(API_ENDPOINTS.BLOG_BANNER, "blog_top_strip");
+  const { banners: blogMidBanners } = useHomeBanners(API_ENDPOINTS.BLOG_BANNER, "blog_mid_strip");
+  const { banners: blogAdBanners } = useHomeBanners(API_ENDPOINTS.BLOG_BANNER, "blog_ad_banner");
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+    updatePageSEO({
+      title: "Printmont Blog | Corporate Gifting, Promotional Items & Design Ideas",
+      description: "Discover expert articles on customized printing, corporate employee kits, personalized occasion gifts, and branding solutions with Printmont.",
+      keywords: "printmont blog, corporate gifts, promotional gifts, business gift ideas, printing blogs",
+      type: "blog"
+    });
+
     let cancelled = false;
 
-    const load = async () => {
+    const loadBlogData = async () => {
       try {
-        // One failing endpoint should not blank the whole page, so each is
-        // settled independently and missing data degrades to an empty section.
-        const [postsRes, catsRes, popularRes] = await Promise.allSettled([
+        setLoading(true);
+        const [postsRes, catsRes, recentRes, popRes] = await Promise.allSettled([
           fetch(API_ENDPOINTS.BLOG_POSTS).then((r) => r.json()),
           fetch(API_ENDPOINTS.BLOG_CATEGORIES).then((r) => r.json()),
-          fetch(API_ENDPOINTS.BLOG_POPULAR).then((r) => r.json()),
+          fetch(API_ENDPOINTS.BLOG_RECENT(6)).then((r) => r.json()),
+          fetch(API_ENDPOINTS.BLOG_POPULAR(6)).then((r) => r.json())
         ]);
+
         if (cancelled) return;
 
-        const pick = (res) =>
-          res.status === "fulfilled" && res.value?.success && Array.isArray(res.value.data)
-            ? res.value.data
-            : [];
+        if (postsRes.status === "fulfilled" && postsRes.value?.success) {
+          const list = Array.isArray(postsRes.value.data) ? postsRes.value.data : [];
+          setPosts(list.filter((p) => p.status !== "inactive"));
+        }
 
-        const loadedPosts = pick(postsRes);
-        setPosts(loadedPosts);
-        setCategories(pick(catsRes));
-        setPopular(pick(popularRes));
+        if (catsRes.status === "fulfilled" && catsRes.value?.success) {
+          setCategories(Array.isArray(catsRes.value.data) ? catsRes.value.data : []);
+        }
 
-        if (postsRes.status !== "fulfilled" || !postsRes.value?.success) setFailed(true);
+        if (recentRes.status === "fulfilled" && recentRes.value?.success) {
+          setRecentPosts(Array.isArray(recentRes.value.data) ? recentRes.value.data : []);
+        }
+
+        if (popRes.status === "fulfilled" && popRes.value?.success) {
+          setPopularPosts(Array.isArray(popRes.value.data) ? popRes.value.data : []);
+        }
       } catch (err) {
-        console.error("Failed to load blog:", err);
-        if (!cancelled) setFailed(true);
+        console.error("Error loading blog data:", err);
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
 
-    load();
-    return () => { cancelled = true; };
+    loadBlogData();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const postCountFor = (categoryId) =>
-    posts.filter((p) => String(p.category_id) === String(categoryId)).length;
+  // Top Sliders list (Powered dynamically by Admin banners: blog_hero & blog_top_strip)
+  const topSliders = useMemo(() => {
+    const apiItems = [];
 
-  const filteredPosts = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+    // 1. Pull banners uploaded to blog_hero ("Main Hero Slider & Banners")
+    if (Array.isArray(blogHeroBanners) && blogHeroBanners.length > 0) {
+      blogHeroBanners.forEach((b, i) => {
+        apiItems.push({
+          id: b.id ? `hero-${b.id}-${i}` : `hero-${i}`,
+          title: b.title || "Slider & banner",
+          image: b.image || b.large || b.image_url_desktop || b.image_url || "/banners/blog-banner-1.png",
+          link: b.target_url || b.target || "/blog"
+        });
+      });
+    }
 
-    return posts.filter((post) => {
-      const inCategory =
-        selectedCategory === "all" || String(post.category_id) === selectedCategory;
-      if (!inCategory) return false;
-      if (!term) return true;
+    // 2. Pull banners uploaded to blog_top_strip ("Top Small Banner Strip / Slider")
+    if (Array.isArray(blogTopBanners) && blogTopBanners.length > 0) {
+      blogTopBanners.forEach((b, i) => {
+        apiItems.push({
+          id: b.id ? `top-${b.id}-${i}` : `top-${i}`,
+          title: b.title || "Slider & banner",
+          image: b.image || b.large || b.image_url_desktop || b.image_url || "/banners/blog-banner-2.png",
+          link: b.target_url || b.target || "/blog"
+        });
+      });
+    }
 
-      const haystack = [
-        post.title,
-        post.excerpt,
-        post.category_name,
-        stripHtml(post.content),
-      ].join(" ").toLowerCase();
+    // If 5 or more banners configured in Admin, use all Admin banners
+    if (apiItems.length >= 5) {
+      return apiItems;
+    }
 
-      return haystack.includes(term);
-    });
-  }, [posts, selectedCategory, searchTerm]);
+    // If Admin has 1 to 4 banners, show Admin banners first, then fill remainder from DEFAULT_TOP_SLIDERS
+    if (apiItems.length > 0) {
+      const remaining = 5 - apiItems.length;
+      return [...apiItems, ...DEFAULT_TOP_SLIDERS.slice(0, remaining)];
+    }
 
-  // Reset paging whenever the result set changes underneath it.
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [selectedCategory, searchTerm]);
+    // Fallback if no Admin banners configured yet
+    return DEFAULT_TOP_SLIDERS;
+  }, [blogHeroBanners, blogTopBanners]);
 
-  // Newest post drives the spotlight; the rest fill the grid.
-  const featured = useMemo(() => {
-    if (!posts.length) return null;
-    return [...posts].sort((a, b) =>
-      String(b.published_at || b.created_at).localeCompare(String(a.published_at || a.created_at))
-    )[0];
+  // Sidebar banner item (Dynamic from Admin blog_mid_strip / blog_hero)
+  const sidebarBanner = useMemo(() => {
+    if (Array.isArray(blogMidBanners) && blogMidBanners.length > 0) {
+      const b = blogMidBanners[0];
+      return {
+        title: b.title || "Slider & banner",
+        image: b.image || b.large || b.image_url_desktop || "/banners/pdp_small_banner_1.jpg",
+        link: b.target_url || b.target || "/category/corporate-gifts"
+      };
+    }
+    if (Array.isArray(blogHeroBanners) && blogHeroBanners.length > 1) {
+      const b = blogHeroBanners[1];
+      return {
+        title: b.title || "Slider & banner",
+        image: b.image || b.large || b.image_url_desktop || "/banners/pdp_small_banner_1.jpg",
+        link: b.target_url || b.target || "/category/corporate-gifts"
+      };
+    }
+    return {
+      title: "Slider & banner",
+      image: "/banners/pdp_small_banner_1.jpg",
+      link: "/category/corporate-gifts"
+    };
+  }, [blogMidBanners, blogHeroBanners]);
+
+  // Fallback posts if API returns limited rows
+  const activePosts = useMemo(() => {
+    if (posts.length > 0) return posts;
+    return [
+      {
+        id: 1,
+        slug: "luxury-corporate-gifting-guide",
+        title: "Title of Blog Post 1",
+        category_name: "Design Trends",
+        author_name: "John Doe",
+        published_at: "2024-10-01",
+        featured_image: "/banners/banner-30.jpg",
+        excerpt: "A brief introduction or summary of the blog post that gives readers an idea of what it is about."
+      },
+      {
+        id: 2,
+        slug: "modern-business-hampers-trends",
+        title: "Title of Blog Post 2",
+        category_name: "Business Insights",
+        author_name: "Jane Smith",
+        published_at: "2024-10-05",
+        featured_image: "/banners/banner11.jpg",
+        excerpt: "A brief introduction or summary of the blog post that gives readers an idea of what it is about."
+      }
+    ];
   }, [posts]);
 
-  const trending = useMemo(() => (popular.length ? popular : posts).slice(0, 4), [popular, posts]);
-  const mostRead = useMemo(
-    () => [...popular].sort((a, b) => Number(b.view_count || b.views || 0) - Number(a.view_count || a.views || 0)).slice(0, 3),
-    [popular]
-  );
+  // Find posts by category name or keyword
+  const getPostForCategory = (keywords = []) => {
+    const found = activePosts.find((p) => {
+      const c = (p.category_name || "").toLowerCase();
+      const t = (p.title || "").toLowerCase();
+      return keywords.some((k) => c.includes(k) || t.includes(k));
+    });
+    return found || activePosts[0];
+  };
 
-  const visiblePosts = filteredPosts.slice(0, visibleCount);
-  const filtersActive = selectedCategory !== "all" || searchTerm.trim() !== "";
+  const corporatePost = useMemo(() => getPostForCategory(["corporate"]), [activePosts]);
+  const businessPost = useMemo(() => getPostForCategory(["business"]), [activePosts]);
+  const promoPost = useMemo(() => getPostForCategory(["promotional", "merch"]), [activePosts]);
+  const doctorPost = useMemo(() => getPostForCategory(["doctor", "healthcare"]), [activePosts]);
+  const noveltiesPost = useMemo(() => getPostForCategory(["relationship", "novelties", "activities"]), [activePosts]);
+  const personalizedPost = useMemo(() => getPostForCategory(["personalized", "personalise"]), [activePosts]);
+
+  // Carousels data slices
+  const latestPostsSlice = useMemo(() => {
+    const list = activePosts;
+    const start = latestIdx % Math.max(1, list.length);
+    return [list[start], list[(start + 1) % list.length]].filter(Boolean);
+  }, [activePosts, latestIdx]);
+
+  const popularPostsSlice = useMemo(() => {
+    const list = popularPosts.length >= 2 ? popularPosts : activePosts;
+    const start = popularIdx % Math.max(1, list.length);
+    return [list[start], list[(start + 1) % list.length]].filter(Boolean);
+  }, [popularPosts, activePosts, popularIdx]);
+
+  const printingPostsSlice = useMemo(() => {
+    const list = activePosts.filter(p => (p.title || "").toLowerCase().includes("print") || (p.category_name || "").toLowerCase().includes("print"));
+    const source = list.length >= 2 ? list : activePosts;
+    const start = printingIdx % Math.max(1, source.length);
+    return [source[start], source[(start + 1) % source.length]].filter(Boolean);
+  }, [activePosts, printingIdx]);
+
+  // Smooth Infinite Hero Carousel Setup
+  const baseTopSliders = useMemo(() => {
+    if (!topSliders || topSliders.length === 0) return [];
+    let list = [...topSliders];
+    while (list.length < 5) {
+      list = [...list, ...topSliders];
+    }
+    return list;
+  }, [topSliders]);
+
+  const carouselTrackItems = useMemo(() => {
+    if (baseTopSliders.length === 0) return [];
+    return [...baseTopSliders, ...baseTopSliders, ...baseTopSliders];
+  }, [baseTopSliders]);
+
+  const [slideIdx, setSlideIdx] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(true);
+  const [isTopSliderHovered, setIsTopSliderHovered] = useState(false);
+  const viewportRef = useRef(null);
+  const [viewportWidth, setViewportWidth] = useState(() => {
+    if (typeof window !== "undefined") {
+      return Math.max(320, window.innerWidth - 28);
+    }
+    return 1200;
+  });
+
+  // Start in the middle set of cloned items for infinite scrolling
+  useEffect(() => {
+    if (baseTopSliders.length > 0) {
+      setSlideIdx(baseTopSliders.length);
+      setIsTransitioning(false);
+    }
+  }, [baseTopSliders.length]);
+
+  // Re-enable transition smoothly after silent index wraps
+  useEffect(() => {
+    if (!isTransitioning) {
+      const raf = requestAnimationFrame(() => {
+        setIsTransitioning(true);
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [isTransitioning]);
+
+  // Track responsive viewport width dynamically
+  useEffect(() => {
+    if (!viewportRef.current) return;
+    const updateWidth = () => {
+      if (viewportRef.current) {
+        setViewportWidth(viewportRef.current.clientWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    const ro = new ResizeObserver(updateWidth);
+    ro.observe(viewportRef.current);
+    return () => {
+      window.removeEventListener("resize", updateWidth);
+      ro.disconnect();
+    };
+  }, []);
+
+  const visibleCount = useMemo(() => {
+    if (viewportWidth < 576) return 1;
+    if (viewportWidth < 768) return 2;
+    if (viewportWidth < 992) return 3;
+    if (viewportWidth < 1200) return 4;
+    return 5;
+  }, [viewportWidth]);
+
+  const gapSize = useMemo(() => {
+    if (viewportWidth < 576) return 8;
+    if (viewportWidth < 768) return 8;
+    if (viewportWidth < 1200) return 10;
+    return 12;
+  }, [viewportWidth]);
+
+  const cardWidth = useMemo(() => {
+    if (!viewportWidth || visibleCount <= 0) return 240;
+    return (viewportWidth - gapSize * (visibleCount - 1)) / visibleCount;
+  }, [viewportWidth, visibleCount, gapSize]);
+
+  const slideNext = useCallback(() => {
+    setIsTransitioning(true);
+    setSlideIdx((prev) => prev + 1);
+  }, []);
+
+  const slidePrev = useCallback(() => {
+    setIsTransitioning(true);
+    setSlideIdx((prev) => (prev > 0 ? prev - 1 : 0));
+  }, []);
+
+  const handleTransitionEnd = useCallback(() => {
+    const len = baseTopSliders.length;
+    if (len === 0) return;
+    if (slideIdx >= len * 2) {
+      setIsTransitioning(false);
+      setSlideIdx((prev) => prev - len);
+    } else if (slideIdx < len) {
+      setIsTransitioning(false);
+      setSlideIdx((prev) => prev + len);
+    }
+  }, [baseTopSliders.length, slideIdx]);
+
+  // Dynamic backend controls (arrows enable/disable, auto-running enable/disable, speed)
+  const carouselConfig = useMemo(() => {
+    const first = (Array.isArray(blogHeroBanners) && blogHeroBanners[0]) || {};
+    return {
+      showArrows: first.button_arrows !== "disable",
+      autoRunning: first.auto_running !== "disable",
+      autoRunSpeed: Number(first.auto_run_speed || first.auto_play_speed || 3500),
+    };
+  }, [blogHeroBanners]);
+
+  // Auto carousel runs smoothly respecting admin speed & auto_running toggle, pauses on hover
+  useEffect(() => {
+    if (!carouselConfig.autoRunning || isTopSliderHovered || baseTopSliders.length <= 1) return;
+    const interval = setInterval(() => {
+      slideNext();
+    }, carouselConfig.autoRunSpeed);
+    return () => clearInterval(interval);
+  }, [carouselConfig.autoRunning, carouselConfig.autoRunSpeed, isTopSliderHovered, baseTopSliders.length, slideNext]);
+
+  const searchQueryParam = searchParams.get("search") || "";
+
+  // Filtered view when user clicks topic in sub-navigation or searches
+  const isFiltered = selectedCategoryParam !== "all" || Boolean(searchQueryParam.trim());
+  const filteredPosts = useMemo(() => {
+    let list = activePosts;
+    if (selectedCategoryParam !== "all") {
+      const key = selectedCategoryParam.toLowerCase().replace(/-gifts$/, "").replace(/-/g, " ");
+      list = list.filter((p) => {
+        const c = (p.category_name || "").toLowerCase();
+        const t = (p.title || "").toLowerCase();
+        return c.includes(key) || t.includes(key);
+      });
+    }
+    if (searchQueryParam.trim()) {
+      const q = searchQueryParam.toLowerCase().trim();
+      list = list.filter((p) => {
+        const t = (p.title || "").toLowerCase();
+        const c = (p.category_name || "").toLowerCase();
+        const e = (p.excerpt || "").toLowerCase();
+        const a = (p.author_name || "").toLowerCase();
+        return t.includes(q) || c.includes(q) || e.includes(q) || a.includes(q);
+      });
+    }
+    return list;
+  }, [activePosts, selectedCategoryParam, searchQueryParam]);
 
   return (
-    <div className="bg-light py-2 py-md-4" style={{ minHeight: "85vh", overflowX: "hidden" }}>
+    <div className="blog-master-container">
+      {/* =========================================================================
+          HERO SECTION: FULL-SCREEN TOP SLIDER & BANNERS (Edge-to-Edge Full Width)
+          ========================================================================= */}
+      <section className="pm-blog-hero-section pm-blog-hero-fullscreen" aria-label="Featured Promo Sliders">
+        <div 
+          className="pm-blog-slider-wrap"
+          onMouseEnter={() => setIsTopSliderHovered(true)}
+          onMouseLeave={() => setIsTopSliderHovered(false)}
+        >
+          {carouselConfig.showArrows && (
+            <button
+              type="button"
+              className="pm-blog-carousel-arrow left"
+              onClick={slidePrev}
+              aria-label="Previous Slide"
+            >
+              <FaChevronLeft />
+            </button>
+          )}
 
-      {/* Same category strip the homepage and blog post page use. */}
-      <div className="d-block d-lg-none mb-3">
-        <Categories bg={THEME} color="white" showImages={false} space="10px 0" />
-      </div>
-
-      <Container className="blog-page">
-
-        {/* PAGE HEADER + SEARCH + BLOG CATEGORIES */}
-        <Panel className="p-3 p-md-4 mb-3">
-          <div className="text-center">
-            <Badge bg="primary-subtle" className="text-primary fw-bold px-3 py-2 mb-2 text-uppercase fs-7">
-              PrintMont Knowledge Hub
-            </Badge>
-            <h1 className="fw-bold text-dark fs-3 fs-md-2 mb-2">PrintMont Blog &amp; Guides</h1>
-            <p className="text-secondary mx-auto mb-3 small" style={{ maxWidth: "680px", lineHeight: "1.6" }}>
-              Expert insights on custom apparel printing, corporate merchandise strategies,
-              design trends, and personalized gifting ideas.
-            </p>
-
-            {/* SEARCH ARTICLES */}
-            <div className="mx-auto" style={{ maxWidth: "480px" }}>
-              <InputGroup>
-                <InputGroup.Text className="bg-white border-end-0 text-muted">
-                  <FaSearch size={13} />
-                </InputGroup.Text>
-                <Form.Control
-                  type="text"
-                  placeholder="Search articles by title, topic or keyword..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="border-start-0 shadow-none small"
-                />
-                {searchTerm && (
-                  <Button variant="outline-secondary" onClick={() => setSearchTerm("")}>Clear</Button>
-                )}
-              </InputGroup>
+          <div className="pm-blog-slider-viewport" ref={viewportRef}>
+            <div
+              className="pm-blog-slider-track"
+              style={{
+                display: "flex",
+                gap: `${gapSize}px`,
+                transform: `translateX(-${slideIdx * (cardWidth + gapSize)}px)`,
+                transition: isTransitioning ? "transform 0.55s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
+                willChange: "transform"
+              }}
+              onTransitionEnd={handleTransitionEnd}
+            >
+              {carouselTrackItems.map((item, idx) => (
+                <div
+                  key={item.id ? `${item.id}-track-${idx}` : `track-${idx}`}
+                  style={{ width: `${cardWidth}px`, flexShrink: 0 }}
+                  className="pm-blog-slider-item"
+                >
+                  <Link to={item.link || "/blog"} className="pm-blog-banner-card">
+                    <div className="pm-blog-banner-img-box">
+                      <img
+                        src={resolveImageUrl(item.image)}
+                        alt={item.title}
+                        className="pm-blog-banner-img"
+                        onError={(e) => {
+                          e.currentTarget.src = "/banners/blog-banner-1.png";
+                        }}
+                      />
+                    </div>
+                    <div className="pm-blog-banner-label">
+                      {item.title || "Slider & banner"}
+                    </div>
+                  </Link>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* BLOG CATEGORIES */}
-          <div className="d-flex flex-wrap justify-content-center gap-2 mt-3 pt-3 border-top">
-            <Button
-              size="sm"
-              variant={selectedCategory === "all" ? "primary" : "outline-secondary"}
-              className={`px-3 fw-semibold ${selectedCategory === "all" ? "" : "bg-white"}`}
-              style={selectedCategory === "all" ? { backgroundColor: THEME, borderColor: THEME } : undefined}
-              onClick={() => setSelectedCategory("all")}
+          {carouselConfig.showArrows && (
+            <button
+              type="button"
+              className="pm-blog-carousel-arrow right"
+              onClick={slideNext}
+              aria-label="Next Slide"
             >
-              All <span className="opacity-75">({posts.length})</span>
-            </Button>
+              <FaChevronRight />
+            </button>
+          )}
+        </div>
+      </section>
 
-            {categories.map((cat) => {
-              const on = selectedCategory === String(cat.id);
-              return (
-                <Button
-                  key={cat.id}
-                  size="sm"
-                  variant={on ? "primary" : "outline-secondary"}
-                  className={`px-3 fw-semibold ${on ? "" : "bg-white"}`}
-                  style={on ? { backgroundColor: THEME, borderColor: THEME } : undefined}
-                  onClick={() => setSelectedCategory(String(cat.id))}
-                >
-                  {cat.name} <span className="opacity-75">({postCountFor(cat.id)})</span>
-                </Button>
-              );
-            })}
-          </div>
-        </Panel>
-
-        {/* FEATURED SPOTLIGHT ARTICLE */}
-        {featured && (
-          <Panel className="overflow-hidden mb-3">
-            <Row className="g-0 align-items-center">
-              <Col lg={7} md={12} className="p-0">
-                <div style={{ maxHeight: "340px", overflow: "hidden" }}>
-                  <img
-                    src={featured.featured_image ? resolveImageUrl(featured.featured_image) : "/b2b_hero.png"}
-                    alt={featured.title}
-                    className="w-100 h-100 img-fluid zoom-hover"
-                    style={{ objectFit: "cover", minHeight: "260px", maxHeight: "340px", width: "100%" }}
-                  />
-                </div>
-              </Col>
-              <Col lg={5} md={12} className="p-3 p-md-4">
-                <Badge bg="primary-subtle" className="text-primary fw-bold px-3 py-1 mb-2 text-uppercase fs-7">
-                  Featured Spotlight
-                </Badge>
-                <h3 className="fw-bold text-dark mb-3 fs-5 line-clamp-3" style={{ lineHeight: "1.35" }}>
-                  {featured.title}
-                </h3>
-                <p className="text-secondary small mb-4 line-clamp-3" style={{ lineHeight: "1.6" }}>
-                  {featured.excerpt || stripHtml(featured.content).slice(0, 200)}
-                </p>
-                <div className="d-flex align-items-center justify-content-between pt-3 border-top">
-                  <span className="text-muted small fw-semibold">
-                    {readingTime(featured)} · {formatDate(featured.published_at || featured.created_at)}
-                  </span>
-                  <Link
-                    to={`/blog/${featured.slug}`}
-                    className="btn btn-sm px-3 fw-bold text-white"
-                    style={{ backgroundColor: THEME }}
-                  >
-                    Read Article <FaArrowRight className="ms-1" size={12} />
-                  </Link>
-                </div>
-              </Col>
-            </Row>
-          </Panel>
-        )}
-
-        {/* MAIN CONTENT GRID */}
-        <Row className="g-3">
-          <Col xs={12} lg={9}>
-
-            {/* BLOGS — LATEST ARTICLES */}
-            <Panel className="p-3 p-md-4 mb-3">
-              <SectionHeading
-                title="Latest Articles"
-                aside={loading ? "Loading…" : `${filteredPosts.length} article${filteredPosts.length === 1 ? "" : "s"} found`}
-              />
-
-              {loading ? (
-                <Row className="g-3">
-                  {[0, 1, 2, 3].map((i) => (
-                    <Col key={i} xs={12} sm={6}><CardSkeleton /></Col>
-                  ))}
-                </Row>
-              ) : failed ? (
-                <div className="text-center py-4">
-                  <h6 className="fw-bold text-dark mb-1">Articles are unavailable right now</h6>
-                  <p className="text-secondary small mb-0">Please refresh in a moment.</p>
-                </div>
-              ) : filteredPosts.length === 0 ? (
-                <div className="text-center py-4">
-                  <FaRegFileAlt size={34} className="text-secondary mb-3" />
-                  <h6 className="fw-bold text-dark mb-1">
-                    {filtersActive ? "No articles match your filters" : "No articles published yet"}
-                  </h6>
-                  <p className="text-secondary small mb-3">
-                    {filtersActive
-                      ? "Try a different category, or clear your search."
-                      : "New guides and insights will appear here soon."}
-                  </p>
-                  {filtersActive && (
-                    <Button
-                      size="sm"
-                      variant="outline-secondary"
-                      onClick={() => { setSelectedCategory("all"); setSearchTerm(""); }}
-                    >
-                      Clear filters
-                    </Button>
-                  )}
-                </div>
+      {/* =========================================================================
+          MAIN CONTAINER (Standard 1400px Grid per Rule 7)
+          ========================================================================= */}
+      <div className="blog-main-container">
+        
+        {/* =========================================================================
+            FILTER NOTICE (Active only when a topic in header is selected)
+            ========================================================================= */}
+        {isFiltered && (
+          <div className="alert alert-primary d-flex align-items-center justify-content-between my-3 py-2 px-3 rounded-2">
+            <div>
+              {searchQueryParam.trim() ? (
+                <>
+                  <strong>Search results for: </strong>
+                  <span className="fst-italic">"{searchQueryParam}"</span>
+                </>
               ) : (
                 <>
-                  <Row className="g-3">
-                    {visiblePosts.map((post) => (
-                      <Col key={post.id} xs={12} sm={6}>
-                        <BlogCard cardData={toCardData(post)} />
-                      </Col>
-                    ))}
-                  </Row>
-
-                  {/* LOAD MORE */}
-                  {visibleCount < filteredPosts.length && (
-                    <div className="text-center mt-3">
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        className="px-4 fw-semibold"
-                        onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
-                      >
-                        Load more articles ({filteredPosts.length - visibleCount} left)
-                      </Button>
-                    </div>
-                  )}
+                  <strong>Filtered by topic: </strong>
+                  <span className="text-capitalize">{selectedCategoryParam.replace(/-/g, " ")}</span>
                 </>
               )}
-            </Panel>
+              <span className="text-muted ms-2">({filteredPosts.length} posts found)</span>
+            </div>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold"
+              onClick={() => setSearchParams({})}
+            >
+              Show Full Blog Page
+            </button>
+          </div>
+        )}
 
-            {/* IN-FEED BANNER 1: CUSTOM APPAREL */}
-            <Panel className="p-3 p-md-4 mb-3 text-white" style={{ background: THEME }}>
-              <Row className="align-items-center g-3">
-                <Col md={8}>
-                  <Badge bg="light" className="text-dark fw-bold px-3 py-1 mb-2 text-uppercase">
-                    Custom Apparel Supply
-                  </Badge>
-                  <h4 className="fw-bold text-white mb-2 fs-5">Build Custom T-Shirts &amp; Hoodies for Your Brand</h4>
-                  <p className="mb-0 small text-white-50" style={{ lineHeight: "1.5" }}>
-                    High-density DTG printing &amp; embroidery with 0% defect guarantee.
-                    Minimum order starting at 25 pcs.
-                  </p>
-                </Col>
-                <Col md={4} className="text-md-end">
-                  <Link to="/business-solutions" className="btn btn-light text-dark fw-bold px-4 py-2">
-                    View Apparel Blanks
-                  </Link>
-                </Col>
-              </Row>
-            </Panel>
+        {/* =========================================================================
+            SECTION 2: MAIN 2-COLUMN SECTION (Latest Blogs + Sidebar)
+            ========================================================================= */}
+        {/* =========================================================================
+            SECTION 2: MAIN 2-COLUMN SECTION (Scrollable Left Column + Stable Right Sidebar)
+            ========================================================================= */}
+        <section className="pm-blog-main-grid">
+          {/* LEFT COLUMN: Scrollable Content (Latest Blogs, Categories & Grids) */}
+          <div className="pm-blog-main-col">
+            
+            {/* 1. Latest Blogs 2-Card Carousel */}
+            <div className="pm-blog-section-block">
+              <h2 className="pm-blog-section-title">Latest Blogs</h2>
+              <div className="pm-blog-latest-wrap">
+                <button
+                  type="button"
+                  className="pm-blog-carousel-arrow left"
+                  onClick={() => setLatestIdx((prev) => (prev > 0 ? prev - 1 : activePosts.length - 1))}
+                  aria-label="Previous Latest Post"
+                >
+                  <FaChevronLeft />
+                </button>
 
-            {/* MOST READ — driven by view counts */}
-            {mostRead.length > 0 && (
-              <Panel className="p-3 p-md-4 mb-3">
-                <SectionHeading title="Most Read" aside="By reader views" />
-                <div className="d-flex flex-column gap-3">
-                  {mostRead.map((post, idx) => (
-                    <Link
-                      key={post.id}
-                      to={`/blog/${post.slug}`}
-                      className="d-flex align-items-center gap-3 text-decoration-none border rounded p-2 hover-shadow"
-                    >
-                      <span
-                        className="fw-bold flex-shrink-0 d-flex align-items-center justify-content-center rounded"
-                        style={{ width: 34, height: 34, backgroundColor: "#eef3fa", color: THEME }}
-                      >
-                        {idx + 1}
-                      </span>
-                      <div className="flex-shrink-0 rounded overflow-hidden border d-none d-sm-block" style={{ width: 70, height: 52 }}>
-                        <img
-                          src={post.featured_image ? resolveImageUrl(post.featured_image) : "/default-img.jpg"}
-                          alt={post.title}
-                          className="w-100 h-100"
-                          style={{ objectFit: "cover" }}
-                        />
-                      </div>
-                      <div className="flex-grow-1 min-w-0">
-                        <h6 className="fw-bold text-dark mb-1 line-clamp-2 small">{post.title}</h6>
-                        <span className="text-muted d-flex align-items-center gap-2" style={{ fontSize: "0.72rem" }}>
-                          <span><FaEye size={11} className="me-1" />{post.view_count || post.views || 0} views</span>
-                          <span>·</span>
-                          <span>{readingTime(post)}</span>
-                        </span>
-                      </div>
-                    </Link>
+                <div className="pm-blog-two-cards-row">
+                  {latestPostsSlice.map((post) => (
+                    <WireframeBlogCard key={post.id} post={post} />
                   ))}
                 </div>
-              </Panel>
-            )}
 
-            {/* IN-FEED BANNER 2: FRANCHISE PARTNER */}
-            <Panel className="p-3 p-md-4 mb-3">
-              <Row className="align-items-center g-3">
-                <Col md={8}>
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <FaBuilding style={{ color: THEME }} size={18} />
-                    <Badge bg="primary-subtle" className="text-primary fw-bold px-2 py-1">
-                      Franchise Opportunity
-                    </Badge>
-                  </div>
-                  <h5 className="fw-bold text-dark mb-1 fs-6">Own a PrintMont Franchise Outlet in Your City</h5>
-                  <p className="text-secondary small mb-0" style={{ lineHeight: "1.5" }}>
-                    Tap into the ₹25,000 Cr gifting industry with high gross margins (45%-65%)
-                    and full factory supply support.
-                  </p>
-                </Col>
-                <Col md={4} className="text-md-end">
-                  <Link to="/franchise" className="btn btn-sm px-4 py-2 fw-bold text-white" style={{ backgroundColor: THEME }}>
-                    Apply For Franchise
+                <button
+                  type="button"
+                  className="pm-blog-carousel-arrow right"
+                  onClick={() => setLatestIdx((prev) => (prev + 1) % activePosts.length)}
+                  aria-label="Next Latest Post"
+                >
+                  <FaChevronRight />
+                </button>
+              </div>
+            </div>
+
+            {/* 2. CATEGORY-WISE SHOWCASE GRIDS (Inside container) */}
+            {/* Row 1: Corporate Gifts > & Business Gifts > */}
+            <div className="pm-blog-cat-grid-row">
+              <div className="pm-blog-cat-box">
+                <Link to="/blog?category=corporate-gifts" className="pm-cat-box-header">
+                  <span>Corporate Gifts</span>
+                  <span className="pm-cat-arrow">&gt;</span>
+                </Link>
+                <div className="pm-cat-box-content">
+                  <WireframeBlogCard post={corporatePost} />
+                </div>
+              </div>
+
+              <div className="pm-blog-cat-box">
+                <Link to="/blog?category=business-gifts" className="pm-cat-box-header">
+                  <span>Business Gifts</span>
+                  <span className="pm-cat-arrow">&gt;</span>
+                </Link>
+                <div className="pm-cat-box-content">
+                  <WireframeBlogCard post={businessPost} />
+                </div>
+              </div>
+            </div>
+
+            {/* Row 2: Promotional Gifts > & Doctor Gifts > */}
+            <div className="pm-blog-cat-grid-row">
+              <div className="pm-blog-cat-box">
+                <Link to="/blog?category=promotional-gifts" className="pm-cat-box-header">
+                  <span>Promotional Gifts</span>
+                  <span className="pm-cat-arrow">&gt;</span>
+                </Link>
+                <div className="pm-cat-box-content">
+                  <WireframeBlogCard post={promoPost} />
+                </div>
+              </div>
+
+              <div className="pm-blog-cat-box">
+                <Link to="/blog?category=doctor-gifts" className="pm-cat-box-header">
+                  <span>Docter Gifts</span>
+                  <span className="pm-cat-arrow">&gt;</span>
+                </Link>
+                <div className="pm-cat-box-content">
+                  <WireframeBlogCard post={doctorPost} />
+                </div>
+              </div>
+            </div>
+
+            {/* Row 3: Novelties Gifts > & Personalised Gifts > */}
+            <div className="pm-blog-cat-grid-row">
+              <div className="pm-blog-cat-box">
+                <Link to="/blog?category=relationship-gifts" className="pm-cat-box-header">
+                  <span>Novelties Gifts</span>
+                  <span className="pm-cat-arrow">&gt;</span>
+                </Link>
+                <div className="pm-cat-box-content">
+                  <WireframeBlogCard post={noveltiesPost} />
+                </div>
+              </div>
+
+              <div className="pm-blog-cat-box">
+                <Link to="/blog?category=personalized-gifts" className="pm-cat-box-header">
+                  <span>Personalised Gifts</span>
+                  <span className="pm-cat-arrow">&gt;</span>
+                </Link>
+                <div className="pm-cat-box-content">
+                  <WireframeBlogCard post={personalizedPost} />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. POPULAR BLOGS CAROUSEL ("Populer Blogs") */}
+            <section className="pm-blog-carousel-section" aria-label="Popular Blogs">
+              <h2 className="pm-blog-section-title">Populer Blogs</h2>
+              <div className="pm-blog-latest-wrap">
+                <button
+                  type="button"
+                  className="pm-blog-carousel-arrow left"
+                  onClick={() => setPopularIdx((prev) => (prev > 0 ? prev - 1 : popularPosts.length - 1))}
+                  aria-label="Previous Popular Post"
+                >
+                  <FaChevronLeft />
+                </button>
+
+                <div className="pm-blog-two-cards-row">
+                  {popularPostsSlice.map((post) => (
+                    <WireframeBlogCard key={`pop-${post.id}`} post={post} />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className="pm-blog-carousel-arrow right"
+                  onClick={() => setPopularIdx((prev) => (prev + 1) % Math.max(1, popularPosts.length))}
+                  aria-label="Next Popular Post"
+                >
+                  <FaChevronRight />
+                </button>
+              </div>
+            </section>
+
+            {/* 4. PRINTING BLOGS CAROUSEL ("Printing Blogs") */}
+            <section className="pm-blog-carousel-section" aria-label="Printing Blogs">
+              <h2 className="pm-blog-section-title">Printing Blogs</h2>
+              <div className="pm-blog-latest-wrap">
+                <button
+                  type="button"
+                  className="pm-blog-carousel-arrow left"
+                  onClick={() => setPrintingIdx((prev) => (prev > 0 ? prev - 1 : activePosts.length - 1))}
+                  aria-label="Previous Printing Post"
+                >
+                  <FaChevronLeft />
+                </button>
+
+                <div className="pm-blog-two-cards-row">
+                  {printingPostsSlice.map((post) => (
+                    <WireframeBlogCard key={`print-${post.id}`} post={post} />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className="pm-blog-carousel-arrow right"
+                  onClick={() => setPrintingIdx((prev) => (prev + 1) % activePosts.length)}
+                  aria-label="Next Printing Post"
+                >
+                  <FaChevronRight />
+                </button>
+              </div>
+            </section>
+
+            {/* 5. ALL BLOGS GRID (2-Column Grid) */}
+            <section className="pm-blog-carousel-section" aria-label="All Blogs">
+              <h2 className="pm-blog-section-title">All Blogs</h2>
+              <div className="pm-blog-all-grid">
+                {(isFiltered ? filteredPosts : activePosts).slice(0, 6).map((post) => (
+                  <WireframeBlogCard key={`all-${post.id}`} post={post} />
+                ))}
+              </div>
+            </section>
+
+          </div>
+
+          {/* RIGHT COLUMN: Stable / Sticky Sidebar (Banner + Recent Posts) */}
+          <aside className="pm-blog-sidebar-col" aria-label="Blog Sidebar">
+            {/* Sidebar Tall Banner */}
+            <Link to={sidebarBanner.link} className="pm-blog-sidebar-banner-card">
+              <img
+                src={sidebarBanner.image}
+                alt={sidebarBanner.title}
+                className="pm-blog-sidebar-banner-img"
+                onError={(e) => {
+                  e.currentTarget.src = "/banners/pdp_small_banner_1.jpg";
+                }}
+              />
+              <div className="pm-blog-sidebar-banner-title">
+                Slider &amp; banner
+              </div>
+            </Link>
+
+            {/* Recent Posts Widget (Stable / Sticky) */}
+            <div className="pm-blog-recent-card">
+              <h3 className="pm-blog-recent-title">Recent Posts</h3>
+              <div className="pm-blog-recent-list">
+                {(recentPosts.length > 0 ? recentPosts.slice(0, 6) : activePosts.slice(0, 6)).map((item) => (
+                  <Link
+                    key={item.id}
+                    to={item.slug ? `/blog/${item.slug}` : `/blog/${item.id}`}
+                    className="pm-blog-recent-item"
+                  >
+                    <img
+                      src={item.featured_image ? resolveImageUrl(item.featured_image) : "/banners/banner-30.jpg"}
+                      alt={item.title}
+                      className="pm-blog-recent-thumb"
+                      onError={(e) => {
+                        e.currentTarget.src = "/banners/banner-30.jpg";
+                      }}
+                    />
+                    <div className="pm-blog-recent-info">
+                      <h4 className="pm-blog-recent-post-title">{item.title}</h4>
+                      <span className="pm-blog-recent-date">
+                        {formatDate(item.published_at || item.created_at)}
+                      </span>
+                    </div>
                   </Link>
-                </Col>
-              </Row>
-            </Panel>
-          </Col>
+                ))}
+              </div>
+            </div>
+          </aside>
+        </section>
 
-          {/* RIGHT SIDEBAR */}
-          <Col xs={12} lg={3}>
-            <Sidebar
-              trending={trending}
-              categories={categories}
-              postCountFor={postCountFor}
-              activeCategory={selectedCategory}
-              onPickCategory={setSelectedCategory}
-            />
-          </Col>
-        </Row>
-      </Container>
+      </div>
     </div>
   );
 };

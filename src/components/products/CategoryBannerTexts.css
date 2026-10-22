@@ -1,0 +1,54 @@
+/* Category banners (admin: category-banner-texts.php):
+   full-width image with the admin text in plain type right below it (no card, no coloured box) */
+.cbt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.cbt-card {
+  background: #fff;
+}
+
+.cbt-card a {
+  display: block;
+}
+
+.cbt-img {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+}
+
+.cbt-text {
+  padding: 16px 0 8px;
+  color: #212121;
+}
+
+.cbt-text__title {
+  margin-bottom: 4px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.cbt-text__desc {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+/* Desktop: its own section below About the product, split off like the other sections */
+.pdd .cbt-list.pdd-cbt {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 8px solid #f1f3f6;
+}
+
+@media (max-width: 991.98px) {
+  .cbt-list { gap: 16px; }
+  .cbt-text { padding: 8px 4px 4px; }
+  .cbt-text__title,
+  .cbt-text__desc { font-size: 15px; }
+}

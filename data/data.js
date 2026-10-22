@@ -705,42 +705,42 @@ export const productList = [
 ]
 export const gridsectionfirst = [
   {
-    title: "Women's",
+    title: "Women's Clothing",
     mainItem: {
-      img: "./sq/women1.jpg",
-      name: "T-shirt",
-      offer: "Min 50% off",
+      img: "/sq/women1.jpg",
+      name: "Women's Floral Designer Kurti",
+      offer: "Min. 50% off",
     },
     sideItems: [
       {
-        img: "./sq/women2.jpg",
-        name: "Watch",
-        offer: "Top offer",
+        img: "/sq/women2.jpg",
+        name: "Designer Anarkali Suit",
+        offer: "Min. 40% off",
       },
       {
-        img: "./sq/women3.jpg",
-        name: "Watch",
-        offer: "Top offer",
+        img: "/sq/women3.jpg",
+        name: "Embroidered Party Gown",
+        offer: "Min. 40% off",
       },
     ],
   },
   {
-    title: "Men's",
+    title: "Men's (Category)",
     mainItem: {
-      img: "./sq/men1.jpg",
-      name: "Shirt",
-      offer: "Min 40% off",
+      img: "/sq/men1.jpg",
+      name: "Men's Classic Casual Shirt",
+      offer: "Min. 50% off",
     },
     sideItems: [
       {
-        img: "./sq/men2.jpg",
-        name: "Watch",
-        offer: "Top offer",
+        img: "/sq/men2.jpg",
+        name: "Formal Corporate Blazer",
+        offer: "Min. 40% off",
       },
       {
-        img: "./sq/men3.jpg",
-        name: "Watch",
-        offer: "Top offer",
+        img: "/sq/men3.jpg",
+        name: "Premium Denim Jacket",
+        offer: "Min. 40% off",
       },
     ],
   },
@@ -767,22 +767,22 @@ export const gridsectionfirst = [
 ];
 export const gridsectionsecond = [
   {
-    title: "Top Rated",
+    title: "Top Rated (Category)",
     mainItem: {
       img: "/sqtopdeals/1.jpg",
-      name: "T-shirt",
-      offer: "Min 50% off",
+      name: "Men's Premium Polo T-shirt",
+      offer: "Min. 50% off",
     },
     sideItems: [
       {
         img: "/sqtopdeals/2.jpg",
-        name: "Watch",
-        offer: "Top offer",
+        name: "Luxury Chronograph Watch",
+        offer: "Min. 40% off",
       },
       {
         img: "/sqtopdeals/3.jpg",
-        name: "Watch",
-        offer: "Top offer",
+        name: "Casual Designer Shoes",
+        offer: "Min. 40% off",
       },
     ],
   },
@@ -807,22 +807,22 @@ export const gridsectionsecond = [
     ],
   },
   {
-    title: "Top Selection",
+    title: "Top Selection (Category)",
     mainItem: {
       img: "/sqtopdeals/7.jpg",
-      name: "Frock",
-      offer: "Min 30% off",
+      name: "Wirless Blues Headphone...",
+      offer: "Min. 30% off",
     },
     sideItems: [
       {
         img: "/sqtopdeals/8.jpg",
-        name: "Toy",
-        offer: "Top offer",
+        name: "Professional Camera Lans...",
+        offer: "Min. 30% off",
       },
       {
         img: "/sqtopdeals/9.jpg",
-        name: "Toy",
-        offer: "Top offer",
+        name: "Professional Camera Lans...",
+        offer: "Min. 30% off",
       },
     ],
   },
@@ -976,6 +976,28 @@ export const sampleItems = [
   { image: "/men_shirt/men-shirt-8.jpeg", title: "Slim Fit Shirt", discount: "25% OFF" },
 ];
 export const imageColumn = {
-  imageUrl: "/girl-product-img/girl-1.webp",
+  imageUrl: "/corporate_apparel.png",
   alt: "Men’s Fashion",
 };
+
+export const mensFlatMosaicItems = [
+  { id: 1, name: "Casual Knitted Shirts", title: "Casual Knitted Shirts", image: "/men_shirt/men-shirt-1.png", discount: "Min. 40% off", discountText: "Min. 40% off", slug: "mens-fashion-shirts" },
+  { id: 2, name: "Corporate Polo Tees", title: "Corporate Polo Tees", image: "/men_shirt/men-shirt-2.jpeg", discount: "Min. 35% off", discountText: "Min. 35% off", slug: "mens-fashion-shirts" },
+  { id: 3, name: "Dri-Fit Sports Wear", title: "Dri-Fit Sports Wear", image: "/men_shirt/men-shirt-3.jpeg", discount: "Min. 50% off", discountText: "Min. 50% off", slug: "dri-fit-sports-tees" },
+  { id: 4, name: "Oversized Custom Tees", title: "Oversized Custom Tees", image: "/men_shirt/men-shirt-4.jpeg", discount: "Min. 30% off", discountText: "Min. 30% off", slug: "oversized-custom-tees" },
+  { id: 5, name: "Zipper Winter Hoodies", title: "Zipper Winter Hoodies", image: "/men_shirt/men-shirt-5.jpeg", discount: "Min. 45% off", discountText: "Min. 45% off", slug: "zipper-hoodies" },
+  { id: 6, name: "Fleece Jackets", title: "Fleece Jackets", image: "/men_shirt/men-shirt-6.jpeg", discount: "Min. 40% off", discountText: "Min. 40% off", slug: "fleece-corporate-jackets" },
+  { id: 7, name: "Formal Oxford Shirts", title: "Formal Oxford Shirts", image: "/men_shirt/men-shirt-7.jpeg", discount: "Min. 30% off", discountText: "Min. 30% off", slug: "mens-fashion-shirts" },
+  { id: 8, name: "Embroidered Caps", title: "Embroidered Caps", image: "/men_shirt/men-shirt-8.jpeg", discount: "Min. 50% off", discountText: "Min. 50% off", slug: "caps-uniform-accessories" }
+];
+
+export const womensFlatMosaicItems = [
+  { id: 101, name: "Designer Evening Gowns", title: "Designer Evening Gowns", image: "/women-dress/women-dress-1.jpeg", discount: "Min. 50% off", discountText: "Min. 50% off", slug: "womens-fashion-dresses" },
+  { id: 102, name: "Embroidered Kurtis", title: "Embroidered Kurtis", image: "/women-dress/women-dress-2.jpeg", discount: "Min. 40% off", discountText: "Min. 40% off", slug: "womens-fashion-dresses" },
+  { id: 103, name: "Floral Summer Dresses", title: "Floral Summer Dresses", image: "/women-dress/women-dress-3.jpeg", discount: "Min. 35% off", discountText: "Min. 35% off", slug: "womens-fashion-dresses" },
+  { id: 104, name: "Cotton Everyday Tops", title: "Cotton Everyday Tops", image: "/women-dress/women-dress-4.jpeg", discount: "Min. 30% off", discountText: "Min. 30% off", slug: "womens-fashion-dresses" },
+  { id: 105, name: "Party Wear Gowns", title: "Party Wear Gowns", image: "/women-dress/women-dress-5.jpeg", discount: "Min. 45% off", discountText: "Min. 45% off", slug: "womens-fashion-dresses" },
+  { id: 106, name: "Office Casual Blazers", title: "Office Casual Blazers", image: "/women-dress/women-dress-6.jpeg", discount: "Min. 40% off", discountText: "Min. 40% off", slug: "womens-fashion-dresses" },
+  { id: 107, name: "Printed Maxi Dresses", title: "Printed Maxi Dresses", image: "/women-dress/women-dress-7.jpeg", discount: "Min. 55% off", discountText: "Min. 55% off", slug: "womens-fashion-dresses" },
+  { id: 108, name: "Ethnic Festive Outfits", title: "Ethnic Festive Outfits", image: "/women-dress/women-dress-8.png", discount: "Min. 50% off", discountText: "Min. 50% off", slug: "womens-fashion-dresses" }
+];

@@ -9,36 +9,20 @@ import normalizeProduct from "../utils/normalizeProduct";
  */
 export default function useHomeProducts(apiUrl, initialProducts = [], limit) {
   const serializedInitial = JSON.stringify(initialProducts || []);
-  const cacheKey = `home_prod_cache_${apiUrl}_${limit || 'all'}`;
 
   const [products, setProducts] = useState(() => {
-    if (apiUrl) {
+    if (!apiUrl) {
       try {
-        const cached = sessionStorage.getItem(cacheKey);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch (e) {}
-      return [];
+        const parsed = JSON.parse(serializedInitial);
+        return parsed.map(normalizeProduct).filter(Boolean);
+      } catch {
+        return [];
+      }
     }
-    try {
-      const parsed = JSON.parse(serializedInitial);
-      return parsed.map(normalizeProduct).filter(Boolean);
-    } catch {
-      return [];
-    }
+    return [];
   });
 
-  const [loading, setLoading] = useState(() => {
-    if (!apiUrl) return false;
-    try {
-      const cached = sessionStorage.getItem(cacheKey);
-      if (cached) return false;
-    } catch (e) {}
-    return true;
-  });
-
+  const [loading, setLoading] = useState(!!apiUrl);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -56,9 +40,7 @@ export default function useHomeProducts(apiUrl, initialProducts = [], limit) {
     let isMounted = true;
     const fetchProducts = async () => {
       try {
-        if (!sessionStorage.getItem(cacheKey)) {
-          setLoading(true);
-        }
+        setLoading(true);
         const response = await fetch(apiUrl);
         if (!response.ok) {
           throw new Error(`HTTP Error! Status: ${response.status}`);
@@ -83,12 +65,6 @@ export default function useHomeProducts(apiUrl, initialProducts = [], limit) {
         
         if (typeof limit === "number" && limit > 0) {
           normalized = normalized.slice(0, limit);
-        }
-
-        if (normalized.length > 0) {
-          try {
-            sessionStorage.setItem(cacheKey, JSON.stringify(normalized));
-          } catch (e) {}
         }
 
         setProducts(normalized);

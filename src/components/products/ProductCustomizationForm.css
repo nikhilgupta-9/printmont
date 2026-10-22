@@ -1,0 +1,179 @@
+/* Customization options on the product page — label left, control right (stacks on small screens).
+   Spacing follows the site 8px standard. */
+.pcf {
+  display: flex;
+  flex-direction: column;
+}
+
+.pcf-row {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 360px);
+  gap: 16px;
+  align-items: start;
+  padding: 8px 0;
+}
+
+.pcf-label {
+  padding-top: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #878787;
+}
+
+.pcf-control {
+  min-width: 0;
+}
+
+.pcf-select,
+.pcf-input {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 13px;
+  color: #212121;
+  outline: none;
+}
+
+textarea.pcf-input {
+  padding: 8px;
+  resize: vertical;
+}
+
+.pcf-select:focus,
+.pcf-input:focus {
+  border-color: #2874f0;
+}
+
+.pcf-help {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #878787;
+}
+
+/* Radio buttons */
+.pcf-radios,
+.pcf-chips,
+.pcf-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pcf-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 16px 0 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pcf-radio input {
+  margin: 0;
+}
+
+.pcf-radio.is-active {
+  border-color: #2874f0;
+  background: #f0f5ff;
+}
+
+/* Colour swatches */
+.pcf-swatches {
+  padding-top: 4px;
+}
+
+.pcf-swatch {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #d0d0d0;
+  box-shadow: inset 0 0 0 2px #fff;
+  cursor: pointer;
+}
+
+.pcf-swatch.is-active {
+  outline: 2px solid #2874f0;
+  outline-offset: 2px;
+}
+
+.pcf-selected {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #212121;
+}
+
+/* Multi-select chips */
+.pcf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  background: #fff;
+  font-size: 13px;
+  color: #212121;
+}
+
+.pcf-chip.is-active {
+  border-color: #5b2a86;
+  background: #5b2a86;
+  color: #fff;
+}
+
+/* Upload */
+.pcf-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pcf-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px dashed #2874f0;
+  border-radius: 4px;
+  color: #2874f0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pcf-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 360px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 13px;
+}
+
+@media (max-width: 575.98px) {
+  .pcf-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .pcf-label {
+    padding-top: 0;
+    color: #212121;
+    font-weight: 600;
+  }
+}

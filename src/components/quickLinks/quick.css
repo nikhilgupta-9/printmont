@@ -1,35 +1,311 @@
-.quicklinks-container {
-  /* max-width: 480px; */
-  margin: 0 auto;
-  border: 1px solid #ddd;
-  /* height: 100vh; */
-  /* overflow-y: auto; */
-  background-color: #f8f9fa;
+/* ============================================================
+   Quick Links Directory Stylesheet (Mobile Exact Match + Desktop Clean Light Theme)
+   ============================================================ */
+
+.quicklinks-page-wrapper {
+  background-color: #f8fafc;
+  min-height: calc(100vh - 120px);
 }
 
-.icon-placeholder {
-  width: 36px;
-  height: 36px;
+/* ============================================================
+   📱 MOBILE STYLING (Matches Reference Image Exactly)
+   ============================================================ */
+.quicklinks-mobile-view {
+  background-color: #ffffff;
+  width: 100%;
 }
 
-.footer {
-  border-top: 1px solid #ccc;
-}
-.head-text{
-    color: rgb(38, 37, 37);
-    font-size: 1rem;
-}
-.inner-text{
-    font-size: 0.8rem;
-}
-.quick-title{
-    color: rgb(39, 36, 36);
+.quicklinks-mobile-list {
+  background-color: #ffffff;
 }
 
-.quicklinks-row-hover {
-  transition: background-color 0.2s ease;
+/* Section Divider Headers (e.g. SUPPORT :, Need More Help?, etc.) */
+.quicklinks-section-header {
+  background-color: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 11px 16px;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  text-transform: uppercase;
 }
 
-.quicklinks-row-hover:hover {
-  background-color: #f8f9fa !important;
+/* Item Rows */
+.quicklinks-items-group {
+  background-color: #ffffff;
+}
+
+.quicklinks-row-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  text-decoration: none !important;
+  color: inherit;
+  border-bottom: 1px solid #f1f5f9;
+  background-color: #ffffff;
+  transition: background-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.quicklinks-row-item:active,
+.quicklinks-row-item:hover {
+  background-color: #f8fafc;
+}
+
+.quicklinks-row-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Rounded Icon Badge */
+.quicklinks-icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f8fafc;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.quicklinks-row-item:active .quicklinks-icon-badge {
+  transform: scale(0.96);
+}
+
+.quick-icon {
+  color: #334155;
+}
+
+/* Text Container */
+.quicklinks-text-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.quicklinks-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.3;
+}
+
+.quicklinks-subtext {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+  line-height: 1.35;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Right Chevron Arrow */
+.quicklinks-row-arrow {
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   🖥️ DESKTOP HERO & DIRECTORY (Clean White / Light Slate Theme)
+   ============================================================ */
+
+/* 1. Desktop Hero Banner (Clean Light White/Gray Background - No Blue) */
+.quicklinks-desktop-hero-banner {
+  background-color: #ffffff;
+  padding: 32px 0 36px;
+  position: relative;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.quicklinks-breadcrumbs {
+  font-size: 13.5px;
+}
+
+.hover-dark:hover {
+  color: #0f172a !important;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #22c55e;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25);
+  animation: pulseAnim 2s infinite;
+}
+
+@keyframes pulseAnim {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.quicklinks-hero-title {
+  font-size: 30px;
+  letter-spacing: -0.5px;
+  line-height: 1.25;
+  color: #0f172a;
+}
+
+.quicklinks-hero-pill {
+  display: inline-flex;
+  align-items: center;
+  background-color: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 50px;
+  border: 1px solid #e2e8f0;
+}
+
+.quicklinks-hero-stats-card {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* 2. Control Bar (Filter Pills & Search) */
+.quicklinks-control-bar {
+  background-color: #ffffff;
+  position: sticky;
+  top: 106px;
+  z-index: 100;
+}
+
+.quick-pill-btn {
+  border: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  color: #475569;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 50px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.quick-pill-btn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.quick-pill-btn.active {
+  background-color: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+}
+
+.quicklinks-search-container {
+  width: 320px;
+}
+
+.quicklinks-search-container .form-control {
+  border: 1.5px solid #e2e8f0;
+  font-size: 13.5px;
+  background-color: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.quicklinks-search-container .form-control:focus {
+  background-color: #ffffff;
+  border-color: #0f172a;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+/* 3. Main Directory Cards */
+.quicklinks-desk-card {
+  background-color: #ffffff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03) !important;
+  border-color: #e2e8f0 !important;
+}
+
+.quicklinks-desk-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.07) !important;
+}
+
+.category-indicator-bar {
+  width: 4px;
+  height: 18px;
+  background-color: #eb4c26;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.quick-desk-item {
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+
+.quick-desk-item:hover {
+  background-color: #f8fafc !important;
+}
+
+.quick-desk-item:hover .quicklinks-icon-badge {
+  background-color: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+.quick-desk-item:hover .quicklinks-icon-badge .quick-icon {
+  color: #ffffff;
+}
+
+.quick-desk-item:hover .quick-desk-title {
+  color: #eb4c26 !important;
+}
+
+.quick-desk-arrow-box {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.quick-desk-item:hover .quick-desk-arrow-box {
+  transform: translateX(4px);
+  background-color: #f1f5f9;
+}
+
+.quick-desk-item:last-child {
+  border-bottom: 0 !important;
+}
+
+/* ============================================================
+   Standard 1400px Canvas Constraint (Rule 7)
+   ============================================================ */
+.container-1400 {
+  max-width: 1400px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+@media (max-width: 768px) {
+  .container-1400 {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
 }

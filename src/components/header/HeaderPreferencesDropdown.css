@@ -1,0 +1,134 @@
+/* ==========================================================================
+   HEADER PREFERENCES THREE-DOTS DROPDOWN
+   Pixel-perfect match to user screenshot & Printmont theme
+   ========================================================================== */
+
+.nav-three-dots-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-three-dots-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0;
+}
+
+.nav-three-dots-btn:hover,
+.nav-three-dots-wrapper.is-open .nav-three-dots-btn {
+  background-color: #f1f5f9;
+  color: #00529b;
+}
+
+/* Dropdown Menu Container */
+.nav-pref-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 1050;
+  min-width: 250px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 8px 6px;
+  box-shadow: 0 12px 32px -4px rgba(3, 23, 44, 0.16), 0 4px 12px -2px rgba(3, 23, 44, 0.06);
+  border: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: prefDropdownFade 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top right;
+}
+
+/* Dropdown Items */
+.nav-pref-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-decoration: none !important;
+  color: #1e293b;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.3;
+  transition: all 0.15s ease;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
+.nav-pref-item:hover {
+  background-color: #f8fafc;
+  color: #00529b;
+  transform: translateX(3px);
+}
+
+.nav-pref-item:active {
+  transform: scale(0.98);
+}
+
+/* Icon Containers */
+.nav-pref-bell-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b;
+  flex-shrink: 0;
+  font-size: 1.15rem;
+}
+
+.nav-pref-circle-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #00529b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 6px rgba(0, 82, 155, 0.28);
+  transition: transform 0.15s ease;
+}
+
+.nav-pref-item:hover .nav-pref-circle-icon {
+  transform: scale(1.08);
+  background-color: #03172c;
+}
+
+.nav-pref-text {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.nav-pref-item:hover .nav-pref-text {
+  color: #00529b;
+}
+
+@keyframes prefDropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

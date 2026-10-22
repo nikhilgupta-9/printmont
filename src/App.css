@@ -117,17 +117,35 @@ body {
 
 
 .link-text-white {
-  color: white !important;
+  color: #ffffff !important;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.link-text-white:hover {
+  color: #38bdf8 !important;
+  text-decoration: underline !important;
 }
 
 .link-text-black {
-  color: black;
+  color: #1e293b;
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-.link-text-white,
 .link-text-black:hover {
   color: #0066cc !important;
-  text-decoration: none;
+  text-decoration: underline !important;
+}
+
+.foot-bg a.text-light {
+  transition: all 0.2s ease;
+}
+
+.foot-bg a.text-light:hover {
+  color: #ffffff !important;
+  text-decoration: underline !important;
 }
 
 .red {
@@ -294,7 +312,7 @@ body {
 .dropdown-menu-box {
   display: none;
   min-width: 250px;
-  z-index: 1000;
+  z-index: 1060; /* above the category bar (z 1020) inside the fixed header */
 }
 
 .unselectable {
@@ -945,7 +963,7 @@ input:focus {
 
 .product-page-container {
   width: 100%;
-  padding: 20px;
+  /* padding: 20px; */
   box-shadow: 0 1px 4px rgba(0, 0, 0, .1);
   background: #fff;
   border-radius: 4px;
@@ -1179,10 +1197,11 @@ input:focus {
 }
 
 .horizontal-scroll-wrapper {
-  padding: 0 10px;
+  padding: 0;
   overflow-x: hidden;
   max-width: 100%;
   position: relative;
+  border: none;
 }
 
 .scroll-container {

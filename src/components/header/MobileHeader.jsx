@@ -1,29 +1,44 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GiHamburgerMenu } from "react-icons/gi";
-import { FaRegUser, FaUser, FaBoxOpen, FaWallet, FaPaperPlane, FaStore, FaShoppingBag } from 'react-icons/fa';
+import { FaUserCircle, FaShoppingBag, FaRegUserCircle, FaChevronRight } from 'react-icons/fa';
 import { CiHeart } from "react-icons/ci";
-import { IoSearchSharp } from "react-icons/io5";
-import { AiOutlineClockCircle, AiOutlineClose } from "react-icons/ai";
+import { BsCart3 } from "react-icons/bs";
+import { IoLocationOutline, IoChevronDown } from "react-icons/io5";
+import { AiOutlineClose } from "react-icons/ai";
+import {
+  RiUser3Line,
+  RiShoppingBag3Line,
+  RiTruckLine,
+  RiWallet3Line,
+  RiCustomerService2Line,
+  RiBuilding4Line,
+  RiStore3Line,
+  RiFolder3Line,
+  RiPriceTag3Line
+} from "react-icons/ri";
 import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from '../search/SearchBar';
-import { API_ENDPOINTS, ASSET_URL } from '../../config/apiEndpoints';
+import { API_ENDPOINTS, ASSET_URL, resolveImageUrl } from '../../config/apiEndpoints';
 import { useCheckout } from '../../context/CheckoutContext';
 import { useWishlist } from '../../context/WishlistContext';
+import { useAuth } from '../../context/AuthContext';
+import useAccountNavigation from '../../hooks/useAccountNavigation';
+import { useLocationContext } from '../../context/LocationContext';
+import "./MobileHeader.css";
 
 const MobileHeader = () => {
   const navigate = useNavigate();
   const checkoutContext = useCheckout();
   const { wishlistCount } = useWishlist();
+  const { user } = useAuth();
+  const { accountPath, goToAccount } = useAccountNavigation();
+  const { location, openLocationModal } = useLocationContext();
   const cartItems = checkoutContext?.cartItems || [];
   const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
   const [dropdowns, setDropdowns] = useState({});
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-  const [recentSearches, setRecentSearches] = useState(["T-Shirt", "Mug", "Notebook"]);
   const [logo, setLogo] = useState("/PrintLogo.png");
   const [categoriesData, setCategoriesData] = useState([]);
   const [showAllCategories, setShowAllCategories] = useState(false);
-  const [searchRef] = useState(null);
   const headerRef = useRef();
 
   // Measure and set --site-header-height CSS variable for mobile
@@ -31,6 +46,7 @@ const MobileHeader = () => {
     if (!headerRef.current) return;
 
     const updateHeaderHeight = () => {
+      if (!headerRef.current) return;
       document.documentElement.style.setProperty(
         "--site-header-height",
         `${headerRef.current.getBoundingClientRect().height}px`
@@ -75,7 +91,12 @@ const MobileHeader = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(API_ENDPOINTS.CATEGORIES);
+        const cacheBuster = `_t=${Date.now()}`;
+        const url = API_ENDPOINTS.CATEGORIES.includes('?')
+          ? `${API_ENDPOINTS.CATEGORIES}&${cacheBuster}`
+          : `${API_ENDPOINTS.CATEGORIES}?${cacheBuster}`;
+
+        const response = await fetch(url, { cache: 'no-store' });
         const data = await response.json();
         let catList = [];
         if (data && data.success && data.data) {
@@ -96,6 +117,18 @@ const MobileHeader = () => {
       }
     };
     fetchCategories();
+
+    const handleSync = () => {
+      if (document.visibilityState === 'visible') {
+        fetchCategories();
+      }
+    };
+    window.addEventListener('focus', handleSync);
+    document.addEventListener('visibilitychange', handleSync);
+    return () => {
+      window.removeEventListener('focus', handleSync);
+      document.removeEventListener('visibilitychange', handleSync);
+    };
   }, []);
 
   const getArray = (data) => {
@@ -105,8 +138,30 @@ const MobileHeader = () => {
     return [];
   };
 
-  const safeCategories = getArray(categoriesData);
-  const visibleCategories = showAllCategories ? safeCategories : safeCategories.slice(0, 8);
+  const getSidebarOrder = (cat) => {
+    if (!cat) return 999999;
+    const ord = Number(cat.mobile?.sidebar_order ?? cat.mobile_sidebar_order ?? cat.mobile?.order ?? cat.mobile_topbar_order ?? cat.display_order ?? cat.order ?? 0);
+    return ord > 0 ? ord : 999999;
+  };
+
+  const isSidebarVisible = (cat) => {
+    if (!cat) return false;
+    if (cat.status && (cat.status === 'inactive' || cat.status === 'deactive' || cat.status === 'disabled')) return false;
+    const mobStatus = cat.mobile?.status ?? cat.mobile_topbar_status;
+    if (mobStatus === 'hide') return false;
+    return true;
+  };
+
+  const safeCategories = getArray(categoriesData)
+    .filter(isSidebarVisible)
+    .slice()
+    .sort((a, b) => {
+      const diff = getSidebarOrder(a) - getSidebarOrder(b);
+      if (diff !== 0) return diff;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+  const visibleCategories = showAllCategories ? safeCategories : safeCategories.slice(0, 12);
 
   const toggleDropdown = (key) => {
     setDropdowns((prev) => ({
@@ -133,126 +188,252 @@ const MobileHeader = () => {
     document.body.style.paddingRight = '';
   };
 
-  const selectKeyword = (keyword) => {
-    setSearchQuery(keyword);
-    setShowSearchDropdown(false);
-    navigate(`/allproducts?search=${encodeURIComponent(keyword)}`);
-  };
+  const userName = user ? (user.firstName || user.name || 'Customer') : 'Guest';
 
   return (
     <>
       <div ref={headerRef} className="site-header bg-white shadow-sm w-100">
-        {/* === TOPBAR (logo + icons) === */}
-        <div className="d-flex justify-content-between align-items-center px-3 py-2">
-          <div className="d-flex align-items-center gap-3">
+        {/* === ROW 1: HAMBURGER + LOGO + WISHLIST + CART + LOGIN === */}
+        <div className="d-flex justify-content-between align-items-center mt-1 px-3 pt-2 pb-1.5">
+          {/* Left: Hamburger + Logo */}
+          <div className="d-flex align-items-center gap-2.5">
             <button 
-              className="btn p-0 border-0" 
+              className="btn p-1 border-0 flex-shrink-0 d-flex align-items-center justify-content-center" 
               type="button" 
               data-bs-toggle="offcanvas" 
               data-bs-target="#offcanvasNavbar"
               aria-controls="offcanvasNavbar"
+              aria-label="Open navigation menu"
+              style={{ borderRadius: '6px', background: '#f8fafc' }}
             >
-              <GiHamburgerMenu size={24} />
+              <svg width="22" height="17" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 1.5H21M1 9H21M1 16.5H21" stroke="#0f172a" strokeWidth="2.4" strokeLinecap="round"/>
+              </svg>
             </button>
-            <Link to="/">
-              <img src={logo || "/PrintLogo.png"} alt="Printmont Logo" className="site-header__logo" onError={(e) => { e.target.src = "/PrintLogo.png"; }} />
+            <Link to="/" className="d-inline-flex align-items-center">
+              <img 
+                src={logo || "/PrintLogo.png"} 
+                alt="Printmont Logo" 
+                style={{ height: "32px", maxWidth: "160px", objectFit: "contain" }} 
+                onError={(e) => { e.target.src = "/PrintLogo.png"; }} 
+              />
             </Link>
           </div>
 
-          <div className="d-flex align-items-center gap-3">
-            <Link to="/wishlist" className="position-relative d-flex align-items-center">
-              <CiHeart size={25} color="#007bff" />
-              {wishlistCount > 0 && (
-                <span className="position-absolute rounded-circle bg-danger text-white fw-bold d-flex align-items-center justify-content-center"
-                      style={{
-                        top: '-6px',
-                        right: '-8px',
-                        fontSize: '9px',
-                        width: '16px',
-                        height: '16px',
-                        border: '1px solid white'
-                      }}>
-                  {wishlistCount}
-                </span>
-              )}
+          {/* Right: Wishlist + Cart + Login */}
+          <div className="d-flex align-items-center gap-2.5">
+            {/* Wishlist */}
+            <Link to="/wishlist" className="position-relative d-inline-flex align-items-center text-decoration-none p-1" aria-label="Wishlist">
+              <CiHeart size={26} color="#00529b" style={{ strokeWidth: 0.8 }} />
+              <span 
+                className="badge rounded-pill position-absolute d-flex align-items-center justify-content-center" 
+                style={{ 
+                  top: "-2px", 
+                  right: "-4px", 
+                  fontSize: "9px", 
+                  padding: "2px 4px", 
+                  lineHeight: "1",
+                  minWidth: "16px",
+                  height: "16px",
+                  backgroundColor: "#e11d48",
+                  color: "#ffffff",
+                  boxShadow: "0 1px 3px rgba(225,29,72,0.4)"
+                }}
+              >
+                {wishlistCount || 0}
+              </span>
             </Link>
 
-            <Link to="/cart" className="position-relative d-flex align-items-center">
-              <FaShoppingBag size={22} color="#007bff" />
-              {cartCount > 0 && (
-                <span className="position-absolute rounded-circle bg-danger text-white fw-bold d-flex align-items-center justify-content-center"
-                      style={{
-                        top: '-6px',
-                        right: '-8px',
-                        fontSize: '9px',
-                        width: '16px',
-                        height: '16px',
-                        border: '1px solid white'
-                      }}>
-                  {cartCount}
-                </span>
-              )}
+            {/* Cart */}
+            <Link to="/cart" className="position-relative d-inline-flex align-items-center text-decoration-none p-1" aria-label="Cart">
+              <BsCart3 size={21} color="#00529b" />
+              <span 
+                className="badge rounded-pill position-absolute d-flex align-items-center justify-content-center" 
+                style={{ 
+                  top: "-2px", 
+                  right: "-4px", 
+                  fontSize: "9px", 
+                  padding: "2px 4px", 
+                  lineHeight: "1",
+                  minWidth: "16px",
+                  height: "16px",
+                  backgroundColor: "#e11d48",
+                  color: "#ffffff",
+                  boxShadow: "0 1px 3px rgba(225,29,72,0.4)"
+                }}
+              >
+                {cartCount || 0}
+              </span>
             </Link>
 
-            <Link to="/login" className="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold">
-              Login
+            {/* Login / User */}
+            <Link to={accountPath} onClick={goToAccount} className="d-flex align-items-center gap-1 text-decoration-none px-2 py-1 rounded-pill" style={{ fontSize: "13px", backgroundColor: "#f0f5ff" }}>
+              <FaRegUserCircle size={18} color="#00529b" />
+              <span style={{ color: "#00529b", fontWeight: 600, fontSize: "13px" }}>
+                {user
+                  ? (user.first_name || user.firstName || (user.name || '').trim().split(/\s+/)[0] || (user.email ? user.email.split('@')[0] : '') || 'Account')
+                  : 'Login'}
+              </span>
             </Link>
           </div>
         </div>
 
-        {/* === SEARCHBAR === */}
-        <div className="navbar-search border-top px-3 py-2 position-relative" style={{ zIndex: "4" }}>
+        {/* === ROW 2: LOCATION STRIP === */}
+        <div className="px-3 pb-1 pt-0.5">
+          <div 
+            className="d-flex align-items-center justify-content-between px-2.5 py-1.5 cursor-pointer rounded-2" 
+            onClick={openLocationModal}
+            style={{ 
+              cursor: "pointer", 
+              fontSize: "12px", 
+              backgroundColor: "#f8fafc",
+              border: "1px solid #e2e8f0"
+            }}
+            title="Click to select delivery location"
+          >
+            <div className="d-flex align-items-center gap-1.5 text-truncate">
+              <IoLocationOutline size={15} color="#00529b" className="flex-shrink-0" />
+              {location?.is_set ? (
+                <span className="text-dark text-truncate" style={{ fontSize: "12px" }}>
+                  Deliver to <strong style={{ color: "#00529b" }}>{location.city_name} {location.pincode}</strong>
+                </span>
+              ) : (
+                <span className="text-secondary text-truncate" style={{ fontSize: "12px" }}>
+                  Deliver to <span style={{ color: "#00529b", fontWeight: 600 }}>Select City &amp; Pincode</span>
+                </span>
+              )}
+            </div>
+            <IoChevronDown size={12} color="#64748b" className="flex-shrink-0 ms-1" />
+          </div>
+        </div>
+
+        {/* === ROW 3: SEARCHBAR === */}
+        <div className="navbar-search px-3 pb-2 pt-1 position-relative" style={{ zIndex: "4" }}>
           <SearchBar isMobileOverlay={true} />
         </div>
       </div>
       <div className="site-header-spacer" aria-hidden="true" />
 
-      {/* Offcanvas Sidebar */}
-      <div className="offcanvas offcanvas-start w-75" tabIndex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-        <div className="offcanvas-header text-white py-3 d-flex align-items-center justify-content-between" style={{ backgroundColor: "rgb(11, 83, 161)" }}>
-          <Link to="/login" className="d-flex align-items-center gap-2 text-white text-decoration-none" onClick={closeOffcanvas}>
-            <FaUser className="fs-5" />
-            <h6 className="mb-0 fw-semibold fs-5 text-white">Login & Signup</h6>
-          </Link>
-          <button type="button" className="btn-close btn-close-white ms-auto" onClick={closeOffcanvas} style={{ opacity: 1 }}></button>
+      {/* =========================================================================
+          OFFCANVAS SIDEBAR (Matches provided wireframe layout precisely)
+          ========================================================================= */}
+      <div
+        className="offcanvas offcanvas-start mob-sidebar-offcanvas"
+        tabIndex="-1"
+        id="offcanvasNavbar"
+        aria-labelledby="offcanvasNavbarLabel"
+      >
+        {/* 1. Header (Deep Blue with User Avatar & Close button) */}
+        <div className="mob-sidebar-header">
+          <div className="mob-sidebar-user-row">
+            <div className="d-flex align-items-center gap-2.5">
+              <div className="mob-sidebar-user-avatar">
+                <FaRegUserCircle size={24} />
+              </div>
+              <h5 className="mob-sidebar-user-name px-1">Hi {userName}</h5>
+            </div>
+            <button
+              type="button"
+              className="mob-sidebar-close-btn"
+              onClick={closeOffcanvas}
+              aria-label="Close menu"
+            >
+              <AiOutlineClose size={16} />
+            </button>
+          </div>
+
+          {/* 1.1 Action Bar underneath user (Track your order | Login & Signup) */}
+          <div className="mob-sidebar-actions-row">
+            <Link
+              to="/track-order"
+              className="mob-sidebar-action-link"
+              onClick={closeOffcanvas}
+            >
+              Track your order
+            </Link>
+            <div className="mob-sidebar-action-divider" />
+            {user ? (
+              <Link
+                to={accountPath}
+                className="mob-sidebar-action-link"
+                onClick={(e) => { closeOffcanvas(); goToAccount(e); }}
+              >
+                My Account
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="mob-sidebar-action-link"
+                onClick={closeOffcanvas}
+              >
+                Login &amp; Signup
+              </Link>
+            )}
+          </div>
         </div>
 
-        <div className="offcanvas-body p-0">
-          <ul className="list-group rounded-0">
+        {/* 2. Middle Category Accordion List (White Background) */}
+        <div className="mob-sidebar-body">
+          <ul className="mob-sidebar-cat-list">
             {visibleCategories.map((item, index) => {
-              const itemChildren = getArray(item.children);
+              const itemChildren = getArray(item.children || item.subcategories)
+                .filter(isSidebarVisible)
+                .slice()
+                .sort((a, b) => {
+                  const diff = getSidebarOrder(a) - getSidebarOrder(b);
+                  if (diff !== 0) return diff;
+                  return (a.name || '').localeCompare(b.name || '');
+                });
+
+              const hasChildren = itemChildren.length > 0;
+              const isExpanded = !!dropdowns[item.id];
+              const rawImg = item.images?.image || item.images?.desktop || item.image || item.icon;
+              const imgUrl = rawImg && !rawImg.startsWith('fa') ? resolveImageUrl(rawImg) : null;
+
               return (
-                <li className="list-group-item px-3 py-2" key={item.id || index} style={{ borderBottom: "1px solid #f0f0f0" }}>
-                  {itemChildren.length > 0 ? (
+                <li className="mob-sidebar-cat-item" key={item.id || index}>
+                  {hasChildren ? (
                     <>
-                      <div 
-                        className="d-flex justify-content-between align-items-center" 
-                        onClick={() => toggleDropdown(item.id)} 
-                        style={{ cursor: 'pointer' }}
+                      <div
+                        className="mob-sidebar-cat-row"
+                        onClick={() => toggleDropdown(item.id)}
                       >
-                        <span className="text-dark fw-medium" style={{ fontSize: "14px" }}>{item.name}</span>
-                        <span className="fw-bold fs-5 text-secondary" style={{ width: "20px", textAlign: "center" }}>
-                          {dropdowns[item.id] ? '−' : '+'}
-                        </span>
+                        <div className="mob-sidebar-cat-left">
+                          {imgUrl ? (
+                            <img src={imgUrl} alt="" className="mob-sidebar-cat-icon rounded-2 object-fit-cover" style={{ width: '28px', height: '28px' }} />
+                          ) : (
+                            <span className="mob-sidebar-cat-icon rounded-2" style={{ width: '28px', height: '28px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <RiPriceTag3Line size={16} color="#00529b" />
+                            </span>
+                          )}
+                          <span className="mob-sidebar-cat-title">{item.name}</span>
+                        </div>
+                        <IoChevronDown
+                          size={15}
+                          style={{
+                            color: '#64748b',
+                            transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
+                          }}
+                        />
                       </div>
-                      {dropdowns[item.id] && (
-                        <ul className="list-unstyled mt-2 ps-3 border-start" style={{ borderColor: "#eee" }}>
+
+                      {isExpanded && (
+                        <ul className="mob-sidebar-sub-list">
                           <li>
-                            <Link 
-                              to={`/category/${item.slug || item.id}`} 
-                              className="text-decoration-none text-secondary d-block py-1"
-                              style={{ fontSize: "13px" }}
+                            <Link
+                              to={`/category/${item.slug || item.id}`}
+                              className="mob-sidebar-sub-link fw-semibold"
                               onClick={closeOffcanvas}
                             >
                               All {item.name}
                             </Link>
                           </li>
                           {itemChildren.map((sub, sIdx) => (
-                            <li key={sIdx}>
-                              <Link 
-                                to={`/category/${sub.slug || sub.id}`} 
-                                className="text-decoration-none text-secondary d-block py-1"
-                                style={{ fontSize: "13px" }}
+                            <li key={sub.id || sIdx}>
+                              <Link
+                                to={`/category/${sub.slug || sub.id}`}
+                                className="mob-sidebar-sub-link"
                                 onClick={closeOffcanvas}
                               >
                                 {sub.name}
@@ -263,21 +444,32 @@ const MobileHeader = () => {
                       )}
                     </>
                   ) : (
-                    <Link 
-                      to={`/category/${item.slug || item.id}`} 
-                      className="d-flex justify-content-between align-items-center text-decoration-none text-dark"
+                    <Link
+                      to={`/category/${item.slug || item.id}`}
+                      className="mob-sidebar-cat-row"
                       onClick={closeOffcanvas}
                     >
-                      <span className="fw-medium" style={{ fontSize: "14px" }}>{item.name}</span>
+                      <div className="mob-sidebar-cat-left">
+                        {imgUrl ? (
+                          <img src={imgUrl} alt="" className="mob-sidebar-cat-icon rounded-2 object-fit-cover" style={{ width: '28px', height: '28px' }} />
+                        ) : (
+                          <span className="mob-sidebar-cat-icon rounded-2" style={{ width: '28px', height: '28px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <RiPriceTag3Line size={16} color="#00529b" />
+                          </span>
+                        )}
+                        <span className="mob-sidebar-cat-title">{item.name}</span>
+                      </div>
+                      <span style={{ fontSize: '13px', color: '#94a3b8' }}>&gt;</span>
                     </Link>
                   )}
                 </li>
               );
             })}
-            
-            {safeCategories.length > 8 && (
-              <li className="list-group-item px-3 py-2 text-center" style={{ backgroundColor: "#f8f9fa", borderBottom: "1px solid #f0f0f0" }}>
-                <button 
+
+            {safeCategories.length > 12 && (
+              <li className="p-2 text-center bg-light border-bottom">
+                <button
+                  type="button"
                   className="btn btn-sm btn-link text-primary fw-semibold text-decoration-none p-0"
                   onClick={() => setShowAllCategories(!showAllCategories)}
                 >
@@ -285,29 +477,87 @@ const MobileHeader = () => {
                 </button>
               </li>
             )}
-          </ul> 
+          </ul>
 
-          <div className="mt-3 border-top">
-            <ul className="list-group rounded-0">
-              <li className="list-group-item d-flex align-items-center gap-3 px-3 py-3" style={{ borderBottom: "1px solid #f0f0f0" }}>
-                <FaUser className="text-secondary fs-5" /> 
-                <Link to="/my-account" className="text-decoration-none text-dark fw-medium" style={{ fontSize: "14px" }} onClick={closeOffcanvas}>My Account</Link>
+          {/* 3. Bottom Light-Blue Block (Account & Support Services - now inside scrollable body) */}
+          <div className="mob-sidebar-bottom-nav">
+            <ul className="mob-sidebar-nav-list">
+              <li className="mob-sidebar-nav-item">
+                <Link
+                  to={accountPath}
+                  className="mob-sidebar-nav-link"
+                  onClick={(e) => { closeOffcanvas(); goToAccount(e); }}
+                >
+                  <span className="mob-sidebar-nav-icon">
+                    <RiUser3Line />
+                  </span>
+                  <span>My Account</span>
+                </Link>
               </li>
-              <li className="list-group-item d-flex align-items-center gap-3 px-3 py-3" style={{ borderBottom: "1px solid #f0f0f0" }}>
-                <FaBoxOpen className="text-secondary fs-5" /> 
-                <Link to="/orders" className="text-decoration-none text-dark fw-medium" style={{ fontSize: "14px" }} onClick={closeOffcanvas}>My Orders</Link>
+
+              <li className="mob-sidebar-nav-item">
+                <Link
+                  to="/orders"
+                  className="mob-sidebar-nav-link"
+                  onClick={closeOffcanvas}
+                >
+                  <span className="mob-sidebar-nav-icon">
+                    <RiShoppingBag3Line />
+                  </span>
+                  <span>Order History</span>
+                </Link>
               </li>
-              <li className="list-group-item d-flex align-items-center gap-3 px-3 py-3" style={{ borderBottom: "1px solid #f0f0f0" }}>
-                <FaPaperPlane className="text-secondary fs-5" /> 
-                <Link to="/track-order" className="text-decoration-none text-dark fw-medium" style={{ fontSize: "14px" }} onClick={closeOffcanvas}>Track Order</Link>
+
+              <li className="mob-sidebar-nav-item">
+                <Link
+                  to="/printmont-coin"
+                  className="mob-sidebar-nav-link"
+                  onClick={closeOffcanvas}
+                >
+                  <span className="mob-sidebar-nav-icon">
+                    <RiWallet3Line />
+                  </span>
+                  <span>My Wallet</span>
+                </Link>
               </li>
-              <li className="list-group-item d-flex align-items-center gap-3 px-3 py-3" style={{ borderBottom: "1px solid #f0f0f0" }}>
-                <FaWallet className="text-secondary fs-5" /> 
-                <Link to="/printmont-coin" className="text-decoration-none text-dark fw-medium" style={{ fontSize: "14px" }} onClick={closeOffcanvas}>My Wallet & PrintCoins</Link>
+
+              <li className="mob-sidebar-nav-item">
+                <Link
+                  to="/help-center"
+                  className="mob-sidebar-nav-link"
+                  onClick={closeOffcanvas}
+                >
+                  <span className="mob-sidebar-nav-icon">
+                    <RiCustomerService2Line />
+                  </span>
+                  <span>Help Center</span>
+                </Link>
               </li>
-              <li className="list-group-item d-flex align-items-center gap-3 px-3 py-3" style={{ borderBottom: "1px solid #f0f0f0" }}>
-                <FaStore className="text-secondary fs-5" /> 
-                <Link to="/become-a-seller" className="text-decoration-none text-dark fw-medium" style={{ fontSize: "14px" }} onClick={closeOffcanvas}>Sell On Printmont</Link>
+
+              <li className="mob-sidebar-nav-item">
+                <Link
+                  to="/franchise"
+                  className="mob-sidebar-nav-link"
+                  onClick={closeOffcanvas}
+                >
+                  <span className="mob-sidebar-nav-icon">
+                    <RiBuilding4Line />
+                  </span>
+                  <span>Franchise Enquire</span>
+                </Link>
+              </li>
+
+              <li className="mob-sidebar-nav-item">
+                <Link
+                  to="/become-a-seller"
+                  className="mob-sidebar-nav-link"
+                  onClick={closeOffcanvas}
+                >
+                  <span className="mob-sidebar-nav-icon">
+                    <RiStore3Line />
+                  </span>
+                  <span>Become A Seller</span>
+                </Link>
               </li>
             </ul>
           </div>

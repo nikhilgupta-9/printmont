@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Button, Pagination, Offcanvas, Alert } from "react-bootstrap";
-import { GoSortDesc } from "react-icons/go";
-import { FaFilter, FaTimes } from "react-icons/fa";
+import { Button, Offcanvas, Alert } from "react-bootstrap";
+import { MdFilterList } from "react-icons/md";
+import { BiSortAlt2 } from "react-icons/bi";
+import { FaFilter } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import ProductCard from "./ProductCard";
 import FilterSidebar from "./FilterSidebar";
@@ -30,7 +31,7 @@ const LazyProductItem = ({ product }) => {
           observer.unobserve(el);
         }
       },
-      { rootMargin: "200px 0px" }
+      { rootMargin: "250px 0px" }
     );
 
     observer.observe(el);
@@ -40,13 +41,13 @@ const LazyProductItem = ({ product }) => {
   }, []);
 
   return (
-    <div ref={ref} className="col-6 col-md-4 col-lg-3 d-flex flex-column mb-3">
+    <div ref={ref} className="col-6 col-md-4 col-lg-3 d-flex flex-column">
       {isVisible ? <ProductCard product={product} /> : <ProductCardSkeleton />}
     </div>
   );
 };
 
-const AllProducts = () => {
+const AllProducts = ({ categoryScope = null }) => {
   const {
     products,
     totalProductsCount,
@@ -55,35 +56,59 @@ const AllProducts = () => {
     loading,
     error,
     facets,
+    displayTitle,
+    isBestsellerFilter,
+    isTopRatedFilter,
+    isTopDealFilter,
+    isDiscountFilter,
     selectedCategory,
     selectedBrands,
     selectedSizes,
+    selectedColors,
+    selectedFabrics,
+    selectedTypes,
+    selectedPatterns,
+    selectedGenders,
+    selectedFits,
+    selectedOccasions,
     priceMin,
     priceMax,
     minDiscount,
     excludeOutOfStock,
+    assuredOnly,
+    minRating,
     currentSort,
     searchQuery,
     setCategoryFilter,
     toggleBrandFilter,
     toggleSizeFilter,
+    toggleColorFilter,
+    toggleFabricFilter,
+    toggleTypeFilter,
+    togglePatternFilter,
+    toggleGenderFilter,
+    toggleFitFilter,
+    toggleOccasionFilter,
     setPriceRangeFilter,
     setMinDiscountFilter,
     toggleInStockFilter,
+    toggleAssuredFilter,
+    setMinRatingFilter,
     setSortOption,
     setPageNumber,
+    clearCollectionFilter,
     clearAllFilters
-  } = useProductFilters();
+  } = useProductFilters(categoryScope);
 
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [showMobileSort, setShowMobileSort] = useState(false);
 
   const sortOptions = [
+    "Relevance",
     "Popularity",
     "Price -- Low to High",
     "Price -- High to Low",
-    "Newest First",
-    "Discount"
+    "Newest First"
   ];
 
   // Scroll to top on page change
@@ -92,98 +117,89 @@ const AllProducts = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Build list of active filter chips
+  // Build active filter chips
   const activeChips = [];
+  if (assuredOnly) {
+    activeChips.push({ key: "assured", label: "PM Assured", onRemove: toggleAssuredFilter });
+  }
   if (selectedCategory) {
-    activeChips.push({
-      key: "category",
-      label: `Category: ${selectedCategory}`,
-      onRemove: () => setCategoryFilter("")
-    });
+    activeChips.push({ key: "category", label: `Category: ${selectedCategory}`, onRemove: () => setCategoryFilter("") });
   }
   selectedBrands.forEach((b) => {
-    activeChips.push({
-      key: `brand-${b}`,
-      label: b,
-      onRemove: () => toggleBrandFilter(b)
-    });
+    activeChips.push({ key: `brand-${b}`, label: b, onRemove: () => toggleBrandFilter(b) });
   });
   selectedSizes.forEach((s) => {
-    activeChips.push({
-      key: `size-${s}`,
-      label: `Size: ${s}`,
-      onRemove: () => toggleSizeFilter(s)
-    });
+    activeChips.push({ key: `size-${s}`, label: `Size: ${s}`, onRemove: () => toggleSizeFilter(s) });
   });
-  if (priceMin > facets.minPrice || priceMax < facets.maxPrice) {
-    activeChips.push({
-      key: "price",
-      label: `₹${priceMin} - ₹${priceMax}`,
-      onRemove: () => setPriceRangeFilter(facets.minPrice, facets.maxPrice)
-    });
+  selectedColors.forEach((c) => {
+    activeChips.push({ key: `color-${c}`, label: `Color: ${c}`, onRemove: () => toggleColorFilter(c) });
+  });
+  selectedFabrics.forEach((f) => {
+    activeChips.push({ key: `fabric-${f}`, label: `Fabric: ${f}`, onRemove: () => toggleFabricFilter(f) });
+  });
+  selectedTypes.forEach((t) => {
+    activeChips.push({ key: `type-${t}`, label: `Type: ${t}`, onRemove: () => toggleTypeFilter(t) });
+  });
+  selectedPatterns.forEach((p) => {
+    activeChips.push({ key: `pattern-${p}`, label: `Pattern: ${p}`, onRemove: () => togglePatternFilter(p) });
+  });
+  selectedGenders.forEach((g) => {
+    activeChips.push({ key: `gender-${g}`, label: `Gender: ${g}`, onRemove: () => toggleGenderFilter(g) });
+  });
+  selectedFits.forEach((fit) => {
+    activeChips.push({ key: `fit-${fit}`, label: `Fit: ${fit}`, onRemove: () => toggleFitFilter(fit) });
+  });
+  selectedOccasions.forEach((o) => {
+    activeChips.push({ key: `occasion-${o}`, label: `Occasion: ${o}`, onRemove: () => toggleOccasionFilter(o) });
+  });
+  if (priceMin > (facets.minPrice || 0) || priceMax < (facets.maxPrice || 5000)) {
+    activeChips.push({ key: "price", label: `₹${priceMin} - ₹${priceMax}`, onRemove: () => setPriceRangeFilter(facets.minPrice, facets.maxPrice) });
   }
   if (minDiscount > 0) {
-    activeChips.push({
-      key: "discount",
-      label: `${minDiscount}%+ Off`,
-      onRemove: () => setMinDiscountFilter(0)
-    });
+    activeChips.push({ key: "discount", label: `${minDiscount}%+ Off`, onRemove: () => setMinDiscountFilter(0) });
   }
-  if (excludeOutOfStock) {
-    activeChips.push({
-      key: "instock",
-      label: "In Stock Only",
-      onRemove: () => toggleInStockFilter()
-    });
+  if (minRating > 0) {
+    activeChips.push({ key: "rating", label: `${minRating}★ & above`, onRemove: () => setMinRatingFilter(0) });
   }
+
+  const queryOrCategory = displayTitle || searchQuery || selectedCategory || "All Products";
 
   return (
-    <div className="ap-page-wrapper bg-light min-vh-100 pb-5">
-      {/* Top Breadcrumb Navigation */}
-      <div className="bg-white border-bottom py-2 px-3">
-        <div className="container-fluid max-width-1400">
-          <nav aria-label="breadcrumb">
-            <ol className="breadcrumb mb-0 fs-7">
-              <li className="breadcrumb-item">
-                <Link to="/" className="text-decoration-none text-muted">
-                  Home
-                </Link>
-              </li>
-              <li className="breadcrumb-item active fw-semibold text-dark" aria-current="page">
-                {selectedCategory ? selectedCategory : "All Products"}
-              </li>
-            </ol>
-          </nav>
-        </div>
+    <div className="bg-light min-vh-100 pb-4">
+      
+      {/* ═══════════════════════════════════════════════════════════
+          MOBILE SUB-HEADER FILTER & SORT BAR (Light grey bar)
+         ═══════════════════════════════════════════════════════════ */}
+      <div className="pm-mobile-filter-sort-bar d-flex d-lg-none">
+        <button
+          type="button"
+          className="pm-m-bar-btn"
+          onClick={() => setShowMobileFilter(true)}
+        >
+          <MdFilterList size={20} />
+          <span>Filter</span>
+          {activeChips.length > 0 && (
+            <span className="pm-m-filter-pill">{activeChips.length}</span>
+          )}
+        </button>
+        <div className="pm-m-bar-divider" />
+        <button
+          type="button"
+          className="pm-m-bar-btn"
+          onClick={() => setShowMobileSort(true)}
+        >
+          <BiSortAlt2 size={20} />
+          <span>Sort</span>
+        </button>
       </div>
 
-      {/* Main Layout */}
-      <div className="container-fluid max-width-1400 py-3">
-        {/* Mobile Sticky Bar for Sort & Filter */}
-        <div className="d-flex d-lg-none bg-white shadow-sm rounded mb-3 p-2 sticky-top ap-mobile-bar" style={{ zIndex: 100 }}>
-          <Button
-            variant="light"
-            size="sm"
-            onClick={() => setShowMobileSort(true)}
-            className="flex-fill me-1 border-0 bg-transparent text-dark fw-semibold d-flex align-items-center justify-content-center"
-          >
-            <GoSortDesc size={20} className="me-1" /> Sort
-          </Button>
-          <div className="vr my-1 text-muted" />
-          <Button
-            variant="light"
-            size="sm"
-            onClick={() => setShowMobileFilter(true)}
-            className="flex-fill ms-1 border-0 bg-transparent text-dark fw-semibold d-flex align-items-center justify-content-center"
-          >
-            <FaFilter size={14} className="me-1" /> Filter {activeChips.length ? `(${activeChips.length})` : ""}
-          </Button>
-        </div>
-
-        <div className="row g-3">
-          {/* DESKTOP FILTER SIDEBAR */}
+      {/* Main Layout Container */}
+      <div className="container-fluid max-width-1400 pt-1 pb-2 pt-lg-1 pb-lg-3 px-1 px-lg-1">
+        <div className="row g-2 g-md-3 g-lg-1">
+          
+          {/* DESKTOP FILTER SIDEBAR (Left Column) */}
           <div className="col-lg-3 col-xl-2-5 d-none d-lg-block">
-            <div className="bg-white border rounded shadow-sm sticky-top ap-desktop-sidebar">
+            <div className="bg-white border rounded shadow-sm sticky-top" style={{ top: "100px" }}>
               {loading ? (
                 <FilterSkeleton />
               ) : (
@@ -192,48 +208,107 @@ const AllProducts = () => {
                   selectedCategory={selectedCategory}
                   selectedBrands={selectedBrands}
                   selectedSizes={selectedSizes}
+                  selectedColors={selectedColors}
+                  selectedFabrics={selectedFabrics}
+                  selectedTypes={selectedTypes}
+                  selectedPatterns={selectedPatterns}
+                  selectedGenders={selectedGenders}
+                  selectedFits={selectedFits}
+                  selectedOccasions={selectedOccasions}
                   priceMin={priceMin}
                   priceMax={priceMax}
                   minDiscount={minDiscount}
                   excludeOutOfStock={excludeOutOfStock}
+                  assuredOnly={assuredOnly}
+                  minRating={minRating}
                   onCategoryChange={setCategoryFilter}
                   onBrandToggle={toggleBrandFilter}
                   onSizeToggle={toggleSizeFilter}
+                  onColorToggle={toggleColorFilter}
+                  onFabricToggle={toggleFabricFilter}
+                  onTypeToggle={toggleTypeFilter}
+                  onPatternToggle={togglePatternFilter}
+                  onGenderToggle={toggleGenderFilter}
+                  onFitToggle={toggleFitFilter}
+                  onOccasionToggle={toggleOccasionFilter}
                   onPriceChange={setPriceRangeFilter}
                   onDiscountChange={setMinDiscountFilter}
                   onInStockToggle={toggleInStockFilter}
+                  onAssuredToggle={toggleAssuredFilter}
+                  onRatingChange={setMinRatingFilter}
                   onClearAll={clearAllFilters}
                 />
               )}
             </div>
           </div>
 
-          {/* PRODUCT LISTING CONTENT AREA */}
-          <div className="col-12 col-lg-9 col-xl-9-5">
-            <div className="bg-white border rounded shadow-sm p-3">
-              {/* DESKTOP HEADER & SORT BAR */}
-              <div className="d-none d-lg-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-                <div className="d-flex align-items-baseline">
-                  <h1 className="h5 fw-bold mb-0 me-2 text-dark">
-                    {selectedCategory ? selectedCategory : "All Products"}
-                  </h1>
-                  <span className="text-muted fs-7">
-                    (Showing {totalProductsCount} {totalProductsCount === 1 ? "product" : "products"})
-                  </span>
+          {/* PRODUCT LISTING CONTENT AREA (Right Column) */}
+          <div className="col-12 col-lg-9 col-xl-9-5 px-1 px-lg-0">
+            <div className="pm-product-listing-box">
+              
+              {/* DESKTOP TOP HEADER: BREADCRUMBS, RESULTS COUNTER & SORT BAR */}
+              <div className="d-none d-lg-flex flex-column gap-0 border-bottom pb-1 mb-2">
+                {/* 1. Breadcrumbs */}
+                <nav aria-label="breadcrumb">
+                  <ol className="breadcrumb mb-0 fs-8 text-muted" style={{ padding: 0, background: 'transparent' }}>
+                    <li className="breadcrumb-item">
+                      <Link to="/" className="text-decoration-none text-muted">Home</Link>
+                    </li>
+                    {selectedCategory ? (
+                      <>
+                        <li className="breadcrumb-item">
+                          <Link to="/allproducts" className="text-decoration-none text-muted">All Products</Link>
+                        </li>
+                        <li className={`breadcrumb-item ${!isBestsellerFilter && !isTopRatedFilter && !isTopDealFilter ? "active fw-semibold text-dark" : ""}`}>
+                          {isBestsellerFilter || isTopRatedFilter || isTopDealFilter ? (
+                            <Link to={`/allproducts?category=${encodeURIComponent(selectedCategory)}`} className="text-decoration-none text-muted">
+                              {selectedCategory}
+                            </Link>
+                          ) : (
+                            selectedCategory
+                          )}
+                        </li>
+                      </>
+                    ) : (
+                      <li className={`breadcrumb-item ${!isBestsellerFilter && !isTopRatedFilter && !isTopDealFilter ? "active fw-semibold text-dark" : ""}`}>
+                        {isBestsellerFilter || isTopRatedFilter || isTopDealFilter ? (
+                          <Link to="/allproducts" className="text-decoration-none text-muted">All Products</Link>
+                        ) : (
+                          "All Products"
+                        )}
+                      </li>
+                    )}
+                    {isBestsellerFilter && (
+                      <li className="breadcrumb-item active fw-semibold text-dark" aria-current="page">
+                        Best Sellers
+                      </li>
+                    )}
+                    {isTopRatedFilter && (
+                      <li className="breadcrumb-item active fw-semibold text-dark" aria-current="page">
+                        Top Rated
+                      </li>
+                    )}
+                    {isTopDealFilter && (
+                      <li className="breadcrumb-item active fw-semibold text-dark" aria-current="page">
+                        Top Deals
+                      </li>
+                    )}
+                  </ol>
+                </nav>
+
+                {/* 2. Results count: Showing 1 – 40 of 15,352 results for "t shirt" */}
+                <div className="fs-7 text-dark fw-bold mt-0">
+                  Showing 1 – {Math.min(currentPage * 40, totalProductsCount || 40)} of {(totalProductsCount || 40).toLocaleString()} results for "{queryOrCategory}"
                 </div>
 
-                {/* Sort buttons matching Flipkart */}
-                <div className="d-flex align-items-center fs-7">
-                  <span className="fw-semibold me-3 text-muted">Sort By</span>
+                {/* 3. Sort tabs */}
+                <div className="d-flex align-items-center flex-wrap gap-2 fs-7 mt-0">
+                  <span className="fw-bold text-dark me-1">Sort By</span>
                   {sortOptions.map((option) => (
                     <button
                       key={option}
                       type="button"
-                      className={`btn btn-link text-decoration-none px-2 py-1 me-1 fs-7 ${
-                        currentSort === option
-                          ? "text-primary border-bottom border-primary border-2 fw-bold"
-                          : "text-dark opacity-75"
-                      }`}
+                      className={`pm-sort-tab-btn ${currentSort === option ? "active" : ""}`}
                       onClick={() => setSortOption(option)}
                     >
                       {option}
@@ -244,15 +319,15 @@ const AllProducts = () => {
 
               {/* ACTIVE FILTER CHIPS */}
               {activeChips.length > 0 && (
-                <div className="d-flex flex-wrap align-items-center gap-2 mb-3 pb-2 border-bottom">
-                  <span className="fs-7 fw-semibold text-muted">Active Filters:</span>
+                <div className="d-flex flex-wrap align-items-center gap-1.5 mb-2.5 pb-2 border-bottom">
+                  <span className="fs-7 fw-semibold text-muted">Active:</span>
                   {activeChips.map((chip) => (
-                    <span key={chip.key} className="ap-filter-chip badge bg-light text-dark border d-inline-flex align-items-center p-2 fs-7">
+                    <span key={chip.key} className="badge bg-light text-dark border d-inline-flex align-items-center p-1.5 fs-8">
                       {chip.label}
                       <button
                         type="button"
                         onClick={chip.onRemove}
-                        className="btn-close ms-2 fs-8"
+                        className="btn-close ms-1.5 fs-9"
                         aria-label="Remove"
                       />
                     </span>
@@ -260,25 +335,18 @@ const AllProducts = () => {
                   <button
                     type="button"
                     onClick={clearAllFilters}
-                    className="btn btn-link text-primary text-decoration-none fs-7 p-0 ms-2 fw-semibold"
+                    className="btn btn-link text-primary text-decoration-none fs-8 p-0 ms-1 fw-semibold"
                   >
                     Clear All
                   </button>
                 </div>
               )}
 
-              {/* SEARCH QUERY BANNER */}
-              {searchQuery && (
-                <div className="alert alert-info py-2 px-3 fs-7 mb-3 d-flex justify-content-between align-items-center">
-                  <span>Results for <strong>"{searchQuery}"</strong></span>
-                </div>
-              )}
-
-              {/* PRODUCT GRID / STATES */}
+              {/* PRODUCT GRID (2 COLUMNS ON MOBILE, 4 COLUMNS ON DESKTOP) */}
               {loading ? (
-                <div className="row g-2 g-md-3">
+                <div className="row g-2">
                   {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                    <div className="col-6 col-md-4 col-lg-3 mb-3" key={i}>
+                    <div className="col-6 col-md-4 col-lg-3 d-flex flex-column" key={i}>
                       <ProductCardSkeleton />
                     </div>
                   ))}
@@ -299,7 +367,7 @@ const AllProducts = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="row g-2 g-md-3">
+                <div className="row g-2">
                   {products.map((p) => (
                     <LazyProductItem key={p.id} product={p} />
                   ))}
@@ -308,46 +376,64 @@ const AllProducts = () => {
 
               {/* PAGINATION */}
               {!loading && !error && totalPages > 1 && (
-                <div className="d-flex justify-content-center mt-4 mb-2">
-                  <Pagination className="ap-pagination">
-                    <Pagination.Prev
-                      disabled={currentPage === 1}
-                      onClick={() => handlePageChange(currentPage - 1)}
-                    />
-                    {Array.from({ length: totalPages }, (_, idx) => idx + 1)
-                      .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
-                      .map((p, idx, arr) => {
-                        const prev = arr[idx - 1];
-                        return (
-                          <React.Fragment key={p}>
-                            {prev && p - prev > 1 && <Pagination.Ellipsis disabled />}
-                            <Pagination.Item
-                              active={p === currentPage}
-                              onClick={() => handlePageChange(p)}
-                            >
-                              {p}
-                            </Pagination.Item>
-                          </React.Fragment>
-                        );
-                      })}
-                    <Pagination.Next
-                      disabled={currentPage === totalPages}
-                      onClick={() => handlePageChange(currentPage + 1)}
-                    />
-                  </Pagination>
+                <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 pt-3 border-top gap-2">
+                  <div className="text-muted fs-7">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <div className="d-flex align-items-center gap-1">
+                    {currentPage > 1 && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary px-3"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                      >
+                        Previous
+                      </button>
+                    )}
+                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                      let pageNum = i + 1;
+                      if (totalPages > 5 && currentPage > 3) {
+                        pageNum = currentPage - 2 + i;
+                        if (pageNum > totalPages) pageNum = totalPages - (4 - i);
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          type="button"
+                          className={`btn btn-sm ${
+                            currentPage === pageNum ? "btn-primary" : "btn-outline-secondary"
+                          }`}
+                          style={{ minWidth: "36px" }}
+                          onClick={() => handlePageChange(pageNum)}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    {currentPage < totalPages && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary px-3"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                      >
+                        Next
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
+
             </div>
           </div>
         </div>
       </div>
 
-      {/* MOBILE FILTER OFFCANVAS DRAWER */}
+      {/* MOBILE OFFCANVAS FOR FILTERS */}
       <Offcanvas
         show={showMobileFilter}
         onHide={() => setShowMobileFilter(false)}
         placement="start"
-        className="d-lg-none ap-mobile-offcanvas"
+        className="w-100"
       >
         <Offcanvas.Body className="p-0">
           <FilterSidebar
@@ -355,49 +441,68 @@ const AllProducts = () => {
             selectedCategory={selectedCategory}
             selectedBrands={selectedBrands}
             selectedSizes={selectedSizes}
+            selectedColors={selectedColors}
+            selectedFabrics={selectedFabrics}
+            selectedTypes={selectedTypes}
+            selectedPatterns={selectedPatterns}
+            selectedGenders={selectedGenders}
+            selectedFits={selectedFits}
+            selectedOccasions={selectedOccasions}
             priceMin={priceMin}
             priceMax={priceMax}
             minDiscount={minDiscount}
             excludeOutOfStock={excludeOutOfStock}
-            onCategoryChange={setCategoryFilter}
+            assuredOnly={assuredOnly}
+            minRating={minRating}
+            onCategoryChange={(cat) => { setCategoryFilter(cat); setShowMobileFilter(false); }}
             onBrandToggle={toggleBrandFilter}
             onSizeToggle={toggleSizeFilter}
+            onColorToggle={toggleColorFilter}
+            onFabricToggle={toggleFabricFilter}
+            onTypeToggle={toggleTypeFilter}
+            onPatternToggle={togglePatternFilter}
+            onGenderToggle={toggleGenderFilter}
+            onFitToggle={toggleFitFilter}
+            onOccasionToggle={toggleOccasionFilter}
             onPriceChange={setPriceRangeFilter}
             onDiscountChange={setMinDiscountFilter}
             onInStockToggle={toggleInStockFilter}
+            onAssuredToggle={toggleAssuredFilter}
+            onRatingChange={setMinRatingFilter}
             onClearAll={clearAllFilters}
             onCloseMobile={() => setShowMobileFilter(false)}
           />
         </Offcanvas.Body>
       </Offcanvas>
 
-      {/* MOBILE SORT BOTTOM SHEET */}
+      {/* MOBILE OFFCANVAS FOR SORT */}
       <Offcanvas
         show={showMobileSort}
         onHide={() => setShowMobileSort(false)}
         placement="bottom"
-        className="d-lg-none rounded-top"
         style={{ height: "auto" }}
       >
-        <Offcanvas.Header closeButton className="border-bottom py-2 px-3">
+        <Offcanvas.Header closeButton className="border-bottom pb-2">
           <Offcanvas.Title className="fs-6 fw-bold">Sort By</Offcanvas.Title>
         </Offcanvas.Header>
-        <Offcanvas.Body className="p-0">
-          {sortOptions.map((opt) => (
-            <button
-              key={opt}
-              type="button"
-              className={`w-100 text-start btn btn-light rounded-0 border-bottom py-3 px-3 fs-7 ${
-                currentSort === opt ? "text-primary fw-bold bg-light" : "text-dark"
-              }`}
-              onClick={() => {
-                setSortOption(opt);
-                setShowMobileSort(false);
-              }}
-            >
-              {opt}
-            </button>
-          ))}
+        <Offcanvas.Body className="p-2">
+          <div className="d-flex flex-column">
+            {sortOptions.map((opt) => (
+              <Button
+                key={opt}
+                variant="light"
+                className={`text-start border-0 py-2.5 px-3 fs-7 ${
+                  currentSort === opt ? "fw-bold text-primary bg-primary-subtle" : "text-dark"
+                }`}
+                onClick={() => {
+                  setSortOption(opt);
+                  setShowMobileSort(false);
+                }}
+              >
+                {opt}
+              </Button>
+            ))}
+          </div>
         </Offcanvas.Body>
       </Offcanvas>
     </div>

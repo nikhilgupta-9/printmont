@@ -5,28 +5,39 @@ import { API_ENDPOINTS, ASSET_URL, resolveImageUrl } from "../../../config/apiEn
 
 // Fallback dummy categories in case the API has no categories or fails
 const fallbackCategories = [
-  { id: 1, name: "Sub Categories Name", slug: "decor-1", image: "/card/home-dec-1.jpeg" },
-  { id: 2, name: "Sub Categories Name", slug: "decor-2", image: "/card/home-dec-2.jpeg" },
-  { id: 3, name: "Sub Categories Name", slug: "decor-3", image: "/card/home-dec-3.jpeg" },
-  { id: 4, name: "Sub Categories Name", slug: "decor-4", image: "/card/home-dec-4.jpeg" },
-  { id: 5, name: "Sub Categories Name", slug: "decor-5", image: "/card/home-dec-1.jpeg" },
-  { id: 6, name: "Sub Categories Name", slug: "decor-6", image: "/card/home-dec-2.jpeg" }
+  { id: 1, name: "Home Decor", slug: "decor-1", image: "/card/home-dec-1.jpeg" },
+  { id: 2, name: "Tableware", slug: "decor-2", image: "/card/home-dec-2.jpeg" },
+  { id: 3, name: "Earbuds", slug: "decor-3", image: "/card/home-dec-3.jpeg" },
+  { id: 4, name: "Mobiles", slug: "decor-4", image: "/card/home-dec-4.jpeg" },
+  { id: 5, name: "Apparel", slug: "decor-5", image: "/card/home-dec-1.jpeg" },
+  { id: 6, name: "Footwear", slug: "decor-6", image: "/card/home-dec-2.jpeg" },
+  { id: 7, name: "Accessories", slug: "decor-7", image: "/card/home-dec-3.jpeg" },
+  { id: 8, name: "Gifts", slug: "decor-8", image: "/card/home-dec-4.jpeg" },
+  { id: 9, name: "Office Kit", slug: "decor-9", image: "/card/home-dec-1.jpeg" }
 ];
 
 const offerLabels = [
   "Under ₹299",
   "From ₹499",
-  "Up to 60% Off"
+  "Up to 60% Off",
+  "Min. 40% Off",
+  "Special Deal",
+  "Under ₹199",
+  "Flat 50% Off",
+  "From ₹399",
+  "Top Rated"
 ];
 
 export default function CompactCategoryGrid({
   title,
+  categoryId,
+  subCategoryIds,
   bgImage,
   bgColor,
-  columns = 3,
-  limit = 6,
-  showViewAll = false,
-  showBottomViewAll = false,
+  columns = 2,
+  limit = 4,
+  showViewAll = true,
+  showBottomViewAll = true,
   offerText
 }) {
   const [categories, setCategories] = useState([]);
@@ -36,17 +47,67 @@ export default function CompactCategoryGrid({
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        const response = await fetch(API_ENDPOINTS.CATEGORIES);
-        const data = await response.json();
         let catList = [];
-        if (data && data.success && data.data) {
-          catList = Array.isArray(data.data) ? data.data : (typeof data.data === 'object' ? Object.values(data.data) : []);
-        } else if (Array.isArray(data)) {
-          catList = data;
-        } else if (data && data.categories) {
-          catList = Array.isArray(data.categories) ? data.categories : (typeof data.categories === 'object' ? Object.values(data.categories) : []);
-        } else if (data && typeof data === 'object' && !data.error) {
-          catList = Object.values(data);
+
+        // 1. If specific subCategoryIds are configured, fetch them directly by IDs
+        if (subCategoryIds && typeof subCategoryIds === 'string' && subCategoryIds.trim() !== '') {
+          try {
+            const idsRes = await fetch(API_ENDPOINTS.LAYOUT_SUBCATEGORIES(0, subCategoryIds.trim()));
+            const idsData = await idsRes.json();
+            if (idsData && idsData.success && Array.isArray(idsData.data) && idsData.data.length > 0) {
+              catList = idsData.data;
+            }
+          } catch (e) {
+            console.warn("Direct subCategoryIds fetch failed, trying category parent:", e);
+          }
+        }
+
+        // 2. If categoryId is specified and no list yet, fetch its full subcategories (level 2 & 3)
+        if (catList.length === 0 && categoryId) {
+          try {
+            const subRes = await fetch(API_ENDPOINTS.LAYOUT_SUBCATEGORIES(categoryId));
+            const subData = await subRes.json();
+            if (subData && subData.success && Array.isArray(subData.data) && subData.data.length > 0) {
+              catList = subData.data;
+            }
+          } catch (e) {
+            console.warn("Layout subcategories fetch error, trying legacy:", e);
+          }
+
+          if (catList.length === 0) {
+            const legacyRes = await fetch(API_ENDPOINTS.SUBCATEGORIES(categoryId));
+            const legacyData = await legacyRes.json();
+            if (legacyData && legacyData.success && Array.isArray(legacyData.data)) {
+              catList = legacyData.data;
+            } else if (Array.isArray(legacyData)) {
+              catList = legacyData;
+            }
+          }
+        }
+
+        // 3. If still empty, fetch general categories
+        if (catList.length === 0) {
+          const response = await fetch(API_ENDPOINTS.CATEGORIES);
+          const data = await response.json();
+          if (data && data.success && data.data) {
+            catList = Array.isArray(data.data) ? data.data : (typeof data.data === 'object' ? Object.values(data.data) : []);
+          } else if (Array.isArray(data)) {
+            catList = data;
+          } else if (data && data.categories) {
+            catList = Array.isArray(data.categories) ? data.categories : (typeof data.categories === 'object' ? Object.values(data.categories) : []);
+          } else if (data && typeof data === 'object' && !data.error) {
+            catList = Object.values(data);
+          }
+        }
+
+        // 4. Filter by subCategoryIds if list wasn't already filtered
+        if (subCategoryIds && typeof subCategoryIds === 'string' && subCategoryIds.trim() !== '' && catList.length > 0) {
+          const selectedSubIds = subCategoryIds.split(',').map(s => s.trim());
+          const catMap = new Map(catList.map(c => [String(c.id), c]));
+          const filteredSubs = selectedSubIds.map(id => catMap.get(id)).filter(Boolean);
+          if (filteredSubs.length > 0) {
+            catList = filteredSubs;
+          }
         }
 
         if (catList.length > 0) {
@@ -63,30 +124,37 @@ export default function CompactCategoryGrid({
     };
 
     fetchCategories();
-  }, [limit]);
+  }, [categoryId, subCategoryIds, limit]);
+
+  const is3Col = Number(columns) === 3;
+  const colClass = is3Col ? "card-grid-item-3col" : (Number(columns) === 1 ? "card-grid-item-1col" : "card-grid-item-2col");
 
   const hasDarkBg = bgImage || (bgColor && bgColor !== "white" && bgColor !== "transparent" && bgColor !== "#ffffff");
 
   const containerStyle = {
-    backgroundImage: bgImage ? `url(${bgImage})` : "none",
-    backgroundColor: bgColor || "transparent",
+    backgroundImage: bgImage ? `url(${resolveImageUrl(bgImage)})` : "none",
+    backgroundColor: bgColor || (bgImage ? "transparent" : "#00a8ec"),
     backgroundSize: "cover",
     backgroundPosition: "center",
-    padding: (bgImage || bgColor) ? "1rem" : "0",
-    borderRadius: "0.375rem"
+    padding: "0.75rem",
+    borderRadius: "0.5rem"
   };
 
-  const colClass = columns === 2 ? "card-grid-item-2col" : "card-grid-item-3col";
-
-  const getImageUrl = (img) => {
-    return resolveImageUrl(img);
+  const getImageUrl = (cat) => {
+    if (!cat) return "/default-img.jpg";
+    if (typeof cat === "string") {
+      if (cat.startsWith("fa") || cat.includes("fa-")) return "/default-img.jpg";
+      return resolveImageUrl(cat);
+    }
+    const raw = cat.image_url || cat.image || (cat.images && (cat.images.image || cat.images.desktop || cat.images.mobile)) || (cat.icon && !cat.icon.startsWith("fa") ? cat.icon : "") || "";
+    return resolveImageUrl(raw);
   };
 
   if (loading) {
     return (
-      <div className="container-fluid px-1 px-lg-0 home-layout-gap" style={containerStyle}>
-        <div className="d-flex justify-content-between align-items-center mb-1 mb-lg-3">
-          <h5 className="mb-0 fw-bold" style={{ color: hasDarkBg ? "white" : "inherit" }}>{title}</h5>
+      <div className="w-100 m-0" style={containerStyle}>
+        <div className="pm-home-section-header mb-2">
+          <h3 className="pm-home-section-title" style={{ color: hasDarkBg ? "#ffffff" : "#1e293b" }}>{title}</h3>
         </div>
         <div className="card-grid-container">
           {Array.from({ length: limit }).map((_, idx) => (
@@ -105,24 +173,20 @@ export default function CompactCategoryGrid({
   if (categories.length === 0) return null;
 
   return (
-    <div className="container-fluid px-1 px-lg-0 home-layout-gap" style={containerStyle}>
-      <div 
-        className="d-flex justify-content-between align-items-center mb-1 mb-lg-3" 
-        style={{ paddingLeft: (bgImage || bgColor) ? "8px" : "0", paddingRight: (bgImage || bgColor) ? "8px" : "0" }}
-      >
-        <h5 
-          className="mb-0 fw-bold" 
-          style={{ color: hasDarkBg ? "white" : "inherit", paddingTop: (bgImage || bgColor) ? "8px" : "0" }}
+    <div className="w-100 m-0" style={containerStyle}>
+      <div className="pm-home-section-header mb-2">
+        <h3 
+          className="pm-home-section-title" 
+          style={{ color: hasDarkBg ? "#ffffff" : "#1e293b" }}
         >
           {title}
-        </h5>
+        </h3>
         {showViewAll && (
           <Link
-            to="/cart"
-            className="d-flex align-items-center justify-content-center rounded bg-theme px-2 py-1 text-white text-decoration-none me-1"
-            style={{ fontSize: '0.75rem', height: '24px', whiteSpace: 'nowrap' }}
+            to={categoryId ? `/allproducts?category=${encodeURIComponent(categoryId)}` : `/allproducts?q=${encodeURIComponent(title || '')}`}
+            className={hasDarkBg ? "pm-home-view-all-pill" : "pm-home-view-all-btn"}
           >
-            View All <MdKeyboardArrowRight size={16} />
+            View All <MdKeyboardArrowRight size={14} className="ms-0.5" />
           </Link>
         )}
       </div>
@@ -134,26 +198,30 @@ export default function CompactCategoryGrid({
             className={colClass}
           >
             <Link 
-              to={`/products?category=${category.slug}`} 
-              className="card text-center bd p-1 w-100 bg-white text-decoration-none text-dark" 
-              style={{ border: "none", borderRadius: "8px" }}
+              to={`/allproducts?category=${encodeURIComponent(category.name || category.slug || category.id || '')}`} 
+              className="card text-center bd p-1.5 w-100 bg-white text-decoration-none text-dark shadow-sm d-flex flex-column h-100" 
+              style={{ border: "none", borderRadius: "8px", transition: "transform 0.15s" }}
             >
-              <div className="product-card-img-wrapper" style={{ overflow: "hidden", aspectRatio: "1/1", display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0, backgroundColor: "#ffffff" }}>
+              <div className="product-card-img-wrapper" style={{ overflow: "hidden", aspectRatio: "1/1", display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0, backgroundColor: "#f8fafc", borderRadius: "6px" }}>
                 <img 
-                  src={getImageUrl(category.image || category.icon)} 
+                  src={getImageUrl(category)} 
                   alt={category.name} 
-                  className="product-card-img" 
+                  className="product-card-img zoom-hover" 
                   style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "/default-img.jpg";
+                  }}
                 />
               </div>
-              <div className="p-1 text-center mt-1">
+              <div className="p-1 text-center mt-1 border-top" style={{ borderColor: "#f1f5f9" }}>
                 <p
-                  className="m-0 fw-semibold text-truncate product-card-title"
-                  style={{ lineHeight: "1.2" }}
+                  className="m-0 fw-bold text-truncate"
+                  style={{ fontSize: "12px", color: "#1e293b", lineHeight: "1.2" }}
                 >
                   {category.name}
                 </p>
-                <span className="text-success fw-bold product-card-discount-text">
+                <span className="fw-bold" style={{ fontSize: "11px", color: "#059669" }}>
                   {offerText || offerLabels[index % offerLabels.length]}
                 </span>
               </div>
@@ -163,15 +231,14 @@ export default function CompactCategoryGrid({
       </div>
 
       {showBottomViewAll && (
-        <div className="p-1 mt-2">
-          <div className="d-flex w-100 justify-content-center align-items-center border bd rounded bg-light">
-            <Link
-              to="/cart"
-              className="w-100 py-2 text-center text-decoration-none text-dark fs-6 fw-semibold d-flex align-items-center justify-content-center"
-            >
-              View all <MdKeyboardArrowRight size={18} />
-            </Link>
-          </div>
+        <div className="p-0 mt-2">
+          <Link
+            to={categoryId ? `/allproducts?category=${encodeURIComponent(categoryId)}` : `/allproducts?q=${encodeURIComponent(title || '')}`}
+            className="w-100 py-1.5 text-center text-decoration-none bg-white rounded shadow-sm fs-7 fw-bold d-flex align-items-center justify-content-center"
+            style={{ color: "#334155", fontSize: "12px", border: "1px solid #e2e8f0" }}
+          >
+            View all <MdKeyboardArrowRight size={16} className="ms-1 text-muted" />
+          </Link>
         </div>
       )}
     </div>

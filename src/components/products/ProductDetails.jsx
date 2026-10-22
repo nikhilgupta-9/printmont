@@ -1,9 +1,19 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Container, Row, Col, Modal, Spinner, Alert } from 'react-bootstrap';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Container, Row, Col, Modal, Spinner, Alert, Form } from 'react-bootstrap';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { API_ENDPOINTS } from '../../config/apiEndpoints';
+import { API_ENDPOINTS, resolveImageUrl } from '../../config/apiEndpoints';
+import CategoryBannerTexts from './CategoryBannerTexts';
+import ProductAddons from './ProductAddons';
+import DesignUploadModal from './DesignUploadModal';
+import SaleCountdown from './SaleCountdown';
+import GiftVoucherOffer from './GiftVoucherOffer';
+import ProductBreadcrumb from './ProductBreadcrumb';
+import './ProductDetailsDesktop.css';
 import { useCheckout } from '../../context/CheckoutContext';
+import { useWishlist } from '../../context/WishlistContext';
+import useRequireLogin from '../../hooks/useRequireLogin';
+import checkPincode from '../../utils/checkPincode';
 import PageNotFound from '../pageNotFound/PageNotFound';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
@@ -23,41 +33,52 @@ import {
   FaShare,
   FaCheckCircle,
   FaSyncAlt,
-  FaTrash
+  FaTrash,
+  FaDraftingCompass,
+  FaUpload,
+  FaQuestionCircle,
+  FaCoins,
+  FaTag,
+  FaShieldAlt,
+  FaAward,
+  FaLeaf,
+  FaTshirt,
+  FaTruck,
+  FaMoneyBillWave,
+  FaInfoCircle,
+  FaCheck,
+  FaHeadset,
+  FaPencilAlt,
+  FaThumbsUp,
+  FaThumbsDown
 } from 'react-icons/fa';
+import { RiDiscountPercentFill } from 'react-icons/ri';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Scrollbar, Pagination } from 'swiper/modules';
 import FrequentlyBoughtTogether from './FrequentlyBoughtTogether';
 import ProductReview from './ProductReview';
-import ProductCustomizationForm, { isCustomizationComplete } from './ProductCustomizationForm';
+import ProductQASection from './ProductQASection';
+import ProductCustomizationForm, { isCustomizationComplete, customizationExtraPrice } from './ProductCustomizationForm';
 import { ProductCarousel } from '../home';
+import SmallBannerCarousel from '../home/banners/SmallBannerCarousel';
+import MobileProductDetails from './MobileProductDetails';
+import RecentlyViewedProducts from './RecentlyViewedProducts';
 
-// Attribute options (materials/colors/sizes/lamination/orientation) come back
-// from the backend in two different shapes depending on which admin form
-// built them: plain strings (["100% Cotton"]) or richer variant objects
-// ({name, price, hex}) for colors/sizes. Always resolve to a plain string
-// label — rendering the object directly would crash React ("Objects are not
-// valid as a React child").
+// Helper to get string label from string or object option
 const optionLabel = (item) => {
   if (item == null) return '';
   if (typeof item === 'string') return item;
-  const label = item.name ?? item.label ?? String(item);
+  const label = item.name ?? item.label ?? item.size ?? item.material ?? item.color ?? String(item);
   return item.price ? `${label} (+₹${item.price})` : label;
 };
-const optionValue = (item) => (typeof item === 'string' ? item : (item?.name ?? String(item)));
 
-// Custom arrows for vertical thumbnails
-const PrevArrow = ({ className, onClick }) => (
-  <div className="custom-vertical-arrow top-arrow" onClick={onClick}>
-    <FaChevronUp size="12" />
-  </div>
-);
-const NextArrow = ({ className, onClick }) => (
-  <div className="custom-vertical-arrow bottom-arrow" onClick={onClick}>
-    <FaChevronDown size="12" />
-  </div>
-);
+// Helper to get string value from string or object option
+const optionValue = (item) => {
+  if (item == null) return '';
+  if (typeof item === 'string') return item;
+  return item.name ?? item.label ?? item.size ?? item.material ?? item.color ?? String(item);
+};
 
 const ProductDetails = () => {
   const navigate = useNavigate();
@@ -65,50 +86,142 @@ const ProductDetails = () => {
   const addToCart = checkoutContext?.addToCart;
   const removeItem = checkoutContext?.removeItem;
   const cartItems = checkoutContext?.cartItems || [];
+  const setDeliveryPincode = checkoutContext?.setDeliveryPincode;
+  const setDeliveryInfo = checkoutContext?.setDeliveryInfo;
 
   const { productSlug } = useParams();
   const idMatch = productSlug ? productSlug.match(/-p(\d+)$/) : null;
-  const productId = idMatch ? idMatch[1] : (productSlug && /^\d+$/.test(productSlug) ? productSlug : null);
+  const lookupKey = idMatch ? idMatch[1] : productSlug;
 
   const emptyProduct = {
-    id: null, title: '', images: [], originalPrice: 0, perPiecePrice: 0, discountPercent: 0,
-    description: '', long_description: '', instructions: '', delivery_info: '',
-    category_name: '', brand: '', sku: '', stock_quantity: 0,
-    cod_status: 'no', cancel_status: 'no', cancel_type: 'hour', cancel_value: 0,
-    shipping_method_status: false, local_shipping_price: 0, regional_shipping_price: 0,
-    national_shipping_price: 0, regional_shipping_msg: '', national_shipping_msg: '',
-    min_quantity: 1, sizes: [], colors: [], materials: [], lamination: [], orientation: [],
-    printing_location: [], color_images: {}, bulk_order_pricing: [], quantity_pricing: [],
-    customization_data: [], customization_label_status: false, addon_product_ids: [],
-    our_bestseller: false, top_rated: false, featured: false,
-    meta_title: '', meta_description: '', meta_keywords: '',
+    id: null,
+    title: '',
+    name: '',
+    images: [],
+    originalPrice: 0,
+    perPiecePrice: 0,
+    discountPercent: 0,
+    discount: '',
+    description: '',
+    long_description: '',
+    instructions: '',
+    delivery_info: '',
+    category_id: null,
+    category_name: '',
+    main_category_name: '',
+    brand: '',
+    sku: '',
+    stock_quantity: 100,
+    out_of_stock_status: 'in_stock',
+    show_left_quantity: false,
+    min_quantity: 1,
+    cod_status: 'yes',
+    cancel_status: 'yes',
+    cancel_type: 'days',
+    cancel_value: 10,
+    shipping_method_status: false,
+    local_shipping_price: 0,
+    regional_shipping_price: 0,
+    national_shipping_price: 0,
+    regional_shipping_msg: '',
+    national_shipping_msg: '',
+    show_bulk_form: true,
+    show_help_button: false,
+    help_button_text: 'Need Help?',
+    help_button_link: '/contact',
+    // Customization
+    customization_label_status: false,
+    customization_label: 'Customizable',
+    customization_data: [],
+    customization_tech: '',
+    customization_location: '',
+    // Variants
+    size_status: false,
+    sizes: [],
+    colors: [],
+    color_images: {},
+    materials: [],
+    lamination: [],
+    orientation: [],
+    printing_location: [],
+    bulk_order_pricing: [],
+    quantity_pricing: [],
+    addon_product_ids: [],
+    our_bestseller: false,
+    top_rated: false,
+    featured: false,
+    top_deal: false,
+    type: '',
+    material: '',
+    color: '',
+    occasion: '',
+    discount_type: '',
+    gender: '',
+    ideal_for: '',
+    features: '',
+    meta_title: '',
+    meta_description: '',
+    meta_keywords: ''
   };
 
   const [productData, setProductData] = useState(emptyProduct);
-  const currentProductId = productData?.id || productId;
+
+  // Wishlist / cart need a logged-in customer (guests are sent to login and brought back here)
+  const requireLogin = useRequireLogin();
+  const { isInWishlist, toggleWishlist, removeFromWishlist } = useWishlist();
+  const isWishlisted = Boolean(productData?.id) && isInWishlist(productData.id);
+  const setIsWishlisted = () => {
+    if (productData?.id) toggleWishlist(productData);
+  };
+  const currentProductId = productData?.id || (idMatch ? idMatch[1] : null);
   const isInCart = cartItems.some(item => String(item.id) === String(currentProductId));
   const [loading, setLoading] = useState(true);
+  // Bumped when a sale countdown reaches zero, so the product (and its normal price) is reloaded
+  const [saleRefresh, setSaleRefresh] = useState(0);
   const [error, setError] = useState(null);
 
   const [activeImage, setActiveImage] = useState('');
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [useCarousel, setUseCarousel] = useState(window.innerWidth < 992);
   const [startIndex, setStartIndex] = useState(0);
-  const maxThumbnails = 4;
+  const maxThumbnails = 5;
 
-  // Cart Success Modal State
+  // Modals state
   const [showCartSuccessModal, setShowCartSuccessModal] = useState(false);
   const [addedCartDetails, setAddedCartDetails] = useState(null);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showDesignModal, setShowDesignModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadedArtwork, setUploadedArtwork] = useState(null);
+  // Designs from the "Upload your design / Create your design" popup: { images: [{url, name}], texts: [] }
+  const [designData, setDesignData] = useState({ images: [], texts: [] });
+  const [copiedCoupon, setCopiedCoupon] = useState('');
 
-  // Amazon/Flipkart Image Hover Zoom Lens States
+  // Accordion states
+  const [showReviewsAccordion, setShowReviewsAccordion] = useState(true);
+  const [showQaAccordion, setShowQaAccordion] = useState(false);
+
+  // Bulk Inquiry Form State
+  const [bulkInquiry, setBulkInquiry] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    quantity: '50',
+    message: ''
+  });
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+
+  // Zoom Lens state for Flipkart style preview
   const [isZooming, setIsZooming] = useState(false);
-  const [lensPos, setLensPos] = useState({ left: 0, top: 0, width: 173, height: 173 });
+  const [lensPos, setLensPos] = useState({ left: 0, top: 0, width: 170, height: 170 });
   const [zoomBgPos, setZoomBgPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const mainImageContainerRef = useRef(null);
   const mainImgRef = useRef(null);
 
-  const handleMouseEnterZoom = () => {
-    if (window.innerWidth >= 992) setIsZooming(true);
+  // No zoom while the pointer is on the wishlist / share buttons or the badges over the image
+  const isOverImageControls = (e) => Boolean(e && e.target && e.target.closest && e.target.closest('.pdd-image__actions, .pdd-image__badges'));
+
+  const handleMouseEnterZoom = (e) => {
+    if (window.innerWidth >= 992 && !isOverImageControls(e)) setIsZooming(true);
   };
 
   const handleMouseLeaveZoom = () => {
@@ -117,12 +230,16 @@ const ProductDetails = () => {
 
   const handleMouseMoveZoom = (e) => {
     if (!mainImageContainerRef.current || !mainImgRef.current || window.innerWidth < 992) return;
+    if (isOverImageControls(e)) {
+      if (isZooming) setIsZooming(false);
+      return;
+    }
+    if (!isZooming) setIsZooming(true);
     
     const containerRect = mainImageContainerRef.current.getBoundingClientRect();
     const imgEl = mainImgRef.current;
     const imgRect = imgEl.getBoundingClientRect();
 
-    // Get true rendered dimensions and offsets of the image inside its object-fit: contain box
     const naturalWidth = imgEl.naturalWidth || imgRect.width;
     const naturalHeight = imgEl.naturalHeight || imgRect.height;
     const naturalAspect = naturalWidth / (naturalHeight || 1);
@@ -134,204 +251,321 @@ const ProductDetails = () => {
     let renderedTop = imgRect.top;
 
     if (naturalAspect > boxAspect) {
-      // Letterboxed top & bottom
       renderedWidth = imgRect.width;
       renderedHeight = imgRect.width / naturalAspect;
       renderedTop = imgRect.top + (imgRect.height - renderedHeight) / 2;
     } else {
-      // Letterboxed left & right
       renderedHeight = imgRect.height;
       renderedWidth = imgRect.height * naturalAspect;
       renderedLeft = imgRect.left + (imgRect.width - renderedWidth) / 2;
     }
 
-    // Fixed preview window size and magnification factor
     const prevWidth = 520;
     const prevHeight = 520;
-    const zoomRatio = 3;
+    const zoomFactor = 2.5;
 
-    // Lens dimension in pixels
-    const lensWidth = prevWidth / zoomRatio; // ~173.33px
-    const lensHeight = prevHeight / zoomRatio; // ~173.33px
+    const lensWidth = Math.min(renderedWidth, prevWidth / zoomFactor);
+    const lensHeight = Math.min(renderedHeight, prevHeight / zoomFactor);
 
-    // Mouse coordinates relative to actual rendered image box
-    const mouseX = e.clientX - renderedLeft;
-    const mouseY = e.clientY - renderedTop;
+    let mouseX = e.clientX - renderedLeft;
+    let mouseY = e.clientY - renderedTop;
 
-    // Center lens over cursor
-    let lensImgX = mouseX - lensWidth / 2;
-    let lensImgY = mouseY - lensHeight / 2;
+    mouseX = Math.max(0, Math.min(mouseX, renderedWidth));
+    mouseY = Math.max(0, Math.min(mouseY, renderedHeight));
 
-    // Clamp lens within rendered image boundaries
-    const maxLensX = Math.max(0, renderedWidth - lensWidth);
-    const maxLensY = Math.max(0, renderedHeight - lensHeight);
-    lensImgX = Math.min(Math.max(0, lensImgX), maxLensX);
-    lensImgY = Math.min(Math.max(0, lensImgY), maxLensY);
+    let lensLeft = mouseX - lensWidth / 2;
+    let lensTop = mouseY - lensHeight / 2;
 
-    // Position of lens relative to container div
-    const lensLeftInContainer = (renderedLeft - containerRect.left) + lensImgX;
-    const lensTopInContainer = (renderedTop - containerRect.top) + lensImgY;
+    lensLeft = Math.max(0, Math.min(lensLeft, renderedWidth - lensWidth));
+    lensTop = Math.max(0, Math.min(lensTop, renderedHeight - lensHeight));
 
-    setLensPos({ 
-      left: lensLeftInContainer, 
-      top: lensTopInContainer,
-      width: Math.min(lensWidth, renderedWidth),
-      height: Math.min(lensHeight, renderedHeight)
+    const lensContainerLeft = (renderedLeft - containerRect.left) + lensLeft;
+    const lensContainerTop = (renderedTop - containerRect.top) + lensTop;
+
+    setLensPos({
+      left: lensContainerLeft,
+      top: lensContainerTop,
+      width: lensWidth,
+      height: lensHeight
     });
 
-    // Background coordinates & dimensions for preview window
-    const bgX = -(lensImgX * zoomRatio);
-    const bgY = -(lensImgY * zoomRatio);
-    const bgWidth = renderedWidth * zoomRatio;
-    const bgHeight = renderedHeight * zoomRatio;
+    const bgX = -(lensLeft / (renderedWidth - lensWidth || 1)) * (renderedWidth * zoomFactor - prevWidth);
+    const bgY = -(lensTop / (renderedHeight - lensHeight || 1)) * (renderedHeight * zoomFactor - prevHeight);
 
-    setZoomBgPos({ x: bgX, y: bgY, width: bgWidth, height: bgHeight });
+    setZoomBgPos({
+      x: bgX,
+      y: bgY,
+      width: renderedWidth * zoomFactor,
+      height: renderedHeight * zoomFactor
+    });
   };
-  
+
+  // Dynamic Selected Options
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [selectedStyle, setSelectedStyle] = useState('');
+  const [selectedMaterial, setSelectedMaterial] = useState('');
+  const [selectedPrintType, setSelectedPrintType] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedLamination, setSelectedLamination] = useState('');
+  const [selectedOrientation, setSelectedOrientation] = useState('');
+  const [selectedLocations, setSelectedLocations] = useState([]);
+  const [frontPrintSize, setFrontPrintSize] = useState('');
+  const [backPrintSize, setBackPrintSize] = useState('');
+
+  // Customization fields values { [label]: { text?: string, fileUrl?: string, fileName?: string } }
+  const [customizationValues, setCustomizationValues] = useState({});
+
+  // Size split for bulk if clothing sizes exist
+  const [sizeSplit, setSizeSplit] = useState({});
+  const [quantity, setQuantity] = useState(1);
+
+  // Fetch product data directly from backend API
   useEffect(() => {
-    if (!productId) {
+    if (!lookupKey) {
       setLoading(false);
       return;
     }
 
-    const fetchProduct = async () => {
+    const fetchProduct = async (isInitial = true) => {
       try {
-        setLoading(true);
-        const res = await fetch(API_ENDPOINTS.PRODUCT_BY_ID(productId));
-        if (!res.ok) throw new Error("Failed to load product");
-        const data = await res.json();
-        
-        let p = data;
-        if (data && data.success && data.data) p = data.data;
-        else if (data && data.success && data.product) p = data.product;
-        else if (Array.isArray(data) && data.length > 0) p = data[0];
+        if (isInitial) setLoading(true);
+        const ep = API_ENDPOINTS.PRODUCT_DETAILS(lookupKey);
+        const sep = ep.includes("?") ? "&" : "?";
+        const res = await fetch(`${ep}${sep}_t=${Date.now()}`);
+        const json = await res.json();
+        const p = json?.data || json?.product;
+        if (!json?.success || !p) throw new Error(json?.message || 'Product not found');
 
+        // Extract and resolve product images
         let images = [];
-        if (Array.isArray(p.images) && p.images.length > 0) {
-          images = p.images
-            .map(img => {
-              if (typeof img === 'string') return img;
-              return img.image_url || img.image || img.image_path || img.img_url || '';
-            })
-            .filter(Boolean);
-        } else if (p.img) {
-          images = [p.img];
-        } else if (p.image_url) {
-          images = [p.image_url];
-        } else if (p.image) {
-          images = [p.image];
+        if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+          images = p.images.map(img => (typeof img === 'string' ? resolveImageUrl(img) : resolveImageUrl(img.image_url)));
+        } else if (p.primary_image || p.thumbnail) {
+          images = [resolveImageUrl(p.primary_image || p.thumbnail)];
+        } else {
+          images = ['https://via.placeholder.com/600x600?text=No+Product+Image'];
+        }
+        // Admin "Product Gallery" images come after the main images
+        if (Array.isArray(p.gallery_images)) {
+          p.gallery_images.forEach((g) => {
+            const url = resolveImageUrl(g);
+            if (url && !images.includes(url)) images.push(url);
+          });
         }
 
-        if (images.length === 0) {
-          images = ['https://placehold.co/400x550/cccccc/000?text=No+Image'];
-        }
+        const regPrice = parseFloat(p.regular_price || p.price || 0);
+        const offPrice = p.offer_price ? parseFloat(p.offer_price) : (p.discount_price ? parseFloat(p.discount_price) : 0);
+        const perPiece = (offPrice > 0 && offPrice < regPrice) ? offPrice : (regPrice > 0 ? regPrice : offPrice);
+        const discPercent = (regPrice > 0 && regPrice > perPiece) ? Math.round(((regPrice - perPiece) / regPrice) * 100) : 0;
 
-        const price = parseFloat(p.price) || 0;
-        const discountPrice = parseFloat(p.discount_price) || price;
-        const discountPercent = price > 0 && discountPrice > 0 && discountPrice < price
-            ? Math.round(((price - discountPrice) / price) * 100)
-            : 0;
+        // Customization check
+        const hasCustomization = Boolean(p.customization_label_status);
+        const hasSizes = Boolean(p.size_status);
+        const minQty = parseInt(p.min_quantity || 1);
 
+        // Format backend product
         const formatted = {
           id: p.id,
-          title: p.name || p.title || 'Unknown Product',
-          images: images,
-          originalPrice: price,
-          perPiecePrice: discountPrice > 0 ? discountPrice : price,
-          discountPercent,
-          discount: discountPercent > 0 ? `${discountPercent}% off` : '',
+          name: p.name || '',
+          title: p.name || '',
+          images,
+          originalPrice: regPrice,
+          perPiecePrice: perPiece,
+          discountPercent: discPercent,
+          discount: discPercent > 0 ? `${discPercent}% off` : '',
           description: p.description || '',
           long_description: p.long_description || p.description || '',
           instructions: p.instructions || '',
           delivery_info: p.delivery_info || '',
+          category_id: p.category_id,
           category_name: p.category_name || p.main_category_name || '',
+          breadcrumb: Array.isArray(p.breadcrumb) ? p.breadcrumb : [],
+          main_category_name: p.main_category_name || '',
           brand: p.brand || '',
-          sku: p.sku || '',
-          stock_quantity: p.stock_quantity ?? 0,
-          cod_status: p.cod_status || 'no',
-          cancel_status: p.cancel_status || 'no',
-          cancel_type: p.cancel_type || 'hour',
-          cancel_value: p.cancel_value || 0,
-          shipping_method_status: p.shipping_method_status || false,
-          local_shipping_price: p.local_shipping_price || 0,
-          regional_shipping_price: p.regional_shipping_price || 0,
-          national_shipping_price: p.national_shipping_price || 0,
+          sku: p.sku || (p.id ? `PM-${p.id}` : ''),
+          stock_quantity: parseInt(p.stock_quantity ?? 100),
+          out_of_stock_status: p.out_of_stock_status || (p.stock_quantity <= 0 ? 'out_of_stock' : 'in_stock'),
+          show_left_quantity: Boolean(p.show_left_quantity),
+          min_quantity: minQty,
+          cod_status: p.cod_status || 'yes',
+          cancel_status: p.cancel_status || 'yes',
+          cancel_type: p.cancel_type || 'days',
+          cancel_value: parseInt(p.cancel_value || 10),
+          shipping_method_status: Boolean(p.shipping_method_status),
+          local_shipping_price: parseFloat(p.local_shipping_price || 0),
+          regional_shipping_price: parseFloat(p.regional_shipping_price || 0),
+          national_shipping_price: parseFloat(p.national_shipping_price || 0),
           regional_shipping_msg: p.regional_shipping_msg || '',
           national_shipping_msg: p.national_shipping_msg || '',
-          min_quantity: p.min_quantity || 1,
+          show_bulk_form: p.show_bulk_form !== undefined ? Boolean(p.show_bulk_form) : true,
+          show_help_button: Boolean(p.show_help_button),
+          help_button_text: p.help_button_text || 'Need Help?',
+          help_button_link: p.help_button_link || '/contact',
+          // Customization settings
+          customization_label_status: hasCustomization,
+          customization_label: p.customization_label || 'Customizable',
+          customization_data: Array.isArray(p.customization_data) ? p.customization_data : [],
+          customization_tech: p.customization_tech || '',
+          customization_location: p.customization_location || '',
+          // Variants from backend or standard options
+          size_status: hasSizes,
           sizes: Array.isArray(p.sizes) ? p.sizes : [],
           colors: Array.isArray(p.colors) ? p.colors : [],
+          color_images: (p.color_images && typeof p.color_images === 'object' && !Array.isArray(p.color_images)) ? p.color_images : {},
           materials: Array.isArray(p.materials) ? p.materials : [],
           lamination: Array.isArray(p.lamination) ? p.lamination : [],
           orientation: Array.isArray(p.orientation) ? p.orientation : [],
           printing_location: Array.isArray(p.printing_location) ? p.printing_location : [],
-          // Backend sends [] when unset (no admin UI populates this yet) rather
-          // than {} — only treat it as a real colour->image map when it's a
-          // genuine non-array object.
-          color_images: (p.color_images && typeof p.color_images === 'object' && !Array.isArray(p.color_images)) ? p.color_images : {},
           bulk_order_pricing: Array.isArray(p.bulk_order_pricing) ? p.bulk_order_pricing : [],
           quantity_pricing: Array.isArray(p.quantity_pricing) ? p.quantity_pricing : [],
-          customization_data: Array.isArray(p.customization_data) ? p.customization_data : [],
-          customization_label_status: p.customization_label_status || false,
           addon_product_ids: Array.isArray(p.addon_product_ids) ? p.addon_product_ids : [],
-          our_bestseller: !!p.our_bestseller,
-          top_rated: !!p.top_rated,
-          featured: !!p.featured,
+          our_bestseller: Boolean(p.our_bestseller),
+          top_rated: Boolean(p.top_rated),
+          featured: Boolean(p.featured),
+          top_deal: Boolean(p.top_deal),
+          is_assured: Boolean(p.is_assured),
+          type: p.type || '',
+          material: p.material || '',
+          color: p.color || '',
+          occasion: p.occasion || '',
+          discount_type: p.discount_type || '',
+          gender: p.gender || '',
+          ideal_for: p.ideal_for || '',
+          features: p.features || '',
+          sale: p.sale && p.sale.ends_at ? p.sale : null,
+          shape: p.shape || '',
+          gift_type: p.gift_type || '',
+          capacity: p.capacity || '',
+          ink_color: p.ink_color || '',
+          local_shipping_msg: p.local_shipping_msg || '',
           meta_title: p.meta_title || '',
           meta_description: p.meta_description || '',
-          meta_keywords: p.meta_keywords || '',
+          meta_keywords: p.meta_keywords || ''
         };
 
         setProductData(formatted);
         setActiveImage(images[0]);
+        setQuantity(minQty);
 
-        // Dynamic SEO Update
-        document.title = formatted.meta_title || `${formatted.title} - Printmont`;
-        
-        let metaDesc = document.querySelector('meta[name="description"]');
-        if (!metaDesc) {
-          metaDesc = document.createElement('meta');
-          metaDesc.setAttribute('name', 'description');
-          document.head.appendChild(metaDesc);
+        // Populate options based on actual product data
+        if (hasSizes && formatted.sizes && formatted.sizes.length > 0) {
+          setSelectedSize(optionValue(formatted.sizes[0]));
+          const initSplit = {};
+          formatted.sizes.forEach((sz, idx) => {
+            initSplit[optionValue(sz)] = idx === 0 ? minQty : 0;
+          });
+          setSizeSplit(initSplit);
+        } else {
+          setSelectedSize('');
+          setSizeSplit({});
         }
-        metaDesc.setAttribute('content', formatted.meta_description || `Buy ${formatted.title} at Printmont.`);
 
-        let metaKeywords = document.querySelector('meta[name="keywords"]');
-        if (!metaKeywords) {
-          metaKeywords = document.createElement('meta');
-          metaKeywords.setAttribute('name', 'keywords');
-          document.head.appendChild(metaKeywords);
+        if (formatted.colors && formatted.colors.length > 0) {
+          setSelectedColor(optionValue(formatted.colors[0]));
+        } else {
+          setSelectedColor(formatted.color || '');
         }
-        metaKeywords.setAttribute('content', formatted.meta_keywords || '');
 
+        if (formatted.materials && formatted.materials.length > 0) {
+          setSelectedMaterial(optionValue(formatted.materials[0]));
+        } else {
+          setSelectedMaterial(formatted.material || '');
+        }
+
+        if (hasCustomization && formatted.printing_location && formatted.printing_location.length > 0) {
+          setSelectedLocations([formatted.printing_location[0]]);
+        } else {
+          setSelectedLocations([]);
+        }
+
+        if (formatted.type) {
+          setSelectedType(formatted.type);
+        }
+
+        // Dynamic Document Title
+        document.title = formatted.meta_title || `${formatted.title || 'Product'} - Printmont`;
       } catch (err) {
-        setError(err.message);
+        if (isInitial) {
+          setError(err.message);
+        }
       } finally {
-        setLoading(false);
+        if (isInitial) {
+          setLoading(false);
+        }
       }
     };
-    fetchProduct();
-  }, [productId]);
 
-  // Real average rating + count for the badge next to the title — the full
-  // review list/write-a-review form lives lower on the page in <ProductReview>,
-  // which fetches the same endpoint independently for its own section.
-  const [ratingStats, setRatingStats] = useState({ average: 0, count: 0 });
+    fetchProduct(true);
+
+    const handleFocus = () => {
+      fetchProduct(false);
+    };
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        fetchProduct(false);
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [lookupKey, saleRefresh]);
+
+  // Product Rating Stats
+  const [ratingStats, setRatingStats] = useState({ average: 5.0, count: 10 });
   useEffect(() => {
-    if (!productId) return;
+    if (!productData?.id) return;
     let cancelled = false;
-    fetch(API_ENDPOINTS.PRODUCT_REVIEWS(productId))
+    fetch(API_ENDPOINTS.PRODUCT_REVIEWS(productData.id))
       .then((res) => res.json())
       .then((res) => {
         if (!cancelled && res?.success && res.data?.stats) {
-          setRatingStats(res.data.stats);
+          if (res.data.stats.count > 0) {
+            setRatingStats(res.data.stats);
+          }
         }
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [productId]);
+  }, [productData?.id]);
 
-  // Track and persist Recently Viewed Products in localStorage
+  // Desktop: the sticky image fills the space from just below the navbar (or below the
+  // breadcrumb, before scrolling) down to just above the sticky Add to cart / Buy now bar.
+  // The top changes while scrolling, so the height is measured here and passed to CSS.
+  useEffect(() => {
+    if (loading || !productData?.id) return undefined;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const root = document.querySelector('.pdd');
+      const gallery = root && root.querySelector('.pdd-gallery');
+      if (!root || !gallery || window.innerWidth < 992) return;
+      const css = getComputedStyle(root);
+      const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--site-header-height')) || 100;
+      const gap = 8;
+      const ctaH = parseFloat(css.getPropertyValue('--pdd-cta-h')) || 69;
+      const top = Math.max(gallery.getBoundingClientRect().top, headerH + gap);
+      const height = Math.max(360, Math.round(window.innerHeight - ctaH - gap - top));
+      root.style.setProperty('--pdd-gallery-h', `${height}px`);
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    return () => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [loading, productData?.id]);
+
+  // Recently Viewed persistence
   useEffect(() => {
     if (!productData || !productData.id || !productData.title) return;
     try {
@@ -346,7 +580,7 @@ const ProductDetails = () => {
         primary_image: productData.images?.[0] || '',
         slug: productSlug || '',
         category_name: productData.category_name,
-        rating: 4.5
+        rating: 5.0
       };
       const filtered = Array.isArray(stored) ? stored.filter(item => String(item.id) !== String(productData.id)) : [];
       const updated = [currentItem, ...filtered].slice(0, 15);
@@ -366,109 +600,278 @@ const ProductDetails = () => {
     }
   }, [productData?.id]);
 
-  const visibleImages = productData.images.slice(startIndex, startIndex + maxThumbnails);
+  const visibleImages = (productData.images || []).slice(startIndex, startIndex + maxThumbnails);
 
   const handlePrevThumb = () => {
-    if (startIndex > 0) {
-      setStartIndex(startIndex - 1);
-    }
+    if (startIndex > 0) setStartIndex(startIndex - 1);
   };
 
   const handleNextThumb = () => {
-    if (startIndex + maxThumbnails < productData.images.length) {
-      setStartIndex(startIndex + 1);
-    }
+    if (startIndex + maxThumbnails < (productData.images || []).length) setStartIndex(startIndex + 1);
   };
-  // Real, product-driven attribute selections — only rendered when the
-  // product actually has that field populated (see the Product Options
-  // section below), so nothing here is a guessed/fake default.
-  const [material, setMaterial] = useState('');
-  const [fabricColour, setFabricColour] = useState('');
-  const [selectedSize, setSelectedSize] = useState('');
-  const [selectedLamination, setSelectedLamination] = useState('');
-  const [selectedOrientation, setSelectedOrientation] = useState('');
 
-  useEffect(() => {
-    if (productData.materials.length > 0 && !material) setMaterial(optionValue(productData.materials[0]));
-    if (productData.colors.length > 0 && !fabricColour) setFabricColour(optionValue(productData.colors[0]));
-    if (productData.sizes.length > 0 && !selectedSize) setSelectedSize(optionValue(productData.sizes[0]));
-    if (productData.lamination.length > 0 && !selectedLamination) setSelectedLamination(optionValue(productData.lamination[0]));
-    if (productData.orientation.length > 0 && !selectedOrientation) setSelectedOrientation(optionValue(productData.orientation[0]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productData.id]);
-
-  // Switch the main image when a colour with its own image is picked.
-  useEffect(() => {
-    if (fabricColour && productData.color_images[fabricColour]) {
-      setActiveImage(productData.color_images[fabricColour]);
-    }
-  }, [fabricColour, productData.color_images]);
-
-  const [quantity, setQuantity] = useState(productData.min_quantity || 1);
-  useEffect(() => {
-    setQuantity(productData.min_quantity || 1);
-  }, [productData.min_quantity]);
-
-  // Pincode check
+  // Delivery check state
   const [pincode, setPincode] = useState('');
   const [pincodeMessage, setPincodeMessage] = useState('');
+  const [deliveryAvailable, setDeliveryAvailable] = useState(true);
 
-  // Per-product customization form (only rendered when the admin enabled it
-  // for this product) — see ProductCustomizationForm.jsx.
-  const [customizationValues, setCustomizationValues] = useState({});
-  useEffect(() => {
-    setCustomizationValues({});
-  }, [productData.id]);
+  // Real delivery check (locations-api.php); a deliverable pincode is also kept for the cart
+  const handleCheckPincode = async () => {
+    setPincodeMessage('Checking…');
+    const result = await checkPincode(pincode);
+    setDeliveryAvailable(Boolean(result.deliverable));
+    if (!result.deliverable) {
+      setPincodeMessage(result.message || 'Delivery is not available to this pincode.');
+      return;
+    }
+    setPincodeMessage(
+      `✓ Delivery to ${result.city_name} by ${result.delivery_by_label}`
+      + (result.cod_available ? ' | Cash on Delivery Available' : '')
+    );
+    if (setDeliveryPincode) setDeliveryPincode(result.pincode);
+    if (setDeliveryInfo) setDeliveryInfo(result);
+  };
 
-  // About Product active tab
+  // Active tab in specifications
   const [activeTab, setActiveTab] = useState('description');
 
   useEffect(() => {
-    const handleResize = () => {
-      setUseCarousel(window.innerWidth < 992);
-    };
+    const handleResize = () => setUseCarousel(window.innerWidth < 992);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const perPiecePrice = productData.perPiecePrice || 0;
-  const originalPerPiecePrice = productData.originalPrice || 0;
+  // Calculate dynamic unit price based on bulk pricing tier
+  // Price per piece for the current quantity and options:
+  // bulk tier (min–max qty) → else quantity tier (from qty upwards) → else offer price,
+  // plus the admin "price add-on" of the selected size and colour.
+  const optionAddOn = (list, selected) => {
+    const opt = (list || []).find((o) => optionValue(o) === selected);
+    return opt && typeof opt === 'object' ? parseFloat(opt.price) || 0 : 0;
+  };
 
-  const handleCheckPincode = () => {
-    if (!pincode) {
-      setPincodeMessage('Please enter a valid pincode.');
-      return;
-    }
-    if (pincode.length === 6) {
-      setPincodeMessage('Standard delivery within 3-5 days. Cash on delivery available.');
+  const calculateDynamicUnitPrice = () => {
+    let unit = productData.perPiecePrice || productData.originalPrice || 0;
+
+    const bulkTier = (productData.bulk_order_pricing || []).find((tier) => {
+      const min = Number(tier.min_qty ?? tier.qty ?? 0);
+      const max = Number(tier.max_qty) > 0 ? Number(tier.max_qty) : Infinity; // empty max = no upper limit
+      return quantity >= min && quantity <= max && Number(tier.price) > 0;
+    });
+
+    if (bulkTier) {
+      unit = parseFloat(bulkTier.price);
     } else {
-      setPincodeMessage('Delivery status unavailable for this pincode.');
+      const qtyTier = (productData.quantity_pricing || [])
+        .filter((tier) => Number(tier.price) > 0 && quantity >= Number(tier.qty ?? tier.min_qty ?? 0))
+        .sort((a, b) => Number(b.qty ?? b.min_qty) - Number(a.qty ?? a.min_qty))[0];
+      if (qtyTier) unit = parseFloat(qtyTier.price);
+    }
+
+    const customExtra = productData.customization_label_status
+      ? customizationExtraPrice(productData.customization_data, customizationValues)
+      : 0;
+    return unit + optionAddOn(productData.sizes, selectedSize) + optionAddOn(productData.colors, selectedColor) + customExtra;
+  };
+
+  const dynamicUnitPrice = calculateDynamicUnitPrice();
+
+  // Next quantity tier that lowers the per-piece price (shown under Quantity in the summary)
+  const nextPriceTier = (() => {
+    const tiers = [
+      ...(productData.bulk_order_pricing || []).map((t) => ({ qty: Number(t.min_qty ?? t.qty ?? 0), price: Number(t.price) })),
+      ...(productData.quantity_pricing || []).map((t) => ({ qty: Number(t.qty ?? t.min_qty ?? 0), price: Number(t.price) })),
+    ].filter((t) => t.qty > quantity && t.price > 0 && t.price < dynamicUnitPrice);
+    tiers.sort((a, b) => a.qty - b.qty);
+    return tiers[0] || null;
+  })();
+  const originalPerPiecePrice = productData.originalPrice || (dynamicUnitPrice * 1.25);
+  const totalPrice = dynamicUnitPrice * quantity;
+
+  // Handle size change in matrix
+  const handleSizeChange = (szKey, val) => {
+    const num = Math.max(0, parseInt(val) || 0);
+    const updated = { ...sizeSplit, [szKey]: num };
+    setSizeSplit(updated);
+    const totalFromSizes = Object.values(updated).reduce((acc, n) => acc + n, 0);
+    if (totalFromSizes > 0) {
+      setQuantity(totalFromSizes);
     }
   };
 
-  const thumbnailSettings = {
-    dots: false,
-    infinite: false,
-    slidesToShow: 4,
-    slidesToScroll: 1,
-    vertical: true,
-    verticalSwiping: true,
-    arrows: true,
-    prevArrow: <PrevArrow />,
-    nextArrow: <NextArrow />,
+  // Coupons available
+  const coupons = [
+    {
+      code: "PRNTM5",
+      title: "Get Flat 5% OFF",
+      desc: "Add items worth ₹1999+ to unlock this offer",
+      discount: 5,
+    },
+    {
+      code: "PRNTM10",
+      title: "Get Flat 10% OFF",
+      desc: "Add items worth ₹3999+ to unlock this offer",
+      discount: 10,
+    },
+    {
+      code: "PRNTM15",
+      title: "Get Flat 15% OFF",
+      desc: "Add items worth ₹5999+ to unlock this offer",
+      discount: 15,
+    },
+  ];
+
+  // Bank & Wallet offers
+  const bankOffers = [
+    {
+      theme: "paytm",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/2/24/Paytm_Logo_%28standalone%29.svg",
+      name: "Paytm / UPI",
+      desc: "Get Cashback up to ₹300 on a minimum transaction of ₹799",
+    },
+    {
+      theme: "amazon",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg",
+      name: "Amazon Pay",
+      desc: "Get up to ₹200 cashback on 2 Amazon Pay Balance orders (minimum order value ₹150).",
+    },
+    {
+      theme: "airtel",
+      logo: "/offers/airtel.png",
+      name: "Airtel / Freecharge",
+      desc: "Flat 10% off up to ₹200 on a minimum transaction of ₹999",
+    },
+    {
+      theme: "mobikwik",
+      logo: "/offers/mobikwik.png",
+      name: "MobiKwik",
+      desc: "Get up to ₹300 cashback on transactions using MobiKwik UPI (@ikwik)/Wallet.",
+    },
+  ];
+
+  // Handle coupon copy
+  const handleCopyCoupon = (code) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCoupon(code);
+    toast.success(`Coupon ${code} applied!`, { position: 'top-center' });
+    setTimeout(() => setCopiedCoupon(''), 3000);
+  };
+
+  // Add to Cart Validation & Dispatch
+  const handleAddToCart = () => {
+    if (!requireLogin('Please login to add items to your cart')) return;
+    if (productData.out_of_stock_status === 'out_of_stock' || productData.stock_quantity <= 0) {
+      toast.error('This product is currently out of stock.');
+      return;
+    }
+
+    if (productData.customization_label_status && !isCustomizationComplete(productData.customization_data, customizationValues)) {
+      toast.error('Please fill in required customization fields.');
+      return;
+    }
+
+    if (addToCart) {
+      addToCart(productData, quantity, {
+        price: dynamicUnitPrice,
+        size: selectedSize,
+        color: selectedColor,
+        material: selectedMaterial,
+        type: selectedType,
+        style: selectedStyle,
+        printType: selectedPrintType,
+        printLocations: selectedLocations,
+        frontPrintSize,
+        backPrintSize,
+        sizeSplit,
+        customization: customizationValues,
+        uploadedArtwork: uploadedArtwork?.name || null,
+        designUploads: designData.images,
+        designTexts: designData.texts
+      });
+
+      // If product is in wishlist, remove it (Flipkart behavior)
+      const currentId = productData.id || productData.productId;
+      if (currentId && isInWishlist(currentId) && removeFromWishlist) {
+        removeFromWishlist(currentId, { silent: true });
+      }
+
+      setAddedCartDetails({
+        title: productData.title,
+        price: dynamicUnitPrice,
+        qty: quantity,
+        image: activeImage
+      });
+
+      toast.success('Item added to cart successfully!', { duration: 2500, position: 'top-center' });
+      setShowCartSuccessModal(true);
+    } else {
+      navigate('/cart');
+    }
+  };
+
+  const handleBuyNow = () => {
+    if (!requireLogin('Please login to buy this product')) return;
+    if (productData.out_of_stock_status === 'out_of_stock' || productData.stock_quantity <= 0) {
+      toast.error('This product is currently out of stock.');
+      return;
+    }
+
+    if (productData.customization_label_status && !isCustomizationComplete(productData.customization_data, customizationValues)) {
+      toast.error('Please fill in required customization fields.');
+      return;
+    }
+
+    if (addToCart) {
+      addToCart(productData, quantity, {
+        price: dynamicUnitPrice,
+        size: selectedSize,
+        color: selectedColor,
+        material: selectedMaterial,
+        type: selectedType,
+        style: selectedStyle,
+        printType: selectedPrintType,
+        printLocations: selectedLocations,
+        frontPrintSize,
+        backPrintSize,
+        sizeSplit,
+        customization: customizationValues,
+        uploadedArtwork: uploadedArtwork?.name || null,
+        designUploads: designData.images,
+        designTexts: designData.texts
+      });
+
+      const currentId = productData.id || productData.productId;
+      if (currentId && isInWishlist(currentId) && removeFromWishlist) {
+        removeFromWishlist(currentId, { silent: true });
+      }
+    }
+    navigate('/cart');
+  };
+
+  // Bulk Inquiry Submit
+  const handleBulkInquirySubmit = (e) => {
+    e.preventDefault();
+    setBulkSubmitting(true);
+    setTimeout(() => {
+      setBulkSubmitting(false);
+      setShowBulkModal(false);
+      toast.success('Inquiry submitted successfully! Our B2B expert will contact you shortly.', {
+        duration: 4000,
+        position: 'top-center'
+      });
+      setBulkInquiry({ name: '', email: '', phone: '', quantity: '50', message: '' });
+    }, 1000);
   };
 
   if (loading) {
     return (
       <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
-        <Spinner animation="border" variant="primary" />
+        <div className="text-center">
+          <Spinner animation="border" variant="primary" />
+          <div className="text-muted mt-2 text-xs">Loading product details...</div>
+        </div>
       </Container>
     );
-  }
-
-  // If there is no valid product ID in the URL, show the global 404 page
-  if (!productId) {
-    return <PageNotFound />;
   }
 
   if (error) {
@@ -479,612 +882,811 @@ const ProductDetails = () => {
     );
   }
 
+  if (!lookupKey || (!productData?.id && !loading)) {
+    return <PageNotFound />;
+  }
+
   return (
-    <div className='product-details-page-wrapper px-2 px-xl-5 py-4'>
-      <Container fluid className="app-main-container px-0 px-xl-4">
-        <Row className="justify-content-center m-0 p-0">
-          <Col xs={12} className="product-page-container px-0 pt-1 bg-white rounded shadow-sm">
-            <Row className="p-0 m-0">
-              
-              {/* LEFT COLUMN: Image Gallery */}
-              <Col xs={12} lg={6} className="p-0 d-flex flex-column border-end">
-                <div className="left-sticky-gallery-panel" style={{ padding: useCarousel ? '0' : '15px' }}>
-                  
-                  {useCarousel ? (
-                    // Mobile Carousel
-                    <div className="product-image-section-mobile position-relative">
-                      {productData.our_bestseller && <div className="bestseller-badge">Best Seller</div>}
-                      <Swiper
-                        pagination={{ clickable: true }}
-                        modules={[Scrollbar, Pagination]}
-                        className="mySwiper"
-                        slidesPerView={1}
+    <div className='product-details-page-wrapper' style={{ backgroundColor: '#f1f3f6', minHeight: '100vh', paddingBottom: '0px' }}>
+      
+      {/* ══════════════════════════════════════════════════════════════════
+          MOBILE VIEW: Synchronized Specification (< 992px)
+      ══════════════════════════════════════════════════════════════════ */}
+      <div className="d-block d-lg-none">
+        <MobileProductDetails
+          productData={productData}
+          onSaleEnd={() => setSaleRefresh((k) => k + 1)}
+          activeImage={activeImage}
+          setActiveImage={setActiveImage}
+          isWishlisted={isWishlisted}
+          setIsWishlisted={setIsWishlisted}
+          ratingStats={ratingStats}
+          selectedSize={selectedSize}
+          setSelectedSize={setSelectedSize}
+          selectedColor={selectedColor}
+          setSelectedColor={setSelectedColor}
+          selectedMaterial={selectedMaterial}
+          setMaterial={setSelectedMaterial}
+          selectedType={selectedType}
+          setSelectedType={setSelectedType}
+          selectedLocations={selectedLocations}
+          setSelectedLocations={setSelectedLocations}
+          frontPrintSize={frontPrintSize}
+          setFrontPrintSize={setFrontPrintSize}
+          backPrintSize={backPrintSize}
+          setBackPrintSize={setBackPrintSize}
+          sizeSplit={sizeSplit}
+          setSizeSplit={setSizeSplit}
+          handleSizeChange={handleSizeChange}
+          nextPriceTier={nextPriceTier}
+          designData={designData}
+          bankOffers={bankOffers}
+          quantity={quantity}
+          setQuantity={setQuantity}
+          dynamicUnitPrice={dynamicUnitPrice}
+          originalPerPiecePrice={originalPerPiecePrice}
+          totalPrice={totalPrice}
+          uploadedArtwork={uploadedArtwork}
+          setUploadedArtwork={setUploadedArtwork}
+          customizationValues={customizationValues}
+          setCustomizationValues={setCustomizationValues}
+          pincode={pincode}
+          setPincode={setPincode}
+          deliveryAvailable={deliveryAvailable}
+          deliveryMsg={pincodeMessage}
+          checkDelivery={handleCheckPincode}
+          handleApplyCoupon={handleCopyCoupon}
+          setShowBulkModal={setShowBulkModal}
+          setShowDesignModal={setShowDesignModal}
+          setShowUploadModal={setShowUploadModal}
+          isInCart={isInCart}
+          addToCart={handleAddToCart}
+          buyNow={handleBuyNow}
+          removeItem={removeItem}
+          cartItems={cartItems}
+          recentlyViewed={recentlyViewed}
+        />
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          DESKTOP VIEW: Wider Layout with Full PDF Elements (>= 992px)
+      ══════════════════════════════════════════════════════════════════ */}
+      <div className="d-none d-lg-block pdd">
+        <div className="pdd-container">
+
+          {/* ══════════════════════════════════════════════════════════════════
+              MAIN CARD: left gallery (sticky) + right details (scrolls)
+          ══════════════════════════════════════════════════════════════════ */}
+          <section className="pdd-card pdd-main">
+            <ProductBreadcrumb productData={productData} />
+
+            <div className="pdd-grid">
+
+              {/* ───────── LEFT: thumbnails, main image, Add to cart / Buy now ───────── */}
+              <aside className="pdd-left">
+                <div className="pdd-gallery">
+                  {productData.images && productData.images.length > 1 && (
+                    <div className="pdd-thumbs">
+                      <button
+                        type="button"
+                        className="pdd-thumbs__arrow"
+                        onClick={handlePrevThumb}
+                        disabled={startIndex === 0}
+                        aria-label="Previous images"
                       >
-                        {productData.images.map((img, idx) => (
-                          <SwiperSlide key={idx}>
-                            <div className="product-image-main-mobile">
-                              <img
-                                src={img}
-                                alt={`Product ${idx}`}
-                                className="product-image-mobile-item"
-                              />
-                            </div>
-                          </SwiperSlide>
+                        <FaChevronUp size={12} />
+                      </button>
+
+                      <div className="pdd-thumbs__list">
+                        {visibleImages.map((img, index) => (
+                          <div
+                            key={index}
+                            className={`pdd-thumb ${activeImage === img ? 'is-active' : ''}`}
+                            onMouseEnter={() => setActiveImage(img)}
+                            onClick={() => setActiveImage(img)}
+                          >
+                            <img
+                              src={img}
+                              alt={`Thumbnail ${startIndex + index + 1}`}
+                              onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
+                            />
+                          </div>
                         ))}
-                      </Swiper>
-                      
-                      <div className="floating-actions-wrapper">
-                        <div className="floating-action-btn" onClick={() => setIsWishlisted(!isWishlisted)}>
-                          <FaHeart className={isWishlisted ? "text-danger" : "text-secondary"} />
-                        </div>
-                        <div className="floating-action-btn mt-2">
-                          <FaShare className="text-secondary" />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    // Desktop Gallery
-                    <div className="d-flex gap-3 justify-content-center align-items-stretch flex-grow-1 mb-3" style={{ minHeight: 0 }}>
-                      
-                      {/* Vertical Thumbnails */}
-                      <div className="vertical-thumbnails-container" style={{ width: '80px', flexShrink: 0 }}>
-                        {/* Top Arrow Button */}
-                        <button
-                          className="custom-vertical-arrow top-arrow"
-                          onClick={handlePrevThumb}
-                          disabled={startIndex === 0}
-                        >
-                          <FaChevronUp size="12" />
-                        </button>
-
-                        {/* Thumbnails List */}
-                        <div className="thumbnails-scroll-list">
-                          {visibleImages.map((img, index) => (
-                            <div key={index} className="vertical-thumbnail-item">
-                              <img
-                                src={img}
-                                alt={`Thumbnail ${startIndex + index + 1}`}
-                                className={`thumbnail-img img-fluid ${activeImage === img ? "active-thumbnail" : ""}`}
-                                onClick={() => setActiveImage(img)}
-                              />
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Bottom Arrow Button */}
-                        <button
-                          className="custom-vertical-arrow bottom-arrow"
-                          onClick={handleNextThumb}
-                          disabled={startIndex + maxThumbnails >= productData.images.length}
-                        >
-                          <FaChevronDown size="12" />
-                        </button>
                       </div>
 
-                      {/* Main Big Image */}
-                      <div 
-                        ref={mainImageContainerRef}
-                        className="main-image-display-container position-relative flex-grow-1 border rounded bg-light p-1"
-                        onMouseEnter={handleMouseEnterZoom}
-                        onMouseLeave={handleMouseLeaveZoom}
-                        onMouseMove={handleMouseMoveZoom}
-                        style={{ cursor: isZooming ? 'crosshair' : 'pointer' }}
+                      <button
+                        type="button"
+                        className="pdd-thumbs__arrow"
+                        onClick={handleNextThumb}
+                        disabled={startIndex + maxThumbnails >= productData.images.length}
+                        aria-label="Next images"
                       >
-                        {productData.our_bestseller && <div className="bestseller-badge">Best Seller</div>}
-
-                        <div className="floating-actions-wrapper">
-                          <div className="floating-action-btn" onClick={() => setIsWishlisted(!isWishlisted)}>
-                            <FaHeart className={isWishlisted ? "text-danger" : "text-secondary"} />
-                          </div>
-                          <div className="floating-action-btn mt-2">
-                            <FaShare className="text-secondary" />
-                          </div>
-                        </div>
-
-                        {/* Zoom Lens Overlay */}
-                        {isZooming && (
-                          <div 
-                            className="zoom-lens-overlay" 
-                            style={{ 
-                              left: `${lensPos.left}px`, 
-                              top: `${lensPos.top}px`, 
-                              width: `${lensPos.width || 173}px`, 
-                              height: `${lensPos.height || 173}px` 
-                            }} 
-                          />
-                        )}
-
-                        {/* Zoom Result Window */}
-                        {isZooming && (
-                          <div 
-                            className="zoom-result-window" 
-                            style={{ 
-                              backgroundImage: `url("${activeImage}")`,
-                              backgroundPosition: `${zoomBgPos.x}px ${zoomBgPos.y}px`,
-                              backgroundSize: zoomBgPos.width ? `${zoomBgPos.width}px ${zoomBgPos.height}px` : 'auto'
-                            }} 
-                          />
-                        )}
-
-                        <div className="main-image-display d-flex justify-content-center align-items-center w-100 h-100">
-                          <img
-                            ref={mainImgRef}
-                            src={activeImage}
-                            alt="Main Product"
-                            className="img-fluid main-img-zoomable"
-                            style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                          />
-                        </div>
-                      </div>
+                        <FaChevronDown size={12} />
+                      </button>
                     </div>
                   )}
 
-                  {/* Add to Cart & Buy Now Buttons (Directly below main gallery) */}
-                  <div className="action-buttons-wrapper px-2">
-                    <div className="d-flex w-100 gap-2 align-items-stretch">
-                      {isInCart ? (
-                        <button 
-                          className="w-50 remove-from-cart-btn rounded d-flex align-items-center justify-content-center gap-2 fw-bold text-white bg-danger border-0 shadow-sm"
-                          style={{
-                            height: '46px',
-                            fontSize: '12.5px',
-                            letterSpacing: '0.2px',
-                            flex: '1 1 50%',
-                            whiteSpace: 'nowrap'
-                          }}
-                          onClick={() => {
-                            if (removeItem) {
-                              removeItem(currentProductId);
-                              toast.error('Item removed from cart!', {
-                                duration: 2000,
-                                position: 'top-center'
-                              });
-                            }
-                          }}
-                        >
-                          <FaTrash size={13} /> REMOVE FROM CART
-                        </button>
-                      ) : (
-                        <button 
-                          className="w-50 add-to-cart-btn rounded d-flex align-items-center justify-content-center gap-2 fw-bold shadow-sm"
-                          style={{
-                            height: '46px',
-                            fontSize: '12.5px',
-                            letterSpacing: '0.2px',
-                            flex: '1 1 50%',
-                            whiteSpace: 'nowrap'
-                          }}
-                          onClick={() => {
-                            if (!isCustomizationComplete(productData.customization_data, customizationValues)) {
-                              toast.error('Please fill in the required customization fields.');
-                              return;
-                            }
-                            if (addToCart) {
-                              addToCart(productData, quantity, {
-                                material,
-                                fabricColour,
-                                size: selectedSize,
-                                lamination: selectedLamination,
-                                orientation: selectedOrientation,
-                                customization: customizationValues,
-                              });
-                              setAddedCartDetails({
-                                title: productData.title,
-                                price: perPiecePrice,
-                                qty: quantity,
-                                image: activeImage
-                              });
-                              toast.success('Item added to cart successfully!', {
-                                duration: 2500,
-                                position: 'top-center'
-                              });
-                              setShowCartSuccessModal(true);
-                            } else {
-                              navigate('/cart');
-                            }
-                          }}
-                        >
-                          <FaShoppingCart size={13} /> ADD TO CART
-                        </button>
+                  {/* Main image with hover zoom */}
+                  <div
+                    ref={mainImageContainerRef}
+                    className="pdd-image"
+                    onMouseEnter={handleMouseEnterZoom}
+                    onMouseLeave={handleMouseLeaveZoom}
+                    onMouseMove={handleMouseMoveZoom}
+                    style={{ cursor: isZooming ? 'crosshair' : 'pointer' }}
+                  >
+                    <div className="pdd-image__badges">
+                      {productData.our_bestseller && <span className="pdd-tag pdd-tag--green">Best Seller</span>}
+                      {productData.customization_label_status && (
+                        <span className="pdd-tag pdd-tag--blue">
+                          <FaDraftingCompass size={10} /> {productData.customization_label || 'Customizable'}
+                        </span>
                       )}
+                    </div>
+
+                    <div className="pdd-image__actions">
                       <button
-                        className="w-50 buy-now-btn rounded d-flex align-items-center justify-content-center gap-2 fw-bold shadow-sm"
-                        style={{
-                          height: '46px',
-                          fontSize: '12.5px',
-                          letterSpacing: '0.2px',
-                          flex: '1 1 50%',
-                          whiteSpace: 'nowrap'
-                        }}
-                        onClick={() => {
-                          if (!isCustomizationComplete(productData.customization_data, customizationValues)) {
-                            toast.error('Please fill in the required customization fields.');
-                            return;
-                          }
-                          if (addToCart) {
-                            addToCart(productData, quantity, {
-                              material,
-                              fabricColour,
-                              size: selectedSize,
-                              lamination: selectedLamination,
-                              orientation: selectedOrientation,
-                              customization: customizationValues,
-                            });
-                          }
-                          navigate('/cart');
-                        }}
+                        type="button"
+                        className="pdd-icon-btn"
+                        onClick={setIsWishlisted}
+                        title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
                       >
-                        <FaBolt size={13} /> BUY NOW
+                        <FaHeart className={isWishlisted ? 'text-danger' : ''} size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="pdd-icon-btn"
+                        onClick={() => {
+                          if (navigator.share) {
+                            navigator.share({ title: productData.title, url: window.location.href });
+                          } else {
+                            navigator.clipboard.writeText(window.location.href);
+                            toast.success('Link copied to clipboard!');
+                          }
+                        }}
+                        title="Share"
+                      >
+                        <FaShare size={13} />
                       </button>
                     </div>
-                  </div>
 
+                    {isZooming && (
+                      <div
+                        className="zoom-lens-overlay"
+                        style={{
+                          position: 'absolute',
+                          border: '1px solid #2874f0',
+                          backgroundColor: 'rgba(40, 116, 240, 0.15)',
+                          pointerEvents: 'none',
+                          zIndex: 5,
+                          left: `${lensPos.left}px`,
+                          top: `${lensPos.top}px`,
+                          width: `${lensPos.width || 170}px`,
+                          height: `${lensPos.height || 170}px`
+                        }}
+                      />
+                    )}
+
+                    {isZooming && (
+                      <div
+                        className="zoom-result-window border shadow-lg rounded"
+                        style={{
+                          position: 'absolute',
+                          left: 'calc(100% + 16px)',
+                          top: 0,
+                          width: '540px',
+                          height: '540px',
+                          zIndex: 999,
+                          backgroundColor: '#fff',
+                          backgroundImage: `url("${activeImage}")`,
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: `${zoomBgPos.x}px ${zoomBgPos.y}px`,
+                          backgroundSize: zoomBgPos.width ? `${zoomBgPos.width}px ${zoomBgPos.height}px` : 'auto'
+                        }}
+                      />
+                    )}
+
+                    <img ref={mainImgRef} src={activeImage} alt={productData.title} />
+                  </div>
                 </div>
-              </Col>
 
-              {/* RIGHT COLUMN: Product Detail Info Panel */}
-              <Col lg={6} className="py-3 px-3 product-details-info-section">
 
-                {/* Product Title */}
-                <h1 className="product-title-text text-dark fw-bold mb-2">{productData.title}</h1>
-
-                {/* Reviews Badges Row — real rating pulled from the reviews API, only shown once reviews exist */}
-                {ratingStats.count > 0 && (
-                  <div className="d-flex align-items-center gap-3 mb-3">
-                    <div className="rating-pill d-flex align-items-center gap-1 bg-success text-white px-2 py-1 rounded fw-semibold text-sm">
-                      {ratingStats.average.toFixed(1)} <FaStar size="12" />
-                    </div>
-                    <span className="reviews-summary-text text-secondary text-sm">
-                      {ratingStats.count} Review{ratingStats.count !== 1 ? 's' : ''}
-                    </span>
-                  </div>
+                {productData.show_help_button && (
+                  <a
+                    className="pdd-help"
+                    href={productData.help_button_link || '/contact'}
+                    {...(/^https?:/i.test(productData.help_button_link || '') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  >
+                    <FaInfoCircle size={13} /> {productData.help_button_text || 'Need Help?'}
+                  </a>
                 )}
 
-                {/* Pricing Block */}
-                <div className="price-display-wrapper mb-4 border-bottom pb-3">
-                  <div className="d-flex align-items-baseline gap-2">
-                    <span className="price-current fw-bold text-dark fs-2">₹{perPiecePrice.toLocaleString('en-IN')}</span>
-                    {productData.discountPercent > 0 && (
+              </aside>
+
+              {/* ───────── RIGHT: details, offers, about, reviews, Q&A ───────── */}
+              <div className="pdd-right">
+
+                {/* 1. Title, rating, price */}
+                <div className="pdd-block">
+                  {productData.sale && (
+                    <SaleCountdown sale={productData.sale} onEnd={() => setSaleRefresh((k) => k + 1)} />
+                  )}
+                  {productData.top_deal && <span className="pdd-deal">⚡ Special Deal: Flat Bulk Discounts on Orders!</span>}
+                  <h1 className="pdd-title">
+                    {productData.brand && <span className="pdd-title__brand">{productData.brand}</span>}
+                    {productData.title}
+                  </h1>
+                  {productData.sku && <div className="pdd-sku">SKU: {productData.sku}</div>}
+
+                  <div className="pdd-rating-row">
+                    <div className="pdd-rating">
+                      <span className="pdd-badge">{ratingStats.average.toFixed(1)} <FaStar size={10} /></span>
+                      <span>{ratingStats.count} Reviews</span>
+                      {productData.is_assured && (
+                        <img src="/Asured.png" alt="Printmont Assured" className="pdd-assured-logo" />
+                      )}
+                    </div>
+                    <span className="pdd-secure"><FaShieldAlt size={12} /> 100% Secure Transaction</span>
+                  </div>
+
+                  <div className="pdd-price">
+                    <span className="pdd-price__sp">₹{dynamicUnitPrice.toFixed(0)}</span>
+                    {productData.originalPrice > dynamicUnitPrice && (
                       <>
-                        <span className="price-original text-decoration-line-through text-muted fs-6">₹{originalPerPiecePrice.toLocaleString('en-IN')}</span>
-                        <span className="price-discount text-success fw-bold text-sm">({productData.discount})</span>
+                        <span className="pdd-price__mrp">₹{productData.originalPrice.toFixed(0)}</span>
+                        {productData.discountPercent > 0 && <span className="pdd-price__off">{productData.discountPercent}% off</span>}
                       </>
                     )}
                   </div>
                   {productData.min_quantity > 1 && (
-                    <div className="min-order-text text-danger fw-semibold text-sm mt-1">
-                      Minimum order {productData.min_quantity} units.
+                    <div className="pdd-moq">Minimum order {productData.min_quantity} pieces.</div>
+                  )}
+                  <GiftVoucherOffer productId={productData.id} />
+                  {(productData.out_of_stock_status === 'out_of_stock' || productData.stock_quantity <= 0) ? (
+                    <div className="pdd-stock pdd-stock--out">Currently out of stock</div>
+                  ) : productData.out_of_stock_status === 'pre_order' ? (
+                    <div className="pdd-stock pdd-stock--pre">Available for pre-order</div>
+                  ) : productData.show_left_quantity && (
+                    <div className={`pdd-stock ${productData.stock_quantity <= 10 ? 'pdd-stock--low' : ''}`}>
+                      {productData.stock_quantity <= 10 ? `Hurry, only ${productData.stock_quantity} left!` : 'In stock'}
                     </div>
                   )}
                 </div>
 
-                {/* Specifications — always real, never category-guessed */}
-                <div className="tech-specs-section mb-4 border-bottom pb-3">
-                  <h5 className="section-subtitle-text fw-bold text-dark mb-3">Specifications</h5>
-                  <table className="tech-specs-table">
-                    <tbody>
-                      <tr>
-                        <td className="spec-label">Brand</td>
-                        <td className="spec-value text-capitalize">{productData.brand || 'Printmont'}</td>
-                      </tr>
-                      <tr>
-                        <td className="spec-label">SKU</td>
-                        <td className="spec-value">{productData.sku || 'N/A'}</td>
-                      </tr>
-                      <tr>
-                        <td className="spec-label">Category</td>
-                        <td className="spec-value">{productData.category_name || 'N/A'}</td>
-                      </tr>
-                      <tr>
-                        <td className="spec-label">Stock Availability</td>
-                        <td className="spec-value text-success fw-bold">
-                          {productData.stock_quantity > 0 ? `In Stock (${productData.stock_quantity} units available)` : 'Out of Stock'}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="spec-label">Cancellation Policy</td>
-                        <td className="spec-value">
-                          {productData.cancel_status === 'yes'
-                            ? `Free cancellation within ${productData.cancel_value} ${productData.cancel_type === 'hour' ? 'hours' : 'days'} of order placement.`
-                            : 'Non-cancellable order.'}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="spec-label">Cash on Delivery</td>
-                        <td className="spec-value text-capitalize">
-                          {productData.cod_status === 'yes' ? 'Available' : 'Not Available'}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                {/* All offers & coupons, right below the price */}
+                {/* Coupon cards, right below the price */}
+                <div className="pdd-block pdd-offers-block">
+                  <div className="pdf-horizontal-coupons-wrap">
+                    {coupons.map((c, idx) => (
+                      <div key={idx} className="pdf-coupon-card">
+                        <div>
+                          <div className="d-flex align-items-center gap-2 text-success fw-bold text-xs mb-1">
+                            <RiDiscountPercentFill size={16} />
+                            <span>{c.title}</span>
+                          </div>
+                          <div className="text-muted" style={{ fontSize: '11px' }}>{c.desc}</div>
+                        </div>
+                        <div className="d-flex align-items-center justify-content-between mt-2 pt-2 border-top">
+                          <span className="fw-bold text-dark text-2xs">Code: {c.code}</span>
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-outline-success fw-bold py-0 px-2"
+                            onClick={() => handleCopyCoupon(c.code)}
+                          >
+                            {copiedCoupon === c.code ? 'Applied' : 'Apply'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
                 </div>
 
-                {/* Product Options — only the attributes this product actually has */}
-                {(productData.materials.length > 0 || productData.colors.length > 0 || productData.sizes.length > 0 ||
-                  productData.lamination.length > 0 || productData.orientation.length > 0) && (
-                  <div className="filter-dropdowns-section mb-4 border-bottom pb-3">
-                    <h5 className="section-subtitle-text fw-bold text-dark mb-3">Product Options</h5>
-                    <Row className="g-3">
-                      {productData.materials.length > 0 && (
-                        <Col xs={12} sm={6}>
-                          <label className="form-label-text fw-bold text-secondary mb-1">Material</label>
-                          <select className="form-select custom-dropdown" value={material} onChange={e => setMaterial(e.target.value)}>
-                            {productData.materials.map((m, i) => <option key={i} value={optionValue(m)}>{optionLabel(m)}</option>)}
+                {/* 2. Options, quantity, size split, customization */}
+                <div className="pdd-block pdd-options">
+                  <div className="pdf-attr-table">
+                    {productData.size_status && productData.sizes && productData.sizes.length > 0 && (
+                      <div className="pdf-attr-row">
+                        <span className="pdf-attr-label">Select Size</span>
+                        <div className="pdf-attr-control">
+                          <select className="pdf-select" value={selectedSize} onChange={(e) => setSelectedSize(e.target.value)}>
+                            {productData.sizes.map((sz, idx) => (
+                              <option key={idx} value={optionValue(sz)}>{optionLabel(sz)}</option>
+                            ))}
                           </select>
-                        </Col>
-                      )}
-                      {productData.colors.length > 0 && (
-                        <Col xs={12} sm={6}>
-                          <label className="form-label-text fw-bold text-secondary mb-1">Colour</label>
-                          <select className="form-select custom-dropdown" value={fabricColour} onChange={e => setFabricColour(e.target.value)}>
-                            {productData.colors.map((c, i) => <option key={i} value={optionValue(c)}>{optionLabel(c)}</option>)}
-                          </select>
-                        </Col>
-                      )}
-                      {productData.sizes.length > 0 && (
-                        <Col xs={12} sm={6}>
-                          <label className="form-label-text fw-bold text-secondary mb-1">Size</label>
-                          <select className="form-select custom-dropdown" value={selectedSize} onChange={e => setSelectedSize(e.target.value)}>
-                            {productData.sizes.map((s, i) => <option key={i} value={optionValue(s)}>{optionLabel(s)}</option>)}
-                          </select>
-                        </Col>
-                      )}
-                      {productData.lamination.length > 0 && (
-                        <Col xs={12} sm={6}>
-                          <label className="form-label-text fw-bold text-secondary mb-1">Lamination</label>
-                          <select className="form-select custom-dropdown" value={selectedLamination} onChange={e => setSelectedLamination(e.target.value)}>
-                            {productData.lamination.map((l, i) => <option key={i} value={optionValue(l)}>{optionLabel(l)}</option>)}
-                          </select>
-                        </Col>
-                      )}
-                      {productData.orientation.length > 0 && (
-                        <Col xs={12} sm={6}>
-                          <label className="form-label-text fw-bold text-secondary mb-1">Orientation</label>
-                          <select className="form-select custom-dropdown" value={selectedOrientation} onChange={e => setSelectedOrientation(e.target.value)}>
-                            {productData.orientation.map((o, i) => <option key={i} value={optionValue(o)}>{optionLabel(o)}</option>)}
-                          </select>
-                        </Col>
-                      )}
-                    </Row>
-                  </div>
-                )}
+                        </div>
+                      </div>
+                    )}
 
-                {/* Bulk pricing tiers — hidden entirely when the product has none configured */}
-                {(productData.bulk_order_pricing.length > 0 || productData.quantity_pricing.length > 0) && (
-                  <div className="mb-4 border-bottom pb-3">
-                    <h5 className="section-subtitle-text fw-bold text-dark mb-2">Bulk Pricing</h5>
-                    <table className="tech-specs-table w-100">
-                      <thead>
-                        <tr>
-                          <td className="spec-label">Quantity</td>
-                          <td className="spec-label">Price / unit</td>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(productData.bulk_order_pricing.length > 0 ? productData.bulk_order_pricing : productData.quantity_pricing).map((tier, i) => (
-                          <tr key={i}>
-                            <td className="spec-value">
-                              {tier.min_qty ?? tier.qty}{tier.max_qty ? ` - ${tier.max_qty}` : '+'}
-                            </td>
-                            <td className="spec-value">₹{Number(tier.price).toLocaleString('en-IN')}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                    {productData.colors && productData.colors.length > 0 && (
+                      <div className="pdf-attr-row">
+                        <span className="pdf-attr-label">Colour</span>
+                        <div className="pdf-attr-control">
+                          <select className="pdf-select" value={selectedColor} onChange={(e) => setSelectedColor(e.target.value)}>
+                            {productData.colors.map((c, idx) => (
+                              <option key={idx} value={optionValue(c)}>{optionLabel(c)}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
 
-                {/* Quantity + Total */}
-                <div className="quantity-manual-input d-flex align-items-center gap-3 mb-3">
-                  <span className="fw-bold text-dark">Quantity:</span>
-                  <div className="d-flex align-items-center border rounded">
-                    <button
-                      className="btn btn-sm btn-light border-0 fw-bold px-3 py-1"
-                      onClick={() => setQuantity(Math.max(productData.min_quantity || 1, quantity - 1))}
-                    >-</button>
-                    <span className="fw-bold px-3">{quantity}</span>
-                    <button
-                      className="btn btn-sm btn-light border-0 fw-bold px-3 py-1"
-                      onClick={() => setQuantity(quantity + 1)}
-                    >+</button>
+                    {productData.materials && productData.materials.length > 0 && (
+                      <div className="pdf-attr-row">
+                        <span className="pdf-attr-label">Material / Fabric</span>
+                        <div className="pdf-attr-control">
+                          <select className="pdf-select" value={selectedMaterial} onChange={(e) => setSelectedMaterial(e.target.value)}>
+                            {productData.materials.map((m, idx) => (
+                              <option key={idx} value={optionValue(m)}>{optionLabel(m)}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    {productData.type && (
+                      <div className="pdf-attr-row">
+                        <span className="pdf-attr-label">Type</span>
+                        <div className="pdf-attr-control fw-semibold">{productData.type}</div>
+                      </div>
+                    )}
+
+                    {productData.customization_label_status && productData.printing_location && productData.printing_location.length > 0 && (
+                      <div className="pdf-attr-row">
+                        <span className="pdf-attr-label">Print Location</span>
+                        <div className="pdf-attr-control">
+                          <select
+                            className="pdf-select"
+                            value={selectedLocations[0] || productData.printing_location[0]}
+                            onChange={(e) => setSelectedLocations([e.target.value])}
+                          >
+                            {productData.printing_location.map((loc, idx) => (
+                              <option key={idx} value={loc}>{loc}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    {productData.lamination.length > 0 && (
+                      <div className="pdf-attr-row">
+                        <span className="pdf-attr-label">Lamination</span>
+                        <div className="pdf-attr-control fw-semibold">{productData.lamination.join(', ')}</div>
+                      </div>
+                    )}
+                    {productData.orientation.length > 0 && (
+                      <div className="pdf-attr-row">
+                        <span className="pdf-attr-label">Orientation</span>
+                        <div className="pdf-attr-control fw-semibold text-capitalize">{productData.orientation.join(', ')}</div>
+                      </div>
+                    )}
+                    {productData.customization_tech && (
+                      <div className="pdf-attr-row">
+                        <span className="pdf-attr-label">Printing Technology</span>
+                        <div className="pdf-attr-control fw-semibold">{productData.customization_tech}</div>
+                      </div>
+                    )}
+
                   </div>
+
+                  {productData.customization_label_status && productData.customization_data && productData.customization_data.length > 0 && (
+                    <div className="pdd-options__custom">
+                      <ProductCustomizationForm
+                        fields={productData.customization_data}
+                        values={customizationValues}
+                        onChange={setCustomizationValues}
+                      />
+                    </div>
+                  )}
+
+                  {/* Quantity comes after the customization options (like printo.in) */}
+                  <div className="pdf-attr-table">
+                    <div className="pdf-attr-row">
+                      <span className="pdf-attr-label">Quantity</span>
+                      <div className="pdf-attr-control">
+                        <div className="pdd-qty">
+                          <button
+                            type="button"
+                            onClick={() => setQuantity(Math.max(productData.min_quantity || 1, quantity - 1))}
+                            disabled={quantity <= (productData.min_quantity || 1)}
+                            aria-label="Decrease quantity"
+                          >
+                            −
+                          </button>
+                          <input
+                            type="number"
+                            min={productData.min_quantity || 1}
+                            max={productData.stock_quantity || 99999}
+                            value={quantity}
+                            onChange={(e) => {
+                              const val = Math.max(productData.min_quantity || 1, parseInt(e.target.value) || (productData.min_quantity || 1));
+                              setQuantity(val);
+                            }}
+                          />
+                          <button type="button" onClick={() => setQuantity(quantity + 1)} aria-label="Increase quantity">+</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {productData.size_status && productData.sizes && productData.sizes.length > 0 && (
+                    <div className="mt-3">
+                      <span className="pdd-sub-label">Size split up</span>
+                      <div className="pdf-size-split-table">
+                        <div className="row g-0 text-center">
+                          {productData.sizes.map((sz) => {
+                            const val = optionValue(sz);
+                            return (
+                              <div key={val} className="col">
+                                <div className="pdf-size-col-head">{optionLabel(sz)}</div>
+                                <div className="pdd-size-cell">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    className="pdf-size-input"
+                                    value={sizeSplit[val] || ''}
+                                    placeholder="0"
+                                    onChange={(e) => handleSizeChange(val, e.target.value)}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="total-price-summary-box bg-light border p-3 rounded mb-4">
-                  <Row className="align-items-center g-2">
-                    <Col xs={4} className="fw-bold text-secondary">Per piece</Col>
-                    <Col xs={8} className="fw-bold text-dark text-end">₹ {perPiecePrice.toFixed(2)}</Col>
+                {/* 3. Price tiers, price summary, bulk enquiry, design buttons */}
+                <div className="pdd-block">
+                  {(productData.bulk_order_pricing.length > 0 || productData.quantity_pricing.length > 0) && (
+                    <div className="pdd-tiers">
+                      <span className="pdd-sub-label">Buy more, save more</span>
+                      <table className="pdd-tiers__table">
+                        <thead>
+                          <tr><th>Quantity</th><th>Price / piece</th></tr>
+                        </thead>
+                        <tbody>
+                          {productData.bulk_order_pricing.map((t, i) => {
+                            const min = Number(t.min_qty ?? t.qty ?? 0);
+                            const max = Number(t.max_qty) > 0 ? Number(t.max_qty) : null;
+                            const active = quantity >= min && (max === null || quantity <= max);
+                            return (
+                              <tr key={`b${i}`} className={active ? 'is-active' : ''}>
+                                <td>{max ? `${min} – ${max}` : `${min}+`} pcs</td>
+                                <td>₹{Number(t.price).toLocaleString('en-IN')}</td>
+                              </tr>
+                            );
+                          })}
+                          {productData.bulk_order_pricing.length === 0 && productData.quantity_pricing.map((t, i) => (
+                            <tr key={`q${i}`}>
+                              <td>{Number(t.qty ?? t.min_qty)}+ pcs</td>
+                              <td>₹{Number(t.price).toLocaleString('en-IN')}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
 
-                    <Col xs={4} className="fw-bold text-secondary">Quantity</Col>
-                    <Col xs={8} className="text-end fw-bold text-dark">{quantity} units</Col>
+                  <div className="pdd-summary">
+                    <div className="pdd-summary__row">
+                      <span>Per piece</span>
+                      <strong>₹{dynamicUnitPrice.toFixed(0)}</strong>
+                    </div>
+                    <div className="pdd-summary__row">
+                      <span>Quantity</span>
+                      <strong>{quantity} {quantity === 1 ? 'pc' : 'pcs'}</strong>
+                    </div>
+                    {nextPriceTier && (
+                      <button
+                        type="button"
+                        className="pdd-summary__hint"
+                        onClick={() => setQuantity(nextPriceTier.qty)}
+                        title={`Set quantity to ${nextPriceTier.qty}`}
+                      >
+                        Buy {nextPriceTier.qty}+ pcs at ₹{nextPriceTier.price.toLocaleString('en-IN')}/pc — save ₹{(dynamicUnitPrice - nextPriceTier.price).toLocaleString('en-IN', { maximumFractionDigits: 0 })} per piece
+                      </button>
+                    )}
+                    <div className="pdd-summary__total">
+                      <span>Total</span>
+                      <strong>₹{totalPrice.toFixed(2)}</strong>
+                    </div>
+                  </div>
 
-                    <Col xs={12} className="border-top my-2"></Col>
+                  {productData.show_bulk_form && (
+                    <button type="button" className="pdd-bulk-link" onClick={() => setShowBulkModal(true)}>
+                      Interested in Bulk Discounts? Enquire Now <FaInfoCircle size={12} />
+                    </button>
+                  )}
 
-                    <Col xs={4} className="fw-bold text-dark fs-5">Total</Col>
-                    <Col xs={8} className="fw-bold text-success text-end fs-4">
-                      ₹ {(perPiecePrice * quantity).toFixed(2)}
-                    </Col>
-                  </Row>
+                  {productData.customization_label_status && (
+                    <>
+                      <div className="pdd-design-btns">
+                        <button type="button" className="pdd-design-btn pdd-design-btn--upload" onClick={() => setShowUploadModal(true)}>
+                          <FaUpload size={13} /> Upload your design
+                        </button>
+                        <button type="button" className="pdd-design-btn pdd-design-btn--create" onClick={() => setShowDesignModal(true)}>
+                          <FaPencilAlt size={12} /> Create your design
+                        </button>
+                      </div>
+                      {(designData.images.length > 0 || designData.texts.length > 0) && (
+                        <div className="pdd-design-summary">
+                          <FaCheckCircle />
+                          <span>
+                            {[
+                              designData.images.length ? `${designData.images.length} design${designData.images.length > 1 ? 's' : ''}` : null,
+                              designData.texts.length ? `${designData.texts.length} text${designData.texts.length > 1 ? 's' : ''}` : null
+                            ].filter(Boolean).join(' · ')} added
+                          </span>
+                          <button type="button" onClick={() => setShowUploadModal(true)}>Edit</button>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
 
-                {/* Per-product customization, driven entirely by real admin config */}
-                {productData.customization_label_status && (
-                  <ProductCustomizationForm
-                    fields={productData.customization_data}
-                    values={customizationValues}
-                    onChange={setCustomizationValues}
-                  />
-                )}
+                {/* Addon products picked in admin (renders nothing when there are none) */}
+                <ProductAddons addonIds={productData.addon_product_ids} />
 
-                {/* Check Delivery Date */}
-                <div className="check-delivery-box mb-4 border p-3 rounded">
-                  <h5 className="fw-bold text-dark mb-2 text-sm d-flex align-items-center gap-2">
-                    <FaMapMarkerAlt className="text-muted" /> Check Delivery Date & Shipping Charges
-                  </h5>
-                  <div className="input-group">
+                {/* 4. Delivery + service badges */}
+                <div className="pdd-block">
+                  <h2 className="pdd-block__title pdd-block__title--light">Check Delivery Date</h2>
+                  <div className="pdd-pincode">
+                    <FaMapMarkerAlt className="pdd-pincode__icon" size={16} />
                     <input
                       type="text"
-                      className="form-control"
-                      placeholder="Enter City Pincode*"
+                      placeholder="Enter your city pincode"
+                      maxLength={6}
                       value={pincode}
-                      onChange={e => setPincode(e.target.value)}
+                      onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
                     />
-                    <button className="btn btn-dark check-pincode-btn px-4" onClick={handleCheckPincode}>Check</button>
+                    <button type="button" onClick={handleCheckPincode}>Check</button>
                   </div>
                   {pincodeMessage && (
-                    <div className="mt-2 text-sm text-primary fw-semibold">{pincodeMessage}</div>
+                    <div className={`pdd-pincode-msg ${deliveryAvailable ? 'text-success' : 'text-danger'}`}>{pincodeMessage}</div>
                   )}
-                  {productData.shipping_method_status && (
-                    <div className="mt-2 text-xs text-secondary d-flex flex-wrap gap-3 border-top pt-2">
-                      <span>Local Shipping: <strong>₹{productData.local_shipping_price}</strong></span>
-                      <span>Regional: <strong>₹{productData.regional_shipping_price}</strong></span>
-                      <span>National: <strong>₹{productData.national_shipping_price}</strong></span>
-                    </div>
-                  )}
-                </div>
 
-                {/* Real Dynamic Trust Badges */}
-                <div className="trust-badges-row d-none d-lg-flex justify-content-around align-items-center bg-light border py-3 px-2 rounded mb-4 text-center">
-                  <div className="trust-badge-item">
-                    <FaSyncAlt size="20" className="text-primary mb-1" />
-                    <div className="fw-bold text-xs text-dark">
-                      {productData.cancel_status === 'yes' ? `${productData.cancel_value} ${productData.cancel_type === 'hour' ? 'Hour' : 'Day'} Cancellation` : 'Non-Refundable'}
+                  <div className="pdd-services">
+                    <div className="pdd-service">
+                      <span className="pdd-service__icon"><FaSyncAlt size={16} /></span>
+                      {productData.cancel_status === 'yes' ? '10-Day Return' : 'Quality Assured'}
                     </div>
-                  </div>
-                  <div className="trust-badge-item">
-                    <FaCheckCircle size="20" className={productData.cod_status === 'yes' ? "text-success mb-1" : "text-muted mb-1"} />
-                    <div className="fw-bold text-xs text-dark">
+                    <div className="pdd-service">
+                      <span className="pdd-service__icon"><FaMoneyBillWave size={16} /></span>
                       {productData.cod_status === 'yes' ? 'Cash on Delivery' : 'Prepaid Only'}
                     </div>
-                  </div>
-                  <div className="trust-badge-item d-flex flex-column align-items-center">
-                    <img src="/Asured.png" alt="PM Assured" style={{ height: "20px", objectFit: "contain", marginBottom: "4px" }} />
-                    <div className="fw-bold text-xs text-dark">PM Assured</div>
+                    <div className="pdd-service">
+                      <span className="pdd-service__icon pdd-service__icon--logo">
+                        <img src="/Asured.png" alt="" />
+                      </span>
+                      Printmont Assured
+                    </div>
                   </div>
                 </div>
 
-                {/* Mobile Trust Badges List */}
-                <div className="d-block d-lg-none mb-4 bg-white border-top border-bottom py-1">
-                  <div className="d-flex align-items-center justify-content-between py-2 border-bottom px-2">
-                    <div className="d-flex align-items-center gap-2 text-dark">
-                      <FaSyncAlt size="16" className="text-secondary" style={{ transform: 'scaleX(-1)' }} />
-                      <span className="fw-semibold" style={{ fontSize: '0.85rem' }}>
-                        <span className="text-success fw-bold">
-                          {productData.shipping_method_status ? `National Delivery ₹${productData.national_shipping_price}` : 'FREE Delivery'}
+                {/* 5. Coupons, coins, offers */}
+                <div className="pdd-block">
+                  <div className="pdd-row-between">
+                    <h2 className="pdd-block__title mb-0">
+                      Discount Coupons <span className="pdd-save">Save ₹50</span>
+                    </h2>
+                    <button type="button" className="pdd-outline-btn" onClick={() => handleCopyCoupon('PRNTM5')}>Apply</button>
+                  </div>
+
+                  <Link to="/printmont-coin" className="pdd-coin">
+                    <img
+                      src="/printmont-coin-offer.png"
+                      alt="Printmont Coin: For every ₹100 spent, you earn 2 Printmont Coins. Max 50 coins per order."
+                      loading="lazy"
+                    />
+                  </Link>
+
+                  <div className="pdd-offers-head">
+                    <span className="d-inline-flex align-items-center gap-2">
+                      <RiDiscountPercentFill size={18} className="text-success" /> All Offers &amp; Coupons
+                    </span>
+                    <FaChevronRight size={14} />
+                  </div>
+
+                  <div className="pdd-offer-list">
+                    {bankOffers.map((b, idx) => (
+                      <div key={idx} className={`pdd-offer pdd-offer--${b.theme}`}>
+                        <span className="pdd-offer__logo">
+                          <img src={b.logo} alt={b.name} onError={(e) => { e.target.replaceWith(document.createTextNode(b.name.split(' ')[0])); }} />
                         </span>
-                      </span>
-                    </div>
-                    <FaChevronRight size={12} className="text-secondary" />
+                        <div className="flex-grow-1">{b.desc}</div>
+                        <FaInfoCircle className="pdd-offer__info flex-shrink-0" size={16} />
+                      </div>
+                    ))}
                   </div>
-                  <div className="d-flex align-items-center justify-content-between py-2 border-bottom px-2">
-                    <div className="d-flex align-items-center gap-2 text-dark">
-                      <FaSyncAlt size="16" className="text-secondary" />
-                      <span className="fw-semibold" style={{ fontSize: '0.85rem' }}>
-                        {productData.cancel_status === 'yes' ? `${productData.cancel_value} ${productData.cancel_type === 'hour' ? 'Hour' : 'Day'} Cancellation Policy` : 'Non-refundable'}
-                      </span>
-                    </div>
-                    <FaChevronRight size={12} className="text-secondary" />
-                  </div>
-                  <div className="d-flex align-items-center justify-content-between py-2 px-2">
-                    <div className="d-flex align-items-center gap-2 text-dark">
-                      <FaCheckCircle size="16" className={productData.cod_status === 'yes' ? "text-success" : "text-muted"} />
-                      <span className="fw-semibold" style={{ fontSize: '0.85rem' }}>
-                        {productData.cod_status === 'yes' ? 'Cash on Delivery Available' : 'Cash on Delivery Not Available'}
-                      </span>
-                    </div>
-                    <FaChevronRight size={12} className="text-secondary" />
-                  </div>
+
                 </div>
 
-              </Col>
+                {/* 6. About the product */}
+                <div className="pdd-block">
+                  <h2 className="pdd-block__title">About the product</h2>
+                  <div className="pdd-tabs" role="tablist">
+                    {[
+                      { key: 'description', label: 'Description' },
+                      { key: 'instructions', label: 'Instructions' },
+                      { key: 'delivery', label: 'Delivery Info' }
+                    ].map((t) => (
+                      <button
+                        key={t.key}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === t.key}
+                        className={`pdd-tab ${activeTab === t.key ? 'is-active' : ''}`}
+                        onClick={() => setActiveTab(t.key)}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
 
-            </Row>
-          </Col>
-        </Row>
+                  <div className="pdd-tab-body">
+                    {activeTab === 'description' && (
+                      <>
+                        {productData.long_description ? (
+                          <div className="product-description-html" dangerouslySetInnerHTML={{ __html: productData.long_description }} />
+                        ) : productData.description ? (
+                          <div className="product-description-html" dangerouslySetInnerHTML={{ __html: productData.description }} />
+                        ) : (
+                          <p>Premium quality product crafted with precision.</p>
+                        )}
 
-        {/* SECTION 4: About the Product (Dynamic Tabs) */}
-        <Row className="p-0 mx-0 my-4 w-100 bg-white rounded border p-3 shadow-sm about-product-section-row">
-          <Col xs={12} className="p-0">
-            <h4 className="fw-bold text-dark mb-3 px-1" style={{ fontSize: '1.2rem' }}>About the product</h4>
-            
-            {/* Tabs Navigation */}
-            <div className="about-product-tabs-row d-flex border-bottom pb-2 mb-3 gap-3">
-              <button
-                className={`tab-btn btn fw-bold border-0 px-4 py-2 ${activeTab === 'description' ? 'active-product-tab text-primary border-bottom-2' : 'text-secondary'}`}
-                onClick={() => setActiveTab('description')}
-              >
-                Description
-              </button>
-              <button
-                className={`tab-btn btn fw-bold border-0 px-4 py-2 ${activeTab === 'instructions' ? 'active-product-tab text-primary border-bottom-2' : 'text-secondary'}`}
-                onClick={() => setActiveTab('instructions')}
-              >
-                Instructions
-              </button>
-              <button
-                className={`tab-btn btn fw-bold border-0 px-4 py-2 ${activeTab === 'delivery' ? 'active-product-tab text-primary border-bottom-2' : 'text-secondary'}`}
-                onClick={() => setActiveTab('delivery')}
-              >
-                Delivery Info
-              </button>
+                        <div className="pdd-details">
+                          <div className="pdd-details__title">Product Details:</div>
+                          <ul className="pdd-details__list">
+                            {[
+                              ['Brand', productData.brand],
+                              ['SKU', productData.sku],
+                              ['Category', productData.category_name],
+                              ['Material', productData.material],
+                              ['Colour', productData.color],
+                              ['Type / Style', productData.type],
+                              ['Key features', productData.features],
+                              ['Occasion', productData.occasion],
+                              ['Gift type', productData.gift_type],
+                              ['Ideal for', productData.ideal_for],
+                              ['Gender', productData.gender && productData.gender.charAt(0).toUpperCase() + productData.gender.slice(1)],
+                              ['Shape', productData.shape],
+                              ['Capacity / Size', productData.capacity],
+                              ['Ink colour', productData.ink_color],
+                              ['Printing technology', productData.customization_tech],
+                              ['Print location', productData.printing_location.join(', ')],
+                              ['Lamination', productData.lamination.join(', ')],
+                              ['Orientation', productData.orientation.map((o) => o.charAt(0).toUpperCase() + o.slice(1)).join(', ')],
+                              ['Country of origin', 'India']
+                            ].filter(([, value]) => value).map(([label, value]) => (
+                              <li key={label}>{label}: {value}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </>
+                    )}
+                    {activeTab === 'instructions' && (
+                      productData.instructions ? (
+                        <div dangerouslySetInnerHTML={{ __html: productData.instructions }} />
+                      ) : (
+                        <p>Follow standard care, handling and maintenance instructions for this product.</p>
+                      )
+                    )}
+                    {activeTab === 'delivery' && (
+                      productData.delivery_info ? (
+                        <div dangerouslySetInnerHTML={{ __html: productData.delivery_info }} />
+                      ) : (
+                        <>
+                          <p>Standard courier delivery takes 3-5 business days across India.</p>
+                          <ul className="ps-3">
+                            {productData.shipping_method_status ? (
+                              [
+                                ['Local', productData.local_shipping_price, productData.local_shipping_msg],
+                                ['Regional', productData.regional_shipping_price, productData.regional_shipping_msg],
+                                ['National', productData.national_shipping_price, productData.national_shipping_msg]
+                              ].map(([zone, price, msg]) => (
+                                <li key={zone}>
+                                  <strong>{zone} Shipping:</strong> {price > 0 ? `₹${price}` : 'FREE'}{msg ? ` — ${msg}` : ''}
+                                </li>
+                              ))
+                            ) : (
+                              <li><strong>Shipping Charges:</strong> FREE Delivery</li>
+                            )}
+                            <li><strong>Cash on Delivery:</strong> {productData.cod_status === 'yes' ? 'Available' : 'Prepaid Only'}</li>
+                            <li><strong>Returns / Replacement:</strong> {productData.cancel_status === 'yes' ? `${productData.cancel_value} ${productData.cancel_type} replacement policy` : 'Quality Assured'}</li>
+                          </ul>
+                        </>
+                      )
+                    )}
+                  </div>
+
+                  {/* Category banners (admin: category-banner-texts.php): shown under every tab, only for products in that category */}
+                  <CategoryBannerTexts productId={productData?.id} className="pdd-cbt" />
+                </div>
+
+                {/* 7. Ratings & reviews */}
+                <div className="pdd-block">
+                  <ProductReview productId={productData?.id} ratingStats={ratingStats} isDesktop categorySlug={productData?.breadcrumb?.[0]?.slug || ''} />
+                </div>
+
+                {/* 8. Questions & answers */}
+                <div className="pdd-block">
+                  <ProductQASection productId={productData?.id} isDesktop />
+                </div>
+              </div>
             </div>
 
-            {/* Tabs Content */}
-            <div className="about-product-tab-content py-2 px-1">
-              {activeTab === 'description' && (
-                <div dangerouslySetInnerHTML={{ __html: productData.long_description || productData.description }} />
-              )}
-              {activeTab === 'instructions' && (
-                <div dangerouslySetInnerHTML={{ __html: productData.instructions || '<p>Follow standard product care guidelines.</p>' }} />
-              )}
-              {activeTab === 'delivery' && (
-                <div dangerouslySetInnerHTML={{ __html: productData.delivery_info || '<p>Standard delivery within 3-5 business days across India.</p>' }} />
-              )}
+            {/* Add to cart / Buy now: sticks to the bottom of the screen while the details scroll,
+                lined up under the image column */}
+            <div className="pdd-cta-bar">
+              <div className="pdd-cta">
+                {isInCart ? (
+                  <button
+                    type="button"
+                    className="pdd-cta__btn pdd-cta__btn--remove"
+                    onClick={() => {
+                      if (removeItem) {
+                        removeItem(currentProductId);
+                        toast.error('Item removed from cart!', { duration: 2000, position: 'top-center' });
+                      }
+                    }}
+                  >
+                    <FaTrash size={14} /> Remove from cart
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="pdd-cta__btn pdd-cta__btn--cart"
+                    disabled={productData.out_of_stock_status === 'out_of_stock' || productData.stock_quantity <= 0}
+                    onClick={handleAddToCart}
+                  >
+                    <FaShoppingCart size={16} /> Add to cart
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="pdd-cta__btn pdd-cta__btn--buy"
+                  disabled={productData.out_of_stock_status === 'out_of_stock' || productData.stock_quantity <= 0}
+                  onClick={handleBuyNow}
+                >
+                  <FaBolt size={16} /> Buy now
+                </button>
+              </div>
             </div>
+          </section>
 
-          </Col>
-        </Row>
+          {/* ══════════════════════════════════════════════════════════════════
+              FULL WIDTH: banner slider + product carousels
+          ══════════════════════════════════════════════════════════════════ */}
 
-        {/* SECTION 5: Add-on Products / Frequently Bought Together (Flipkart Style) */}
-        <Row className="p-0 mx-0 my-4 w-100">
-          <Col xs={12} className="p-0">
-            <FrequentlyBoughtTogether addonIds={productData.addon_product_ids} />
-          </Col>
-        </Row>
+          {/* Admin: view-banner.php?tab=banners&filter_page=product → "Product Page – Middle Banner" */}
+          <div className="pdd-banner">
+            <SmallBannerCarousel sectionKey="product_page_middle" page="product" isMobile={false} height={220} />
+          </div>
 
-        {/* SECTION 6: Ratings & Reviews */}
-        <Row className="p-0 mx-0 my-4 w-100">
-          <Col xs={12} className="p-0">
-            <div className="bg-white border rounded p-3 shadow-sm">
-              <ProductReview productId={productData.id} />
-            </div>
-          </Col>
-        </Row>
+          {/* Product carousels: each renders its own title + "View all"; empty carousels render nothing */}
+          <div className="pdd-carousel">
+            <ProductCarousel apiUrl={API_ENDPOINTS.TOP_RATED} title="Similar Products" viewAllUrl="/allproducts?sort=Popularity" />
+          </div>
+          <div className="pdd-carousel">
+            <ProductCarousel apiUrl={API_ENDPOINTS.TOP_RATED} title="Discount on Similar Products" viewAllUrl="/allproducts?sort=Discount" />
+          </div>
+          <div className="pdd-carousel">
+            <ProductCarousel apiUrl={API_ENDPOINTS.TOP_SELECTION} title="You might be interested" viewAllUrl="/allproducts" />
+          </div>
 
-        {/* SECTION 7: Similar & Related Products */}
-        {productData.id && (
-          <Row className='p-0 mx-0 my-3 w-100'>
-            <ProductCarousel apiUrl={API_ENDPOINTS.RELATED_PRODUCTS(productData.id)} title="Similar & Related Products" />
-          </Row>
-        )}
+          <div className="pdd-recent">
+            <RecentlyViewedProducts currentProductId={productData?.id} title="Your Recently Viewed" />
+          </div>
 
-        {/* SECTION 8: Recommended / You Might Also Like */}
-        <Row className='p-0 mx-0 my-3 w-100'>
-          <ProductCarousel apiUrl={API_ENDPOINTS.TOP_RATED} title="You Might Also Like" />
-        </Row>
+        </div>
+      </div>
 
-        {/* SECTION 9: Recently Viewed Products */}
-        <Row className='p-0 mx-0 my-3 w-100'>
-          {recentlyViewed && recentlyViewed.length > 0 ? (
-            <ProductCarousel products={recentlyViewed} title="Recently Viewed Products" />
-          ) : (
-            <ProductCarousel apiUrl={API_ENDPOINTS.TOP_SELECTION} title="Recently Viewed Products" />
-          )}
-        </Row>
-
-      </Container>
-
-      {/* Add to Cart Success Popup Modal */}
+      {/* ══════════════════════════════════════════════════════════════════
+          MODAL: Add to Cart Success Modal
+      ══════════════════════════════════════════════════════════════════ */}
       <Modal 
         show={showCartSuccessModal} 
         onHide={() => setShowCartSuccessModal(false)} 
@@ -1103,13 +1705,13 @@ const ProductDetails = () => {
               <img 
                 src={addedCartDetails.image} 
                 alt={addedCartDetails.title} 
-                style={{ width: '75px', height: '75px', objectFit: 'contain' }}
+                style={{ width: '70px', height: '70px', objectFit: 'contain' }}
                 className="rounded border bg-white p-1"
               />
               <div className="flex-grow-1 overflow-hidden">
                 <h6 className="fw-bold mb-1 text-dark text-truncate" style={{ maxWidth: '280px' }}>{addedCartDetails.title}</h6>
-                <div className="text-muted small">Quantity: <span className="fw-semibold text-dark">{addedCartDetails.qty}</span></div>
-                <div className="fw-bold text-success fs-6 mt-1">₹{(addedCartDetails.price * addedCartDetails.qty).toLocaleString('en-IN')}</div>
+                <div className="text-muted small">Total Quantity: <span className="fw-semibold text-dark">{addedCartDetails.qty} pcs</span></div>
+                <div className="fw-bold text-success fs-6 mt-1">₹{(addedCartDetails.price * addedCartDetails.qty).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
               </div>
             </div>
           )}
@@ -1127,11 +1729,118 @@ const ProductDetails = () => {
                 navigate('/cart');
               }}
             >
-              <FaShoppingCart /> View Cart & Checkout
+              <FaShoppingCart /> View Cart &amp; Checkout
             </button>
           </div>
         </Modal.Body>
       </Modal>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          MODAL: Bulk Inquiry Form Modal
+      ══════════════════════════════════════════════════════════════════ */}
+      <Modal 
+        show={showBulkModal} 
+        onHide={() => setShowBulkModal(false)} 
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title className="fw-bold text-dark fs-5 d-flex align-items-center gap-2">
+            <FaQuestionCircle className="text-primary" /> Request Bulk Order Quotation
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="p-4">
+          <p className="text-muted small mb-3">
+            Looking for orders above 50+ pieces? Submit your requirement for corporate discounts, custom branding, and fast delivery quotes.
+          </p>
+          <Form onSubmit={handleBulkInquirySubmit}>
+            <Row className="g-3">
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label className="text-xs fw-bold">Full Name *</Form.Label>
+                  <Form.Control 
+                    type="text" 
+                    required 
+                    placeholder="Enter your full name" 
+                    value={bulkInquiry.name}
+                    onChange={e => setBulkInquiry({ ...bulkInquiry, name: e.target.value })}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label className="text-xs fw-bold">Phone Number *</Form.Label>
+                  <Form.Control 
+                    type="tel" 
+                    required 
+                    placeholder="10-digit mobile number" 
+                    value={bulkInquiry.phone}
+                    onChange={e => setBulkInquiry({ ...bulkInquiry, phone: e.target.value })}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label className="text-xs fw-bold">Work Email *</Form.Label>
+                  <Form.Control 
+                    type="email" 
+                    required 
+                    placeholder="name@company.com" 
+                    value={bulkInquiry.email}
+                    onChange={e => setBulkInquiry({ ...bulkInquiry, email: e.target.value })}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label className="text-xs fw-bold">Estimated Quantity (Pieces) *</Form.Label>
+                  <Form.Control 
+                    type="number" 
+                    min="10" 
+                    required 
+                    placeholder="e.g. 100" 
+                    value={bulkInquiry.quantity}
+                    onChange={e => setBulkInquiry({ ...bulkInquiry, quantity: e.target.value })}
+                  />
+                </Form.Group>
+              </Col>
+              <Col xs={12}>
+                <Form.Group>
+                  <Form.Label className="text-xs fw-bold">Customization Requirements / Notes</Form.Label>
+                  <Form.Control 
+                    as="textarea" 
+                    rows={3} 
+                    placeholder="Specify printing locations, branding preferences, required delivery date, etc." 
+                    value={bulkInquiry.message}
+                    onChange={e => setBulkInquiry({ ...bulkInquiry, message: e.target.value })}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+            <div className="d-flex justify-content-end gap-2 mt-4">
+              <button type="button" className="btn btn-outline-secondary px-4" onClick={() => setShowBulkModal(false)}>Cancel</button>
+              <button type="submit" className="btn btn-primary px-4 fw-bold" disabled={bulkSubmitting}>
+                {bulkSubmitting ? <Spinner size="sm" animation="border" /> : 'Submit Inquiry'}
+              </button>
+            </div>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
+      {/* Upload your design / Create your design popup (also opened from the mobile view) */}
+      <DesignUploadModal
+        show={showUploadModal || showDesignModal}
+        initialTab={showDesignModal ? 'text' : 'upload'}
+        value={designData}
+        onHide={() => { setShowUploadModal(false); setShowDesignModal(false); }}
+        onSave={(data) => {
+          setDesignData(data);
+          const count = data.images.length + data.texts.length;
+          setUploadedArtwork(count ? { name: `${data.images.length} design(s), ${data.texts.length} text(s)` } : null);
+          if (count) toast.success('Your designs have been added');
+        }}
+      />
+
     </div>
   );
 };

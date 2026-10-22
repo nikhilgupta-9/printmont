@@ -16,21 +16,8 @@ import { useCheckout } from '../../context/CheckoutContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import checkPincode from '../../utils/checkPincode';
 
-/**
- * The cart is not a step. Place Order starts the three numbered steps:
- *
- *   0  cart           (no step bars at all)
- *   1  Address
- *   2  Order Summary
- *   3  Payment
- *
- * Once checkout starts, the design stacks the steps as numbered bars in the
- * main column: the current one is a blue bar with its panel underneath, the
- * finished ones collapse to a white bar with a tick and a CHANGE link. The
- * buyer name/mobile row sits above them unnumbered, since it is a header
- * rather than a step of its own.
- */
 const SCREEN_CART = 0;
 const STEP_ADDRESS = 1;
 const STEP_SUMMARY = 2;
@@ -48,15 +35,15 @@ const Cart = () => {
         buyerDetails,
         address,
         deliveryPincode, setDeliveryPincode,
+        deliveryInfo, setDeliveryInfo,
     } = useCheckout();
 
     const [show, setShow] = useState(false);
     const [showSaved, setShowSaved] = useState(false);
 
-    // Draft for the pincode modal; only a valid one is committed to context,
-    // where the address step picks it up.
     const [pincode, setPincode] = useState(deliveryPincode);
     const [pincodeError, setPincodeError] = useState("");
+    const [checkingPincode, setCheckingPincode] = useState(false);
 
     // Opening /cart always starts at the cart itself, never mid-checkout.
     useEffect(() => {
@@ -79,14 +66,24 @@ const Cart = () => {
         setShow(false);
     };
 
-    const handlePincodeSubmit = (e) => {
+    // Checks delivery to the pincode on the server before using it
+    const handlePincodeSubmit = async (e) => {
         e.preventDefault();
         const entered = pincode.trim();
-        if (!/^\d{6}$/.test(entered)) {
-            setPincodeError("Enter a 6-digit pincode");
+        if (!/^[1-9]\d{5}$/.test(entered)) {
+            setPincodeError("Enter a valid 6-digit pincode");
+            return;
+        }
+        setCheckingPincode(true);
+        const result = await checkPincode(entered);
+        setCheckingPincode(false);
+        if (!result.deliverable) {
+            setPincodeError(result.message || "Delivery is not available to this pincode.");
             return;
         }
         setDeliveryPincode(entered);
+        setDeliveryInfo(result);
+        toast.success(`Delivery available to ${result.city_name}${result.delivery_by_label ? ` by ${result.delivery_by_label}` : ''}`);
         closePincodeModal();
     };
 
@@ -100,13 +97,17 @@ const Cart = () => {
     };
 
     if (isLoading) {
-        return <div className="text-center mt-5">Loading Cart...</div>;
+        return (
+            <div className="text-center py-5" style={{ minHeight: '60vh' }}>
+                <div className="spinner-border text-primary" role="status"></div>
+                <div className="mt-3 text-muted">Loading Cart...</div>
+            </div>
+        );
     }
 
     const isCart = checkoutStep === SCREEN_CART;
     const hasItems = cartItems.length > 0;
 
-    // The step-1 bar echoes back what the shopper entered on the address form.
     const buyerName = buyerDetails?.name || 'Buyer name';
     const buyerMobile = buyerDetails?.mobile || 'Buyer Mobile no.';
 
@@ -120,7 +121,7 @@ const Cart = () => {
     ].filter(Boolean).join(', ');
 
     return (
-        <div className="checkout-page pb-5" style={{ minHeight: '100vh', backgroundColor: '#f1f3f6' }}>
+        <div className="checkout-page pb-md-5 pb-0" style={{ minHeight: '100vh', backgroundColor: '#f1f3f6' }}>
 
             <div className="container p-0 py-md-4">
                 <div className="row g-0 g-md-3">
@@ -130,30 +131,61 @@ const Cart = () => {
                         {/* ---------- CART ---------- */}
                         {isCart && (
                             <>
-                                <div className="d-flex justify-content-between align-items-center bg-white p-2 p-lg-3 mb-2 border-bottom shadow-sm">
-                                    <span className="mb-0 text-secondary" style={{ fontSize: '13px' }}>From Saved Addresses</span>
+                                {/* Delivery Address / Pincode Bar */}
+                                <div className="d-flex justify-content-between align-items-center bg-white p-2 p-md-3 mb-2 border-bottom shadow-xs">
+                                    {deliveryPincode && deliveryInfo ? (
+                                        <div className="mb-0 me-2" style={{ fontSize: '13px', minWidth: 0 }}>
+                                            <div className="text-dark text-truncate">
+                                                Deliver to: <strong>{deliveryInfo.city_name}, {deliveryInfo.state_name} - {deliveryPincode}</strong>
+                                            </div>
+                                            <div className="text-secondary" style={{ fontSize: '12px' }}>
+                                                {deliveryInfo.delivery_by_label ? `Delivery by ${deliveryInfo.delivery_by_label}` : deliveryInfo.standard_delivery_days}
+                                                {deliveryInfo.cod_available ? ' • Cash on Delivery available' : ''}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <span className="mb-0 text-secondary fw-normal" style={{ fontSize: '13px' }}>
+                                            Check delivery to your pincode
+                                        </span>
+                                    )}
                                     <button
-                                        className="btn fw-bold px-2 py-1 px-md-3 py-md-2 bg-white"
-                                        style={{ border: '1px solid #0b53a1', color: '#0b53a1', fontSize: '12px', borderRadius: '4px' }}
+                                        className="btn fw-semibold px-2 py-1 px-md-3 py-md-2 bg-white flex-shrink-0"
+                                        style={{ border: '1px solid #0b53a1', color: '#0b53a1', fontSize: '12px', borderRadius: '3px' }}
                                         onClick={openPincodeModal}
                                     >
-                                        Enter Delivery Pincode
+                                        {deliveryPincode && deliveryInfo ? 'Change' : 'Enter Delivery Pincode'}
                                     </button>
                                 </div>
 
+                                {/* Items Selected Bar (Mobile View) */}
                                 {hasItems && (
-                                    <div className="d-md-none p-2 fw-semibold d-flex align-items-center gap-2 border-bottom" style={{ fontSize: '13px', backgroundColor: '#f8f9fa' }}>
-                                        <input type="checkbox" className="form-check-input shadow-none m-0" defaultChecked style={{ width: '16px', height: '16px' }} />
-                                        <span className="text-dark">{cartTotals.totalItems}/{cartItems.length} items selected</span>
+                                    <div className="d-md-none p-2 px-3 fw-semibold d-flex align-items-center gap-2 border-bottom bg-white" style={{ fontSize: '13px' }}>
+                                        <div 
+                                            className="d-inline-flex align-items-center justify-content-center text-white rounded-1 shadow-xs"
+                                            style={{ 
+                                                width: '18px', 
+                                                height: '18px', 
+                                                backgroundColor: '#0084ff',
+                                                fontSize: '12px',
+                                                fontWeight: 'bold',
+                                                lineHeight: 1
+                                            }}
+                                        >
+                                            −
+                                        </div>
+                                        <span className="text-dark">
+                                            {cartTotals.totalItems || cartItems.length}/{cartItems.length} items selected
+                                        </span>
                                     </div>
                                 )}
 
+                                {/* Cart Products List */}
                                 <div className="cart-products-list">
                                     {!hasItems ? (
                                         <div className="bg-white p-5 text-center my-3 shadow-sm rounded">
                                             <h5 className="fw-bold text-dark mb-3">Your Cart is Empty</h5>
                                             <p className="text-muted mb-4">Add products to your cart to see them here.</p>
-                                            <button className="btn checkout-cta" onClick={() => navigate('/allproducts')}>
+                                            <button className="btn checkout-cta rounded-pill px-4" onClick={() => navigate('/allproducts')}>
                                                 Continue Shopping
                                             </button>
                                         </div>
@@ -162,13 +194,17 @@ const Cart = () => {
                                     )}
                                 </div>
 
+                                {/* Mobile Price Details & Promo Card (Exact User Layout) */}
                                 {hasItems && (
-                                    <div className="checkout-panel-band d-md-none mb-4">
-                                        <div className="px-3 py-2 checkout-panel-title">PRICE DETAILS.</div>
+                                    <div className="checkout-panel-band d-md-none mb-0">
+                                        <div className="px-3 py-2 fw-bold text-uppercase" style={{ color: '#0b53a1', fontSize: '14px', letterSpacing: '0.3px' }}>
+                                            PRICE DETAILS.
+                                        </div>
                                         <div className="px-3 pb-3">
-                                            <div className="bg-white rounded-3 p-3 shadow-sm border">
+                                            {/* Price Details White Card */}
+                                            <div className="bg-white rounded-3 p-3 shadow-xs border mb-3">
                                                 <PriceDetails
-                                                    itemCount={cartTotals.totalItems}
+                                                    itemCount={cartTotals.totalItems || cartItems.length}
                                                     totalPrice={cartTotals.originalTotalPrice}
                                                     discount={cartTotals.totalDiscount}
                                                     couponApplied={cartTotals.couponApplied}
@@ -177,29 +213,27 @@ const Cart = () => {
                                                     isCart
                                                     isMobile
                                                 />
-
-                                                <div className="mt-3 mb-3 d-flex border rounded-1">
-                                                    <input type="text" className="form-control border-0 shadow-none px-2" placeholder="Have a Discount Coupon?" style={{ fontSize: '13px', color: '#1a73e8' }} />
-                                                    <button className="btn fw-bold px-3 rounded-0" style={{ backgroundColor: '#e7eefa', color: '#0b53a1', fontSize: '13px' }}>Applied</button>
-                                                </div>
-
-                                                <PrintmontCoinsPromo />
                                             </div>
 
-                                            <div className="mt-3 bg-light rounded text-center">
+                                            {/* Printmont Coins Promo (Outside Price Details) */}
+                                            <PrintmontCoinsPromo />
+
+                                            {/* Trust & Safe Payments (Outside Price Details) */}
+                                            <div className="mt-2 text-center">
                                                 <TrustBar />
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
+                                {/* Desktop Place Order Button */}
                                 {hasItems && (
-                                    <div className="d-none d-lg-flex justify-content-end bg-white p-3 mb-4 shadow-sm">
-                                        <button className="btn checkout-cta" onClick={handlePlaceOrder}>Place Order</button>
+                                    <div className="d-none d-lg-flex justify-content-end bg-white p-3 mb-4 shadow-sm border">
+                                        <button className="btn checkout-cta px-4" onClick={handlePlaceOrder}>Place Order</button>
                                     </div>
                                 )}
 
-                                {/* Collapsed by default, as in the design. */}
+                                {/* Saved For Later Section */}
                                 {savedItems.length > 0 && (
                                     <div className="card shadow-sm border-light rounded-0 mt-3 d-none d-md-block mb-3">
                                         <div className="card-body p-0">
@@ -232,52 +266,58 @@ const Cart = () => {
                         {!isCart && (
                             <div className="checkout-steps shadow-sm">
 
-                                {/* Buyer header — not a step, so no number. */}
-                                <CheckoutStepBar
-                                    title={buyerName}
-                                    plainTitle
-                                    done={checkoutStep > STEP_ADDRESS}
-                                    aside={buyerMobile}
-                                />
+                                {/* DESKTOP COLLAPSED STEPS (Steps 1 & 2) */}
+                                {checkoutStep >= STEP_SUMMARY && (
+                                    <div className="d-none d-md-block">
+                                        {/* Step 1: Buyer Name */}
+                                        <CheckoutStepBar
+                                            number="1"
+                                            title={buyerName}
+                                            plainTitle
+                                            done={true}
+                                            aside={buyerMobile}
+                                        />
 
-                                {/* 1 — address */}
-                                {checkoutStep === STEP_ADDRESS ? (
-                                    <>
-                                        <CheckoutStepBar number="1" title="ADD DELIVERY ADDRESS" active />
-                                        <OrderAddress onAddressSaved={() => goToStep(STEP_SUMMARY)} />
-                                    </>
-                                ) : (
-                                    <CheckoutStepBar
-                                        number="1"
-                                        title="DELIVERY DETAILS"
-                                        done
-                                        onChange={() => goToStep(STEP_ADDRESS)}
-                                    >
-                                        {savedAddressLine}
-                                    </CheckoutStepBar>
+                                        {/* Step 2: Delivery Details */}
+                                        <CheckoutStepBar
+                                            number="2"
+                                            title="DELIVERY DETAILS"
+                                            done={true}
+                                            onChange={() => goToStep(STEP_ADDRESS)}
+                                        >
+                                            {savedAddressLine}
+                                        </CheckoutStepBar>
+                                    </div>
                                 )}
 
-                                {/* 2 — order summary */}
+                                {/* 1 — Address step */}
+                                {checkoutStep === STEP_ADDRESS && (
+                                    <OrderAddress onAddressSaved={() => goToStep(STEP_SUMMARY)} />
+                                )}
+
+                                {/* 2 — Order Summary step */}
                                 {checkoutStep === STEP_SUMMARY && (
                                     <>
-                                        <CheckoutStepBar number="2" title="ORDER SUMMARY" active />
+                                        <div className="d-none d-md-block">
+                                            <CheckoutStepBar number="3" title="ORDER SUMMARY" active />
+                                        </div>
                                         <OrderSummary onContinue={() => goToStep(STEP_PAYMENT)} />
                                     </>
                                 )}
-                                {checkoutStep > STEP_SUMMARY && (
-                                    <CheckoutStepBar
-                                        number="2"
-                                        title="ORDER SUMMARY"
-                                        done
-                                        onChange={() => goToStep(STEP_SUMMARY)}
-                                    />
-                                )}
 
-                                {/* 3 — payment */}
+                                {/* 3 — Payment step */}
                                 {checkoutStep === STEP_PAYMENT && (
                                     <>
-                                        <CheckoutStepBar number="3" title="COMPLETE PAYMENT" active />
-                                        <PaymentGateway onPaymentSuccess={() => navigate('/orders')} />
+                                        <div className="d-none d-md-block">
+                                            <CheckoutStepBar
+                                                number="3"
+                                                title="ORDER SUMMARY"
+                                                done={true}
+                                                onChange={() => goToStep(STEP_SUMMARY)}
+                                            />
+                                            <CheckoutStepBar number="4" title="COMPLETE PAYMENT" active />
+                                        </div>
+                                        <PaymentGateway onPaymentSuccess={(result) => navigate(result?.orderNumber || result?.orderId ? `/order/${result.orderNumber || result.orderId}` : '/orders', { replace: true })} />
                                     </>
                                 )}
 
@@ -285,16 +325,16 @@ const Cart = () => {
                         )}
 
                         {/* Clears the fixed bottom bar on mobile. */}
-                        <div className="d-md-none" style={{ height: '80px' }} />
+                        <div className="d-md-none" style={{ height: '70px' }} />
 
                     </div>
 
-                    {/* Desktop sidebar. The steps render their own price panel on mobile. */}
+                    {/* Desktop sidebar - Kept 100% intact */}
                     {hasItems && (
                         <div className="col-12 col-lg-3 checkout-sidebar-col order-md-2 d-none d-lg-block">
                             <div className="checkout-sidebar-sticky">
                                 <PriceDetails
-                                    itemCount={cartTotals.totalItems}
+                                    itemCount={cartTotals.totalItems || cartItems.length}
                                     totalPrice={cartTotals.originalTotalPrice}
                                     discount={cartTotals.totalDiscount}
                                     couponApplied={cartTotals.couponApplied}
@@ -315,13 +355,31 @@ const Cart = () => {
                 </div>
             </div>
 
-            {/* Cart's own bottom bar. Each step supplies its own. */}
+            {/* Mobile Fixed Bottom Bar (Exact Full-Width Place Order Button in Blue) */}
             {isCart && hasItems && (
-                <div className="d-md-none checkout-bottom-bar">
-                    <button className="btn checkout-cta w-100" onClick={handlePlaceOrder}>Place Order</button>
+                <div 
+                    className="d-md-none position-fixed bottom-0 start-0 w-100 bg-white border-top shadow-lg"
+                    style={{ zIndex: 1040 }}
+                >
+                    <div className="">
+                        <button 
+                            type="button"
+                            className="btn w-100 py-3 text-white fw-bold text-uppercase rounded-0 shadow-sm" 
+                            style={{ 
+                                backgroundColor: '#0b53a1', 
+                                borderColor: '#0b53a1', 
+                                fontSize: '15px', 
+                                letterSpacing: '0.6px' 
+                            }}
+                            onClick={handlePlaceOrder}
+                        >
+                            PLACE ORDER
+                        </button>
+                    </div>
                 </div>
             )}
 
+            {/* Pincode Modal */}
             <Modal show={show} onHide={closePincodeModal} size="sm" centered>
                 <Modal.Header closeButton>
                     <Modal.Title className="fs-6">Enter Pincode</Modal.Title>
@@ -333,9 +391,12 @@ const Cart = () => {
                             placeholder="Enter pincode"
                             value={pincode}
                             isInvalid={!!pincodeError}
-                            onChange={(e) => { setPincode(e.target.value); setPincodeError(''); }}
+                            onChange={(e) => { setPincode(e.target.value.replace(/\D/g, '')); setPincodeError(''); }}
+                            autoFocus
                         />
-                        <Button type="submit" style={{ backgroundColor: '#0b53a1', borderColor: '#0b53a1' }}>Submit</Button>
+                        <Button type="submit" disabled={checkingPincode} style={{ backgroundColor: '#0b53a1', borderColor: '#0b53a1' }}>
+                            {checkingPincode ? 'Checking…' : 'Check'}
+                        </Button>
                     </Form>
                     {pincodeError && (
                         <div className="text-danger mt-2" style={{ fontSize: '13px' }}>{pincodeError}</div>

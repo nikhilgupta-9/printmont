@@ -4,6 +4,18 @@ const activeRequests = new Map();
 const responseCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
 
+// Automatically purge cache when user focuses window (e.g. switching back from Admin panel)
+if (typeof window !== 'undefined') {
+  window.addEventListener('focus', () => {
+    responseCache.clear();
+    try {
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('api_cache_')) sessionStorage.removeItem(key);
+      });
+    } catch (e) {}
+  });
+}
+
 const MAX_CONCURRENT = 5;
 let currentConcurrent = 0;
 const requestQueue = [];
@@ -40,14 +52,83 @@ const queueRequest = (executeFetch) => {
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// ── Silent token refresh ─────────────────────────────────────────────
+// The access token lives 1 hour; the refresh token (saved at login) 30 days. On a 401 we get a
+// new access token once (shared by all requests that failed at the same time) and retry.
+let refreshPromise = null;
+
+const refreshAccessToken = (requestUrl) => {
+  const refreshToken = localStorage.getItem('refresh_token');
+  const apiRoot = requestUrl && requestUrl.includes('/api/') ? requestUrl.split('/api/')[0] + '/api/' : null;
+  if (!refreshToken || !apiRoot) return Promise.resolve(null);
+
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const res = await originalFetch(`${apiRoot}user-api.php?action=refresh_token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+        const data = await res.json().catch(() => null);
+        const newToken = data?.success ? data.tokens?.access_token : null;
+        if (!newToken) {
+          localStorage.removeItem('refresh_token');
+          return null;
+        }
+        localStorage.setItem('token', newToken);
+        if (data.tokens.refresh_token) localStorage.setItem('refresh_token', data.tokens.refresh_token);
+        window.dispatchEvent(new CustomEvent('auth:token-refreshed', { detail: { token: newToken } }));
+        return newToken;
+      } catch {
+        return null;
+      } finally {
+        setTimeout(() => { refreshPromise = null; }, 0);
+      }
+    })();
+  }
+  return refreshPromise;
+};
+
+// Same request again with the new token (only requests that carried a Bearer token).
+// Headers stay a plain object with their original names: a Headers object lowercases them
+// ("authorization"), which the PHP APIs' getBearerToken() does not find.
+const retryWithFreshToken = async (args, url) => {
+  const options = args[1] || {};
+  const headers = options.headers instanceof Headers
+    ? Object.fromEntries(options.headers.entries())
+    : { ...(options.headers || {}) };
+  const authKey = Object.keys(headers).find((k) => k.toLowerCase() === 'authorization');
+  if (!authKey || !/^Bearer\s/i.test(headers[authKey])) return null;
+  const newToken = await refreshAccessToken(url);
+  if (!newToken) return null;
+  delete headers[authKey];
+  headers.Authorization = `Bearer ${newToken}`;
+  return originalFetch(args[0], { ...options, headers });
+};
+
 window.fetch = async (...args) => {
   const url = typeof args[0] === 'string' ? args[0] : args[0]?.url;
   const options = args[1] || {};
   const method = (options.method || 'GET').toUpperCase();
   
-  // Only deduplicate and cache GET requests
+  // Only deduplicate and cache GET requests (exclude dynamic user/cart/wishlist APIs and real-time admin sync APIs)
   const isGet = method === 'GET';
-  const requestKey = isGet && url ? url : null;
+  const isNoStore = options.cache === 'no-store' || options.cache === 'reload';
+  const isDynamicApi = url && (
+    url.includes('user-api.php') || 
+    url.includes('cart-api.php') || 
+    url.includes('wishlist-api.php') || 
+    url.includes('auth-settings-api.php') ||
+    url.includes('menu_api.php') ||
+    url.includes('header-settings-api.php') ||
+    url.includes('category-api.php') ||
+    url.includes('category_api.php') ||
+    url.includes('home-layout-api.php') ||
+    url.includes('product-layout-api.php') ||
+    url.includes('footer-api.php')
+  );
+  const requestKey = isGet && url && !isDynamicApi && !isNoStore ? url : null;
 
   if (requestKey) {
     let cached = responseCache.get(requestKey);
@@ -105,7 +186,9 @@ window.fetch = async (...args) => {
       // Announce it once, globally, so AuthContext can clear the session —
       // otherwise the header keeps showing the user as signed in while every
       // authenticated request is being rejected.
-      if (response && response.status === 401 && !/\/login|\/register/.test(url || "")) {
+      if (response && response.status === 401 && !/\/login|\/register|action=(login|register|refresh_token)/.test(url || "")) {
+        const retried = await retryWithFreshToken(args, url);
+        if (retried && retried.status !== 401) return retried;
         window.dispatchEvent(new CustomEvent("auth:unauthorized", { detail: { url } }));
       }
 

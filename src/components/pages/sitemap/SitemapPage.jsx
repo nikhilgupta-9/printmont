@@ -1,128 +1,50 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Container, Row, Col } from 'react-bootstrap';
+import { Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { API_ENDPOINTS, ASSET_URL } from '../../../config/apiEndpoints';
+import { FaFolderOpen, FaSitemap, FaFileCode } from 'react-icons/fa';
+import { API_ENDPOINTS } from '../../../config/apiEndpoints';
+import { updatePageSEO } from '../../../utils/seo';
+import PageHero from '../../common/PageHero';
 import './sitemap.css';
 
-const FALLBACK_SECTIONS = [
-  {
-    category_key: 'main_pages',
-    category_name: 'Main Navigation & Shopping',
-    icon: 'ri-compass-3-line',
-    links: [
-      { id: 1, title: 'Home', url: '/' },
-      { id: 2, title: 'All Products & Collections', url: '/allproducts' },
-      { id: 3, title: 'Shopping Cart', url: '/cart' },
-      { id: 4, title: 'Track Your Order', url: '/track-order' },
-      { id: 5, title: 'Printmont Coin & Wallet', url: '/wallet' },
-    ]
-  },
-  {
-    category_key: 'products_categories',
-    category_name: 'Product Categories',
-    icon: 'ri-store-2-line',
-    links: [
-      { id: 'c1', title: 'T-Shirts & Apparel', url: '/category/t-shirts' },
-      { id: 'c2', title: 'Custom Drinkware & Mugs', url: '/category/mugs' },
-      { id: 'c3', title: 'Business Cards & Stationery', url: '/category/stationery' },
-      { id: 'c4', title: 'Custom Phone Cases', url: '/category/phone-cases' },
-      { id: 'c5', title: 'Photo Frames & Canvas', url: '/category/photo-frames' },
-    ]
-  },
-  {
-    category_key: 'company_info',
-    category_name: 'Company & Opportunities',
-    icon: 'ri-building-line',
-    links: [
-      { id: 6, title: 'About Us', url: '/about' },
-      { id: 7, title: 'Careers & Vacancies', url: '/careers' },
-      { id: 8, title: 'Official Printmont Blog', url: '/blog' },
-      { id: 9, title: 'Affiliate Program', url: '/affiliate-program' },
-      { id: 10, title: 'Become a Seller / Partner', url: '/become-a-seller' },
-      { id: 11, title: 'Business Solutions & Corporate', url: '/business-solutions' },
-      { id: 12, title: 'Bulk & Wholesale Orders', url: '/bulk-orders' },
-      { id: 13, title: 'Franchise Program', url: '/franchise' },
-    ]
-  },
-  {
-    category_key: 'help_support',
-    category_name: 'Help & Customer Support',
-    icon: 'ri-customer-service-2-line',
-    links: [
-      { id: 14, title: 'Help Center', url: '/help-center' },
-      { id: 15, title: 'Frequently Asked Questions (FAQ)', url: '/faq' },
-      { id: 16, title: 'Contact Us', url: '/contact' },
-      { id: 17, title: 'Support Ticket Portal', url: '/support' },
-      { id: 18, title: 'Quick Navigation Links', url: '/quick-links' },
-    ]
-  },
-  {
-    category_key: 'legal_policies',
-    category_name: 'Legal & Policies',
-    icon: 'ri-shield-check-line',
-    links: [
-      { id: 19, title: 'Safe & Secure Shopping', url: '/security' },
-      { id: 20, title: 'Privacy Policy', url: '/privacy-policy' },
-      { id: 21, title: 'Terms & Conditions', url: '/terms-and-conditions' },
-      { id: 22, title: 'Terms of Use', url: '/terms-of-use' },
-      { id: 23, title: 'Shipping & Delivery Policy', url: '/shipping-policy' },
-      { id: 24, title: 'Return & Refund Policy', url: '/refund-policy' },
-    ]
-  }
+const FILTER_TABS = [
+  { key: 'all', label: 'All Categories & Sections' },
+  { key: 'products_categories', label: 'Categories' },
+  { key: 'main_pages', label: 'Shopping & Account' },
+  { key: 'company_info', label: 'B2B & Corporate' },
+  { key: 'blog_articles', label: 'Blogs & Guides' },
+  { key: 'help_support', label: 'Help Center' },
+  { key: 'legal_policies', label: 'Policies & Legal' }
 ];
 
-const ICONS_MAP = {
-  main_pages: 'ri-compass-3-line',
-  main: 'ri-compass-3-line',
-  products_categories: 'ri-store-2-line',
-  categories: 'ri-store-2-line',
-  company_info: 'ri-building-line',
-  company: 'ri-building-line',
-  help_support: 'ri-customer-service-2-line',
-  support: 'ri-customer-service-2-line',
-  legal_policies: 'ri-shield-check-line',
-  policies: 'ri-shield-check-line',
-  custom: 'ri-links-line'
-};
-
-const SitemapPage = () => {
-  const [sections, setSections] = useState(FALLBACK_SECTIONS);
+export default function SitemapPage() {
+  const [sections, setSections] = useState([]);
+  const [stats, setStats] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+    updatePageSEO({
+      title: 'Online Printing Products, Custom Visiting Cards, Apparel & Merchandise Directory @ Printmont.com',
+      description: 'Explore the complete directory of Printmont custom printing categories, corporate gifting, wholesale products, policies, and blogs.',
+      keywords: 'printmont sitemap, printmont directory, custom printing categories, bulk merchandise list',
+      type: 'website'
+    });
+
     const fetchSitemap = async () => {
       try {
-        const response = await fetch(API_ENDPOINTS.SITEMAP);
-        if (response.ok) {
-          const json = await response.json();
-          if (json.success && json.data) {
-            let apiSections = [];
-            if (Array.isArray(json.data.sections)) {
-              apiSections = json.data.sections;
-            } else if (Array.isArray(json.data)) {
-              apiSections = json.data;
-            } else if (typeof json.data === 'object') {
-              // Convert object map to array
-              apiSections = Object.entries(json.data).map(([key, value]) => {
-                if (Array.isArray(value)) {
-                  return {
-                    category_key: key,
-                    category_name: key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' '),
-                    links: value
-                  };
-                }
-                return value;
-              }).filter(item => item && Array.isArray(item.links));
-            }
+        setLoading(true);
+        const res = await fetch(API_ENDPOINTS.SITEMAP || '/api/sitemap-api.php');
+        const json = await res.json();
 
-            if (apiSections.length > 0) {
-              setSections(apiSections);
-            }
-          }
+        if (json.success && json.data) {
+          setSections(json.data.sections || []);
+          setStats(json.data.stats || null);
         }
       } catch (err) {
-        console.warn('Using fallback sitemap data due to API error:', err);
+        console.error('Error loading sitemap:', err);
       } finally {
         setLoading(false);
       }
@@ -131,196 +53,196 @@ const SitemapPage = () => {
     fetchSitemap();
   }, []);
 
-  // Filter sections by search query
+  // Filter sections by search query and active tab
   const filteredSections = useMemo(() => {
-    if (!searchQuery.trim()) return sections;
+    let result = sections;
 
-    const query = searchQuery.toLowerCase().trim();
+    if (activeTab !== 'all') {
+      result = result.filter(s => s.category_key === activeTab);
+    }
 
-    return sections
-      .map((section) => {
-        const matchingLinks = (section.links || []).filter(
-          (link) =>
-            link.title?.toLowerCase().includes(query) ||
-            link.url?.toLowerCase().includes(query)
-        );
-        return {
-          ...section,
-          links: matchingLinks
-        };
-      })
-      .filter((section) => section.links.length > 0);
-  }, [sections, searchQuery]);
+    if (!searchQuery.trim()) {
+      return result;
+    }
 
-  const totalLinksCount = useMemo(() => {
-    return filteredSections.reduce(
-      (sum, s) => sum + (Array.isArray(s.links) ? s.links.length : 0),
-      0
-    );
-  }, [filteredSections]);
+    const q = searchQuery.toLowerCase().trim();
 
-  const xmlUrl = `${ASSET_URL}sitemap.xml`;
+    return result.map(section => {
+      // Filter links and subcategories
+      const filteredLinks = (section.links || []).filter(link => {
+        const titleMatch = link.title?.toLowerCase().includes(q);
+        const urlMatch = link.url?.toLowerCase().includes(q);
+        
+        // Deep search in level 2 & level 3 subcategories
+        const subMatch = (link.subcategories || []).some(sub => {
+          const sMatch = sub.name?.toLowerCase().includes(q) || sub.url?.toLowerCase().includes(q);
+          const childMatch = (sub.subcategories || []).some(child => 
+            child.name?.toLowerCase().includes(q) || child.url?.toLowerCase().includes(q)
+          );
+          return sMatch || childMatch;
+        });
+
+        return titleMatch || urlMatch || subMatch;
+      });
+
+      return {
+        ...section,
+        links: filteredLinks
+      };
+    }).filter(section => section.links.length > 0);
+  }, [sections, activeTab, searchQuery]);
 
   return (
-    <div className="sitemap-page">
-      <Container>
-        {/* Breadcrumb */}
-        <div className="mb-3">
-          <nav aria-label="breadcrumb">
-            <ol className="breadcrumb mb-0" style={{ fontSize: '0.85rem' }}>
-              <li className="breadcrumb-item">
-                <Link to="/" className="text-decoration-none text-muted">
-                  <i className="ri-home-line me-1"></i>Home
-                </Link>
-              </li>
-              <li className="breadcrumb-item active text-dark fw-semibold" aria-current="page">
-                Sitemap
-              </li>
-            </ol>
-          </nav>
-        </div>
-
-        {/* Hero Section */}
-        <div className="sitemap-hero">
-          <div className="sitemap-badge">
-            <i className="ri-node-tree"></i> Complete Directory
-          </div>
-          <h1 className="sitemap-hero-title">
-            Explore <span>Printmont</span> Sitemap
-          </h1>
-          <p className="sitemap-hero-desc">
-            Quickly navigate to any product category, company page, customer support resource, or legal policy across our entire store.
-          </p>
-
-          {/* Live Search */}
-          <div className="sitemap-search-wrap">
-            <i className="ri-search-line sitemap-search-icon"></i>
-            <input
-              type="text"
-              className="sitemap-search-input"
-              placeholder="Search links, categories, policies, help topics..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          {/* Quick Jump Buttons */}
-          <div className="sitemap-quick-nav">
-            {sections.map((sec) => {
-              const iconClass = ICONS_MAP[sec.category_key] || 'ri-folder-line';
-              return (
-                <a key={sec.category_key} href={`#section-${sec.category_key}`} className="sitemap-quick-btn">
-                  <i className={`${iconClass} me-1`}></i>
-                  {sec.category_name}
-                </a>
-              );
-            })}
-            <a href={xmlUrl} target="_blank" rel="noopener noreferrer" className="sitemap-quick-btn">
-              <i className="ri-file-code-line me-1"></i>
-              sitemap.xml
-            </a>
-          </div>
-        </div>
-
-        {/* XML Sitemap Info Banner */}
-        <div className="sitemap-xml-card">
-          <div className="sitemap-xml-info">
-            <div className="sitemap-xml-icon">
-              <i className="ri-code-s-slash-line"></i>
-            </div>
-            <div>
-              <h6 className="mb-1 fw-bold text-dark">Need Machine-Readable XML Sitemap for Search Engines?</h6>
-              <p className="mb-0 text-muted small">
-                Our dynamic XML sitemap is actively indexed by Google, Bing, and major search engines for rapid SEO crawling.
-              </p>
-            </div>
-          </div>
+    <div className="fk-sitemap-page">
+      {/* 1. Standard Reusable Hero Section with Breadcrumbs for Desktop & Mobile */}
+      <PageHero
+        breadcrumbs={[
+          { label: 'Home', path: '/' },
+          { label: 'Sitemap' }
+        ]}
+        tag="SITE DIRECTORY"
+        tagIcon={<FaFolderOpen />}
+        title="Printmont Site Directory & Catalog"
+        titleIcon={<FaSitemap />}
+        description="Explore the complete hierarchical index of custom printing products, corporate gifting, personalized merchandise, policies, and company links."
+        stats={[
+          { label: 'Categories', value: stats?.categories_count ? `${stats.categories_count}` : '450+' },
+          { label: 'Products', value: stats?.products_count ? `${stats.products_count}` : '370+' },
+          { label: 'Total Links', value: stats?.total_urls ? `${stats.total_urls}+` : '880+' }
+        ]}
+        search={{
+          placeholder: 'Search 880+ categories, products, and links...',
+          value: searchQuery,
+          onChange: (e) => setSearchQuery(e.target.value),
+          onClear: () => setSearchQuery('')
+        }}
+        actions={
           <a
-            href={xmlUrl}
+            href="/sitemap.xml"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-outline-danger btn-sm d-flex align-items-center gap-2 fw-semibold px-3 py-2"
+            className="pm-hero-action-link"
+            title="View XML feed for search engines"
           >
-            <span>View sitemap.xml</span>
-            <i className="ri-external-link-line"></i>
+            <FaFileCode /> XML Sitemap
           </a>
-        </div>
-
-        {/* Category Cards Grid */}
-        {filteredSections.length > 0 ? (
-          <Row className="g-4">
-            {filteredSections.map((sec) => {
-              const iconClass = ICONS_MAP[sec.category_key] || 'ri-folder-line';
-
-              return (
-                <Col
-                  key={sec.category_key}
-                  lg={sec.category_key === 'main_pages' || sec.category_key === 'company_info' ? 6 : 4}
-                  md={6}
-                  xs={12}
-                  id={`section-${sec.category_key}`}
-                >
-                  <div className="sitemap-section-card">
-                    <div className="sitemap-card-header">
-                      <h2 className="sitemap-card-title">
-                        <i className={`${iconClass} text-theme`}></i>
-                        <span>{sec.category_name}</span>
-                      </h2>
-                      <span className="sitemap-card-count">{sec.links.length} links</span>
-                    </div>
-                    <div className="sitemap-card-body">
-                      <ul className="sitemap-links-list">
-                        {sec.links.map((item, idx) => {
-                          const isExternal =
-                            item.url.startsWith('http://') ||
-                            item.url.startsWith('https://');
-
-                          return (
-                            <li key={item.id || idx} className="sitemap-link-item">
-                              {isExternal ? (
-                                <a
-                                  href={item.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="sitemap-link"
-                                >
-                                  <span>{item.title}</span>
-                                  <i className="ri-arrow-right-up-line sitemap-link-icon"></i>
-                                </a>
-                              ) : (
-                                <Link to={item.url} className="sitemap-link">
-                                  <span>{item.title}</span>
-                                  <i className="ri-arrow-right-line sitemap-link-icon"></i>
-                                </Link>
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  </div>
-                </Col>
-              );
-            })}
-          </Row>
-        ) : (
-          <div className="sitemap-empty-state">
-            <i className="ri-search-eye-line sitemap-empty-icon"></i>
-            <h4 className="fw-bold text-dark mb-2">No Matching Links Found</h4>
-            <p className="text-muted mb-3">
-              We couldn't find any page matching "<strong>{searchQuery}</strong>". Try a different search term.
-            </p>
+        }
+      >
+        {/* Quick Filter Section Tabs */}
+        <div className="fk-tab-pills-wrap">
+          {FILTER_TABS.map(tab => (
             <button
-              className="btn btn-dark btn-sm px-4 py-2"
-              onClick={() => setSearchQuery('')}
+              key={tab.key}
+              type="button"
+              className={`fk-tab-pill ${activeTab === tab.key ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.key)}
             >
-              Clear Search
+              {tab.label}
             </button>
-          </div>
-        )}
-      </Container>
+          ))}
+        </div>
+      </PageHero>
+
+      {/* 2. Main Flipkart-Style Tree Container */}
+      <main className="fk-sitemap-container">
+        <div className="fk-tree-card">
+          {loading ? (
+            <div className="text-center py-5">
+              <Spinner animation="border" variant="primary" />
+              <p className="text-muted mt-3 small">Loading Printmont Directory...</p>
+            </div>
+          ) : filteredSections.length === 0 ? (
+            <div className="fk-sitemap-empty">
+              <h3>No categories found matching "{searchQuery}"</h3>
+              <p>Please try a different search keyword or browse all sections.</p>
+              <button 
+                type="button" 
+                className="fk-reset-btn"
+                onClick={() => { setSearchQuery(''); setActiveTab('all'); }}
+              >
+                Reset Search
+              </button>
+            </div>
+          ) : (
+            <>
+              {filteredSections.map(sec => {
+                const isProductCategories = sec.category_key === 'products_categories';
+
+                return (
+                  <div key={sec.category_key} className="fk-section-group">
+                    {/* Section H1 / Group Header (e.g. Categories, Company Info, Policies) */}
+                    <h1 className="fk-main-title">
+                      {sec.category_name}
+                    </h1>
+
+                    {isProductCategories ? (
+                      /* Category Tree Hierarchy (Level 1 H2 -> Level 2/3 inline cluster) */
+                      sec.links.map(cat => {
+                        const hasSubs = cat.subcategories && cat.subcategories.length > 0;
+
+                        return (
+                          <div key={cat.id} className="fk-category-block">
+                            {/* H2 Category Heading matching Flipkart: <h2><a href="...">Books</a></h2> */}
+                            <h2 className="fk-sub-heading">
+                              <Link to={cat.url}>{cat.title}</Link>
+                            </h2>
+
+                            {/* Subcategories Cluster (Flipkart pipe-separated links) */}
+                            {hasSubs ? (
+                              <div className="fk-links-cluster">
+                                {cat.subcategories.map(sub => {
+                                  const hasChildren = sub.subcategories && sub.subcategories.length > 0;
+
+                                  if (hasChildren) {
+                                    return (
+                                      <div key={sub.id} className="fk-subgroup-row">
+                                        <div className="fk-subgroup-title">
+                                          <Link to={sub.url}>{sub.name}</Link>
+                                        </div>
+                                        <div className="fk-links-cluster">
+                                          {sub.subcategories.map(child => (
+                                            <Link key={child.id} to={child.url} className="link">
+                                              {child.name}
+                                            </Link>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <Link key={sub.id} to={sub.url} className="link">
+                                      {sub.name}
+                                    </Link>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      /* Flat Multi-link cluster for Main pages, Corporate, Policies, Blogs */
+                      <div className="fk-links-cluster">
+                        {sec.links.map(link => (
+                          <Link 
+                            key={link.id} 
+                            to={link.url} 
+                            className="link"
+                            target={link.url.endsWith('.xml') ? '_blank' : undefined}
+                          >
+                            {link.title}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </div>
+      </main>
     </div>
   );
-};
-
-export default SitemapPage;
+}

@@ -8,30 +8,8 @@ import normalizeBanner from "../utils/normalizeBanner";
  * @param {string} [basePath] Optional base path prefix for relative image URLs.
  */
 export default function useHomeBanners(apiUrl, sectionKey = "", basePath = "") {
-  const cacheKey = `home_banner_cache_${apiUrl}_${sectionKey}`;
-
-  const [banners, setBanners] = useState(() => {
-    if (apiUrl) {
-      try {
-        const cached = sessionStorage.getItem(cacheKey);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch (e) {}
-    }
-    return [];
-  });
-
-  const [loading, setLoading] = useState(() => {
-    if (!apiUrl) return false;
-    try {
-      const cached = sessionStorage.getItem(cacheKey);
-      if (cached) return false;
-    } catch (e) {}
-    return true;
-  });
-
+  const [banners, setBanners] = useState([]);
+  const [loading, setLoading] = useState(!!apiUrl);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -41,13 +19,13 @@ export default function useHomeBanners(apiUrl, sectionKey = "", basePath = "") {
     }
 
     let isMounted = true;
-    const fetchBanners = async () => {
+    const fetchBanners = async (isInitial = true) => {
       try {
-        // If no cache, set loading true
-        if (!sessionStorage.getItem(cacheKey)) {
-          setLoading(true);
-        }
-        const response = await fetch(apiUrl);
+        if (isInitial) setLoading(true);
+        const sep = apiUrl.includes("?") ? "&" : "?";
+        const response = await fetch(`${apiUrl}${sep}_t=${Date.now()}`, {
+          cache: "no-store"
+        });
         if (!response.ok) {
           throw new Error(`HTTP Error! Status: ${response.status}`);
         }
@@ -59,16 +37,11 @@ export default function useHomeBanners(apiUrl, sectionKey = "", basePath = "") {
 
         // Check success flag standard format
         if (data && data.success && data.data) {
-          // banner_api.php answers in two shapes:
-          //   ?page=...    -> data: { page, sections: { <key>: { banners: [] } } }
-          //   ?section=... -> data: { section_key, label, banners: [] }
           const payload = data.data;
 
           if (Array.isArray(payload.banners)) {
-            // Single-section response — the banners are already right here.
             bannerList = payload.banners;
           } else {
-            // Page response — look inside the sections map.
             const sections =
               payload.sections && typeof payload.sections === "object"
                 ? payload.sections
@@ -81,7 +54,6 @@ export default function useHomeBanners(apiUrl, sectionKey = "", basePath = "") {
             } else if (Array.isArray(sections)) {
               bannerList = sections;
             } else if (!sectionKey) {
-              // No key asked for: fall back to the first section that has banners.
               const firstWithBanners = Object.values(sections).find(
                 (s) => s && (Array.isArray(s.banners) || Array.isArray(s))
               );
@@ -99,28 +71,45 @@ export default function useHomeBanners(apiUrl, sectionKey = "", basePath = "") {
         }
 
         const normalized = bannerList.map(item => normalizeBanner(item, basePath)).filter(Boolean);
-        if (normalized.length > 0) {
-          try {
-            sessionStorage.setItem(cacheKey, JSON.stringify(normalized));
-          } catch (e) {}
-        }
         setBanners(normalized);
         setError(null);
       } catch (err) {
-        if (isMounted) {
+        if (isMounted && isInitial) {
           setError(err.message);
         }
       } finally {
-        if (isMounted) {
+        if (isMounted && isInitial) {
           setLoading(false);
         }
       }
     };
 
-    fetchBanners();
+    fetchBanners(true);
+
+    const handleFocus = () => {
+      fetchBanners(false);
+    };
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        fetchBanners(false);
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    const intervalId = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        fetchBanners(false);
+      }
+    }, 5000);
 
     return () => {
       isMounted = false;
+      clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [apiUrl, sectionKey, basePath]);
 

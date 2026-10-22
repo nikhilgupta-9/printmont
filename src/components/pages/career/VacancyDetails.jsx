@@ -93,6 +93,12 @@ const VacancyDetails = () => {
           setError("This vacancy is no longer available.");
         } else {
           setJob(record);
+          updatePageSEO({
+            title: `${record.job_title || record.title} - Careers at Printmont`,
+            description: `Apply for ${record.job_title || record.title} (${record.department || 'General'}) at Printmont. ${record.location || 'India'}. ${record.experience || ''} experience.`,
+            keywords: `${record.job_title}, printmont careers, hiring ${record.department}`,
+            type: "website"
+          });
         }
       } catch (err) {
         console.error("Failed to load vacancy:", err);

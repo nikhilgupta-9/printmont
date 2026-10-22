@@ -1,94 +1,105 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { API_ENDPOINTS, BASE_URL } from "../../../config/apiEndpoints";
 
 /**
  * Hook to fetch the home page layout sections.
- * Uses sessionStorage caching for instant rendering on revisits.
+ * Automatically synchronizes with backend updates in real-time via:
+ * 1. Window focus & tab visibility change (instant sync when switching back from Admin tab)
+ * 2. Background polling interval (auto-syncs changes without page reload)
+ *
  * @param {string} target 'desktop' | 'mobile'
  * @param {string} [baseURL] The base URL of the API.
+ * @param {number} [pollingIntervalMs=5000] Polling interval in ms for auto-refresh (default: 5000ms).
  */
-export default function useHomeLayout(target, baseURL) {
-  const cacheKey = `home_layout_cache_${target}`;
-
-  const [sections, setSections] = useState(() => {
-    if (target) {
-      try {
-        const cached = sessionStorage.getItem(cacheKey);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch (e) {}
-    }
-    return [];
-  });
-
-  const [loading, setLoading] = useState(() => {
-    if (!target) return false;
-    try {
-      const cached = sessionStorage.getItem(cacheKey);
-      if (cached) return false;
-    } catch (e) {}
-    return true;
-  });
-
+export default function useHomeLayout(target, baseURL, pollingIntervalMs = 5000) {
+  const [sections, setSections] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const lastFetchedDataRef = useRef("");
 
-  useEffect(() => {
+  const fetchLayout = useCallback(async (isInitial = false) => {
     if (!target) {
-      setLoading(false);
+      if (isInitial) setLoading(false);
       return;
     }
 
-    let isMounted = true;
-    const fetchLayout = async () => {
-      try {
-        // Only show loading if no cache exists
-        if (!sessionStorage.getItem(cacheKey)) {
-          setLoading(true);
-        }
-        const endpoint = API_ENDPOINTS.HOME_LAYOUT 
-          ? API_ENDPOINTS.HOME_LAYOUT(target)
-          : `${BASE_URL}/home-layout/home-layout.php?target=${target}`;
+    try {
+      if (isInitial) {
+        setLoading(true);
+      }
 
-        const response = await fetch(
-          `${endpoint}&_t=${Date.now()}`,
-          { cache: "no-store" }
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP Error! Status: ${response.status}`);
-        }
-        const data = await response.json();
+      const endpoint = API_ENDPOINTS.HOME_LAYOUT 
+        ? API_ENDPOINTS.HOME_LAYOUT(target)
+        : `${BASE_URL}/home-layout-api.php?target=${target}`;
 
-        if (!isMounted) return;
+      const response = await fetch(
+        `${endpoint}&_t=${Date.now()}`,
+        { cache: "no-store" }
+      );
 
-        if (data && data.success && Array.isArray(data.data)) {
-          // Cache the layout sections
-          try {
-            sessionStorage.setItem(cacheKey, JSON.stringify(data.data));
-          } catch (e) {}
+      if (!response.ok) {
+        throw new Error(`HTTP Error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data && data.success && Array.isArray(data.data)) {
+        const serialized = JSON.stringify(data.data);
+        if (serialized !== lastFetchedDataRef.current) {
+          lastFetchedDataRef.current = serialized;
           setSections(data.data);
-        } else {
-          throw new Error(data.error || "Failed to load layout configurations.");
         }
         setError(null);
-      } catch (err) {
-        if (isMounted) {
-          setError(err.message);
+      } else {
+        throw new Error(data.error || "Failed to load layout configurations.");
+      }
+    } catch (err) {
+      if (isInitial) {
+        setError(err.message);
+      }
+    } finally {
+      if (isInitial) {
+        setLoading(false);
+      }
+    }
+  }, [target, baseURL]);
+
+  useEffect(() => {
+    // 1. Initial fetch
+    fetchLayout(true);
+
+    // 2. Real-time background polling
+    let intervalId = null;
+    if (pollingIntervalMs > 0) {
+      intervalId = setInterval(() => {
+        if (document.visibilityState === "visible") {
+          fetchLayout(false);
         }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+      }, pollingIntervalMs);
+    }
+
+    // 3. Instant refetch when window gets focus (user switches back from Admin panel)
+    const handleFocus = () => {
+      fetchLayout(false);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchLayout(false);
       }
     };
 
-    fetchLayout();
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      isMounted = false;
+      if (intervalId) clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [target, baseURL]);
+  }, [fetchLayout, pollingIntervalMs]);
 
-  return { sections, loading, error };
+  return { sections, loading, error, refetch: () => fetchLayout(false) };
 }
+
+

@@ -1,11 +1,13 @@
-import React, { createContext, useState, useEffect, useMemo, useContext } from 'react';
+import React, { createContext, useState, useEffect, useMemo, useContext, useRef, useCallback } from 'react';
 import { BASE_URL, API_ENDPOINTS } from '../config/apiEndpoints';
+import useRequireLogin from '../hooks/useRequireLogin';
 
 export const CheckoutContext = createContext();
 
 export const useCheckout = () => useContext(CheckoutContext);
 
 export const CheckoutProvider = ({ children }) => {
+  const requireLogin = useRequireLogin();
   // 0 is the cart, which is not one of the numbered steps. Checkout proper is
   // 1 Address -> 2 Order Summary -> 3 Payment.
   const [checkoutStep, setCheckoutStep] = useState(0);
@@ -32,16 +34,18 @@ export const CheckoutProvider = ({ children }) => {
   const [address, setAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [useCashCoins, setUseCashCoins] = useState(false);
-  const [couponApplied, setCouponApplied] = useState(false);
+  // Coupon code the server accepted (admin coupons.php); '' = none
+  const [couponCode, setCouponCode] = useState('');
+  // Server price of the cart (user-api.php?action=checkout_quote) — the amounts shown at checkout
+  const [quote, setQuote] = useState(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
   // Entered from the cart's "Enter Delivery Pincode" button and used to
   // pre-fill the pincode on the address step.
   const [deliveryPincode, setDeliveryPincode] = useState('');
+  // Result of the pincode check for deliveryPincode (city, state, delivery date, COD)
+  const [deliveryInfo, setDeliveryInfo] = useState(null);
   
-  // Static backend config
   const API_URL = BASE_URL;
-  const PRINTMONT_COINS_BALANCE = 36;
-  const COUPON_DISCOUNT = 450;
-  const CASH_COINS_DISCOUNT = 20;
 
   // 1. Fetch Cart Items on Mount (if backend cart API available)
   useEffect(() => {
@@ -88,33 +92,57 @@ export const CheckoutProvider = ({ children }) => {
   };
 
   // Cart Actions
+  // Login is compulsory to add to cart. Returns false (and sends the guest to login) when not logged in.
   const addToCart = (product, qty = 1, options = {}) => {
+    if (!requireLogin('Please login to add items to your cart')) return false;
+    const productId = product.id || product.productId || product.product_id || (product.title ? product.title.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'product-' + Date.now());
+
+    // Sync to backend cart-api.php if logged in and product_id is valid
+    const token = localStorage.getItem('token');
+    if (token && Number(productId) > 0) {
+      fetch(`${API_URL}/cart-api.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          product_id: Number(productId),
+          quantity: qty > 0 ? qty : 1,
+          attributes: options
+        })
+      }).catch(err => console.error('Cart API sync failed:', err));
+    }
+
     setCartItems(prev => {
-      const productId = product.id || product.productId || (product.title ? product.title.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'product-' + Date.now());
       const existingIndex = prev.findIndex(item => String(item.id) === String(productId));
       
       if (existingIndex > -1) {
-        const updated = [...prev];
-        updated[existingIndex].quantity += qty;
-        return updated;
+        // Same product again: add to its quantity (new object, so React sees the change)
+        return prev.map((item, i) => (i === existingIndex ? { ...item, quantity: (Number(item.quantity) || 0) + qty } : item));
       }
 
-      const price = Number(product.perPiecePrice || product.currentPrice || product.price || 499);
-      const originalPrice = Number(product.originalPrice || (price * 1.3));
-      const rawDiscount = product.discount ? parseInt(product.discount) : 20;
+      const price = Number(product.perPiecePrice || product.currentPrice || product.price || product.discountedPrice || 0);
+      const originalPrice = Number(product.originalPrice || product.regular_price || product.mrp || price);
+      const rawDiscount = product.discount ? parseInt(product.discount) : (originalPrice > price && price > 0 ? Math.round(((originalPrice - price) / originalPrice) * 100) : 20);
 
       let imageSrc = '/men_shirt/men-shirt-2.jpeg';
       if (product.images && product.images.length > 0) {
-        imageSrc = product.images[0];
+        imageSrc = typeof product.images[0] === 'string' ? product.images[0] : (product.images[0]?.image_url || product.images[0]);
       } else if (product.image) {
         imageSrc = product.image;
+      } else if (product.image_url) {
+        imageSrc = product.image_url;
       } else if (product.primary_image) {
         imageSrc = product.primary_image;
+      } else if (product.thumbnail) {
+        imageSrc = product.thumbnail;
       }
 
       const newItem = {
         id: productId,
         name: product.title || product.name || 'Printmont Custom Product',
+        slug: product.slug || '',
         price: isNaN(price) ? 499 : price,
         originalPrice: isNaN(originalPrice) ? 699 : originalPrice,
         discount: isNaN(rawDiscount) ? 20 : rawDiscount,
@@ -128,6 +156,7 @@ export const CheckoutProvider = ({ children }) => {
       };
       return [...prev, newItem];
     });
+    return true;
   };
 
   const updateQuantity = (id, newQuantity) => {
@@ -159,94 +188,204 @@ export const CheckoutProvider = ({ children }) => {
     }
   };
 
-  // Dynamic Calculations
-  const cartTotals = useMemo(() => {
-    const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-    const originalTotalPrice = cartItems.reduce((acc, item) => acc + (item.originalPrice * item.quantity), 0);
-    const totalSellingPrice = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const totalDiscount = originalTotalPrice - totalSellingPrice;
-    
-    const deliveryCharges = originalTotalPrice > 1000 ? 0 : 160;
-    
-    let totalPayable = totalSellingPrice + deliveryCharges;
-    
-    if (couponApplied) {
-        totalPayable -= COUPON_DISCOUNT;
-    }
-    
-    if (useCashCoins) {
-        totalPayable -= CASH_COINS_DISCOUNT;
-    }
+  // What the server needs to price a cart line: product, quantity and the chosen options
+  const linePayload = (item) => ({
+    product_id: item.id || item.productId || item.product_id,
+    quantity: Number(item.quantity) || 1,
+    attributes: {
+      size: item.size || null,
+      color: item.color && item.color !== 'Default' ? item.color : null,
+      customization: item.customization || {},
+    },
+  });
 
+  const authToken = () => localStorage.getItem('token') || localStorage.getItem('user_token');
+
+  const fetchQuote = useCallback(async (code = couponCode, coins = useCashCoins) => {
+    if (cartItems.length === 0) return null;
+    const headers = { 'Content-Type': 'application/json' };
+    const token = authToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(API_ENDPOINTS.CHECKOUT_QUOTE, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ items: cartItems.map(linePayload), coupon_code: code, use_coins: coins }),
+    });
+    return res.json();
+  }, [cartItems, couponCode, useCashCoins]);
+
+  // Re-price whenever the cart, coupon or coins choice changes
+  const quoteSeq = useRef(0);
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      setQuote(null);
+      return undefined;
+    }
+    const seq = ++quoteSeq.current;
+    const timer = setTimeout(async () => {
+      setQuoteLoading(true);
+      try {
+        const data = await fetchQuote();
+        if (seq === quoteSeq.current && data && Array.isArray(data.items)) setQuote(data);
+      } catch (e) {
+        console.error('Checkout quote error:', e);
+      } finally {
+        if (seq === quoteSeq.current) setQuoteLoading(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [fetchQuote, cartItems.length]);
+
+  /** Checks a coupon with the server. Returns { valid, message }. */
+  const applyCoupon = async (code) => {
+    const trimmed = String(code || '').trim();
+    if (!trimmed) return { valid: false, message: 'Enter a coupon code' };
+    try {
+      const data = await fetchQuote(trimmed, useCashCoins);
+      if (data?.coupon?.valid) {
+        setCouponCode(data.coupon.code);
+        setQuote(data);
+        return { valid: true, message: `Coupon ${data.coupon.code} applied — you save ₹${Number(data.coupon.amount).toLocaleString('en-IN')}` };
+      }
+      return { valid: false, message: data?.coupon?.message || 'This coupon code is not valid.' };
+    } catch {
+      return { valid: false, message: 'Could not check the coupon. Please try again.' };
+    }
+  };
+
+  const removeCoupon = () => setCouponCode('');
+
+  // Amounts for the cart / checkout screens. The server quote is used once it arrives;
+  // until then a local estimate (same rules, without coupon / coins) fills in.
+  const cartTotals = useMemo(() => {
+    const totalItems = cartItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+    if (quote && Array.isArray(quote.items) && cartItems.length > 0) {
+      return {
+        totalItems: quote.item_count || totalItems,
+        originalTotalPrice: Number(quote.mrp_total) || 0,
+        totalSellingPrice: Number(quote.subtotal) || 0,
+        totalDiscount: Number(quote.discount) || 0,
+        deliveryCharges: Number(quote.delivery) || 0,
+        couponApplied: quote.coupon?.valid ? Number(quote.coupon.amount) : 0,
+        couponCode: quote.coupon?.valid ? quote.coupon.code : '',
+        cashCoinsApplied: Number(quote.coins?.amount) || 0,
+        coinsUsed: Number(quote.coins?.used) || 0,
+        coinsBalance: Number(quote.coins?.balance) || 0,
+        coinsUsable: Number(quote.coins?.usable) || 0,
+        totalPayable: Number(quote.grand_total) || 0,
+        totalSaved: Number(quote.you_save) || 0,
+        errors: quote.errors || [],
+        isServerPrice: true,
+      };
+    }
+    const originalTotalPrice = cartItems.reduce((acc, item) => acc + (Number(item.originalPrice || item.price) * item.quantity), 0);
+    const totalSellingPrice = cartItems.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0);
+    const deliveryCharges = totalSellingPrice > 1000 || totalSellingPrice === 0 ? 0 : 160;
     return {
       totalItems,
       originalTotalPrice,
       totalSellingPrice,
-      totalDiscount,
+      totalDiscount: Math.max(0, originalTotalPrice - totalSellingPrice),
       deliveryCharges,
-      couponApplied: couponApplied ? COUPON_DISCOUNT : 0,
-      cashCoinsApplied: useCashCoins ? CASH_COINS_DISCOUNT : 0,
-      totalPayable,
-      totalSaved: totalDiscount + (couponApplied ? COUPON_DISCOUNT : 0) + (useCashCoins ? CASH_COINS_DISCOUNT : 0)
+      couponApplied: 0,
+      couponCode: '',
+      cashCoinsApplied: 0,
+      coinsUsed: 0,
+      coinsBalance: 0,
+      coinsUsable: 0,
+      totalPayable: totalSellingPrice + deliveryCharges,
+      totalSaved: Math.max(0, originalTotalPrice - totalSellingPrice),
+      errors: [],
+      isServerPrice: false,
     };
-  }, [cartItems, couponApplied, useCashCoins]);
+  }, [cartItems, quote]);
 
   // Empties the cart itself. Saved-for-later items are deliberately left
   // alone — they were never part of the order.
   const clearCart = () => {
     setCartItems([]);
-    setCouponApplied(false);
+    setCouponCode('');
     setUseCashCoins(false);
+    setQuote(null);
   };
 
   /**
-   * Final order submission.
-   *
-   * Returns a result object rather than reporting to the user itself: the
-   * caller owns the UI, and it needs to know whether the order actually
-   * landed before navigating away or showing a success message.
+   * Places the order. The server prices it again (never trusts amounts from here).
+   * COD → order is placed and the cart is cleared.
+   * Online → returns `razorpay` details; call verifyPayment() after Razorpay's success callback.
    */
-  const submitOrder = async () => {
+  const submitOrder = async (extraParams = {}) => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('user_token');
+      const token = authToken();
       const headers = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const finalPaymentMethod = extraParams.paymentMethod || paymentMethod || 'cod';
+      const recipientName = buyerDetails?.name || address?.name || '';
+      const recipientEmail = buyerDetails?.email || address?.email || '';
+      const recipientPhone = buyerDetails?.mobile || buyerDetails?.phone || address?.mobile || address?.phone || '';
+
+      const orderPayload = {
+        customer_name: recipientName,
+        customer_email: recipientEmail,
+        customer_phone: recipientPhone,
+        buyerDetails: { name: recipientName, email: recipientEmail, mobile: recipientPhone, phone: recipientPhone },
+        address: address || {},
+        payment_method: finalPaymentMethod,
+        paymentMethod: finalPaymentMethod,
+        items: cartItems.map((item) => ({
+          ...linePayload(item),
+          name: item.name || item.title,
+          image: item.image || item.product_image || '',
+        })),
+        coupon_code: couponCode,
+        use_coins: useCashCoins,
+        notes: address?.orderNotes || '',
+      };
 
       const response = await fetch(API_ENDPOINTS.CREATE_ORDER, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          buyerDetails,
-          address,
-          paymentMethod,
-          items: cartItems,
-          totalAmount: cartTotals.totalPayable
-        })
+        body: JSON.stringify(orderPayload)
       });
-
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok || !data.success) {
-        return {
-          success: false,
-          error: data.error || data.message || 'Could not place your order.',
-        };
+        return { success: false, error: data.error || data.message || 'Could not place your order.' };
       }
 
-      // The cart has become an order, so it must not survive the checkout.
-      clearCart();
+      // COD: done. Online: the cart stays until the payment is verified.
+      if (!data.razorpay) clearCart();
 
       return {
         success: true,
         orderId: data.order_id ?? data.id ?? null,
         orderNumber: data.order_number ?? null,
         grandTotal: data.grand_total ?? null,
+        razorpay: data.razorpay || null,
       };
     } catch (error) {
       console.error("Order submission error:", error);
       return { success: false, error: 'Could not reach the checkout server.' };
+    }
+  };
+
+  /** Confirms an online payment on the server (Razorpay signature check), then clears the cart. */
+  const verifyPayment = async (orderId, razorpayResponse) => {
+    try {
+      const res = await fetch(API_ENDPOINTS.VERIFY_PAYMENT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken()}` },
+        body: JSON.stringify({ order_id: orderId, ...razorpayResponse }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Payment could not be verified.' };
+      }
+      clearCart();
+      return { success: true, orderId: data.order_id, orderNumber: data.order_number };
+    } catch {
+      return { success: false, error: 'Could not reach the server to confirm your payment.' };
     }
   };
 
@@ -260,14 +399,15 @@ export const CheckoutProvider = ({ children }) => {
       address, setAddress,
       paymentMethod, setPaymentMethod,
       useCashCoins, setUseCashCoins,
-      couponApplied, setCouponApplied,
+      couponCode, applyCoupon, removeCoupon,
       deliveryPincode, setDeliveryPincode,
-      PRINTMONT_COINS_BALANCE,
-      
+      deliveryInfo, setDeliveryInfo,
+      quote, quoteLoading,
+
       // Actions
       addToCart, updateQuantity, removeItem, saveForLater, moveToCart,
-      clearCart, submitOrder,
-      
+      clearCart, submitOrder, verifyPayment,
+
       // Computed
       cartTotals
     }}>

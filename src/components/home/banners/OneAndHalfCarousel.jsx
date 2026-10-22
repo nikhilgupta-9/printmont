@@ -2,33 +2,37 @@ import React from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import useHomeBanners from "../hooks/useHomeBanners";
 import BannerImage from "./BannerImage";
+import normalizeBanner from "../utils/normalizeBanner";
 import "swiper/css";
 
 /**
- * Mobile-only 1.5 Peek Image Carousel (shows 1 full image + 50% peek of the next image).
+ * Mobile Peeking Image Carousel Slider (shows ~1.25 slides with next slide peeking from right).
  * @param {string} [apiUrl] The API endpoint to fetch banners from.
- * @param {Array} [banners] Static banners list.
+ * @param {Array} [banners] Static or pre-fetched banners list.
  * @param {string} [sectionKey] Optional section key payload.
+ * @param {boolean} [isMobileOnly] Whether to hide on desktop.
  */
 export default function OneAndHalfCarousel({
   apiUrl,
   banners: propBanners,
   sectionKey = "",
-  isMobileOnly = true
+  basePath = "",
+  isMobileOnly = false
 }) {
-  const { banners: fetchedBanners, loading, error } = useHomeBanners(apiUrl, sectionKey);
-  const banners = propBanners || fetchedBanners || [];
+  const { banners: fetchedBanners, loading, error } = useHomeBanners(apiUrl, sectionKey, basePath);
+  const rawBanners = (propBanners && propBanners.length > 0) ? propBanners : (fetchedBanners || []);
+  const banners = rawBanners.map(b => normalizeBanner(b, basePath)).filter(Boolean);
 
-  if (loading && !propBanners) {
+  if (loading && (!propBanners || propBanners.length === 0)) {
     return (
-      <div className={`${isMobileOnly ? "d-block d-md-none" : "d-block"} w-100 px-2`}>
-        <div className="shimmer-bg skeleton-slider-mobile w-100" />
+      <div className={`${isMobileOnly ? "d-block d-md-none" : "d-block"} w-100 px-2 py-2`}>
+        <div className="shimmer-bg skeleton-slider-mobile w-100" style={{ height: "160px", borderRadius: "10px" }} />
       </div>
     );
   }
 
-  if (error && !propBanners) {
-    return <div className="text-center p-3 text-danger">Error: {error}</div>;
+  if (error && (!propBanners || propBanners.length === 0)) {
+    return null;
   }
 
   if (banners.length === 0) {
@@ -36,13 +40,17 @@ export default function OneAndHalfCarousel({
   }
 
   return (
-    <div className={`${isMobileOnly ? "d-block d-md-none" : "d-block"} w-100 home-banner-section p-0 m-0`}>
+    <div className={`${isMobileOnly ? "d-block d-md-none" : "d-block"} w-100 home-banner-section py-2 px-2`}>
       <Swiper
-        slidesPerView={1.25}
-        spaceBetween={12}
+        slidesPerView={1.22}
+        spaceBetween={10}
         breakpoints={{
           480: {
-            slidesPerView: 1.5,
+            slidesPerView: 1.4,
+            spaceBetween: 12
+          },
+          768: {
+            slidesPerView: 2.2,
             spaceBetween: 14
           }
         }}
@@ -50,15 +58,19 @@ export default function OneAndHalfCarousel({
       >
         {banners.map((banner, index) => (
           <SwiperSlide key={index}>
-            <BannerImage
-              large={banner.large}
-              small={banner.small}
-              target={banner.target}
-              alt={banner.alt || `Slide ${index + 1}`}
-            />
+            <div className="overflow-hidden shadow-sm" style={{ borderRadius: "10px" }}>
+              <BannerImage
+                large={banner.large}
+                small={banner.small}
+                target={banner.target}
+                alt={banner.alt || `Slide ${index + 1}`}
+                borderRadius="10px"
+              />
+            </div>
           </SwiperSlide>
         ))}
       </Swiper>
     </div>
   );
 }
+

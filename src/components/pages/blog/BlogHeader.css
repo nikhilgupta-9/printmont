@@ -1,0 +1,315 @@
+/* ==========================================================================
+   Printmont Dedicated Blog Header Stylesheet (BlogHeader.css)
+   Matches the PDF Mockup Header Structure:
+     1. Top Bar: Welcome to Printmont | Follow us on Social
+     2. Primary Category Bar: Navy Blue strip (#0b53a1) with White dropdown items
+     3. Center Logo Header: Dedicated PRINTMONT | BLOG Branding
+     4. Sub-Navigation / Topic Bar: Occasion, Relationship, Corporate Gift Ideas...
+   ========================================================================== */
+
+.pm-blog-header-wrapper {
+  background-color: #ffffff;
+  width: 100%;
+  border-bottom: 1px solid #e2e8f0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* 1. TOP BAR */
+.pm-blog-top-bar {
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 6px 0;
+  font-size: 12px;
+  color: #475569;
+}
+
+.pm-blog-top-container {
+  max-width: 1400px !important;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pm-blog-top-welcome {
+  font-weight: 500;
+  color: #334155;
+}
+
+.pm-blog-top-social {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pm-blog-social-label {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.pm-blog-social-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pm-blog-social-btn {
+  color: #475569;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, transform 0.15s ease;
+  text-decoration: none;
+}
+
+.pm-blog-social-btn:hover {
+  color: #0b53a1;
+  transform: translateY(-1px);
+}
+
+/* 2. PRIMARY CATEGORY STRIP (NAVY BLUE) */
+.pm-blog-cat-strip {
+  background-color: #0b53a1;
+  color: #ffffff;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.pm-blog-cat-container {
+  max-width: 1400px !important;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.pm-blog-cat-list {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none; /* Firefox */
+}
+
+.pm-blog-cat-list::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.pm-blog-cat-item {
+  position: relative;
+}
+
+.pm-blog-cat-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 10px 9px;
+  text-decoration: none;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+  letter-spacing: -0.01em;
+}
+
+.pm-blog-cat-link:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.12);
+  text-decoration: none;
+}
+
+.pm-blog-cat-arrow {
+  font-size: 9px;
+  opacity: 0.85;
+}
+
+/* 3. CENTER LOGO BRANDING AREA */
+.pm-blog-brand-section {
+  background-color: #ffffff;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.pm-blog-brand-container {
+  max-width: 1400px !important;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.pm-blog-logo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  margin: 0 auto;
+}
+
+.pm-blog-logo-img {
+  height: 52px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.pm-blog-logo-img:hover {
+  opacity: 0.95;
+  transform: scale(1.01);
+}
+
+/* 4. BLOG TOPIC / SUB-NAVIGATION BAR (FNP Style Horizontal Scrollable Chips) */
+.pm-blog-topic-strip {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0;
+  width: 100%;
+}
+
+.pm-blog-topic-container {
+  max-width: 1400px !important;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.pm-blog-topic-list {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  list-style: none;
+  margin: 0;
+  padding: 10px 0;
+}
+
+.pm-blog-topic-item {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pm-blog-topic-btn {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 6px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.pm-blog-topic-btn:hover {
+  color: #0b53a1;
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+  text-decoration: none;
+}
+
+.pm-blog-topic-btn.is-active {
+  color: #ffffff !important;
+  font-weight: 600;
+  background-color: #0b53a1 !important;
+  border-color: #0b53a1 !important;
+  box-shadow: 0 2px 8px rgba(11, 83, 161, 0.28);
+}
+
+.pm-blog-topic-arrow {
+  font-size: 10px;
+  color: #64748b;
+  transition: transform 0.15s ease;
+}
+
+.pm-blog-topic-btn:hover .pm-blog-topic-arrow {
+  color: #0b53a1;
+}
+
+.pm-blog-topic-btn.is-active .pm-blog-topic-arrow {
+  color: #ffffff;
+}
+
+/* Mobile Adjustments (FNP Mobile Style, Rule 8 Standards) */
+@media (max-width: 991px) {
+  .pm-blog-top-container,
+  .pm-blog-cat-container,
+  .pm-blog-brand-container,
+  .pm-blog-topic-container {
+    padding: 0 14px !important;
+  }
+
+  .pm-blog-brand-container {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px !important;
+  }
+
+  .pm-blog-logo-link {
+    justify-content: center;
+    margin: 0 auto;
+  }
+
+  .pm-blog-logo-img {
+    height: 42px;
+  }
+
+  /* Horizontal Scrollable Capsule Pills (FNP Mobile Chips) */
+  .pm-blog-topic-list {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 6px 0;
+    gap: 8px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pm-blog-topic-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pm-blog-topic-btn {
+    font-size: 12.5px;
+    padding: 5px 14px;
+    border-radius: 9999px;
+  }
+
+  .pm-blog-topic-arrow {
+    display: none; /* Hide dropdown arrow on mobile chips for clean FNP look */
+  }
+}
+
+@media (max-width: 576px) {
+  .pm-blog-top-bar {
+    display: none;
+  }
+
+  .pm-blog-brand-section {
+    background-color: #ffffff;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .pm-blog-brand-container {
+    padding: 0 14px !important;
+    justify-content: center;
+  }
+
+  .pm-blog-logo-img {
+    height: 36px;
+  }
+}

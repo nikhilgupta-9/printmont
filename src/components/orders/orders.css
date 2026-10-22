@@ -248,15 +248,27 @@
 
 /* Labels live inside the controls as placeholders, so the boxes are
    uniform and taller than Bootstrap's default. */
+.checkout-address-form {
+    border-radius: 4px;
+}
+
 .checkout-input.form-control,
 .checkout-input.form-select {
     border: 1px solid #b6bcc4;
-    border-radius: 3px;
-    padding: 12px 12px;
-    font-size: 13px;
+    border-radius: 4px;
+    padding: 10px 12px;
+    min-height: 44px;
+    font-size: 13.5px;
     color: #1a1a1a;
     background-color: #fff;
     box-shadow: none;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.checkout-address-form .invalid-feedback {
+    font-size: 12px;
+    margin-top: 4px;
+    margin-bottom: 2px;
 }
 
 .checkout-input.form-control::placeholder {
@@ -697,3 +709,457 @@
         display: block;
     }
 }
+
+/* ============================================================
+   FLIPKART STYLE "MY ORDERS" & MOBILE COMPONENT STYLES
+   ============================================================ */
+
+.orders-page-wrapper {
+    background-color: #f1f3f6;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.orders-container {
+    max-width: 1360px;
+}
+
+/* 1. Flipkart Order Card */
+.flipkart-order-card {
+    border: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.flipkart-order-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border-color: #c5d3e8;
+}
+
+.order-card-thumb-wrap {
+    width: 75px;
+    height: 75px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.order-card-thumb {
+    width: 75px;
+    height: 75px;
+    object-fit: contain;
+    padding: 2px;
+}
+
+.extra-items-pill {
+    font-size: 0.65rem;
+    padding: 1px 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.order-product-title {
+    font-size: 0.95rem;
+    line-height: 1.35;
+    color: #212121;
+}
+
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Status dots */
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.status-dot-sm {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+/* Rate & Review Button */
+.btn-rate-review {
+    background: transparent;
+    border: none;
+    color: #2874f0;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-rate-review:hover {
+    background: #eff6ff;
+    color: #0b53a1;
+}
+
+.btn-track-order {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    color: #0b53a1;
+    font-weight: 600;
+    font-size: 0.82rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.btn-track-order:hover {
+    background: #0b53a1;
+    border-color: #0b53a1;
+    color: #ffffff;
+}
+
+/* 2. Mobile Toolbar & Quick Chips */
+.mobile-orders-toolbar {
+    position: sticky;
+    top: 54px;
+    z-index: 1020;
+}
+
+.mobile-quick-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.mobile-quick-chips {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    white-space: nowrap;
+}
+
+.quick-chip {
+    flex-shrink: 0;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.quick-chip.active {
+    background: #0b53a1;
+    border-color: #0b53a1;
+    color: #ffffff;
+}
+
+/* 3. Mobile Slide-up Bottom Sheet Modal */
+.mobile-filter-backdrop,
+.order-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 1060;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.mobile-filter-sheet {
+    width: 100%;
+    max-width: 540px;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.filter-sheet-handle {
+    width: 44px;
+    height: 4px;
+    border-radius: 4px;
+    background: #cbd5e1;
+}
+
+.filter-pill-btn {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.filter-pill-btn .pill-sign {
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.filter-pill-btn.active {
+    background: #eff6ff;
+    border-color: #0b53a1;
+    color: #0b53a1;
+    font-weight: 600;
+}
+
+/* 4. Order Detail & Review Modals */
+.order-detail-sheet,
+.order-review-sheet {
+    width: 100%;
+    max-width: 720px;
+    max-height: 90vh;
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    display: flex;
+    flex-column: column;
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (min-width: 768px) {
+    .order-modal-backdrop {
+        align-items: center;
+        padding: 20px;
+    }
+
+    .order-detail-sheet,
+    .order-review-sheet {
+        border-radius: 16px;
+        max-height: 85vh;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+}
+
+.order-detail-body {
+    overflow-y: auto;
+    max-height: calc(90vh - 65px);
+}
+
+.btn-close-custom {
+    background: #f1f5f9;
+    border: none;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #475569;
+    transition: background 0.15s ease;
+}
+
+.btn-close-custom:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+/* Border utilities */
+.border-start-md {
+    border-left: none;
+}
+
+@media (min-width: 768px) {
+    .border-start-md {
+        border-left: 1px solid #e2e8f0;
+    }
+}
+
+/* 6. Tax Invoice Modal & Print Layout */
+.tax-invoice-modal-wrapper {
+    width: 100%;
+    max-width: 840px;
+    max-height: 92vh;
+    border-radius: 12px;
+    overflow-y: auto;
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tax-invoice-sheet {
+    background-color: #ffffff;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: #1a1a1a;
+}
+
+.order-help-modal-sheet {
+    width: 100%;
+    max-width: 580px;
+    max-height: 90vh;
+    border-radius: 16px;
+    overflow-y: auto;
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.hover-bg-light:hover {
+    background-color: #f8fafc !important;
+}
+
+/* High Quality Print Rules for Tax Invoices */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    
+    .tax-invoice-sheet,
+    .tax-invoice-sheet * {
+        visibility: visible;
+    }
+    
+    .tax-invoice-sheet {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px !important;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .order-modal-backdrop {
+        background: transparent !important;
+        position: static !important;
+    }
+
+    .tax-invoice-modal-wrapper {
+        max-width: 100% !important;
+        max-height: none !important;
+        box-shadow: none !important;
+    }
+}
+
+/* ========================================================
+   FLIPKART-STYLE DESKTOP ORDER FILTERS CARD
+   ======================================================== */
+.order-filter-card {
+    background-color: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e2e8f0 !important;
+}
+
+.order-filter-card .filter-header-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.2px;
+}
+
+.order-filter-card .clear-all-btn {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #0b53a1;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    background: transparent;
+    border: none;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.order-filter-card .clear-all-btn:hover {
+    color: #07386d;
+    background-color: #eff6ff;
+}
+
+.order-filter-section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+
+.order-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.order-filter-row:hover {
+    background-color: #f8fafc;
+}
+
+.order-filter-row.active {
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.order-filter-row .fk-checkbox {
+    width: 17px;
+    height: 17px;
+    border: 1.5px solid #94a3b8;
+    border-radius: 4px;
+    background-color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+}
+
+.order-filter-row:hover .fk-checkbox {
+    border-color: #0b53a1;
+}
+
+.order-filter-row.active .fk-checkbox {
+    background-color: #0b53a1;
+    border-color: #0b53a1;
+    box-shadow: 0 1px 2px rgba(11, 83, 161, 0.2);
+}
+
+.order-filter-row .filter-label-text {
+    font-size: 0.85rem;
+    color: #334155;
+    transition: color 0.15s ease;
+}
+
+.order-filter-row.active .filter-label-text {
+    font-weight: 600;
+    color: #0b53a1;
+}
+
+.order-filter-divider {
+    height: 1px;
+    background-color: #f1f5f9;
+    margin: 4px 0;
+}
+
+

@@ -1,0 +1,132 @@
+/* =========================================================
+   Printmont Dynamic Desktop Footer Styles
+   Connected to printmont-backend/footer-management.php
+   Rule 7 (1400px Container), Rule 8 (Responsive), Rule 9
+   ========================================================= */
+
+.footer-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding-left: clamp(20px, 3.5vw, 48px);
+  padding-right: clamp(20px, 3.5vw, 48px);
+  box-sizing: border-box;
+}
+
+@media (max-width: 767.98px) {
+  .footer-container {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
+/* 1. Main Footer Shell */
+.desktop-footer-view {
+  background-color: var(--pm-foot-bg, #0e1a35);
+  color: var(--pm-foot-text, #cbd5e1);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.footer-sec-heading {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  color: var(--pm-foot-heading, #ffffff);
+}
+
+/* 2. Dynamic Navigation Links with Admin Hover Color */
+.footer-nav-link {
+  color: var(--pm-foot-link, #94a3b8) !important;
+  text-decoration: none !important;
+  display: inline-block;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.footer-nav-link:hover {
+  color: var(--pm-foot-link-hover, #f8991d) !important;
+  transform: translateX(3px);
+}
+
+/* 3. Social Media Round Buttons */
+.footer-social-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none !important;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.footer-social-btn:hover {
+  background-color: var(--pm-foot-link-hover, #f8991d);
+  color: #ffffff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  border-color: var(--pm-foot-link-hover, #f8991d);
+}
+
+/* 4. Bottom Strip */
+.footer-bottom-bar {
+  background-color: var(--pm-foot-bottom-bg, #091224);
+  border-top: 1px solid var(--pm-foot-border, rgba(255, 255, 255, 0.1));
+  transition: background-color 0.3s ease;
+}
+
+.footer-bottom-link-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--pm-foot-link, #94a3b8) !important;
+  text-decoration: none !important;
+  font-size: 0.8125rem;
+  transition: color 0.2s ease;
+}
+
+.footer-bottom-link-item:hover {
+  color: var(--pm-foot-link-hover, #f8991d) !important;
+}
+
+.footer-pay-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pm-foot-text, #cbd5e1);
+  opacity: 0.8;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.footer-pay-icon:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* 5. Desktop vs Mobile Responsiveness */
+@media (max-width: 991.98px) {
+  .desktop-footer-view,
+  .small-screen-foot {
+    display: none !important;
+  }
+  .mobile-footer-wrapper,
+  .big-screen-foot {
+    display: block !important;
+  }
+}
+
+@media (min-width: 992px) {
+  .desktop-footer-view,
+  .small-screen-foot {
+    display: block !important;
+  }
+  .mobile-footer-wrapper,
+  .big-screen-foot {
+    display: none !important;
+  }
+}
+

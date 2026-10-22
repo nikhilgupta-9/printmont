@@ -1,0 +1,309 @@
+/* Questions & Answers on the product page — Flipkart style (mobile base, desktop via .prq--desktop) */
+.prq {
+  background: #fff;
+  padding: 16px 8px;
+  color: #212121;
+}
+
+.prq__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.prq__heading {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #212121;
+  cursor: pointer;
+  user-select: none;
+}
+
+.prq__sub {
+  font-size: 0.75rem;
+  color: #878787;
+  margin-top: 2px;
+}
+
+.prq__toggle {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  color: #555;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prq__body {
+  margin-top: 8px;
+}
+
+/* Search */
+.prq__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  color: #878787;
+  margin-bottom: 4px;
+}
+
+.prq__search input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 0.85rem;
+  color: #212121;
+  min-width: 0;
+}
+
+.prq__search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+/* List */
+.prq__item {
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.prq__item:last-child {
+  border-bottom: 0;
+}
+
+.prq__q {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.prq__a {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #212121;
+}
+
+.prq__label {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.prq__a--pending {
+  color: #878787;
+  font-style: italic;
+}
+
+.prq__more {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin-left: 4px;
+  color: #2874f0;
+  font-weight: 600;
+  font-size: inherit;
+}
+
+.prq__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.prq__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-size: 0.72rem;
+  color: #878787;
+  min-width: 0;
+}
+
+.prq__author {
+  color: #212121;
+  font-weight: 500;
+}
+
+.prq__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.prq__reactions {
+  display: flex;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.prq__react {
+  background: none;
+  border: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #878787;
+}
+
+.prq__react:hover {
+  color: #212121;
+}
+
+.prq__react.is-like {
+  color: #2874f0;
+  font-weight: 600;
+}
+
+.prq__react.is-dislike {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.prq__empty {
+  padding: 16px 0 8px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: #878787;
+}
+
+/* "All questions" button, same look as "Show all reviews" */
+.prq__all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 8px;
+  border: 1px solid #d4d5d9;
+  border-radius: 8px;
+  background: #fff;
+  color: #212121;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.prq__all:hover {
+  background: #fafafa;
+}
+
+/* "Have doubts?" post-question strip */
+.prq__ask {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: #f5faff;
+  border: 1px solid #e3eefd;
+  border-radius: 8px;
+}
+
+.prq__ask-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.prq__ask-sub {
+  font-size: 0.72rem;
+  color: #878787;
+}
+
+.prq__ask-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid #2874f0;
+  border-radius: 4px;
+  background: #fff;
+  color: #2874f0;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.prq__ask-btn:hover {
+  background: #2874f0;
+  color: #fff;
+}
+
+.prq__trust {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #878787;
+}
+
+/* ---------- Desktop ---------- */
+.prq--desktop {
+  padding: 16px 16px;
+}
+
+.prq--desktop .prq__heading {
+  font-size: 1.25rem;
+}
+
+.prq--desktop .prq__sub {
+  font-size: 0.8rem;
+}
+
+.prq--desktop .prq__search {
+  max-width: 520px;
+}
+
+.prq--desktop .prq__item {
+  padding: 16px 0;
+}
+
+.prq--desktop .prq__q {
+  font-size: 0.92rem;
+}
+
+.prq--desktop .prq__a {
+  font-size: 0.875rem;
+}
+
+.prq--desktop .prq__meta {
+  font-size: 0.75rem;
+}
+
+.prq--desktop .prq__ask {
+  padding: 16px 16px;
+}
+
+/* ---------- Small phones ---------- */
+@media (max-width: 400px) {
+  .prq__ask {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .prq__ask-btn {
+    justify-content: center;
+  }
+
+  .prq__foot {
+    align-items: flex-end;
+  }
+}
