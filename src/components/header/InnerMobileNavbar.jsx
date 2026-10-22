@@ -5,7 +5,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import useAccountNavigation from '../../hooks/useAccountNavigation';
 import { useCheckout } from '../../context/CheckoutContext';
-import { API_ENDPOINTS, ASSET_URL } from '../../config/apiEndpoints';
+import { API_ENDPOINTS, ASSET_URL, assetUrl } from '../../config/apiEndpoints';
 import LoginDropdown from './LoginDropdown';
 import './Header.css';
 
@@ -57,7 +57,7 @@ const InnerMobileNavbar = ({
           }
           if (logoData) {
             const filePath = logoData.file_path.startsWith('/') ? logoData.file_path.substring(1) : logoData.file_path;
-            setLogo(`${ASSET_URL}${filePath}${logoData.file_name}`);
+            setLogo(assetUrl(filePath + logoData.file_name));
           }
         }
       } catch (error) {

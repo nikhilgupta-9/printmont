@@ -18,7 +18,7 @@ import {
 } from "react-icons/ri";
 import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from '../search/SearchBar';
-import { API_ENDPOINTS, ASSET_URL, resolveImageUrl } from '../../config/apiEndpoints';
+import { API_ENDPOINTS, ASSET_URL, resolveImageUrl, assetUrl } from '../../config/apiEndpoints';
 import { useCheckout } from '../../context/CheckoutContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useAuth } from '../../context/AuthContext';
@@ -77,7 +77,7 @@ const MobileHeader = () => {
           }
           if (logoData) {
             const filePath = logoData.file_path.startsWith('/') ? logoData.file_path.substring(1) : logoData.file_path;
-            setLogo(`${ASSET_URL}${filePath}${logoData.file_name}`);
+            setLogo(assetUrl(filePath + logoData.file_name));
           }
         }
       } catch (error) {

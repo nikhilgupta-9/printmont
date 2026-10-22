@@ -18,7 +18,7 @@ const SectionSix = () => {
 
             <div className='border-top border-bottom d-flex justify-content-around gap-2 align-items-center mt-2 mb-2'>
               <div className='d-flex flex-column justify-content-center align-items-center'>
-                <img src="./section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
+                <img src="/section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
                 <p className='m-0 p-0 fw-bold product-name-font'>T-shirt</p>
                 <p className='m-0 p-0 fs-8 offer'>Min 50% off</p>
               </div>
@@ -26,12 +26,12 @@ const SectionSix = () => {
               <div className='d-flex'>
                 <div className='d-flex justify-content-between align-items-center flex-column'>
                   <div className='d-flex flex-column justify-content-center align-items-center p-2 border-start'>
-                    <img src="./section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
+                    <img src="/section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
                     <h6 className='mt-2'>Watch</h6>
                     <p className='me-2'>Top offer</p>
                   </div>
                   <div className='d-flex flex-column justify-content-center align-items-center p-2 border-start'>
-                    <img src="./section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
+                    <img src="/section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
                     <h6 className='mt-2'>Watch</h6>
                     <p className='me-2'>Top offer</p>
                   </div>
@@ -53,7 +53,7 @@ const SectionSix = () => {
 
             <div className='border-top border-bottom d-flex justify-content-around gap-2 align-items-center mt-2 mb-2'>
               <div className='d-flex flex-column justify-content-center align-items-center'>
-                <img src="./section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
+                <img src="/section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
                 <p className='m-0 p-0 fw-bold product-name-font'>T-shirt</p>
                 <p className='m-0 p-0 fs-8 offer'>Min 50% off</p>
               </div>
@@ -61,12 +61,12 @@ const SectionSix = () => {
               <div className='d-flex'>
                 <div className='d-flex justify-content-between align-items-center flex-column'>
                   <div className='d-flex flex-column justify-content-center align-items-center p-2 border-start'>
-                    <img src="./section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
+                    <img src="/section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
                     <h6 className='mt-2'>Watch</h6>
                     <p className='me-2'>Top offer</p>
                   </div>
                   <div className='d-flex flex-column justify-content-center align-items-center p-2 border-start'>
-                    <img src="./section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
+                    <img src="/section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
                     <h6 className='mt-2'>Watch</h6>
                     <p className='me-2'>Top offer</p>
                   </div>
@@ -88,7 +88,7 @@ const SectionSix = () => {
 
             <div className='border-top border-bottom d-flex justify-content-around gap-2 align-items-center mt-2 mb-2'>
               <div className='d-flex flex-column justify-content-center align-items-center'>
-                <img src="./section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
+                <img src="/section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
                 <p className='m-0 p-0 fw-bold product-name-font'>T-shirt</p>
                 <p className='m-0 p-0 fs-8 offer'>Min 50% off</p>
               </div>
@@ -96,12 +96,12 @@ const SectionSix = () => {
               <div className='d-flex'>
                 <div className='d-flex justify-content-between align-items-center flex-column'>
                   <div className='d-flex flex-column justify-content-center align-items-center p-2 border-start'>
-                    <img src="./section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
+                    <img src="/section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
                     <h6 className='mt-2'>Watch</h6>
                     <p className='me-2'>Top offer</p>
                   </div>
                   <div className='d-flex flex-column justify-content-center align-items-center p-2 border-start'>
-                    <img src="./section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
+                    <img src="/section-img/pro20.jpeg" className='img-fluid rounded-3' alt="img" />
                     <h6 className='mt-2'>Watch</h6>
                     <p className='me-2'>Top offer</p>
                   </div>

@@ -39,7 +39,7 @@ import {
   FaGraduationCap
 } from "react-icons/fa";
 import { toast } from "react-hot-toast";
-import { API_ENDPOINTS, ASSET_URL } from "../../config/apiEndpoints";
+import { API_ENDPOINTS, ASSET_URL, assetUrl } from "../../config/apiEndpoints";
 import usePageSections from "../pages/usePageSections";
 import useHomeBanners from "../home/hooks/useHomeBanners";
 import ResponsiveHeroCarousel from "../home/banners/ResponsiveHeroCarousel";
@@ -116,7 +116,7 @@ const HERO_POINT_ICONS = [FaPercentage, FaTruck, FaClock, FaHeadset];
 const resolveImg = (img) => {
   if (!img) return "";
   if (/^(https?:)?\/\//.test(img) || img.startsWith("/")) return img;
-  return `${ASSET_URL}${img}`;
+  return assetUrl(img);
 };
 
 const BecomeASeller = () => {

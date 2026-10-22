@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaArrowLeft, FaRegUserCircle, FaEye, FaEyeSlash, FaSpinner, FaShieldAlt, FaTimes } from "react-icons/fa";
 import toast from "react-hot-toast";
-import { API_ENDPOINTS, resolveImageUrl, ASSET_URL } from "../../config/apiEndpoints";
+import { API_ENDPOINTS, resolveImageUrl, ASSET_URL, assetUrl } from "../../config/apiEndpoints";
 import { useAuth } from "../../context/AuthContext";
 import { updatePageSEO } from "../../utils/seo";
 import "./Login.css";
@@ -152,7 +152,7 @@ const Login = ({ isSignupPage = false }) => {
     if (!imgPath) return fallback;
     if (imgPath.startsWith("http://") || imgPath.startsWith("https://")) return imgPath;
     if (imgPath.startsWith("/")) return imgPath;
-    return `${ASSET_URL}${imgPath}`;
+    return assetUrl(imgPath);
   };
 
   // Switch between Login & Signup

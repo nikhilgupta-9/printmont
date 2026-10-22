@@ -11,7 +11,7 @@ import {
   FaCalendarDays,
   FaPenNib
 } from "react-icons/fa6";
-import { API_ENDPOINTS, ASSET_URL, resolveImageUrl } from "../../config/apiEndpoints";
+import { API_ENDPOINTS, ASSET_URL, resolveImageUrl, assetUrl } from "../../config/apiEndpoints";
 import BannerGrid from "../home/banners/BannerGrid";
 import useHomeBanners from "../home/hooks/useHomeBanners";
 import "./About.css";
@@ -37,7 +37,7 @@ const teamImage = (member) => {
   if (!member?.image_path) return null;
   return member.image_path.startsWith("http")
     ? member.image_path
-    : `${ASSET_URL}${String(member.image_path).replace(/^\//, "")}`;
+    : assetUrl(String(member.image_path).replace(/^\//, ""));
 };
 
 /** Golden Laurel SVG branch component for Accolades */

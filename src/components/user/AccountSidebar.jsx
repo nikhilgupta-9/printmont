@@ -13,7 +13,7 @@ import {
 } from "react-icons/fa";
 import { NavLink, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { ASSET_URL, API_ENDPOINTS } from '../../config/apiEndpoints';
+import { ASSET_URL, API_ENDPOINTS, assetUrl } from '../../config/apiEndpoints';
 import './AccountSidebar.css';
 
 const AccountSidebar = ({ activeKey = '', children }) => {
@@ -81,7 +81,7 @@ const AccountSidebar = ({ activeKey = '', children }) => {
 
   const storedAvatar = user?.profile_picture || user?.profilePicture || user?.avatar || '';
   const avatarUrl = storedAvatar
-    ? (storedAvatar.startsWith('http') ? storedAvatar : `${ASSET_URL}${storedAvatar.replace(/^\//, '')}`)
+    ? (storedAvatar.startsWith('http') ? storedAvatar : assetUrl(storedAvatar.replace(/^\//, '')))
     : '';
   const showAvatarImage = Boolean(avatarUrl) && !avatarError;
 

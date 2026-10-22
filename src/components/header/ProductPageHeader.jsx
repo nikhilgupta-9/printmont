@@ -24,7 +24,7 @@ import useAccountNavigation from '../../hooks/useAccountNavigation';
 import { useWishlist } from '../../context/WishlistContext';
 import { useLocationContext } from '../../context/LocationContext';
 import axios from 'axios';
-import { API_ENDPOINTS, ASSET_URL } from '../../config/apiEndpoints';
+import { API_ENDPOINTS, ASSET_URL, assetUrl } from '../../config/apiEndpoints';
 import './Header.css';
 
 const ProductPageHeader = ({ 
@@ -110,7 +110,7 @@ const ProductPageHeader = ({
                     }
                     if (logoData) {
                         const filePath = logoData.file_path.startsWith('/') ? logoData.file_path.substring(1) : logoData.file_path;
-                        setLogo(`${ASSET_URL}${filePath}${logoData.file_name}`);
+                        setLogo(assetUrl(filePath + logoData.file_name));
                     }
                 }
             } catch (error) {
@@ -326,11 +326,11 @@ const ProductPageHeader = ({
                         let imagePath = "/placeholder.jpg";
                         if (item.images && item.images.length > 0) {
                             const img = item.images[0].image_path || item.images[0].file_path;
-                            if (img) imagePath = `${ASSET_URL}${img.startsWith('/') ? img.substring(1) : img}`;
+                            if (img) imagePath = assetUrl(img.startsWith('/') ? img.substring(1) : img);
                         } else if (item.image) {
-                            imagePath = `${ASSET_URL}${item.image.startsWith('/') ? item.image.substring(1) : item.image}`;
+                            imagePath = assetUrl(item.image.startsWith('/') ? item.image.substring(1) : item.image);
                         } else if (item.thumbnail) {
-                            imagePath = `${ASSET_URL}${item.thumbnail.startsWith('/') ? item.thumbnail.substring(1) : item.thumbnail}`;
+                            imagePath = assetUrl(item.thumbnail.startsWith('/') ? item.thumbnail.substring(1) : item.thumbnail);
                         }
 
                         return (

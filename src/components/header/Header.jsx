@@ -13,7 +13,7 @@ import LoginDropdown from "./LoginDropdown";
 import HeaderPreferencesDropdown from "./HeaderPreferencesDropdown";
 import MobileHeader from "./MobileHeader";
 import SearchBar from "../search/SearchBar";
-import { API_ENDPOINTS, ASSET_URL } from "../../config/apiEndpoints";
+import { API_ENDPOINTS, ASSET_URL, assetUrl } from "../../config/apiEndpoints";
 import { useAuth } from "../../context/AuthContext";
 import { useCheckout } from "../../context/CheckoutContext";
 import { useWishlist } from "../../context/WishlistContext";
@@ -60,7 +60,7 @@ const Header = ({ showCategories, showImages = false, isSticky = true, bg, color
 
           if (logoData) {
             const filePath = logoData.file_path.startsWith('/') ? logoData.file_path.substring(1) : logoData.file_path;
-            const imageFullUrl = `${ASSET_URL}${filePath}${logoData.file_name}`;
+            const imageFullUrl = assetUrl(filePath + logoData.file_name);
             setLogo(imageFullUrl);
           }
         }

@@ -34,7 +34,7 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { updatePageSEO } from "../../utils/seo";
-import { API_ENDPOINTS, ASSET_URL } from "../../config/apiEndpoints";
+import { API_ENDPOINTS, ASSET_URL, assetUrl } from "../../config/apiEndpoints";
 import usePageSections from "./usePageSections";
 import useHomeBanners from "../home/hooks/useHomeBanners";
 import ResponsiveHeroCarousel from "../home/banners/ResponsiveHeroCarousel";
@@ -594,7 +594,7 @@ const FranchisePage = () => {
   const resolveImg = (img) => {
     if (!img) return "";
     if (/^(https?:)?\/\//.test(img) || img.startsWith("/")) return img;
-    return `${ASSET_URL}${img}`;
+    return assetUrl(img);
   };
 
   const MODEL_STYLES = [

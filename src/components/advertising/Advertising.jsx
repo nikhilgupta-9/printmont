@@ -23,7 +23,7 @@ import {
 import usePageSections from "../pages/usePageSections";
 import useHomeBanners from "../home/hooks/useHomeBanners";
 import ResponsiveHeroCarousel from "../home/banners/ResponsiveHeroCarousel";
-import { API_ENDPOINTS, ASSET_URL } from "../../config/apiEndpoints";
+import { API_ENDPOINTS, ASSET_URL, assetUrl } from "../../config/apiEndpoints";
 import { updatePageSEO } from "../../utils/seo";
 import "./advertising.css";
 
@@ -40,7 +40,7 @@ const splitParts = (value, count) => {
 const resolveImg = (img) => {
   if (!img) return "";
   if (/^(https?:)?\/\//.test(img) || img.startsWith("/")) return img;
-  return `${ASSET_URL}${img}`;
+  return assetUrl(img);
 };
 
 const Advertising = () => {

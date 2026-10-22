@@ -3,7 +3,7 @@ import { Container, Row, Col, Modal, Button, Form, Spinner } from "react-bootstr
 import { Link } from "react-router-dom";
 import usePageSections from "./usePageSections";
 import { updatePageSEO } from "../../utils/seo";
-import { API_ENDPOINTS, ASSET_URL } from "../../config/apiEndpoints";
+import { API_ENDPOINTS, ASSET_URL, assetUrl } from "../../config/apiEndpoints";
 import { toast } from "react-hot-toast";
 import BulkProductCard from "./BulkProductCard";
 import ResponsiveHeroCarousel from "../home/banners/ResponsiveHeroCarousel";
@@ -162,7 +162,7 @@ const BulkOrderPage = () => {
     if (!img) return null;
     if (img.startsWith("http://") || img.startsWith("https://")) return img;
     if (img.startsWith("/")) return img;
-    return `${ASSET_URL}${img}`;
+    return assetUrl(img);
   };
 
   // Badges array from fulfillment extra (delimited by |)

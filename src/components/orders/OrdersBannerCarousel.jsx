@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import { Link } from 'react-router-dom';
-import { BASE_URL, ASSET_URL } from '../../config/apiEndpoints';
+import { BASE_URL, ASSET_URL, assetUrl } from '../../config/apiEndpoints';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
@@ -65,7 +65,7 @@ const OrdersBannerCarousel = ({ isMobile = false }) => {
     if (!img) return null;
     if (img.startsWith('http://') || img.startsWith('https://')) return img;
     const cleanImg = img.replace(/^\//, '');
-    return `${ASSET_URL}${cleanImg}`;
+    return assetUrl(cleanImg);
   };
 
   // Fallback banners if none configured yet in admin

@@ -230,6 +230,12 @@ export const getChildCategoriesUrl = (parentId, parentLevel) => {
     : API_ENDPOINTS.SUBSUBCATEGORIES(parentId);
 };
 
+export const assetUrl = (p) => {
+  if (!p || typeof p !== 'string') return p;
+  if (/^(https?:)?\/\/|^data:|^blob:/i.test(p)) return p;
+  return `${ASSET_URL}${p.replace(/^(\.\.\/|\.\/|\/)+/, '')}`;
+};
+
 export const resolveImageUrl = (imagePath) => {
   if (!imagePath) return '/default-img.jpg';
   if (typeof imagePath === 'object') {

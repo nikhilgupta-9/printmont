@@ -3,7 +3,7 @@ import { Container, Spinner } from "react-bootstrap";
 import useLandingPage from "./useLandingPage";
 import BusinessSolutionsMobile from "./BusinessSolutionsMobile";
 import BusinessSolutionsDesktop from "./BusinessSolutionsDesktop";
-import { ASSET_URL } from "../../config/apiEndpoints";
+import { ASSET_URL, assetUrl } from "../../config/apiEndpoints";
 import "./business-solutions.css";
 
 export default function BusinessSolutions() {
@@ -29,7 +29,7 @@ export default function BusinessSolutions() {
     if (!img) return "/default-img.jpg";
     if (img.startsWith("http://") || img.startsWith("https://")) return img;
     if (img.startsWith("/")) return img;
-    return `${ASSET_URL}${img}`;
+    return assetUrl(img);
   };
 
   const isLoading = mobileLoading || desktopLoading;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaEye, FaEyeSlash, FaSpinner, FaCheckCircle, FaTimes } from "react-icons/fa";
 import toast from "react-hot-toast";
-import { API_ENDPOINTS, ASSET_URL } from "../../config/apiEndpoints";
+import { API_ENDPOINTS, ASSET_URL, assetUrl } from "../../config/apiEndpoints";
 import { updatePageSEO } from "../../utils/seo";
 import "./Login.css";
 
@@ -75,7 +75,7 @@ const ForgotPassword = () => {
     if (!imgPath) return fallback;
     if (imgPath.startsWith("http://") || imgPath.startsWith("https://")) return imgPath;
     if (imgPath.startsWith("/")) return imgPath;
-    return `${ASSET_URL}${imgPath}`;
+    return assetUrl(imgPath);
   };
 
   // Step 1: Send OTP to Email
