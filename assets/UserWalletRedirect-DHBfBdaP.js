@@ -1,0 +1,1 @@
+import{u as n,b as l,j as t,N as a}from"./index-CEhU8v_b.js";const u=()=>{const{user:r,getUsernamePath:s}=n(),e=l();if(!r){const o=e.pathname.includes("wallet")?e.pathname:"/user/wallet";return t.jsx(a,{to:`/login?redirect=${encodeURIComponent(o)}`,replace:!0})}return t.jsx(a,{to:`/${s()}/wallet`,replace:!0})};export{u as default};

@@ -1,0 +1,1 @@
+import{r as f,ca as i,j as x,cb as l}from"./index-CEhU8v_b.js";const m=f.forwardRef(({bsPrefix:r,bg:a="primary",pill:e=!1,text:s,className:o,as:t="span",...p},c)=>{const d=i(r,"badge");return x.jsx(t,{ref:c,...p,className:l(o,d,e&&"rounded-pill",s&&`text-${s}`,a&&`bg-${a}`)})});m.displayName="Badge";export{m as B};

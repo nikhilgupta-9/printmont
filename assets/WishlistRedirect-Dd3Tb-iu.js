@@ -1,0 +1,1 @@
+import{u as a,b as n,j as e,N as t}from"./index-CEhU8v_b.js";const u=()=>{const{user:s,getUsernamePath:o}=a(),r=n();return s?e.jsx(t,{to:`/${o()}/wishlist`,replace:!0}):e.jsx(t,{to:`/login?redirect=${encodeURIComponent(r.pathname)}`,replace:!0})};export{u as default};
