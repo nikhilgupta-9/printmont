@@ -206,6 +206,11 @@
   .home-banner-grid[data-mobile-columns="2"] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  /* Keep the 2-up mobile grid even: drop a lone last banner (the desktop row can still show it) */
+  .home-banner-grid[data-mobile-columns="2"] > :nth-child(odd):last-child:not(:first-child) {
+    display: none !important;
+  }
 }
 
 /* Shared Responsive Banner Image and Picture Container */

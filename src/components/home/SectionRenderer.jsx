@@ -329,7 +329,7 @@ function renderSectionContent({
         (isMobile && columns_per_row === 2) ||
         (section.layout_format === "2x2" || section.layout_format === "square");
       const resolvedMobileColumns = isMobile
-        ? (columns_per_row || 2)
+        ? Math.min(columns_per_row || 2, 2)
         : (columns_per_row >= 2 ? 2 : 1);
 
       return (

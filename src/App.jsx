@@ -12,6 +12,15 @@ import LocationModal from "./components/location/LocationModal";
 import HeaderManager from "./components/header/HeaderManager";
 import Home from './components/pages/Home';
 import Footer from "./components/footer/Footer";
+import LiveOrderToast from "./components/common/LiveOrderToast";
+import MaintenancePage from "./components/common/MaintenancePage";
+import GlobalPreloader from "./components/common/GlobalPreloader";
+import { API_ENDPOINTS } from "./config/apiEndpoints";
+import { initImageProtection } from "./utils/imageProtection";
+
+import { useEffect, useState, lazy, Suspense } from "react";
+import { useLocation } from "react-router-dom";
+
 const Profile = lazy(() => import("./components/user/Profile"));
 const Wishlist = lazy(() => import("./components/orders/Wishlist"));
 const WishlistRedirect = lazy(() => import("./components/orders/WishlistRedirect"));
@@ -59,16 +68,8 @@ const TermsOfUse = lazy(() => import("./components/pages/TermsOfUse"));
 const BulkOrderPage = lazy(() => import("./components/pages/BulkOrderPage"));
 const FranchisePage = lazy(() => import("./components/pages/FranchisePage"));
 const SitemapPage = lazy(() => import("./components/pages/sitemap/SitemapPage"));
-import LiveOrderToast from "./components/common/LiveOrderToast";
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const AllReviewsPage = lazy(() => import("./components/pages/reviews/AllReviewsPage"));
-import MaintenancePage from "./components/common/MaintenancePage";
-import GlobalPreloader from "./components/common/GlobalPreloader";
-import { API_ENDPOINTS } from "./config/apiEndpoints";
-import { initImageProtection } from "./utils/imageProtection";
-
-import { useEffect, useState, lazy, Suspense } from "react";
-import { useLocation } from "react-router-dom";
 
 function ScrollToTop() {
   const location = useLocation();
