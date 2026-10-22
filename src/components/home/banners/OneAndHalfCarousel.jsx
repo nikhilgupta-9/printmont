@@ -39,19 +39,20 @@ export default function OneAndHalfCarousel({
     return null;
   }
 
+  // Spacing standard (rule.md Rule 10): 8px on the mobile layout, 16px on the desktop layout
+  const slideGap = typeof window !== "undefined" && window.innerWidth >= 992 ? 16 : 8;
+
   return (
     <div className={`${isMobileOnly ? "d-block d-md-none" : "d-block"} w-100 home-banner-section py-2 px-2`}>
       <Swiper
         slidesPerView={1.22}
-        spaceBetween={10}
+        spaceBetween={slideGap}
         breakpoints={{
           480: {
-            slidesPerView: 1.4,
-            spaceBetween: 12
+            slidesPerView: 1.4
           },
           768: {
-            slidesPerView: 2.2,
-            spaceBetween: 14
+            slidesPerView: 2.2
           }
         }}
         className="mySwiper w-100"

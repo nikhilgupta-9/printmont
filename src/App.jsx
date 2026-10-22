@@ -12,62 +12,62 @@ import LocationModal from "./components/location/LocationModal";
 import HeaderManager from "./components/header/HeaderManager";
 import Home from './components/pages/Home';
 import Footer from "./components/footer/Footer";
-import Profile from "./components/user/Profile";
-import Wishlist from "./components/orders/Wishlist";
-import WishlistRedirect from "./components/orders/WishlistRedirect";
-import Orders from "./components/orders/Orders";
-import OrderDetailsPage from "./components/orders/OrderDetailsPage";
-import User from "./components/user/User";
-import Login from "./components/user/Login";
-import ForgotPassword from "./components/user/ForgotPassword";
-import ChangePassword from "./components/user/ChangePassword";
-import PanGstDetails from "./components/user/PanGstDetails";
-import GiftCard from "./components/orders/GiftCard";
-import ProductDetails from "./components/products/ProductDetails";
-import AllProducts from "./components/products/AllProducts";
-import Cart from "./components/orders/Cart";
-import Blog from "./components/pages/blog/Blog";
-import BlogPostPage from "./components/pages/blog/BlogPostPage";
-import CheckApi from "./components/CheckApi";
-import HelpCenter from "./components/helpCenter/HelpCenter";
-import ContactUs from "./components/contact/ContactUs";
-import QuickLinks from "./components/quickLinks/QuickLinks";
-import TrackOrder from "./components/trackOrder/TrackOrder";
-import AppAnnouncement from "./components/appAnnouncement/AppAnnouncement";
-import MyAccount from "./components/myAccount/MyAccount";
-import CareerPage from "./components/pages/career/CareerPage";
-import VacancyDetails from "./components/pages/career/VacancyDetails";
-import AboutPage from "./components/about/AboutPage";
-import PolicyPage from "./components/policy/PolicyPage";
-import PrintmontFAQ from "./components/printmontFAQ/PrintmontFAQ";
-import SecurityInfo from "./components/security/SecurityInfo";
-import PageNotFound from "./components/pageNotFound/PageNotFound";
-import NotificationPreference from "./components/notificationPre/NotificationPreferences";
-import ManageAddress from "./components/manageAddress/ManageAddress";
-import SupportPage from "./components/supportpage/SupportPage";
-import PrintmontCoin from "./components/prinmontCoin/PrintmontCoin";
-import UserWallet from "./components/user/UserWallet";
-import UserWalletRedirect from "./components/user/UserWalletRedirect";
-import UserReviews from "./components/user/UserReviews";
-import BannerPreview from "./components/pages/BannerPreview";
-import CategoryPage from "./components/pages/category-list/CategoryPage";
-import BusinessSolutions from "./components/businessSolutions/BusinessSolutions";
-import Advertising from "./components/advertising/Advertising";
-import BecomeASeller from "./components/becomeSeller/BecomeASeller";
-import AffiliateProgram from "./components/pages/AffiliateProgram";
-import TermsOfUse from "./components/pages/TermsOfUse";
-import BulkOrderPage from "./components/pages/BulkOrderPage";
-import FranchisePage from "./components/pages/FranchisePage";
-import SitemapPage from "./components/pages/sitemap/SitemapPage";
+const Profile = lazy(() => import("./components/user/Profile"));
+const Wishlist = lazy(() => import("./components/orders/Wishlist"));
+const WishlistRedirect = lazy(() => import("./components/orders/WishlistRedirect"));
+const Orders = lazy(() => import("./components/orders/Orders"));
+const OrderDetailsPage = lazy(() => import("./components/orders/OrderDetailsPage"));
+const User = lazy(() => import("./components/user/User"));
+const Login = lazy(() => import("./components/user/Login"));
+const ForgotPassword = lazy(() => import("./components/user/ForgotPassword"));
+const ChangePassword = lazy(() => import("./components/user/ChangePassword"));
+const PanGstDetails = lazy(() => import("./components/user/PanGstDetails"));
+const GiftCard = lazy(() => import("./components/orders/GiftCard"));
+const ProductDetails = lazy(() => import("./components/products/ProductDetails"));
+const AllProducts = lazy(() => import("./components/products/AllProducts"));
+const Cart = lazy(() => import("./components/orders/Cart"));
+const Blog = lazy(() => import("./components/pages/blog/Blog"));
+const BlogPostPage = lazy(() => import("./components/pages/blog/BlogPostPage"));
+const CheckApi = lazy(() => import("./components/CheckApi"));
+const HelpCenter = lazy(() => import("./components/helpCenter/HelpCenter"));
+const ContactUs = lazy(() => import("./components/contact/ContactUs"));
+const QuickLinks = lazy(() => import("./components/quickLinks/QuickLinks"));
+const TrackOrder = lazy(() => import("./components/trackOrder/TrackOrder"));
+const AppAnnouncement = lazy(() => import("./components/appAnnouncement/AppAnnouncement"));
+const MyAccount = lazy(() => import("./components/myAccount/MyAccount"));
+const CareerPage = lazy(() => import("./components/pages/career/CareerPage"));
+const VacancyDetails = lazy(() => import("./components/pages/career/VacancyDetails"));
+const AboutPage = lazy(() => import("./components/about/AboutPage"));
+const PolicyPage = lazy(() => import("./components/policy/PolicyPage"));
+const PrintmontFAQ = lazy(() => import("./components/printmontFAQ/PrintmontFAQ"));
+const SecurityInfo = lazy(() => import("./components/security/SecurityInfo"));
+const PageNotFound = lazy(() => import("./components/pageNotFound/PageNotFound"));
+const NotificationPreference = lazy(() => import("./components/notificationPre/NotificationPreferences"));
+const ManageAddress = lazy(() => import("./components/manageAddress/ManageAddress"));
+const SupportPage = lazy(() => import("./components/supportpage/SupportPage"));
+const PrintmontCoin = lazy(() => import("./components/prinmontCoin/PrintmontCoin"));
+const UserWallet = lazy(() => import("./components/user/UserWallet"));
+const UserWalletRedirect = lazy(() => import("./components/user/UserWalletRedirect"));
+const UserReviews = lazy(() => import("./components/user/UserReviews"));
+const BannerPreview = lazy(() => import("./components/pages/BannerPreview"));
+const CategoryPage = lazy(() => import("./components/pages/category-list/CategoryPage"));
+const BusinessSolutions = lazy(() => import("./components/businessSolutions/BusinessSolutions"));
+const Advertising = lazy(() => import("./components/advertising/Advertising"));
+const BecomeASeller = lazy(() => import("./components/becomeSeller/BecomeASeller"));
+const AffiliateProgram = lazy(() => import("./components/pages/AffiliateProgram"));
+const TermsOfUse = lazy(() => import("./components/pages/TermsOfUse"));
+const BulkOrderPage = lazy(() => import("./components/pages/BulkOrderPage"));
+const FranchisePage = lazy(() => import("./components/pages/FranchisePage"));
+const SitemapPage = lazy(() => import("./components/pages/sitemap/SitemapPage"));
 import LiveOrderToast from "./components/common/LiveOrderToast";
-import SearchPage from "./pages/SearchPage";
-import AllReviewsPage from "./components/pages/reviews/AllReviewsPage";
+const SearchPage = lazy(() => import("./pages/SearchPage"));
+const AllReviewsPage = lazy(() => import("./components/pages/reviews/AllReviewsPage"));
 import MaintenancePage from "./components/common/MaintenancePage";
 import GlobalPreloader from "./components/common/GlobalPreloader";
 import { API_ENDPOINTS } from "./config/apiEndpoints";
 import { initImageProtection } from "./utils/imageProtection";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useLocation } from "react-router-dom";
 
 function ScrollToTop() {
@@ -240,6 +240,7 @@ function App() {
               <LocationModal />
 
         {/* All Routes */}
+        <Suspense fallback={<div style={{minHeight:"60vh"}} />}>
         <Routes>
           {/* <Route path="/" element={<CheckApi />} /> */}
           <Route path="/" element={<Home />} />
@@ -368,6 +369,7 @@ function App() {
 
           <Route path="*" element={<PageNotFound />} />
         </Routes>
+        </Suspense>
 
         {/* Footer */}
         <Footer />

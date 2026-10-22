@@ -1516,7 +1516,7 @@
   margin-bottom: 24px;
 }
 
-.products-grid {
+.ecosystem-section .products-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 14px;
@@ -1524,25 +1524,25 @@
 }
 
 @media (max-width: 1199.98px) {
-  .products-grid {
+  .ecosystem-section .products-grid {
     grid-template-columns: repeat(5, 1fr);
   }
 }
 
 @media (max-width: 767.98px) {
-  .products-grid {
+  .ecosystem-section .products-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
   }
 }
 
 @media (max-width: 480px) {
-  .products-grid {
+  .ecosystem-section .products-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-.product-card {
+.ecosystem-section .product-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -1556,13 +1556,13 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
 }
 
-.product-card:hover {
+.ecosystem-section .product-card:hover {
   transform: translateY(-3px);
   border-color: #00529b;
   box-shadow: 0 8px 18px rgba(0, 82, 155, 0.1);
 }
 
-.product-image-wrapper {
+.ecosystem-section .product-image-wrapper {
   width: 50px;
   height: 50px;
   border-radius: 10px;
@@ -1573,11 +1573,11 @@
   margin-bottom: 8px;
 }
 
-.prod-emoji {
+.ecosystem-section .prod-emoji {
   font-size: 1.6rem;
 }
 
-.product-name {
+.ecosystem-section .product-name {
   font-size: 0.8125rem;
   font-weight: 600;
   color: #1e293b;
@@ -2850,28 +2850,28 @@
   }
 
   /* 8. Products Ecosystem (3-Column Grid) */
-  .products-grid {
+  .ecosystem-section .products-grid {
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 6px !important;
   }
 
-  .product-card {
+  .ecosystem-section .product-card {
     padding: 8px 4px !important;
     border-radius: 8px !important;
   }
 
-  .product-image-wrapper {
+  .ecosystem-section .product-image-wrapper {
     width: 34px !important;
     height: 34px !important;
     border-radius: 6px !important;
     margin-bottom: 4px !important;
   }
 
-  .prod-emoji {
+  .ecosystem-section .prod-emoji {
     font-size: 1.15rem !important;
   }
 
-  .product-name {
+  .ecosystem-section .product-name {
     font-size: 0.7rem !important;
     line-height: 1.2 !important;
   }

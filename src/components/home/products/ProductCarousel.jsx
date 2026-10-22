@@ -70,7 +70,7 @@ export default function ProductCarousel({
 
   if (loading && products.length === 0) {
     return (
-      <div className="horizontal-scroll-wrapper bg-white m-0 p-0">
+      <div className="horizontal-scroll-wrapper bg-white m-0">
         <div className="pm-home-section-header">
           <h3 className="pm-home-section-title">{title}</h3>
         </div>
@@ -102,7 +102,7 @@ export default function ProductCarousel({
 
   return (
     <div
-      className={`horizontal-scroll-wrapper position-relative m-0 p-0 product-carousel-wrapper ${
+      className={`horizontal-scroll-wrapper position-relative m-0 p-1 product-carousel-wrapper ${
         backgroundImageUrl ? "custom-bg-image" : ""
       }`}
       style={{
@@ -157,7 +157,7 @@ export default function ProductCarousel({
         style={{ 
           scrollbarWidth: "none", 
           msOverflowStyle: "none",
-          gap: "var(--home-card-gap, 8px)"
+          gap: "8px"
         }}
       >
         {products.map((product, index) => {

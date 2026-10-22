@@ -1,3 +1,19 @@
+/* ==========================================================================
+   Printmont spacing standard (rule.md → Rule 10)
+   One unit for margin, gap and padding:
+     Mobile layout  (< 992px)  = 8px
+     Desktop layout (≥ 992px)  = 16px
+   ========================================================================== */
+:root {
+  --pm-space: 8px;
+}
+
+@media (min-width: 992px) {
+  :root {
+    --pm-space: 16px;
+  }
+}
+
 .col-2-5 {
    /* flex: 0 0 auto; */
    width: 20.833333%;
