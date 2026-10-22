@@ -46,9 +46,13 @@ export default function BannerGrid({
     return null;
   }
 
+  // A row with fewer banners than columns spreads them across the full width
+  const gridColumns = Math.max(1, Math.min(columns, banners.length));
+  const gridMobileColumns = Math.max(1, Math.min(mobileColumns, banners.length));
+
   return (
     <section className="home-banner-section">
-      <div className="home-banner-grid" data-columns={columns} data-mobile-columns={mobileColumns}>
+      <div className="home-banner-grid" data-columns={gridColumns} data-mobile-columns={gridMobileColumns}>
         {banners.map((banner, index) => (
           <BannerImage
             key={index}

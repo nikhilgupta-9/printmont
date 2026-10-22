@@ -640,3 +640,22 @@
   }
 }
 
+
+/* Desktop: banners in the same row share one aspect ratio so the row is even */
+@media (min-width: 768px) {
+  .home-banner-grid[data-columns="2"] .home-banner-picture,
+  .home-banner-grid[data-columns="2"] .home-banner-img {
+    aspect-ratio: 505 / 290;
+  }
+
+  .home-banner-grid[data-columns="3"] .home-banner-picture,
+  .home-banner-grid[data-columns="3"] .home-banner-img {
+    aspect-ratio: 16 / 9;
+  }
+
+  .home-banner-grid[data-columns="2"] .home-banner-img,
+  .home-banner-grid[data-columns="3"] .home-banner-img {
+    height: 100%;
+    object-fit: cover;
+  }
+}

@@ -36,10 +36,13 @@ export default function MultiColumnBannerCarousel({
   const rawBanners = (fetchedBanners && fetchedBanners.length > 0) ? fetchedBanners : (propBanners || []);
   const banners = rawBanners.map(b => normalizeBanner(b)).filter(Boolean);
 
+  // Never reserve more slots than there are banners, so a short row fills the width evenly
+  const shown = Math.max(1, Math.min(columns, banners.length || columns));
+
   const settings = {
-    dots: true,
-    infinite: banners.length > columns,
-    slidesToShow: columns,
+    dots: banners.length > shown,
+    infinite: banners.length > shown,
+    slidesToShow: shown,
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 2000,
@@ -50,8 +53,8 @@ export default function MultiColumnBannerCarousel({
       {
         breakpoint: 992,
         settings: {
-          slidesToShow: Math.min(2, columns),
-          infinite: banners.length > Math.min(2, columns)
+          slidesToShow: Math.min(2, shown),
+          infinite: banners.length > Math.min(2, shown)
         }
       },
       {
@@ -83,7 +86,7 @@ export default function MultiColumnBannerCarousel({
   }
 
   return (
-    <div className="home-banner-carousel-container w-100" data-columns={columns}>
+    <div className="home-banner-carousel-container w-100" data-columns={shown}>
       <Slider {...settings}>
         {banners.map((banner, index) => (
           <div key={index} className="home-banner-carousel-slide pe-1">
