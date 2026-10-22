@@ -1,0 +1,1 @@
+import{r as f,cb as i,j as x,cc as l}from"./index-DarcP4Gw.js";const m=f.forwardRef(({bsPrefix:r,bg:s="primary",pill:e=!1,text:a,className:o,as:t="span",...p},c)=>{const d=i(r,"badge");return x.jsx(t,{ref:c,...p,className:l(o,d,e&&"rounded-pill",a&&`text-${a}`,s&&`bg-${s}`)})});m.displayName="Badge";export{m as B};
