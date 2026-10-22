@@ -15,7 +15,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') == 'OPTIONS') {
     exit(0);
 }
 
-if (!defined('BASE_URL')) define('BASE_URL', 'https://mediumvioletred-pelican-783174.hostingersite.com/');
+if (!defined('BASE_URL')) define('BASE_URL', 'https://admin.printmont.com/');
 
 if (!function_exists('resolveBackendImageUrl')) {
     function resolveBackendImageUrl($path) {

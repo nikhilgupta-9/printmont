@@ -2,6 +2,8 @@
 // api/cors.php - Centralized CORS headers configuration
 
 $allowed_origins = [
+    'https://printmont.com',
+    'https://www.printmont.com',
     'https://printmont.me',
     'https://printmont-livid.vercel.app',
     'http://localhost:5173',
