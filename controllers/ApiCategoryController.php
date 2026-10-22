@@ -90,7 +90,7 @@ class ApiCategoryController {
 
     private function formatCategory(array $c, string $baseUrl = ''): array {
         if ($baseUrl === '') $baseUrl = $this->baseUrl();
-        $img = fn($path) => $path ? $baseUrl . ltrim($path, '/') : null;
+        $img = fn($path) => $path ? (preg_match('/^https?:\/\//i', $path) ? $path : $baseUrl . ltrim($path, '/')) : null;
 
         return [
             'id'            => (int) $c['id'],
@@ -103,45 +103,26 @@ class ApiCategoryController {
             'display_order' => (int) $c['display_order'],
             'is_featured'   => (bool) $c['is_featured'],
             'icon'          => $c['icon'],
-            'images' => [
-                'image'      => $img($c['image']),
-                'desktop'    => $img($c['desktop_image']),
-                'desktop_bg' => $img($c['desktop_bg_image']),
-                'mobile'     => $img($c['mobile_image']),
-                'mobile_bg'  => $img($c['mobile_bg_image']),
-            ],
+            'image' => $img($c['image'] ?? ''),
             'desktop_menu' => [
-                'status'              => $c['desktop_menu_status'],
-                'order'               => (int) $c['desktop_menu_order'],
-                'view_design_enabled' => $c['desktop_menu_view'] === 'yes',
-                'design'              => $c['desktop_menu_design'],
-                'tag'                 => $c['desktop_menu_tag'],
-                'image'               => $img($c['desktop_menu_image']),
+                'status'              => $c['desktop_menu_status'] ?? 'show',
+                'order'               => (int) ($c['desktop_menu_order'] ?? 0),
+                'view_design_enabled' => ($c['desktop_menu_view'] ?? '') === 'yes',
+                'design'              => $c['desktop_menu_design'] ?? '',
+                'tag'                 => $c['desktop_menu_tag'] ?? '',
+                'image'               => $img($c['desktop_menu_image'] ?? ''),
             ],
             'mobile_menu' => [
-                'topbar_status'       => $c['mobile_topbar_status'],
-                'topbar_order'        => (int) $c['mobile_topbar_order'],
-                'view_design_enabled' => $c['mobile_menu_view'] === 'yes',
-                'design'              => $c['mobile_menu_design'],
-                'sidebar_order'       => (int) $c['mobile_sidebar_order'],
-            ],
-            'desktop_home' => [
-                'show'     => $c['desktop_home_show'] === 'yes',
-                'design'   => $c['desktop_home_design'],
-                'order'    => (int) $c['desktop_home_order'],
-                'bg_color' => $c['desktop_bg_color'],
-            ],
-            'mobile_home' => [
-                'show'     => $c['mobile_home_show'] === 'yes',
-                'design'   => $c['mobile_home_design'],
-                'format'   => $c['mobile_home_format'],
-                'order'    => (int) $c['mobile_home_order'],
-                'bg_color' => $c['mobile_bg_color'],
+                'topbar_status'       => $c['mobile_topbar_status'] ?? 'show',
+                'topbar_order'        => (int) ($c['mobile_topbar_order'] ?? 0),
+                'view_design_enabled' => ($c['mobile_menu_view'] ?? '') === 'yes',
+                'design'              => $c['mobile_menu_design'] ?? '',
+                'sidebar_order'       => (int) ($c['mobile_sidebar_order'] ?? 0),
             ],
             'seo' => [
-                'meta_title'       => $c['meta_title'],
-                'meta_keywords'    => $c['meta_keywords'],
-                'meta_description' => $c['meta_description'],
+                'meta_title'       => $c['meta_title'] ?? '',
+                'meta_keywords'    => $c['meta_keywords'] ?? '',
+                'meta_description' => $c['meta_description'] ?? '',
             ],
         ];
     }

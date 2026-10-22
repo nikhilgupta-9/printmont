@@ -126,7 +126,11 @@ class LogoController
         );
 
         if ($stmt->execute()) {
-            return array("success" => true, "message" => "Logo created successfully", "id" => $stmt->insert_id);
+            $new_id = $stmt->insert_id;
+            if ($asset_type === 'favicon' && $is_active) {
+                $this->syncFaviconFile($uploadResult['file_path'] . $uploadResult['file_name']);
+            }
+            return array("success" => true, "message" => "Logo created successfully", "id" => $new_id);
         }
         return array("success" => false, "message" => "Unable to create logo: " . $stmt->error);
     }
@@ -207,9 +211,38 @@ class LogoController
         }
 
         if ($stmt->execute()) {
+            if ($current_data['asset_type'] === 'favicon' && $is_active) {
+                $targetFile = $uploadResult ? ($uploadResult['file_path'] . $uploadResult['file_name']) : ($current_data['file_path'] . $current_data['file_name']);
+                $this->syncFaviconFile($targetFile);
+            }
             return array("success" => true, "message" => "Logo updated successfully");
         }
         return array("success" => false, "message" => "Unable to update logo: " . $stmt->error);
+    }
+
+    // Activate a logo / favicon version
+    public function activateLogo($id)
+    {
+        $logo = $this->getLogoById($id);
+        if ($logo->num_rows == 0) {
+            return array("success" => false, "message" => "Asset not found");
+        }
+        $logo_data = $logo->fetch_assoc();
+
+        // Deactivate other versions of the same asset type
+        $this->deactivateOtherVersions($logo_data['asset_type'], $id);
+
+        $query = "UPDATE " . $this->table_name . " SET is_active = 1 WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $id);
+
+        if ($stmt->execute()) {
+            if ($logo_data['asset_type'] === 'favicon') {
+                $this->syncFaviconFile($logo_data['file_path'] . $logo_data['file_name']);
+            }
+            return array("success" => true, "message" => "Asset activated and synchronized successfully!");
+        }
+        return array("success" => false, "message" => "Unable to activate asset: " . $stmt->error);
     }
 
     // Delete logo
@@ -230,9 +263,49 @@ class LogoController
         $stmt->bind_param("i", $id);
 
         if ($stmt->execute()) {
+            // If the deleted one was active, activate the latest available version
+            if ($logo_data['is_active']) {
+                $latest = $this->conn->query("SELECT id, file_path, file_name, asset_type FROM " . $this->table_name . " WHERE asset_type = '" . $this->conn->real_escape_string($logo_data['asset_type']) . "' ORDER BY version DESC LIMIT 1");
+                if ($latest && $latest->num_rows > 0) {
+                    $nextActive = $latest->fetch_assoc();
+                    $this->conn->query("UPDATE " . $this->table_name . " SET is_active = 1 WHERE id = " . intval($nextActive['id']));
+                    if ($nextActive['asset_type'] === 'favicon') {
+                        $this->syncFaviconFile($nextActive['file_path'] . $nextActive['file_name']);
+                    }
+                }
+            }
             return array("success" => true, "message" => "Logo deleted successfully");
         }
         return array("success" => false, "message" => "Unable to delete logo: " . $stmt->error);
+    }
+
+    // Synchronize active favicon across admin and frontend asset paths
+    public function syncFaviconFile($relativeOrFullPath)
+    {
+        $fullSourcePath = $relativeOrFullPath;
+        if (!file_exists($fullSourcePath)) {
+            $fullSourcePath = __DIR__ . '/../' . ltrim($relativeOrFullPath, '/');
+        }
+        if (!file_exists($fullSourcePath)) {
+            return false;
+        }
+
+        $targets = [
+            __DIR__ . '/../favicon.png',
+            __DIR__ . '/../img/icons/icon-48x48.png',
+            __DIR__ . '/../img/icons/favicon.png',
+            __DIR__ . '/../../frontend/public/favicon.png',
+            __DIR__ . '/../../frontend/dist/favicon.png'
+        ];
+
+        foreach ($targets as $target) {
+            $targetDir = dirname($target);
+            if (!file_exists($targetDir)) {
+                @mkdir($targetDir, 0777, true);
+            }
+            @copy($fullSourcePath, $target);
+        }
+        return true;
     }
 
     // Helper methods

@@ -1,5 +1,9 @@
 <?php
 session_start();
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
 require_once(__DIR__ . '/config/database.php');
 require_once(__DIR__ . '/controllers/CategoryController.php');
 
@@ -52,25 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'desktop_menu_status' => $_POST['desktop_menu_status'] ?? 'show',
         'desktop_menu_order' => (int) ($_POST['desktop_menu_order'] ?? 0),
         'desktop_menu_tag' => trim($_POST['desktop_menu_tag'] ?? ''),
-        // Desktop home
-        'desktop_home_show' => $_POST['desktop_home_show'] ?? 'no',
-        'desktop_home_design' => $_POST['desktop_home_design'] ?? '',
-        'desktop_home_order' => (int) ($_POST['desktop_home_order'] ?? 0),
-        'desktop_bg_color' => $_POST['desktop_bg_color'] ?? '',
-        'desktop_bg_image' => uploadCatImg3('desktop_bg_image', 'bg'),
-        'desktop_image' => uploadCatImg3('desktop_image', 'desktop'),
         // Mobile menu
         'mobile_topbar_status' => $_POST['mobile_topbar_status'] ?? 'show',
         'mobile_topbar_order' => (int) ($_POST['mobile_topbar_order'] ?? 0),
         'mobile_sidebar_order' => (int) ($_POST['mobile_sidebar_order'] ?? 0),
-        // Mobile home
-        'mobile_home_show' => $_POST['mobile_home_show'] ?? 'no',
-        'mobile_home_design' => $_POST['mobile_home_design'] ?? '',
-        'mobile_home_format' => $_POST['mobile_home_format'] ?? '4',
-        'mobile_home_order' => (int) ($_POST['mobile_home_order'] ?? 0),
-        'mobile_bg_color' => $_POST['mobile_bg_color'] ?? '',
-        'mobile_bg_image' => uploadCatImg3('mobile_bg_image', 'mobile-bg'),
-        'mobile_image' => uploadCatImg3('mobile_image', 'mobile'),
         // SEO
         'meta_title' => trim($_POST['meta_title'] ?? ''),
         'meta_keywords' => trim($_POST['meta_keywords'] ?? ''),
@@ -99,14 +88,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="shortcut icon" href="img/icons/icon-48x48.png" />
+    <link rel="shortcut icon" href="favicon.png" />
+    <link rel="icon" type="image/png" href="favicon.png" />
     <title>Add Sub Sub Category | Printmont</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
     <script src="js/settings.js"></script>
     <style>
         body {
-            opacity: 0;
+            opacity: 1 !important;
         }
 
         .required-field::after {
@@ -126,22 +116,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-left-color: #ffc107;
         }
 
-        .design-option {
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            padding: 10px;
-            text-align: center;
-            transition: all .2s;
-            cursor: pointer;
+        .design-option { 
+            border: 2px solid #dee2e6; 
+            border-radius: 10px; 
+            padding: 12px; 
+            text-align: left; 
+            transition: all .25s ease-in-out; 
+            cursor: pointer; 
+            background: #ffffff;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
         }
-
-        .design-option:hover {
-            border-color: #0d6efd;
+        .design-option:hover { 
+            border-color: #0d6efd; 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.12);
         }
-
-        input[type=radio]:checked+.design-option {
-            border-color: #0d6efd;
-            background: #e8f4fd;
+        input[type=radio]:checked + .design-option { 
+            border-color: #0d6efd; 
+            background: #f0f7ff; 
+            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+        }
+        .design-option .check-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: none;
+            font-size: 18px;
+            color: #0d6efd;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input[type=radio]:checked + .design-option .check-badge {
+            display: block;
+        }
+        /* Mobile Section Green Accent */
+        .section-card.mobile .design-option:hover {
+            border-color: #198754;
+            box-shadow: 0 4px 12px rgba(25, 135, 84, 0.15);
+        }
+        .section-card.mobile input[type=radio]:checked + .design-option {
+            border-color: #198754;
+            background: #f4faf6;
+            box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.25);
+        }
+        .section-card.mobile input[type=radio]:checked + .design-option .check-badge {
+            color: #198754;
+        }
+        .design-tag {
+            font-size: 10.5px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .design-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        .design-desc {
+            font-size: 11.5px;
+            color: #64748b;
+            line-height: 1.4;
+            margin-top: auto;
+            margin-bottom: 0;
         }
 
         .image-preview {
@@ -288,71 +333,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
 
-                        <!-- DESKTOP HOME PAGE -->
-                        <div class="card mb-4 section-card">
-                            <div class="card-header bg-primary bg-opacity-10">
-                                <h5 class="mb-0 text-primary"><i class="fas fa-home me-2"></i>Desktop – Home Page
-                                    Display</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="mb-3 col-md-4">
-                                        <label class="form-label">Show on Desktop Home?</label>
-                                        <select name="desktop_home_show" class="form-control" id="desktopHomeShow">
-                                            <option value="no">No</option>
-                                            <option value="yes">Yes</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-3 col-md-4">
-                                        <label class="form-label">Home Sort Order</label>
-                                        <input type="number" class="form-control" name="desktop_home_order" value="0"
-                                            min="0">
-                                    </div>
-                                    <div class="mb-3 col-md-4">
-                                        <label class="form-label">Background Color</label>
-                                        <div class="input-group">
-                                            <input type="color" class="form-control form-control-color"
-                                                name="desktop_bg_color" value="#ffffff" style="width:50px"
-                                                id="desktopBgColorPicker">
-                                            <input type="text" class="form-control" id="desktopBgColorText"
-                                                placeholder="#ffffff" maxlength="7">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="conditional-block" id="desktopHomeBlock">
-                                    <label class="form-label">Select Home Design (Desktop)</label>
-                                    <div class="row g-3 mb-3">
-                                        <?php foreach (['design1' => ['📱', 'Design 1'], 'design2' => ['🖼️', 'Design 2'], 'design3' => ['🗂️', 'Design 3'], 'design4' => ['🎨', 'Design 4']] as $val => [$icon, $lbl]): ?>
-                                            <div class="col-6 col-md-3">
-                                                <input type="radio" name="desktop_home_design" value="<?php echo $val; ?>"
-                                                    id="dhd_<?php echo $val; ?>" class="d-none">
-                                                <label for="dhd_<?php echo $val; ?>" class="design-option d-block">
-                                                    <div class="bg-light rounded mb-2"
-                                                        style="height:60px;display:flex;align-items:center;justify-content:center;font-size:24px">
-                                                        <?php echo $icon; ?></div>
-                                                    <small><?php echo $lbl; ?></small>
-                                                </label>
-                                            </div>
-                                        <?php endforeach; ?>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Desktop Category Image</label>
-                                            <input type="file" class="form-control" name="desktop_image"
-                                                accept="image/*" onchange="previewImg(this,'prvDeskImg')">
-                                            <img id="prvDeskImg" class="image-preview">
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Desktop Background Image</label>
-                                            <input type="file" class="form-control" name="desktop_bg_image"
-                                                accept="image/*" onchange="previewImg(this,'prvDeskBg')">
-                                            <img id="prvDeskBg" class="image-preview">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- MOBILE TOP BAR -->
                         <div class="card mb-4 section-card mobile">
                             <div class="card-header bg-success bg-opacity-10">
@@ -377,87 +357,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <label class="form-label">Sidebar Sort Order</label>
                                         <input type="number" class="form-control" name="mobile_sidebar_order" value="0"
                                             min="0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- MOBILE HOME PAGE -->
-                        <div class="card mb-4 section-card mobile">
-                            <div class="card-header bg-success bg-opacity-10">
-                                <h5 class="mb-0 text-success"><i class="fas fa-home me-2"></i>Mobile – Home Page Display
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="mb-3 col-md-4">
-                                        <label class="form-label">Show on Mobile Home?</label>
-                                        <select name="mobile_home_show" class="form-control" id="mobileHomeShow">
-                                            <option value="no">No</option>
-                                            <option value="yes">Yes</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-3 col-md-4">
-                                        <label class="form-label">Mobile Home Sort Order</label>
-                                        <input type="number" class="form-control" name="mobile_home_order" value="0"
-                                            min="0">
-                                    </div>
-                                    <div class="mb-3 col-md-4">
-                                        <label class="form-label">Background Color</label>
-                                        <div class="input-group">
-                                            <input type="color" class="form-control form-control-color"
-                                                name="mobile_bg_color" value="#ffffff" style="width:50px"
-                                                id="mobileBgColorPicker">
-                                            <input type="text" class="form-control" id="mobileBgColorText"
-                                                placeholder="#ffffff" maxlength="7">
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Mobile images always visible -->
-                                <div class="row mb-3">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Mobile Category Image</label>
-                                        <input type="file" class="form-control" name="mobile_image" accept="image/*"
-                                            onchange="previewImg(this,'prvMobImg')">
-                                        <img id="prvMobImg" class="image-preview">
-                                        <small class="text-muted">Max 5 MB · JPG/PNG/WebP</small>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Mobile Background Image <small
-                                                class="text-muted">(optional)</small></label>
-                                        <input type="file" class="form-control" name="mobile_bg_image" accept="image/*"
-                                            onchange="previewImg(this,'prvMobBg')">
-                                        <img id="prvMobBg" class="image-preview">
-                                    </div>
-                                </div>
-                                <div class="conditional-block" id="mobileHomeBlock">
-                                    <div class="row mb-3">
-                                        <div class="col-md-8">
-                                            <label class="form-label">Mobile Home Design</label>
-                                            <div class="row g-2">
-                                                <?php foreach (['design1' => ['📱', 'Design 1'], 'design2' => ['🖼️', 'Design 2'], 'design3' => ['🗂️', 'Design 3'], 'design4' => ['🎨', 'Design 4']] as $val => [$icon, $lbl]): ?>
-                                                    <div class="col-3">
-                                                        <input type="radio" name="mobile_home_design"
-                                                            value="<?php echo $val; ?>" id="mhd_<?php echo $val; ?>"
-                                                            class="d-none">
-                                                        <label for="mhd_<?php echo $val; ?>" class="design-option d-block">
-                                                            <div class="bg-light rounded mb-1"
-                                                                style="height:50px;display:flex;align-items:center;justify-content:center;font-size:20px">
-                                                                <?php echo $icon; ?></div>
-                                                            <small><?php echo $lbl; ?></small>
-                                                        </label>
-                                                    </div>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label">Product Box Format</label>
-                                            <select name="mobile_home_format" class="form-control">
-                                                <option value="4">4 Image Product Box</option>
-                                                <option value="6">6 Image Product Box</option>
-                                                <option value="8">8 Image Product Box</option>
-                                            </select>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -526,8 +425,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             sel.addEventListener('change', update);
             update();
         }
-        bindToggle('desktopHomeShow', 'desktopHomeBlock');
-        bindToggle('mobileHomeShow', 'mobileHomeBlock');
+        
+        
 
         function syncColor(pickerId, textId) {
             const p = document.getElementById(pickerId), t = document.getElementById(textId);
@@ -535,8 +434,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             p.addEventListener('input', () => t.value = p.value);
             t.addEventListener('input', () => { if (/^#[0-9a-f]{6}$/i.test(t.value)) p.value = t.value; });
         }
-        syncColor('desktopBgColorPicker', 'desktopBgColorText');
-        syncColor('mobileBgColorPicker', 'mobileBgColorText');
+        
+        
 
         function previewImg(input, id) {
             const el = document.getElementById(id);

@@ -12,7 +12,7 @@ class PolicyModel {
        Get All Policies
        ================================ */
     public function getAllPolicies() {
-        $query = "SELECT * FROM policies ORDER BY updated_at DESC";
+        $query = "SELECT * FROM policies ORDER BY id ASC";
         return $this->db->fetchAll($query);
     }
 

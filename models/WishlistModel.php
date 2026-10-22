@@ -27,7 +27,11 @@ class WishlistModel {
         return $this->db->fetchAll(
             "SELECT wi.id, wi.product_id, wi.created_at,
                     p.name, p.product_slug AS slug, p.price, p.regular_price, p.offer_price, p.discount_price,
-                    p.stock_quantity, p.status AS product_status,
+                    p.stock_quantity, p.status AS product_status, p.out_of_stock_status,
+                    (SELECT ROUND(AVG(r.rating), 1) FROM product_reviews r
+                      WHERE r.product_id = p.id AND r.status = 'approved') AS rating_avg,
+                    (SELECT COUNT(*) FROM product_reviews r
+                      WHERE r.product_id = p.id AND r.status = 'approved') AS rating_count,
                     (SELECT image_url FROM product_images pi
                       WHERE pi.product_id = p.id
                       ORDER BY pi.is_primary DESC, pi.display_order ASC LIMIT 1) AS image_url

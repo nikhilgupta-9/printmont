@@ -1,5 +1,8 @@
 <?php
-session_start();
+ob_start();
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 require_once(__DIR__ . '/config/database.php');
 require_once(__DIR__ . '/controllers/AuthController.php');
 require_once(__DIR__ . '/controllers/ProductController.php');
@@ -9,70 +12,129 @@ require_once(__DIR__ . '/controllers/CategoryController.php');
 $database = new Database();
 $db = $database->getConnection();
 
-// ── Auth check (must happen before any HTML output, otherwise a redirect
-//    here fails with "headers already sent" and leaves a broken half page) ──
+// Auth check
 $auth = new AuthController($db);
 if (!$auth->isLoggedIn()) {
     header('Location: index.php');
     exit;
 }
 
-if (!isset($_GET['id']) || empty($_GET['id'])) {
-    header('Location: view-products.php');
-    exit;
-}
-
 $productController = new ProductController($db);
 $categoryController = new CategoryController($db);
 
-$product = $productController->getProductById($_GET['id']);
+$productId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-if (!$product) {
-    $_SESSION['error_message'] = "Product not found!";
-    header('Location: view-products.php');
-    exit;
+// If no ID supplied (e.g. clicked from sidebar), pick the first active product
+if ($productId <= 0) {
+    $firstProd = $database->fetch("SELECT id FROM products ORDER BY id DESC LIMIT 1");
+    if ($firstProd) {
+        $productId = (int)$firstProd['id'];
+    }
 }
 
-// Get breadcrumb categories (you might need to adjust this based on your category structure)
-$categories = $categoryController->getAllCategories();
-?>
+$product = $productId > 0 ? $productController->getProductById($productId) : null;
 
+// Get all products for quick switcher dropdown
+$allProductsList = $database->fetchAll("SELECT id, name, sku FROM products ORDER BY name ASC LIMIT 100") ?: [];
+
+// Get product images
+$images = [];
+if ($product) {
+    $images = $database->fetchAll("SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, display_order ASC", [$productId]) ?: [];
+    if (empty($images) && !empty($product['thumbnail_image'])) {
+        $images[] = ['image_url' => $product['thumbnail_image'], 'is_primary' => 1];
+    }
+}
+
+// Check for messages
+$success_message = $_SESSION['success_message'] ?? '';
+$error_message = $_SESSION['error_message'] ?? '';
+unset($_SESSION['success_message'], $_SESSION['error_message']);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="Responsive Admin &amp; Dashboard Template based on Bootstrap 5">
-    <meta name="author" content="Nikhil">
-    <link rel="preconnect" href="https://fonts.gstatic.com/">
     <link rel="shortcut icon" href="img/icons/icon-48x48.png" />
-    <title><?php echo htmlspecialchars($product['name']); ?> | PrintMont</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&amp;display=swap" rel="stylesheet">
+    <title><?php echo $product ? htmlspecialchars($product['name']) : 'Single Product Preview'; ?> | Printmont Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="js/settings.js"></script>
     <style>
         body { opacity: 0; }
-        .product-gallery img { width: 100%; border-radius: 10px; cursor: pointer; }
-        .thumbnail { width: 80px; height: 80px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent; }
-        .thumbnail.active { border-color: #007bff; }
-        .breadcrumb { background: transparent; padding: 0; margin-bottom: 20px; }
-        .price-section { background: #f8f9fa; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
-        .original-price { text-decoration: line-through; color: #6c757d; font-size: 1.1rem; }
-        .discount-price { color: #dc3545; font-size: 1.8rem; font-weight: bold; }
-        .current-price { color: #198754; font-size: 1.8rem; font-weight: bold; }
-        .discount-badge { background: #dc3545; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; margin-left: 10px; }
-        .size-option { border: 2px solid #dee2e6; border-radius: 8px; padding: 12px 20px; text-align: center; cursor: pointer; margin: 5px; transition: all 0.3s; }
-        .size-option:hover { border-color: #007bff; }
-        .size-option.selected { border-color: #007bff; background-color: #007bff; color: white; }
-        .coupon-card { border: 2px dashed #28a745; border-radius: 10px; padding: 15px; margin: 10px 0; background: #f8fff9; }
-        .offer-card { border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin: 8px 0; }
-        .delivery-info { background: #e7f3ff; border-radius: 10px; padding: 20px; margin: 20px 0; }
-        .rating-stars { color: #ffc107; }
-        .service-badge { background: #198754; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; margin-right: 10px; }
-        .color-option { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; margin: 5px; }
-        .color-option.selected { border-color: #007bff; }
-        .action-buttons .btn { margin-right: 10px; margin-bottom: 10px; }
+        .main-gallery-frame {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 380px;
+            max-height: 480px;
+            overflow: hidden;
+            position: relative;
+        }
+        .main-gallery-frame img {
+            max-width: 100%;
+            max-height: 420px;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+        .thumbnail-strip {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+        }
+        .thumb-preview-card {
+            width: 70px;
+            height: 70px;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            background: #fff;
+            padding: 4px;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .thumb-preview-card.active, .thumb-preview-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+        .thumb-preview-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .spec-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.6rem 0;
+            border-bottom: 1px dashed #e2e8f0;
+            font-size: 0.9rem;
+        }
+        .spec-item:last-child {
+            border-bottom: none;
+        }
+        .badge-pill-soft {
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .price-hero {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1.25rem;
+        }
     </style>
 </head>
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
@@ -80,195 +142,257 @@ $categories = $categoryController->getAllCategories();
         <?php include_once "includes/side-navbar.php"; ?>
         <div class="main">
             <?php include_once "includes/top-navbar.php"; ?>
+            
             <main class="content">
                 <div class="container-fluid p-0">
-                    <div class="row mb-2 mb-xl-3">
-                        <div class="col-auto d-none d-sm-block">
-                            <h3><strong>Product</strong> Details</h3>
+                    
+                    <!-- Header Bar -->
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+                        <div>
+                            <h1 class="h3 mb-1 text-gray-800"><strong>Single Product</strong> Preview</h1>
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+                                    <li class="breadcrumb-item"><a href="dashboard.php">Dashboard</a></li>
+                                    <li class="breadcrumb-item"><a href="view-products.php">Products</a></li>
+                                    <li class="breadcrumb-item active"><?php echo $product ? htmlspecialchars($product['name']) : 'Preview'; ?></li>
+                                </ol>
+                            </nav>
                         </div>
-                        <div class="col-auto ms-auto text-end mt-n1">
-                            <a href="view-products.php" class="btn btn-light bg-white me-2">Back to Products</a>
-                            <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="btn btn-primary">Edit Product</a>
+
+                        <!-- Actions & Quick Switcher -->
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <div class="d-flex align-items-center">
+                                <select class="form-select form-select-sm" style="max-width: 250px;" onchange="if(this.value) location.href='single-product-version.php?id=' + this.value;">
+                                    <option value="">Switch Product...</option>
+                                    <?php foreach ($allProductsList as $pItem): ?>
+                                        <option value="<?php echo $pItem['id']; ?>" <?php echo ($productId == $pItem['id']) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars(mb_strimwidth($pItem['name'], 0, 30, '...')); ?> (SKU: <?php echo htmlspecialchars($pItem['sku'] ?: 'N/A'); ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <a href="view-products.php" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-list me-1"></i> All Products
+                            </a>
+                            <?php if ($product): ?>
+                                <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-pen me-1"></i> Edit Product
+                                </a>
+                            <?php endif; ?>
                         </div>
                     </div>
 
-                    <div class="row">
-                        <!-- Product Images Gallery -->
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="product-gallery">
-                                        <div class="main-image mb-3">
-                                            <img src="<?php echo $product['images'][0]['image_url'] ?? 'https://via.placeholder.com/500x500'; ?>" 
-                                                 alt="<?php echo htmlspecialchars($product['name']); ?>" 
-                                                 id="mainImage" class="img-fluid">
-                                        </div>
-                                        <div class="thumbnail-list d-flex flex-wrap gap-2">
-                                            <?php foreach ($product['images'] as $index => $image): ?>
-                                                <img src="<?php echo $image['image_url']; ?>" 
-                                                     alt="Thumbnail <?php echo $index + 1; ?>" 
-                                                     class="thumbnail <?php echo $index === 0 ? 'active' : ''; ?>" 
-                                                     onclick="changeImage(this, '<?php echo $image['image_url']; ?>')">
-                                            <?php endforeach; ?>
-                                        </div>
-                                    </div>
-                                </div>
+                    <?php if (!$product): ?>
+                        <div class="card p-5 text-center">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                            <h4>No Product Found</h4>
+                            <p class="text-muted">Please add products or select a valid product from the list.</p>
+                            <div>
+                                <a href="product.php" class="btn btn-primary">Add New Product</a>
                             </div>
                         </div>
-
-                        <!-- Product Details -->
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-body">
-                                    <!-- Brand and Name -->
-                                    <h2 class="h4"><?php echo htmlspecialchars($product['brand']); ?></h2>
-                                    <h1 class="h3 mb-3"><?php echo htmlspecialchars($product['name']); ?></h1>
-
-                                    <!-- Rating -->
-                                    <div class="d-flex align-items-center mb-3">
-                                        <div class="rating-stars me-2">
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star-half-alt"></i>
+                    <?php else: 
+                        $primaryImg = !empty($images[0]['image_url']) ? $images[0]['image_url'] : 'img/icons/icon-48x48.png';
+                        $price = (float)$product['price'];
+                        $discountPrice = (float)($product['discount_price'] ?? 0);
+                        $finalPrice = ($discountPrice > 0) ? $discountPrice : $price;
+                        $hasDiscount = ($discountPrice > 0 && $discountPrice < $price);
+                        $discountPercent = $hasDiscount ? round((($price - $discountPrice) / $price) * 100) : 0;
+                        $stock = (int)($product['stock_quantity'] ?? $product['product_quantity'] ?? $product['stock'] ?? 0);
+                    ?>
+                        <div class="row g-4">
+                            <!-- Left: Gallery Section -->
+                            <div class="col-lg-5">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body p-3">
+                                        <div class="main-gallery-frame mb-3">
+                                            <img id="mainProductImg" src="<?php echo htmlspecialchars($primaryImg); ?>" 
+                                                 alt="<?php echo htmlspecialchars($product['name']); ?>"
+                                                 onerror="this.src='img/icons/icon-48x48.png'">
                                         </div>
-                                        <!-- <span class="text-muted">25,600 ratings and 990 reviews</span> -->
-                                    </div>
 
-                                    <!-- Price Section -->
-                                    <div class="price-section">
-                                        <div class="d-flex align-items-center mb-2">
-                                            <?php if ($product['discount_price']): ?>
-                                                <span class="discount-price">&#8377; <?php echo number_format($product['discount_price'], 2); ?></span>
-                                                <span class="original-price ms-2">&#8377; <?php echo number_format($product['price'], 2); ?></span>
-                                                <span class="discount-badge">
-                                                    <?php 
-                                                        $discount = (($product['price'] - $product['discount_price']) / $product['price']) * 100;
-                                                        echo round($discount) . '% off';
-                                                    ?>
+                                        <!-- Thumbnails Strip -->
+                                        <?php if (!empty($images) && count($images) > 1): ?>
+                                            <div class="thumbnail-strip">
+                                                <?php foreach ($images as $idx => $img): ?>
+                                                    <div class="thumb-preview-card <?php echo $idx === 0 ? 'active' : ''; ?>" 
+                                                         onclick="switchMainImage(this, '<?php echo htmlspecialchars($img['image_url']); ?>')">
+                                                        <img src="<?php echo htmlspecialchars($img['image_url']); ?>" alt="Thumbnail">
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+
+                                <!-- Highlights / Flags Card -->
+                                <div class="card border-0 shadow-sm mt-3">
+                                    <div class="card-body p-3">
+                                        <h6 class="fw-bold mb-3 text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">Catalog Flags</h6>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <?php if (!empty($product['our_bestseller'])): ?>
+                                                <span class="badge-pill-soft" style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a;">
+                                                    <i class="fas fa-fire"></i> Bestseller Product
+                                                </span>
+                                            <?php endif; ?>
+
+                                            <?php if (!empty($product['top_selection'])): ?>
+                                                <span class="badge-pill-soft" style="background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe;">
+                                                    <i class="fas fa-crown"></i> Top Selection
+                                                </span>
+                                            <?php endif; ?>
+
+                                            <?php if (!empty($product['featured'])): ?>
+                                                <span class="badge-pill-soft" style="background: #fdf2f8; color: #db2777; border: 1px solid #fbcfe8;">
+                                                    <i class="fas fa-star"></i> Featured
+                                                </span>
+                                            <?php endif; ?>
+
+                                            <?php if ($product['status'] === 'active'): ?>
+                                                <span class="badge-pill-soft" style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0;">
+                                                    <i class="fas fa-circle-check"></i> Active in Store
                                                 </span>
                                             <?php else: ?>
-                                                <span class="current-price">¥<?php echo number_format($product['price'], 2); ?></span>
+                                                <span class="badge-pill-soft" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;">
+                                                    <i class="fas fa-circle-xmark"></i> <?php echo ucfirst($product['status']); ?>
+                                                </span>
                                             <?php endif; ?>
                                         </div>
-                                        <small class="text-muted">Inclusive of all taxes</small>
                                     </div>
+                                </div>
+                            </div>
 
-                                    <!-- Coupon Section -->
-                                    <div class="coupon-card">
-                                        <h6 class="mb-2"><i class="fas fa-tag text-success me-2"></i>Coupons for you</h6>
-                                        <p class="mb-1">Special Price Get extra 18% off upto ¥360 on 50 item(s) (price inclusive of cashback/coupon)</p>
-                                        <small class="text-muted">**T&C**</small>
-                                    </div>
-
-                                    <!-- Available Offers -->
-                                    <div class="mb-4">
-                                        <h6 class="mb-3">Available offers</h6>
-                                        <div class="offer-list">
-                                            <div class="offer-card">
-                                                <strong>Bank Offer</strong> 5% cashback on Axis Bank Flipkart Debit Card up to ¥750 <strong>T&C</strong>
-                                            </div>
-                                            <div class="offer-card">
-                                                <strong>Bank Offer</strong> 5% cashback on Flipkart SBI Credit Card upto ¥4,000 per calendar quarter <strong>T&C</strong>
-                                            </div>
-                                            <div class="offer-card">
-                                                <strong>Bank Offer</strong> Flat ¥50 off on Flipkart Bajaj Finserv Insta EMI Card. Min Booking Amount: ¥2,500 <strong>T&C</strong>
-                                            </div>
-                                            <a href="#" class="text-primary">+11 more offers</a>
+                            <!-- Right: Product Information -->
+                            <div class="col-lg-7">
+                                <div class="card border-0 shadow-sm mb-3">
+                                    <div class="card-body p-4">
+                                        
+                                        <!-- Brand & Category -->
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <span class="text-uppercase fw-semibold text-primary" style="font-size: 0.8rem; letter-spacing: 0.05em;">
+                                                <?php echo htmlspecialchars($product['brand'] ?: 'Printmont Signature'); ?>
+                                            </span>
+                                            <span class="badge bg-light text-secondary border">
+                                                <i class="fas fa-folder me-1"></i> <?php echo htmlspecialchars($product['category_name'] ?? 'General'); ?>
+                                            </span>
                                         </div>
-                                    </div>
 
-                                    <!-- Delivery Information -->
-                                    <div class="delivery-info">
-                                        <h6 class="mb-3"><i class="fas fa-truck me-2"></i>Deliver to</h6>
-                                        <div class="input-group mb-3">
-                                            <input type="text" class="form-control" placeholder="Enter delivery pincode">
-                                            <button class="btn btn-primary" type="button">Check</button>
+                                        <!-- Product Title -->
+                                        <h2 class="h4 fw-bold text-gray-900 mb-2">
+                                            <?php echo htmlspecialchars($product['name']); ?>
+                                        </h2>
+
+                                        <!-- SKU & Stock -->
+                                        <div class="d-flex align-items-center gap-3 mb-3 text-muted small">
+                                            <span>SKU: <strong class="text-dark font-monospace"><?php echo htmlspecialchars($product['sku'] ?: 'N/A'); ?></strong></span>
+                                            <span>•</span>
+                                            <span>Stock: 
+                                                <?php if ($stock > 10): ?>
+                                                    <strong class="text-success"><?php echo $stock; ?> Available</strong>
+                                                <?php elseif ($stock > 0): ?>
+                                                    <strong class="text-warning"><?php echo $stock; ?> Low Stock</strong>
+                                                <?php else: ?>
+                                                    <strong class="text-danger">Out of Stock</strong>
+                                                <?php endif; ?>
+                                            </span>
                                         </div>
-                                        <p class="mb-1"><strong>Delivery by 20 Nov, Thursday</strong></p>
-                                        <p class="text-muted mb-2">If ordered before 7:59 AM</p>
-                                        <a href="#" class="text-primary">View Details</a>
-                                    </div>
 
-                                    <!-- Color Selection -->
-                                    <div class="mb-4">
-                                        <h6 class="mb-3">Color</h6>
-                                        <div class="d-flex">
-                                            <div class="color-option selected" style="background-color: #6c757d;" title="Grey"></div>
-                                            <div class="color-option" style="background-color: #000000;" title="Black"></div>
-                                            <div class="color-option" style="background-color: #dc3545;" title="Red"></div>
-                                            <div class="color-option" style="background-color: #0d6efd;" title="Blue"></div>
+                                        <!-- Price Block (Indian Rupees ₹) -->
+                                        <div class="price-hero mb-4">
+                                            <div class="d-flex align-items-baseline gap-2 mb-1">
+                                                <span class="h2 fw-bold text-dark mb-0">₹<?php echo number_format($finalPrice, 2); ?></span>
+                                                <?php if ($hasDiscount): ?>
+                                                    <span class="h5 text-muted text-decoration-line-through mb-0">₹<?php echo number_format($price, 2); ?></span>
+                                                    <span class="badge bg-danger rounded-pill px-2 py-1 ms-2 font-weight-bold">
+                                                        <?php echo $discountPercent; ?>% OFF
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="text-muted small">
+                                                <i class="fas fa-info-circle me-1"></i> Inclusive of GST and all statutory taxes.
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <!-- Size Selection -->
-                                    <div class="mb-4">
-                                        <h6 class="mb-3">Size - UK/India</h6>
-                                        <div class="d-flex flex-wrap">
-                                            <?php 
-                                            $sizes = [6, 7, 8, 9, 10, 11, 12];
-                                            foreach ($sizes as $size): 
-                                            ?>
-                                                <div class="size-option" onclick="selectSize(this)">
-                                                    <?php echo $size; ?>
+                                        <!-- Short Description -->
+                                        <?php if (!empty($product['short_description'])): ?>
+                                            <div class="mb-4">
+                                                <h6 class="fw-bold text-dark mb-2">Overview</h6>
+                                                <p class="text-secondary leading-relaxed mb-0">
+                                                    <?php echo nl2br(htmlspecialchars($product['short_description'])); ?>
+                                                </p>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <!-- Specifications Table -->
+                                        <div class="mb-4">
+                                            <h6 class="fw-bold text-dark mb-2">Product Specifications</h6>
+                                            <div class="bg-light p-3 rounded-3 border">
+                                                <div class="spec-item">
+                                                    <span class="text-muted">Product ID</span>
+                                                    <span class="fw-medium text-dark">#<?php echo $product['id']; ?></span>
                                                 </div>
-                                            <?php endforeach; ?>
+                                                <div class="spec-item">
+                                                    <span class="text-muted">Brand / Collection</span>
+                                                    <span class="fw-medium text-dark"><?php echo htmlspecialchars($product['brand'] ?: 'Printmont'); ?></span>
+                                                </div>
+                                                <div class="spec-item">
+                                                    <span class="text-muted">Status</span>
+                                                    <span class="fw-medium text-dark"><?php echo ucfirst($product['status']); ?></span>
+                                                </div>
+                                                <div class="spec-item">
+                                                    <span class="text-muted">Added On</span>
+                                                    <span class="fw-medium text-dark"><?php echo date('M d, Y', strtotime($product['created_at'])); ?></span>
+                                                </div>
+                                                <?php if (!empty($product['updated_at'])): ?>
+                                                    <div class="spec-item">
+                                                        <span class="text-muted">Last Modified</span>
+                                                        <span class="fw-medium text-dark"><?php echo date('M d, Y H:i', strtotime($product['updated_at'])); ?></span>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
                                         </div>
-                                        <a href="#" class="text-primary mt-2 d-inline-block">Size Chart</a>
-                                    </div>
 
-                                    <!-- Services -->
-                                    <div class="mb-4">
-                                        <h6 class="mb-3">Services</h6>
-                                        <span class="service-badge"><i class="fas fa-money-bill-wave me-1"></i> Cash on Delivery available</span>
-                                    </div>
+                                        <!-- Full Description / Content -->
+                                        <?php if (!empty($product['description'])): ?>
+                                            <div class="mb-4">
+                                                <h6 class="fw-bold text-dark mb-2">Full Description</h6>
+                                                <div class="text-secondary border rounded p-3 bg-white" style="font-size: 0.92rem; line-height: 1.6;">
+                                                    <?php echo $product['description']; ?>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
 
-                                    <!-- Action Buttons -->
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-lg"><i class="fas fa-shopping-cart me-2"></i>ADD TO CART</button>
-                                        <button class="btn btn-success btn-lg"><i class="fas fa-bolt me-2"></i>BUY NOW</button>
+                                        <!-- Quick Action Controls -->
+                                        <div class="d-flex flex-wrap gap-2 pt-2 border-top">
+                                            <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="btn btn-primary">
+                                                <i class="fas fa-pen me-1"></i> Edit Product Details
+                                            </a>
+                                            <a href="view-products.php" class="btn btn-outline-secondary">
+                                                <i class="fas fa-arrow-left me-1"></i> Back to Product List
+                                            </a>
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    <?php endif; ?>
+
                 </div>
             </main>
+
             <?php include_once "includes/footer.php"; ?>
         </div>
     </div>
 
     <script src="js/app.js"></script>
     <script>
-        function changeImage(thumbElement, imageUrl) {
-            // Update main image
-            document.getElementById('mainImage').src = imageUrl;
-            
-            // Update active thumbnail
-            document.querySelectorAll('.thumbnail').forEach(thumb => {
-                thumb.classList.remove('active');
-            });
+        function switchMainImage(thumbElement, imgUrl) {
+            document.getElementById('mainProductImg').src = imgUrl;
+            document.querySelectorAll('.thumb-preview-card').forEach(card => card.classList.remove('active'));
             thumbElement.classList.add('active');
         }
-
-        function selectSize(sizeElement) {
-            // Remove selected class from all sizes
-            document.querySelectorAll('.size-option').forEach(size => {
-                size.classList.remove('selected');
-            });
-            
-            // Add selected class to clicked size
-            sizeElement.classList.add('selected');
-        }
-
-        // Select first size by default
-        document.addEventListener('DOMContentLoaded', function() {
-            const firstSize = document.querySelector('.size-option');
-            if (firstSize) {
-                firstSize.classList.add('selected');
-            }
-        });
     </script>
 </body>
 </html>

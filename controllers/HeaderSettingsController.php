@@ -129,7 +129,7 @@ class HeaderSettingsController {
                 'page_name' => 'Shopping Cart',
                 'page_group' => 'commerce',
                 'route_patterns' => '/cart',
-                'header_type' => 'full',
+                'header_type' => 'inner',
                 'show_category_bar' => 0,
                 'category_bar_mode' => 'text_only',
                 'is_sticky' => 0,
@@ -762,15 +762,59 @@ class HeaderSettingsController {
         // Read global layout design if exists
         $configFile = __DIR__ . '/../config/header_menu_design.json';
         $menuDesign = 'design1';
+        $headerConfig = [
+            'design' => 'design1',
+            'home_desktop_design' => 'design1',
+            'home_mobile_design' => 'design1',
+            'inner_desktop_design' => 'design1',
+            'inner_mobile_design' => 'design1',
+            'category_image_shape' => 'circle',
+            'category_image_size' => 56,
+            'sticky_header' => true,
+            'announcement_bar' => true,
+            'announcement_text' => '🎉 Free Delivery on Custom Orders over ₹999 | Corporate & Bulk Discounts Available!',
+            'category_bar_style' => 'with_icons',
+            'search_bar_style' => 'expanded',
+            'show_wishlist' => true,
+            'show_cart' => true
+        ];
+
         if (file_exists($configFile)) {
             $data = json_decode(file_get_contents($configFile), true);
-            $menuDesign = $data['design'] ?? 'design1';
+            if (is_array($data)) {
+                $headerConfig = array_merge($headerConfig, $data);
+                $menuDesign = $data['design'] ?? ($data['home_desktop_design'] ?? 'design1');
+            }
         }
 
         return [
             'menu_design' => $menuDesign,
+            'home_desktop_design' => $headerConfig['home_desktop_design'] ?? 'design1',
+            'home_mobile_design' => $headerConfig['home_mobile_design'] ?? 'design1',
+            'inner_desktop_design' => $headerConfig['inner_desktop_design'] ?? 'design1',
+            'inner_mobile_design' => $headerConfig['inner_mobile_design'] ?? 'design1',
+            'category_image_shape' => $headerConfig['category_image_shape'] ?? 'circle',
+            'category_image_size' => (int)($headerConfig['category_image_size'] ?? 56),
+            'header_config' => $headerConfig,
             'rules' => $rules,
             'generated_at' => date('Y-m-d H:i:s')
         ];
+    }
+
+    /**
+     * Update Category / Mega Menu Image Shape & Size settings.
+     */
+    public function updateCategoryImageSettings($shape, $size) {
+        $configFile = __DIR__ . '/../config/header_menu_design.json';
+        $config = [];
+        if (file_exists($configFile)) {
+            $config = json_decode(file_get_contents($configFile), true) ?: [];
+        }
+        $validShapes = ['circle', 'square', 'rounded_square'];
+        $config['category_image_shape'] = in_array($shape, $validShapes) ? $shape : 'circle';
+        $sizeInt = (int)$size;
+        $config['category_image_size'] = ($sizeInt >= 36 && $sizeInt <= 120) ? $sizeInt : 56;
+        $config['updated_at'] = date('Y-m-d H:i:s');
+        return (bool)file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT));
     }
 }

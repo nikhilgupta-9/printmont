@@ -1,0 +1,10 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /printmont/printmont-backend/uploads/products/
+
+    # Route through watermark handler only on download or export
+    RewriteCond %{QUERY_STRING} (download=1|wm=1|export=1|save=1|dl=1) [NC]
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteCond %{REQUEST_URI} \.(jpe?g|png|bmp|gif)$ [NC]
+    RewriteRule ^(.*)$ /printmont/printmont-backend/watermark-handler.php?src=uploads/products/$1&download=1 [QSA,L]
+</IfModule>

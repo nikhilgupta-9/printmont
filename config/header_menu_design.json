@@ -1,3 +1,17 @@
 {
-    "design": "design1"
+    "home_desktop_design": "design1",
+    "home_mobile_design": "design1",
+    "inner_desktop_design": "design1",
+    "inner_mobile_design": "design1",
+    "design": "design1",
+    "category_image_shape": "rounded_square",
+    "category_image_size": 56,
+    "sticky_header": true,
+    "announcement_bar": true,
+    "announcement_text": "\ud83c\udf89 Free Delivery on Custom Orders over \u20b9999 | Corporate & Bulk Discounts Available!",
+    "category_bar_style": "with_icons",
+    "search_bar_style": "expanded",
+    "show_wishlist": true,
+    "show_cart": true,
+    "updated_at": "2026-10-21 14:10:29"
 }

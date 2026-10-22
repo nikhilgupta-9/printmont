@@ -207,7 +207,75 @@
         }
         wrap.appendChild(label);
 
-        if (field.input === 'image') {
+        if (field.input === 'product_picker') {
+            wrap.classList.add('is-wide');
+            var select = el('select', 'pe-select pe-product-picker');
+            select.id = inputId;
+            select.name = field.name;
+            var optDefault = el('option', null, '— Choose a store product to auto-fill details (or type custom) —');
+            optDefault.value = '';
+            select.appendChild(optDefault);
+            (field.choices || []).forEach(function (choice) {
+                var option = el('option', null, choice.label + (choice.offer_price ? ' (₹' + Math.round(choice.offer_price) + ')' : ''));
+                option.value = choice.value;
+                if (String(choice.value) === String(value)) option.selected = true;
+                select.appendChild(option);
+            });
+
+            select.addEventListener('change', function () {
+                var selectedVal = select.value;
+                if (!selectedVal) return;
+                var choice = (field.choices || []).find(function(c) { return String(c.value) === String(selectedVal); });
+                if (!choice) return;
+
+                var form = select.closest('form');
+                if (!form) return;
+
+                var titleInput = form.querySelector('[name="title"]');
+                var contentInput = form.querySelector('[name="content"]');
+                var extraInput = form.querySelector('[name="extra"]');
+                var imgBox = form.querySelector('.pe-image');
+
+                if (titleInput) {
+                    titleInput.value = choice.label.startsWith('Bulk ') ? choice.label : ('Bulk ' + choice.label);
+                }
+
+                if (contentInput) {
+                    var price = choice.offer_price || choice.regular_price || '299';
+                    contentInput.value = '₹' + Math.round(price) + ' each for 100 pieces';
+                }
+
+                if (extraInput) {
+                    var curCat = (extraInput.value || '').split('|')[0].trim() || 'Apparel';
+                    extraInput.value = curCat + ' | ' + (choice.product_slug || choice.label.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+                }
+
+                if (choice.thumbnail_image && imgBox) {
+                    var img = imgBox.querySelector('.pe-image-img');
+                    var none = imgBox.querySelector('.pe-image-none');
+                    var rm = imgBox.querySelector('[name$="__remove"]');
+                    if (img) {
+                        img.src = choice.thumbnail_image;
+                        img.hidden = false;
+                    }
+                    if (none) none.hidden = true;
+                    if (rm) rm.value = '0';
+
+                    var hiddenStoreImg = form.querySelector('[name="selected_store_image"]');
+                    if (!hiddenStoreImg) {
+                        hiddenStoreImg = el('input');
+                        hiddenStoreImg.type = 'hidden';
+                        hiddenStoreImg.name = 'selected_store_image';
+                        form.appendChild(hiddenStoreImg);
+                    }
+                    hiddenStoreImg.value = choice.thumbnail_image;
+                }
+
+                toast('Auto-filled from: ' + choice.label);
+            });
+
+            wrap.appendChild(select);
+        } else if (field.input === 'image') {
             wrap.appendChild(buildImage(field, value, inputId));
         } else if (field.input === 'select') {
             var select = el('select', 'pe-select');
@@ -417,7 +485,11 @@
         var prefix = band.key + '-' + partIndex;
 
         var head = el('div', 'pe-part-head');
-        head.appendChild(el('h3', null, part.label));
+        var titleWrap = el('div', 'pe-part-title-wrap');
+        var num = el('span', 'pe-part-num', String(partIndex + 1));
+        titleWrap.appendChild(num);
+        titleWrap.appendChild(el('h3', null, part.label));
+        head.appendChild(titleWrap);
         host.appendChild(head);
 
         var form = el('form', 'pe-fields');
@@ -472,7 +544,11 @@
         var host = el('div', 'pe-part');
 
         var head = el('div', 'pe-part-head');
-        head.appendChild(el('h3', null, part.label));
+        var titleWrap = el('div', 'pe-part-title-wrap');
+        var num = el('span', 'pe-part-num', String(partIndex + 1));
+        titleWrap.appendChild(num);
+        titleWrap.appendChild(el('h3', null, part.label));
+        head.appendChild(titleWrap);
 
         var add = el('button', 'pe-btn pe-btn-sm', part.addLabel || 'Add');
         add.type = 'button';
@@ -785,21 +861,108 @@
     function refreshCounts() {
         cfg.bands.forEach(function (band) {
             var node = document.querySelector('.pe-rail a[href="#band-' + band.key + '"] .pe-count');
-            if (!node) return;
-            var count = countFor(band);
-            node.textContent = count ? String(count) : '';
+            if (node) {
+                var count = countFor(band);
+                node.textContent = count ? String(count) : '';
+            }
+            var tabBadge = document.querySelector('.pe-tab-item[data-band="' + band.key + '"] .pe-tab-badge');
+            if (tabBadge) {
+                var tabCount = countFor(band);
+                tabBadge.textContent = tabCount ? String(tabCount) : '';
+                tabBadge.style.display = tabCount ? 'inline-flex' : 'none';
+            }
         });
     }
 
+    function switchTab(bandKey) {
+        var editor = document.getElementById('pageEditor');
+        var tabs = document.querySelectorAll('.pe-tab-item');
+        var panels = document.querySelectorAll('.pe-band');
+        var railLinks = document.querySelectorAll('.pe-rail a');
+
+        tabs.forEach(function (tab) {
+            tab.classList.toggle('is-active', tab.dataset.band === bandKey);
+        });
+
+        railLinks.forEach(function (link) {
+            link.classList.toggle('is-current', link.getAttribute('href') === '#band-' + bandKey);
+        });
+
+        if (bandKey === 'all') {
+            if (editor) editor.classList.remove('is-tab-mode');
+            panels.forEach(function (panel) {
+                panel.classList.remove('is-tab-active');
+            });
+        } else {
+            if (editor) editor.classList.add('is-tab-mode');
+            panels.forEach(function (panel) {
+                var isTarget = panel.id === 'band-' + bandKey;
+                panel.classList.toggle('is-tab-active', isTarget);
+                if (isTarget) panel.classList.remove('is-closed');
+            });
+
+            if (history.replaceState) {
+                history.replaceState(null, '', '#band-' + bandKey);
+            }
+        }
+    }
+
     function render() {
+        var tabsNav = document.getElementById('peTabsNav');
         var rail = document.getElementById('peRail');
         var host = document.getElementById('peBands');
 
+        var initialBand = '';
+        if (window.location.hash) {
+            var rawHash = window.location.hash.replace(/^#band-/, '').replace(/^#/, '');
+            var found = cfg.bands.find(function (b) { return b.key === rawHash; });
+            if (found) initialBand = found.key;
+        }
+        if (!initialBand && cfg.bands.length > 0) {
+            initialBand = cfg.bands[0].key;
+        }
+
+        // Render Tabs Bar
+        if (tabsNav) {
+            cfg.bands.forEach(function (band) {
+                var tab = el('button', 'pe-tab-item');
+                tab.type = 'button';
+                tab.dataset.band = band.key;
+
+                var label = el('span', null, band.label);
+                tab.appendChild(label);
+
+                var badge = el('span', 'pe-tab-badge');
+                badge.style.display = 'none';
+                tab.appendChild(badge);
+
+                tab.addEventListener('click', function () {
+                    switchTab(band.key);
+                });
+                tabsNav.appendChild(tab);
+            });
+
+            // "All Bands" view tab
+            var allTab = el('button', 'pe-tab-item');
+            allTab.type = 'button';
+            allTab.dataset.band = 'all';
+            allTab.appendChild(el('span', null, '📑 Show All'));
+            allTab.addEventListener('click', function () {
+                switchTab('all');
+            });
+            tabsNav.appendChild(allTab);
+        }
+
+        // Render Rail & Bands
         cfg.bands.forEach(function (band) {
             var link = el('a', null);
             link.href = '#band-' + band.key;
             link.appendChild(el('span', null, band.label));
             link.appendChild(el('span', 'pe-count'));
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                switchTab(band.key);
+            });
             rail.appendChild(link);
 
             var panel = el('section', 'pe-band');
@@ -817,43 +980,77 @@
             panel.appendChild(head);
 
             var body = el('div', 'pe-band-body');
-            band.parts.forEach(function (part, index) {
-                body.appendChild(part.kind === 'list'
-                    ? buildList(band, index, part)
-                    : buildSingle(band, index, part));
-            });
+
+            if (band.parts.length > 1) {
+                var subNav = el('div', 'pe-subnav');
+                var subLabel = el('span', 'pe-subnav-label', '📑 Filter Section:');
+                subNav.appendChild(subLabel);
+
+                var allBtn = el('button', 'pe-subnav-btn is-active');
+                allBtn.type = 'button';
+                allBtn.textContent = 'View All (' + band.parts.length + ')';
+                subNav.appendChild(allBtn);
+
+                var partNodes = [];
+
+                band.parts.forEach(function (part, index) {
+                    var partNode = part.kind === 'list'
+                        ? buildList(band, index, part)
+                        : buildSingle(band, index, part);
+                    partNode.dataset.partIndex = index;
+                    partNodes.push(partNode);
+
+                    var btn = el('button', 'pe-subnav-btn');
+                    btn.type = 'button';
+                    var numSpan = el('span', 'pe-subnav-badge', String(index + 1));
+                    btn.appendChild(numSpan);
+                    var txtSpan = el('span', null, part.label);
+                    btn.appendChild(txtSpan);
+
+                    btn.addEventListener('click', function () {
+                        subNav.querySelectorAll('.pe-subnav-btn').forEach(function (b) { b.classList.remove('is-active'); });
+                        btn.classList.add('is-active');
+                        partNodes.forEach(function (p, idx) {
+                            p.style.display = (idx === index) ? 'block' : 'none';
+                        });
+                    });
+                    subNav.appendChild(btn);
+                });
+
+                allBtn.addEventListener('click', function () {
+                    subNav.querySelectorAll('.pe-subnav-btn').forEach(function (b) { b.classList.remove('is-active'); });
+                    allBtn.classList.add('is-active');
+                    partNodes.forEach(function (p) {
+                        p.style.display = 'block';
+                    });
+                });
+
+                body.appendChild(subNav);
+                partNodes.forEach(function (p) { body.appendChild(p); });
+            } else {
+                band.parts.forEach(function (part, index) {
+                    body.appendChild(part.kind === 'list'
+                        ? buildList(band, index, part)
+                        : buildSingle(band, index, part));
+                });
+            }
             panel.appendChild(body);
 
             host.appendChild(panel);
         });
 
         refreshCounts();
-        trackRail();
-    }
+        if (initialBand) {
+            switchTab(initialBand);
+        }
 
-    /** Highlight the rail entry for whichever band is on screen. */
-    function trackRail() {
-        var links = document.querySelectorAll('.pe-rail a');
-        var panels = document.querySelectorAll('.pe-band');
-
-        if (!('IntersectionObserver' in window)) return;
-
-        var seen = new Map();
-        var observer = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) { seen.set(entry.target.id, entry.intersectionRatio); });
-
-            var best = null;
-            var bestRatio = 0;
-            seen.forEach(function (ratio, id) {
-                if (ratio > bestRatio) { bestRatio = ratio; best = id; }
-            });
-
-            links.forEach(function (link) {
-                link.classList.toggle('is-current', best !== null && link.getAttribute('href') === '#' + best);
-            });
-        }, { rootMargin: '-80px 0px -55% 0px', threshold: [0, 0.25, 0.5, 1] });
-
-        panels.forEach(function (panel) { observer.observe(panel); });
+        window.addEventListener('hashchange', function () {
+            if (window.location.hash) {
+                var hashKey = window.location.hash.replace(/^#band-/, '').replace(/^#/, '');
+                var match = cfg.bands.find(function (b) { return b.key === hashKey; });
+                if (match) switchTab(match.key);
+            }
+        });
     }
 
     window.addEventListener('beforeunload', function (e) {

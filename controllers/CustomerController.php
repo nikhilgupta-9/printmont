@@ -55,6 +55,18 @@ class CustomerController {
         return $this->customer->search($searchTerm);
     }
 
+    public function getCustomerOrders($customerId, $userId = null, $email = '', $phone = '') {
+        return $this->customer->getCustomerOrders($customerId, $userId, $email, $phone);
+    }
+
+    public function getCustomerAddresses($userId) {
+        return $this->customer->getCustomerAddresses($userId);
+    }
+
+    public function getCustomerFullStats($customerId, $userId = null, $email = '', $phone = '') {
+        return $this->customer->getCustomerFullStats($customerId, $userId, $email, $phone);
+    }
+
     public function validateCustomerData($data) {
         $errors = [];
 

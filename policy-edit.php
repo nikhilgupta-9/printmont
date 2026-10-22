@@ -20,26 +20,47 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Policy Management | Printmont</title>
 
+    <link rel="shortcut icon" href="img/icons/icon-48x48.png" />
+    <link rel="icon" type="image/png" href="favicon.png" />
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
 
     <style>
+        .policy-tabs .nav-link {
+            font-weight: 600;
+            color: #495057;
+            padding: 10px 18px;
+            border-radius: 6px 6px 0 0;
+            transition: all 0.2s ease;
+        }
+        .policy-tabs .nav-link:hover {
+            color: #0b53a1;
+            background: rgba(11, 83, 161, 0.05);
+        }
         .policy-tabs .nav-link.active {
-            background-color: #0d6efd;
+            background-color: #0b53a1 !important;
             color: #fff !important;
+            border-color: #0b53a1 !important;
         }
 
         .policy-box {
-            border: 1px solid #ddd;
+            border: 1px solid #e2e8f0;
             background: #fff;
-            padding: 20px;
+            padding: 24px;
             border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .remove-point {
             cursor: pointer;
-            color: red;
-            font-size: 20px;
-            padding-left: 10px;
+            color: #dc3545;
+            font-size: 22px;
+            padding: 0 10px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+        }
+        .remove-point:hover {
+            color: #a71d2a;
         }
     </style>
 </head>
@@ -210,14 +231,27 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
             }
 
             document.addEventListener('DOMContentLoaded', function () {
+                // If a hash exists in URL (e.g. #privacy), activate that tab
+                const hash = window.location.hash.replace('#', '');
+                if (hash) {
+                    const targetBtn = document.querySelector(`[data-bs-target="#${hash}"]`);
+                    if (targetBtn) {
+                        const tabTrigger = new bootstrap.Tab(targetBtn);
+                        tabTrigger.show();
+                    }
+                }
+
                 initVisible();
 
                 // Bootstrap fires this after the pane is visible and measurable.
                 document.querySelectorAll('[data-bs-toggle="tab"], [data-bs-toggle="pill"]').forEach(function (trigger) {
                     trigger.addEventListener('shown.bs.tab', function (e) {
                         const paneId = (e.target.getAttribute('href') || e.target.dataset.bsTarget || '').replace('#', '');
-                        const pane = paneId && document.getElementById(paneId);
-                        if (pane) pane.querySelectorAll('.policy-richtext').forEach(initEditor);
+                        if (paneId) {
+                            history.replaceState(null, null, '#' + paneId);
+                            const pane = document.getElementById(paneId);
+                            if (pane) pane.querySelectorAll('.policy-richtext').forEach(initEditor);
+                        }
                     });
                 });
             });

@@ -16,7 +16,7 @@ class ContactModel
        ============================ */
     public function getContactInfo()
     {
-        $query = "SELECT * FROM contact_info WHERE is_active = 1 LIMIT 1";
+        $query = "SELECT * FROM contact_info ORDER BY (is_active = 1) DESC, id ASC LIMIT 1";
         $result = $this->db->query($query);
 
         if ($result && $result->num_rows > 0) {
@@ -25,7 +25,7 @@ class ContactModel
         
         // Return default structure if no record found
         return [
-            'id' => '',
+            'id' => 1,
             'help_number' => '',
             'service_time' => '',
             'sales_email' => '',
@@ -48,6 +48,10 @@ class ContactModel
             // Insert new record
             return $this->insertContactInfo($data);
         } else {
+            // Ensure valid target id
+            if (empty($data['id'])) {
+                $data['id'] = $existing['id'];
+            }
             // Update existing record
             return $this->updateExistingContactInfo($data);
         }
@@ -58,11 +62,11 @@ class ContactModel
        ============================ */
     private function insertContactInfo($data)
     {
-        $help_number = $this->db->real_escape_string($data['help_number']);
+        $help_number = $this->db->real_escape_string($data['help_number'] ?? '');
         $service_time = $this->db->real_escape_string($data['service_time'] ?? '');
-        $sales_email = $this->db->real_escape_string($data['sales_email']);
+        $sales_email = $this->db->real_escape_string($data['sales_email'] ?? '');
         $corporate_email = $this->db->real_escape_string($data['corporate_email'] ?? '');
-        $address_one = $this->db->real_escape_string($data['address_one']);
+        $address_one = $this->db->real_escape_string($data['address_one'] ?? '');
         $address_two = $this->db->real_escape_string($data['address_two'] ?? '');
 
         $query = "
@@ -87,12 +91,12 @@ class ContactModel
        ============================ */
     private function updateExistingContactInfo($data)
     {
-        $id = $this->db->real_escape_string($data['id']);
-        $help_number = $this->db->real_escape_string($data['help_number']);
+        $id = intval($data['id'] ?? 1);
+        $help_number = $this->db->real_escape_string($data['help_number'] ?? '');
         $service_time = $this->db->real_escape_string($data['service_time'] ?? '');
-        $sales_email = $this->db->real_escape_string($data['sales_email']);
+        $sales_email = $this->db->real_escape_string($data['sales_email'] ?? '');
         $corporate_email = $this->db->real_escape_string($data['corporate_email'] ?? '');
-        $address_one = $this->db->real_escape_string($data['address_one']);
+        $address_one = $this->db->real_escape_string($data['address_one'] ?? '');
         $address_two = $this->db->real_escape_string($data['address_two'] ?? '');
 
         $query = "
@@ -103,8 +107,9 @@ class ContactModel
                 corporate_email = '$corporate_email',
                 address_one = '$address_one',
                 address_two = '$address_two',
+                is_active = 1,
                 updated_at = NOW()
-            WHERE id = '$id'
+            WHERE id = $id
         ";
 
         if ($this->db->query($query)) {
@@ -151,23 +156,37 @@ class ContactModel
     /* ============================
        LIST Contact Inquiries (admin)
        ============================ */
-    public function getInquiries($status = '')
+    public function getInquiries($status = '', $search = '')
     {
-        $sql = "SELECT * FROM contact_inquiries";
+        $sql = "SELECT * FROM contact_inquiries WHERE 1=1";
         $params = [];
+        $types = "";
 
-        if ($status !== '') {
-            $sql .= " WHERE status = ?";
+        if ($status !== '' && $status !== 'all') {
+            $sql .= " AND status = ?";
             $params[] = $status;
+            $types .= "s";
         }
+
+        if (!empty($search)) {
+            $sql .= " AND (name LIKE ? OR email LIKE ? OR phone LIKE ? OR subject LIKE ? OR message LIKE ?)";
+            $searchTerm = "%" . $search . "%";
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $types .= "sssss";
+        }
+
         $sql .= " ORDER BY created_at DESC";
 
         $stmt = $this->db->prepare($sql);
         if (!$stmt) {
             return [];
         }
-        if ($params) {
-            $stmt->bind_param('s', $params[0]);
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
         }
         $stmt->execute();
         $result = $stmt->get_result();
@@ -181,6 +200,30 @@ class ContactModel
         return $rows;
     }
 
+    public function getInquiryStats()
+    {
+        $stats = [
+            'total'       => 0,
+            'new'         => 0,
+            'in_progress' => 0,
+            'resolved'    => 0,
+            'closed'      => 0
+        ];
+
+        $res = $this->db->query("SELECT status, COUNT(*) as cnt FROM contact_inquiries GROUP BY status");
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $statusKey = $row['status'];
+                $cnt = (int)$row['cnt'];
+                $stats['total'] += $cnt;
+                if (isset($stats[$statusKey])) {
+                    $stats[$statusKey] = $cnt;
+                }
+            }
+        }
+        return $stats;
+    }
+
     public function updateInquiryStatus($id, $status, $notes = '')
     {
         $stmt = $this->db->prepare(
@@ -191,6 +234,20 @@ class ContactModel
         }
         $id = (int) $id;
         $stmt->bind_param('ssi', $status, $notes, $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+
+        return $ok;
+    }
+
+    public function deleteInquiry($id)
+    {
+        $stmt = $this->db->prepare("DELETE FROM contact_inquiries WHERE id = ?");
+        if (!$stmt) {
+            return false;
+        }
+        $id = (int) $id;
+        $stmt->bind_param('i', $id);
         $ok = $stmt->execute();
         $stmt->close();
 

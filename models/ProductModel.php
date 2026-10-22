@@ -18,7 +18,7 @@ class ProductModel
         'price', 'regular_price', 'offer_price', 'discount_price', 'sort_order',
         'stock_quantity', 'product_quantity', 'out_of_stock_status', 'minimum_quantity',
         'bulk_price_variance', 'sku', 'status', 'featured',
-        'top_selection', 'our_bestseller', 'top_rated', 'top_deal_by_categories', 'view_count',
+        'top_selection', 'our_bestseller', 'top_rated', 'top_deal_by_categories', 'top_deal', 'view_count',
         // SEO
         'meta_title', 'meta_keywords', 'meta_description',
         // Visibility / Status toggles
@@ -29,17 +29,17 @@ class ProductModel
         'addon_product_ids',
         // Attributes
         'show_sizes', 'show_colors',
-        'size_attributes', 'color_attributes', 'material_attributes',
-        'lamination_attributes', 'orientation_attributes', 'quantity_price_breaks',
+        'size_attributes', 'color_attributes', 'color_images', 'material_attributes',
+        'lamination_attributes', 'orientation_attributes', 'printing_location', 'quantity_price_breaks',
         // Shipping
         'shipping_method_status',
         'local_shipping_charge', 'local_shipping_message',
         'regional_shipping_charge', 'regional_shipping_message',
         'national_shipping_charge', 'national_shipping_message',
         // Cancel
-        'cancel_available', 'cancel_time', 'cancel_type',
+        'cancel_available', 'cancel_status', 'cancel_time', 'cancel_type',
         // COD
-        'cod_available',
+        'cod_available', 'cod_status',
         // Timestamps
         'created_at', 'updated_at',
     ];
@@ -82,7 +82,8 @@ class ProductModel
         }
     }
 
-    public function updateProduct($id, $data, $mainImages = [])
+    // $replaceImages: rewrite product_images even when $mainImages is empty (admin removed every image)
+    public function updateProduct($id, $data, $mainImages = [], $replaceImages = false)
     {
         $this->db->beginTransaction();
         try {
@@ -103,7 +104,7 @@ class ProductModel
             $query = "UPDATE products SET " . implode(', ', $setParts) . " WHERE id = ?";
             $this->db->execute($query, $params);
 
-            if (!empty($mainImages)) {
+            if (!empty($mainImages) || $replaceImages) {
                 $this->db->execute("DELETE FROM product_images WHERE product_id = ?", [$id]);
                 foreach ($mainImages as $index => $image) {
                     $imgQ = "INSERT INTO product_images (product_id, image_url, is_primary, display_order, created_at) VALUES (?, ?, ?, ?, NOW())";
@@ -126,15 +127,33 @@ class ProductModel
 
     public function getProductById($id)
     {
-        $query = "SELECT p.*, c1.name as main_category_name
+        $query = "SELECT p.*, c1.name as category_name, c1.name as main_category_name
                   FROM products p
                   LEFT JOIN categories c1 ON p.category_id = c1.id
                   WHERE p.id = ?";
         $product = $this->db->fetch($query, [$id]);
 
         if ($product) {
-            $imagesQuery = "SELECT * FROM product_images WHERE product_id = ? ORDER BY display_order";
+            // Primary first, then the saved order — the edit form treats the first image as primary
+            $imagesQuery = "SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, display_order ASC, id ASC";
             $product['main_images'] = $this->db->fetchAll($imagesQuery, [$id]);
+        }
+
+        return $product;
+    }
+
+    public function getProductBySlug($slug)
+    {
+        $query = "SELECT p.*, c1.name as category_name, c1.name as main_category_name
+                  FROM products p
+                  LEFT JOIN categories c1 ON p.category_id = c1.id
+                  WHERE p.product_slug = ? OR p.name LIKE ?
+                  LIMIT 1";
+        $product = $this->db->fetch($query, [$slug, "%$slug%"]);
+
+        if ($product) {
+            $imagesQuery = "SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, display_order ASC";
+            $product['main_images'] = $this->db->fetchAll($imagesQuery, [$product['id']]);
         }
 
         return $product;
@@ -162,9 +181,15 @@ class ProductModel
         }
 
         $whereClause = !empty($where) ? "WHERE " . implode(" AND ", $where) : "";
-        $query = "SELECT p.*, c1.name as main_category_name
+        $query = "SELECT p.*, 
+                         c1.name as main_category_name, 
+                         c1.name as category_name,
+                         c2.name as sub_category_name,
+                         c3.name as sub_sub_category_name
                   FROM products p
                   LEFT JOIN categories c1 ON p.category_id = c1.id
+                  LEFT JOIN categories c2 ON p.sub_category_id = c2.id
+                  LEFT JOIN categories c3 ON p.sub_sub_category_id = c3.id
                   $whereClause
                   ORDER BY p.created_at DESC";
 

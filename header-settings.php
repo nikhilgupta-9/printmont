@@ -1,8 +1,16 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/controllers/HeaderSettingsController.php';
 require_once __DIR__ . '/controllers/CategoryController.php';
+
+// Authentication check
+if (!isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit;
+}
 
 $headerCtrl = new HeaderSettingsController();
 $catCtrl = new CategoryController();
@@ -73,10 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $val = ($_POST['value'] ?? '0') === '1' ? 'yes' : 'no';
         $statusVal = ($_POST['value'] ?? '0') === '1' ? 'show' : 'hide';
 
-        if ($catId > 0 && in_array($field, ['desktop_home_show', 'desktop_menu_status', 'mobile_topbar_status', 'mobile_home_show'])) {
-            $dbVal = ($field === 'desktop_home_show' || $field === 'mobile_home_show') ? $val : $statusVal;
+        if ($catId > 0 && in_array($field, ['desktop_menu_status', 'mobile_topbar_status'])) {
             $stmt = $conn->prepare("UPDATE categories SET `{$field}` = ? WHERE id = ?");
-            $stmt->bind_param("si", $dbVal, $catId);
+            $stmt->bind_param("si", $statusVal, $catId);
             $res = $stmt->execute();
             echo json_encode(['success' => $res]);
             exit;
@@ -139,8 +146,9 @@ foreach ($groupMeta as $k => $m) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Dynamic Brand Favicon (Rule 1) -->
+    <link rel="shortcut icon" href="favicon.png" />
+    <link rel="icon" type="image/png" href="favicon.png" />
     <title>Manage Header &amp; Categories | Printmont Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
@@ -458,10 +466,8 @@ foreach ($groupMeta as $k => $m) {
                                 <thead class="table-light">
                                     <tr>
                                         <th>Category</th>
-                                        <th class="text-center">Home Icon Bar (Desktop)</th>
-                                        <th class="text-center">Top Dropdown Inside Pages</th>
-                                        <th class="text-center">Mobile Drawer</th>
-                                        <th class="text-center">Mobile Home Strip</th>
+                                        <th class="text-center">Desktop Top Menu Status</th>
+                                        <th class="text-center">Mobile Topbar Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -485,13 +491,6 @@ foreach ($groupMeta as $k => $m) {
                                         <td class="text-center">
                                             <div class="form-check form-switch d-inline-block">
                                                 <input class="form-check-input" type="checkbox" role="switch"
-                                                       <?php echo ($cat['desktop_home_show'] ?? '') === 'yes' ? 'checked' : ''; ?>
-                                                       onchange="toggleCat(<?php echo $cat['id']; ?>, 'desktop_home_show', this.checked ? 1 : 0)">
-                                            </div>
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="form-check form-switch d-inline-block">
-                                                <input class="form-check-input" type="checkbox" role="switch"
                                                        <?php echo ($cat['desktop_menu_status'] ?? '') === 'show' ? 'checked' : ''; ?>
                                                        onchange="toggleCat(<?php echo $cat['id']; ?>, 'desktop_menu_status', this.checked ? 1 : 0)">
                                             </div>
@@ -501,13 +500,6 @@ foreach ($groupMeta as $k => $m) {
                                                 <input class="form-check-input" type="checkbox" role="switch"
                                                        <?php echo ($cat['mobile_topbar_status'] ?? '') === 'show' ? 'checked' : ''; ?>
                                                        onchange="toggleCat(<?php echo $cat['id']; ?>, 'mobile_topbar_status', this.checked ? 1 : 0)">
-                                            </div>
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="form-check form-switch d-inline-block">
-                                                <input class="form-check-input" type="checkbox" role="switch"
-                                                       <?php echo ($cat['mobile_home_show'] ?? '') === 'yes' ? 'checked' : ''; ?>
-                                                       onchange="toggleCat(<?php echo $cat['id']; ?>, 'mobile_home_show', this.checked ? 1 : 0)">
                                             </div>
                                         </td>
                                     </tr>

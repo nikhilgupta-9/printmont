@@ -43,7 +43,12 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
 
 // Fallback redirect
 if (empty($redirect) || $redirect === '#') {
-    $redirect = '../../notifications.php';
+    $redirect = '../../notifications.php' . ($id ? '?open_id=' . urlencode($id) : '');
+} else {
+    // If it's a relative path that doesn't start with http/https or / or ../, prepend ../../
+    if (!preg_match('/^(https?:\/\/|\/|\.\.\/)/i', $redirect)) {
+        $redirect = '../../' . $redirect;
+    }
 }
 
 header('Location: ' . $redirect);

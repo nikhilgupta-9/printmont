@@ -1,18 +1,20 @@
 <?php
 session_start();
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
 require_once(__DIR__ . '/config/database.php');
 require_once(__DIR__ . '/controllers/CategoryController.php');
 
-$controller    = new CategoryController();
+$controller     = new CategoryController();
 $mainCategories = $controller->getMainCategories();
 $error   = '';
+$success = '';
 
-// AJAX: suggest the next display order for the selected main category
-if (isset($_GET['get_next_order']) && isset($_GET['parent_id'])) {
-    header('Content-Type: application/json');
-    echo json_encode(['next_order' => $controller->getNextDisplayOrder(2, (int)$_GET['parent_id'])]);
-    exit;
-}
+// Pre-select parent when arriving from "Add Sub Category" on a specific main category row
+$selectedParentId = (int)($_POST['parent_id'] ?? $_GET['parent_id'] ?? 0);
+$nextOrder = $selectedParentId ? $controller->getNextDisplayOrder(2, $selectedParentId) : 1;
 
 function old($key, $default = '') {
     return htmlspecialchars($_POST[$key] ?? $default);
@@ -20,13 +22,6 @@ function old($key, $default = '') {
 function oldSel($key, $value, $default = '') {
     return (($_POST[$key] ?? $default) === $value) ? 'selected' : '';
 }
-function oldChecked($key, $value) {
-    return (($_POST[$key] ?? '') === $value) ? 'checked' : '';
-}
-
-// Pre-select parent when arriving from "Add Sub Category" on a specific main category row
-$selectedParentId = (int)($_POST['parent_id'] ?? $_GET['parent_id'] ?? 0);
-$nextOrder = $selectedParentId ? $controller->getNextDisplayOrder(2, $selectedParentId) : 1;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name'] ?? '');
@@ -58,29 +53,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'is_featured'          => (int)($_POST['is_featured'] ?? 0),
         'icon'                 => trim($_POST['icon'] ?? ''),
         'display_order'        => (int)($_POST['display_order'] ?? $controller->getNextDisplayOrder(2, $parentId)),
-        // Desktop menu
+        'image'                => uploadCatImg('image', 'sub'),
+        // Desktop Inner Menu (FNP Column Header)
         'desktop_menu_status'  => $_POST['desktop_menu_status'] ?? 'show',
-        'desktop_menu_order'   => (int)($_POST['desktop_menu_order'] ?? 0),
+        'desktop_menu_order'   => (int)($_POST['desktop_menu_order'] ?? (int)($_POST['display_order'] ?? 0)),
         'desktop_menu_tag'     => trim($_POST['desktop_menu_tag'] ?? ''),
-        // Desktop home
-        'desktop_home_show'    => $_POST['desktop_home_show'] ?? 'no',
-        'desktop_home_design'  => $_POST['desktop_home_design'] ?? '',
-        'desktop_home_order'   => (int)($_POST['desktop_home_order'] ?? 0),
-        'desktop_bg_color'     => $_POST['desktop_bg_color'] ?? '',
-        'desktop_bg_image'     => uploadCatImg('desktop_bg_image', 'bg'),
-        'desktop_image'        => uploadCatImg('desktop_image', 'desktop'),
-        // Mobile menu
+        // Mobile
         'mobile_topbar_status' => $_POST['mobile_topbar_status'] ?? 'show',
-        'mobile_topbar_order'  => (int)($_POST['mobile_topbar_order'] ?? 0),
-        'mobile_sidebar_order' => (int)($_POST['mobile_sidebar_order'] ?? 0),
-        // Mobile home
-        'mobile_home_show'     => $_POST['mobile_home_show'] ?? 'no',
-        'mobile_home_design'   => $_POST['mobile_home_design'] ?? '',
-        'mobile_home_format'   => $_POST['mobile_home_format'] ?? '4',
-        'mobile_home_order'    => (int)($_POST['mobile_home_order'] ?? 0),
-        'mobile_bg_color'      => $_POST['mobile_bg_color'] ?? '',
-        'mobile_bg_image'      => uploadCatImg('mobile_bg_image', 'mobile-bg'),
-        'mobile_image'         => uploadCatImg('mobile_image', 'mobile'),
+        'mobile_topbar_order'  => (int)($_POST['mobile_topbar_order'] ?? (int)($_POST['display_order'] ?? 0)),
         // SEO
         'meta_title'           => trim($_POST['meta_title'] ?? ''),
         'meta_keywords'        => trim($_POST['meta_keywords'] ?? ''),
@@ -88,19 +68,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
 
     if (empty($data['name'])) {
-        $error = 'Sub category name is required.';
+        $error = 'Subcategory name is required.';
     } elseif (!$parentId) {
-        $error = 'Please select a main category.';
+        $error = 'Please select a main parent category.';
     } elseif ($controller->checkCategoryExists($data['name'], $data['slug'])) {
         $error = 'A category with this name or slug already exists. Please choose a different name or slug.';
     } else {
         $result = $controller->createCategory($data);
         if ($result) {
-            $_SESSION['success_message'] = 'Sub category created successfully!';
+            $_SESSION['success_message'] = 'Subcategory created successfully!';
             header('Location: view-categories.php');
             exit;
         } else {
-            $error = 'Failed to create sub category.';
+            $error = 'Failed to create subcategory.';
         }
     }
 }
@@ -110,22 +90,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="shortcut icon" href="img/icons/icon-48x48.png" />
-    <title>Add Sub Category | Printmont</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="favicon.png" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <title>Add Subcategory | Printmont</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
     <script src="js/settings.js"></script>
     <style>
-        body { opacity: 0; }
+        body { opacity: 1 !important; font-family: 'Inter', sans-serif; }
         .required-field::after { content: " *"; color: #dc3545; }
-        .section-card { border-left: 4px solid #0d6efd; }
-        .section-card.mobile { border-left-color: #198754; }
-        .section-card.seo { border-left-color: #ffc107; }
-        .design-option { border: 2px solid #dee2e6; border-radius: 8px; padding: 10px; text-align: center; transition: all .2s; cursor: pointer; }
-        .design-option:hover { border-color: #0d6efd; }
-        input[type=radio]:checked + .design-option { border-color: #0d6efd; background: #e8f4fd; }
-        .image-preview { max-height: 120px; border-radius: 6px; margin-top: 8px; display: none; }
-        .conditional-block { display: none; }
+        .nav-tabs .nav-link {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 12px 18px;
+            color: #4b5563;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .nav-tabs .nav-link.active {
+            color: #198754 !important;
+            border-color: #dee2e6 #dee2e6 #ffffff !important;
+            background-color: #ffffff !important;
+            font-weight: 700;
+        }
+        .tab-content {
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 24px;
+        }
+        .section-header-box {
+            padding: 14px 18px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
@@ -136,12 +135,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <main class="content">
             <div class="container-fluid p-0">
 
-                <div class="row mb-3">
-                    <div class="col-auto d-none d-sm-block">
-                        <h3><strong>Add</strong> Sub Category</h3>
+                <!-- Page Header -->
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                        <h2 class="h3 fw-bold mb-1">Add Subcategory</h2>
+                        <span class="badge bg-success px-2 py-1">Level 2 – Mega Menu Column Header</span>
                     </div>
-                    <div class="col-auto ms-auto text-end mt-n1">
-                        <a href="view-categories.php" class="btn btn-success">View All Categories</a>
+                    <div>
+                        <a href="view-categories.php" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-arrow-left me-1"></i> All Categories
+                        </a>
+                        <button type="submit" form="subCatForm" class="btn btn-success px-4">
+                            <i class="fas fa-plus me-1"></i> Create Subcategory
+                        </button>
                     </div>
                 </div>
 
@@ -149,322 +155,135 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="alert alert-danger alert-dismissible"><button class="btn-close" data-bs-dismiss="alert"></button><?php echo htmlspecialchars($error); ?></div>
                 <?php endif; ?>
 
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" enctype="multipart/form-data" id="subCatForm">
 
-                    <!-- BASIC INFO -->
-                    <div class="card mb-4">
-                        <div class="card-header"><h5 class="mb-0">Basic Information</h5></div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label required-field">Main Category</label>
-                                <select name="parent_id" id="parentCatSelect" class="form-control" required>
-                                    <option value="">— Select Main Category —</option>
-                                    <?php foreach ($mainCategories as $mc): ?>
-                                        <option value="<?php echo $mc['id']; ?>" <?php echo ($selectedParentId == $mc['id']) ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($mc['name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                    <!-- SEPARATE TAB NAVIGATION -->
+                    <ul class="nav nav-tabs" id="categoryTabs" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" id="tab-basic-btn" data-bs-toggle="tab" data-bs-target="#tab-basic" type="button" role="tab">
+                                <i class="fas fa-info-circle me-1 text-success"></i> 1. Subcategory Info
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="tab-inner-btn" data-bs-toggle="tab" data-bs-target="#tab-inner" type="button" role="tab">
+                                <i class="fas fa-bars me-1 text-primary"></i> 2. Inner Dropdown Column Position & Tag
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="tab-seo-btn" data-bs-toggle="tab" data-bs-target="#tab-seo" type="button" role="tab">
+                                <i class="fas fa-search me-1 text-warning"></i> 3. SEO Settings
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content shadow-sm mb-4">
+
+                        <!-- TAB 1: BASIC INFO -->
+                        <div class="tab-pane fade show active" id="tab-basic" role="tabpanel">
+                            <div class="section-header-box bg-light border">
+                                <h5 class="fw-bold mb-1 text-dark"><i class="fas fa-folder-open me-2 text-success"></i>Subcategory Details</h5>
+                                <p class="text-muted small mb-0">Select the Main Category (Parent) that this subcategory belongs to.</p>
                             </div>
+
                             <div class="row">
                                 <div class="mb-3 col-md-6">
-                                    <label class="form-label required-field">Sub Category Name</label>
-                                    <input type="text" class="form-control" name="name" id="catName" required
-                                           placeholder="e.g. Laptops" value="<?php echo old('name'); ?>">
+                                    <label class="form-label required-field fw-bold">Parent Main Category</label>
+                                    <select name="parent_id" class="form-select form-select-lg" required>
+                                        <option value="">-- Select Main Category --</option>
+                                        <?php foreach ($mainCategories as $main): ?>
+                                            <option value="<?php echo $main['id']; ?>" <?php echo ($selectedParentId == $main['id'] || old('parent_id') == $main['id']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($main['name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <small class="text-muted">This subcategory will appear as a column inside this main category's dropdown.</small>
                                 </div>
                                 <div class="mb-3 col-md-6">
-                                    <label class="form-label required-field">Slug</label>
-                                    <input type="text" class="form-control" name="slug" id="catSlug"
-                                           placeholder="auto-generated" value="<?php echo old('slug'); ?>">
-                                    <small class="text-muted">Auto-fills from name.</small>
+                                    <label class="form-label required-field fw-semibold">Subcategory Name</label>
+                                    <input type="text" class="form-control form-control-lg" name="name" required
+                                           value="<?php echo old('name'); ?>" placeholder="e.g. Diarise & Executive Notebooks">
                                 </div>
                             </div>
+
                             <div class="row">
-                                <div class="mb-3 col-md-3">
-                                    <label class="form-label">Status</label>
-                                    <select name="status" class="form-control">
-                                        <option value="active" <?php echo oldSel('status', 'active', 'active'); ?>>Active</option>
-                                        <option value="inactive" <?php echo oldSel('status', 'inactive', 'active'); ?>>Inactive</option>
-                                    </select>
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label fw-semibold">Slug (URL)</label>
+                                    <input type="text" class="form-control" name="slug" value="<?php echo old('slug'); ?>" placeholder="e.g. diaries-notebooks">
                                 </div>
                                 <div class="mb-3 col-md-3">
-                                    <label class="form-label">Featured</label>
-                                    <select name="is_featured" class="form-control">
-                                        <option value="0" <?php echo oldSel('is_featured', '0', '0'); ?>>No</option>
-                                        <option value="1" <?php echo oldSel('is_featured', '1', '0'); ?>>Yes</option>
+                                    <label class="form-label fw-semibold">Status</label>
+                                    <select name="status" class="form-select">
+                                        <option value="active" <?php echo oldSel('status', 'active', 'active'); ?>>Active (Visible)</option>
+                                        <option value="inactive" <?php echo oldSel('status', 'inactive', 'active'); ?>>Inactive (Hidden)</option>
                                     </select>
                                 </div>
                                 <div class="mb-3 col-md-3">
-                                    <label class="form-label">Display Order</label>
-                                    <input type="number" class="form-control" name="display_order" id="displayOrderInput" value="<?php echo old('display_order', $nextOrder); ?>" min="0">
-                                    <small class="text-muted">Auto-suggested based on the selected main category.</small>
+                                    <label class="form-label fw-semibold">Display Order</label>
+                                    <input type="number" class="form-control" name="display_order" value="<?php echo old('display_order', $nextOrder); ?>" min="0">
                                 </div>
-                                <div class="mb-3 col-md-3">
-                                    <label class="form-label">Icon <small class="text-muted">(optional)</small></label>
-                                    <input type="text" class="form-control" name="icon" placeholder="fas fa-tag" value="<?php echo old('icon'); ?>">
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Description</label>
-                                <textarea class="form-control" name="description" rows="2"><?php echo old('description'); ?></textarea>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- DESKTOP TOP MENU (sub category has tag field) -->
-                    <div class="card mb-4 section-card">
-                        <div class="card-header bg-primary bg-opacity-10">
-                            <h5 class="mb-0 text-primary"><i class="fas fa-desktop me-2"></i>Desktop – Top Menu Settings</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="mb-3 col-md-4">
-                                    <label class="form-label">Top Menu Inside Status</label>
-                                    <select name="desktop_menu_status" class="form-control">
-                                        <option value="show" <?php echo oldSel('desktop_menu_status', 'show', 'show'); ?>>Show</option>
-                                        <option value="hide" <?php echo oldSel('desktop_menu_status', 'hide', 'show'); ?>>Hide</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3 col-md-4">
-                                    <label class="form-label">Top Menu Inside Sort Order</label>
-                                    <input type="number" class="form-control" name="desktop_menu_order" value="<?php echo old('desktop_menu_order', '0'); ?>" min="0">
-                                </div>
-                                <div class="mb-3 col-md-4">
-                                    <label class="form-label">Top Menu Tag <small class="text-muted">(e.g. New, Hot)</small></label>
-                                    <input type="text" class="form-control" name="desktop_menu_tag" placeholder="New" maxlength="100" value="<?php echo old('desktop_menu_tag'); ?>">
-                                </div>
+                        <!-- TAB 2: INNER DROPDOWN COLUMN & TAG -->
+                        <div class="tab-pane fade" id="tab-inner" role="tabpanel">
+                            <div class="section-header-box bg-primary bg-opacity-10 border border-primary border-opacity-25">
+                                <h5 class="fw-bold mb-1 text-primary"><i class="fas fa-bars me-2"></i>Inner Dropdown Column & Tag Settings</h5>
+                                <p class="text-muted small mb-0">Manage column ordering and badges inside the 5-column mega menu.</p>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- DESKTOP HOME PAGE -->
-                    <div class="card mb-4 section-card">
-                        <div class="card-header bg-primary bg-opacity-10">
-                            <h5 class="mb-0 text-primary"><i class="fas fa-home me-2"></i>Desktop – Home Page Display</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="mb-3 col-md-4">
-                                    <label class="form-label">Show on Desktop Home Page?</label>
-                                    <select name="desktop_home_show" class="form-control" id="desktopHomeShow">
-                                        <option value="no" <?php echo oldSel('desktop_home_show', 'no', 'no'); ?>>No</option>
-                                        <option value="yes" <?php echo oldSel('desktop_home_show', 'yes', 'no'); ?>>Yes</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3 col-md-4">
-                                    <label class="form-label">Home Sort Order</label>
-                                    <input type="number" class="form-control" name="desktop_home_order" value="<?php echo old('desktop_home_order', '0'); ?>" min="0">
-                                </div>
-                                <div class="mb-3 col-md-4">
-                                    <label class="form-label">Background Color</label>
-                                    <div class="input-group">
-                                        <input type="color" class="form-control form-control-color" name="desktop_bg_color" value="<?php echo old('desktop_bg_color', '#ffffff'); ?>" style="width:50px" id="desktopBgColorPicker">
-                                        <input type="text" class="form-control" id="desktopBgColorText" value="<?php echo old('desktop_bg_color'); ?>" placeholder="#ffffff" maxlength="7">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="conditional-block" id="desktopHomeBlock">
-                                <label class="form-label">Select Home Design (Desktop)</label>
-                                <div class="row g-3 mb-3">
-                                    <?php foreach (['design1'=>['📱','Design 1'],'design2'=>['🖼️','Design 2'],'design3'=>['🗂️','Design 3'],'design4'=>['🎨','Design 4']] as $val => [$icon,$lbl]): ?>
-                                    <div class="col-6 col-md-3">
-                                        <input type="radio" name="desktop_home_design" value="<?php echo $val; ?>" id="dhd_<?php echo $val; ?>" class="d-none" <?php echo oldChecked('desktop_home_design', $val); ?>>
-                                        <label for="dhd_<?php echo $val; ?>" class="design-option d-block">
-                                            <div class="bg-light rounded mb-2" style="height:60px;display:flex;align-items:center;justify-content:center;font-size:24px"><?php echo $icon; ?></div>
-                                            <small><?php echo $lbl; ?></small>
-                                        </label>
-                                    </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Desktop Category Image</label>
-                                        <input type="file" class="form-control" name="desktop_image" accept="image/*" onchange="previewImg(this,'prvDeskImg')">
-                                        <img id="prvDeskImg" class="image-preview">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Desktop Background Image</label>
-                                        <input type="file" class="form-control" name="desktop_bg_image" accept="image/*" onchange="previewImg(this,'prvDeskBg')">
-                                        <img id="prvDeskBg" class="image-preview">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- MOBILE TOP BAR -->
-                    <div class="card mb-4 section-card mobile">
-                        <div class="card-header bg-success bg-opacity-10">
-                            <h5 class="mb-0 text-success"><i class="fas fa-mobile-alt me-2"></i>Mobile – Top Bar Settings</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="mb-3 col-md-4">
-                                    <label class="form-label">Mobile Top Bar Inside Status</label>
-                                    <select name="mobile_topbar_status" class="form-control">
-                                        <option value="show" <?php echo oldSel('mobile_topbar_status', 'show', 'show'); ?>>Show</option>
-                                        <option value="hide" <?php echo oldSel('mobile_topbar_status', 'hide', 'show'); ?>>Hide</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3 col-md-4">
-                                    <label class="form-label">Top Bar Inside Sort Order</label>
-                                    <input type="number" class="form-control" name="mobile_topbar_order" value="<?php echo old('mobile_topbar_order', '0'); ?>" min="0">
-                                </div>
-                                <div class="mb-3 col-md-4">
-                                    <label class="form-label">Sidebar Inside Sort Order</label>
-                                    <input type="number" class="form-control" name="mobile_sidebar_order" value="<?php echo old('mobile_sidebar_order', '0'); ?>" min="0">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- MOBILE HOME PAGE -->
-                    <div class="card mb-4 section-card mobile">
-                        <div class="card-header bg-success bg-opacity-10">
-                            <h5 class="mb-0 text-success"><i class="fas fa-home me-2"></i>Mobile – Home Page Display</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="mb-3 col-md-4">
-                                    <label class="form-label">Show on Mobile Home?</label>
-                                    <select name="mobile_home_show" class="form-control" id="mobileHomeShow">
-                                        <option value="no" <?php echo oldSel('mobile_home_show', 'no', 'no'); ?>>No</option>
-                                        <option value="yes" <?php echo oldSel('mobile_home_show', 'yes', 'no'); ?>>Yes</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3 col-md-4">
-                                    <label class="form-label">Mobile Home Sort Order</label>
-                                    <input type="number" class="form-control" name="mobile_home_order" value="<?php echo old('mobile_home_order', '0'); ?>" min="0">
-                                </div>
-                                <div class="mb-3 col-md-4">
-                                    <label class="form-label">Background Color</label>
-                                    <div class="input-group">
-                                        <input type="color" class="form-control form-control-color" name="mobile_bg_color" value="<?php echo old('mobile_bg_color', '#ffffff'); ?>" style="width:50px" id="mobileBgColorPicker">
-                                        <input type="text" class="form-control" id="mobileBgColorText" value="<?php echo old('mobile_bg_color'); ?>" placeholder="#ffffff" maxlength="7">
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Mobile images always visible -->
                             <div class="row mb-3">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Mobile Category Image</label>
-                                    <input type="file" class="form-control" name="mobile_image" accept="image/*" onchange="previewImg(this,'prvMobImg')">
-                                    <img id="prvMobImg" class="image-preview">
-                                    <small class="text-muted">Max 5 MB · JPG/PNG/WebP</small>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold">Show in Dropdown Menu?</label>
+                                    <select name="desktop_menu_status" class="form-select">
+                                        <option value="show" <?php echo oldSel('desktop_menu_status', 'show', 'show'); ?>>Show in Dropdown</option>
+                                        <option value="hide" <?php echo oldSel('desktop_menu_status', 'hide', 'show'); ?>>Hide from Dropdown</option>
+                                    </select>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Mobile Background Image <small class="text-muted">(optional)</small></label>
-                                    <input type="file" class="form-control" name="mobile_bg_image" accept="image/*" onchange="previewImg(this,'prvMobBg')">
-                                    <img id="prvMobBg" class="image-preview">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold">Dropdown Column Order</label>
+                                    <input type="number" class="form-control" name="desktop_menu_order" value="<?php echo old('desktop_menu_order', $nextOrder); ?>" min="0">
+                                    <small class="text-muted">Columns are ordered 1 to 5 based on this number.</small>
                                 </div>
-                            </div>
-                            <div class="conditional-block" id="mobileHomeBlock">
-                                <div class="row mb-3">
-                                    <div class="col-md-8">
-                                        <label class="form-label">Mobile Home Design</label>
-                                        <div class="row g-2">
-                                            <?php foreach (['design1'=>['📱','Design 1'],'design2'=>['🖼️','Design 2'],'design3'=>['🗂️','Design 3'],'design4'=>['🎨','Design 4']] as $val => [$icon,$lbl]): ?>
-                                            <div class="col-3">
-                                                <input type="radio" name="mobile_home_design" value="<?php echo $val; ?>" id="mhd_<?php echo $val; ?>" class="d-none" <?php echo oldChecked('mobile_home_design', $val); ?>>
-                                                <label for="mhd_<?php echo $val; ?>" class="design-option d-block">
-                                                    <div class="bg-light rounded mb-1" style="height:50px;display:flex;align-items:center;justify-content:center;font-size:20px"><?php echo $icon; ?></div>
-                                                    <small><?php echo $lbl; ?></small>
-                                                </label>
-                                            </div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Product Box Format</label>
-                                        <select name="mobile_home_format" class="form-control">
-                                            <option value="4" <?php echo oldSel('mobile_home_format', '4', '4'); ?>>4 Image Product Box</option>
-                                            <option value="6" <?php echo oldSel('mobile_home_format', '6', '4'); ?>>6 Image Product Box</option>
-                                            <option value="8" <?php echo oldSel('mobile_home_format', '8', '4'); ?>>8 Image Product Box</option>
-                                        </select>
-                                    </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold">Menu Badge / Tag (Pill)</label>
+                                    <input type="text" class="form-control" name="desktop_menu_tag" value="<?php echo old('desktop_menu_tag'); ?>" placeholder="e.g. New, Hot">
+                                    <small class="text-muted">Shows a red badge (e.g. <span class="badge bg-danger">New</span>) next to this link.</small>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- TAB 3: SEO -->
+                        <div class="tab-pane fade" id="tab-seo" role="tabpanel">
+                            <div class="section-header-box bg-warning bg-opacity-10 border border-warning border-opacity-25">
+                                <h5 class="fw-bold mb-1 text-dark"><i class="fas fa-search me-2 text-warning"></i>SEO Meta Information</h5>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Meta Title</label>
+                                <input type="text" class="form-control" name="meta_title" value="<?php echo old('meta_title'); ?>">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Meta Description</label>
+                                <textarea class="form-control" name="meta_description" rows="3"><?php echo old('meta_description'); ?></textarea>
+                            </div>
+                        </div>
+
                     </div>
 
-                    <!-- SEO -->
-                    <div class="card mb-4 section-card seo">
-                        <div class="card-header bg-warning bg-opacity-10">
-                            <h5 class="mb-0"><i class="fas fa-search me-2"></i>SEO Meta</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label">Meta Title</label>
-                                <input type="text" class="form-control" name="meta_title" maxlength="255" placeholder="SEO title" value="<?php echo old('meta_title'); ?>">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Meta Keywords</label>
-                                <input type="text" class="form-control" name="meta_keywords" placeholder="keyword1, keyword2" value="<?php echo old('meta_keywords'); ?>">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Meta Description</label>
-                                <textarea class="form-control" name="meta_description" rows="3" maxlength="160" placeholder="Max 160 chars"><?php echo old('meta_description'); ?></textarea>
-                            </div>
-                        </div>
+                    <!-- Actions -->
+                    <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded border">
+                        <a href="view-categories.php" class="btn btn-secondary px-3"><i class="fas fa-times me-1"></i> Cancel</a>
+                        <button type="submit" class="btn btn-success px-4 fw-semibold"><i class="fas fa-plus me-1"></i> Create Subcategory</button>
                     </div>
 
-                    <div class="mb-4">
-                        <button type="submit" class="btn btn-primary btn-lg">Create Sub Category</button>
-                        <a href="view-categories.php" class="btn btn-secondary ms-2">Cancel</a>
-                    </div>
                 </form>
+
             </div>
         </main>
         <?php include_once "includes/footer.php"; ?>
     </div>
 </div>
+
 <script src="js/app.js"></script>
-<script>
-const catName = document.getElementById('catName');
-const catSlug = document.getElementById('catSlug');
-catName.addEventListener('input', function () {
-    if (!catSlug._manual) catSlug.value = this.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-});
-catSlug.addEventListener('input', function () { this._manual = !!this.value; });
-
-// Auto-suggest the next display order when the main category changes
-const parentSelect = document.getElementById('parentCatSelect');
-const displayOrderInput = document.getElementById('displayOrderInput');
-displayOrderInput.addEventListener('input', function () { this._manual = true; });
-parentSelect.addEventListener('change', function () {
-    if (displayOrderInput._manual || !this.value) return;
-    fetch(`add-sub-category.php?get_next_order=1&parent_id=${this.value}`)
-        .then(r => r.json())
-        .then(data => { displayOrderInput.value = data.next_order; });
-});
-
-function bindToggle(selectId, blockId) {
-    const sel = document.getElementById(selectId);
-    const blk = document.getElementById(blockId);
-    if (!sel || !blk) return;
-    const update = () => blk.style.display = sel.value === 'yes' ? 'block' : 'none';
-    sel.addEventListener('change', update);
-    update();
-}
-bindToggle('desktopHomeShow', 'desktopHomeBlock');
-bindToggle('mobileHomeShow',  'mobileHomeBlock');
-
-function syncColor(pickerId, textId) {
-    const p = document.getElementById(pickerId), t = document.getElementById(textId);
-    if (!p||!t) return;
-    p.addEventListener('input', () => t.value = p.value);
-    t.addEventListener('input', () => { if (/^#[0-9a-f]{6}$/i.test(t.value)) p.value = t.value; });
-}
-syncColor('desktopBgColorPicker','desktopBgColorText');
-syncColor('mobileBgColorPicker','mobileBgColorText');
-
-function previewImg(input, id) {
-    const el = document.getElementById(id);
-    if (!input.files||!input.files[0]) return;
-    const r = new FileReader();
-    r.onload = e => { el.src = e.target.result; el.style.display = 'block'; };
-    r.readAsDataURL(input.files[0]);
-}
-</script>
 </body>
 </html>

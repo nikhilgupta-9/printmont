@@ -1,4 +1,15 @@
 <?php
+/**
+ * Dynamic Sitemap Controller — Printmont
+ * 
+ * Automatically generates live sitemap entries directly from database:
+ * - Categories & Subcategories tree (Auto-sync)
+ * - Active Products catalog (Auto-sync)
+ * - Published Blog Posts & Categories (Auto-sync)
+ * - Core Store, Corporate & Policy pages
+ * - Custom Admin overrides & XML generator
+ */
+
 require_once(__DIR__ . '/../config/database.php');
 
 class SitemapController {
@@ -28,345 +39,489 @@ class SitemapController {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
         $this->conn->query($query);
-
-        // Seed default entries if empty
-        $check = $this->conn->query("SELECT COUNT(*) as cnt FROM `{$this->table_name}`");
-        $row = $check ? $check->fetch_assoc() : ['cnt' => 0];
-        if ($row['cnt'] == 0) {
-            $this->seedDefaultEntries();
-        }
     }
 
-    public function seedDefaultEntries() {
-        $defaults = [
-            // Main Navigation & Shop
-            ['title' => 'Home', 'url' => '/', 'category' => 'main_pages', 'changefreq' => 'daily', 'priority' => 1.0, 'sort_order' => 1],
-            ['title' => 'All Products', 'url' => '/product', 'category' => 'main_pages', 'changefreq' => 'daily', 'priority' => 0.9, 'sort_order' => 2],
-            ['title' => 'Bulk Orders', 'url' => '/bulk-order', 'category' => 'main_pages', 'changefreq' => 'weekly', 'priority' => 0.8, 'sort_order' => 3],
-            ['title' => 'Franchise Program', 'url' => '/franchise', 'category' => 'main_pages', 'changefreq' => 'weekly', 'priority' => 0.8, 'sort_order' => 4],
-            ['title' => 'Track Your Order', 'url' => '/track-order', 'category' => 'main_pages', 'changefreq' => 'daily', 'priority' => 0.7, 'sort_order' => 5],
+    /**
+     * Get Complete Live Dynamic Sections (Auto-aggregating all DB tables)
+     */
+    public function getGroupedEntries($active_only = true) {
+        $sections = [];
 
-            // Company & About
-            ['title' => 'About Us', 'url' => '/about', 'category' => 'company_info', 'changefreq' => 'monthly', 'priority' => 0.8, 'sort_order' => 1],
-            ['title' => 'Careers & Vacancies', 'url' => '/careers', 'category' => 'company_info', 'changefreq' => 'weekly', 'priority' => 0.8, 'sort_order' => 2],
-            ['title' => 'Blog & Stories', 'url' => '/blog', 'category' => 'company_info', 'changefreq' => 'daily', 'priority' => 0.8, 'sort_order' => 3],
-            ['title' => 'Affiliate Program', 'url' => '/affiliate-program', 'category' => 'company_info', 'changefreq' => 'monthly', 'priority' => 0.7, 'sort_order' => 4],
-            ['title' => 'Business Solutions', 'url' => '/business-solutions', 'category' => 'company_info', 'changefreq' => 'monthly', 'priority' => 0.7, 'sort_order' => 5],
-
-            // Customer Support & Help
-            ['title' => 'Help Center', 'url' => '/help-center', 'category' => 'help_support', 'changefreq' => 'weekly', 'priority' => 0.8, 'sort_order' => 1],
-            ['title' => 'Frequently Asked Questions (FAQ)', 'url' => '/faq', 'category' => 'help_support', 'changefreq' => 'weekly', 'priority' => 0.7, 'sort_order' => 2],
-            ['title' => 'Safe & Secure Shopping', 'url' => '/security', 'category' => 'help_support', 'changefreq' => 'monthly', 'priority' => 0.7, 'sort_order' => 3],
-            ['title' => 'Contact Us', 'url' => '/contact', 'category' => 'help_support', 'changefreq' => 'monthly', 'priority' => 0.8, 'sort_order' => 4],
-
-            // Legal & Policies
-            ['title' => 'Privacy Policy', 'url' => '/policy/privacy', 'category' => 'legal_policies', 'changefreq' => 'monthly', 'priority' => 0.6, 'sort_order' => 1],
-            ['title' => 'Terms of Use', 'url' => '/terms-of-use', 'category' => 'legal_policies', 'changefreq' => 'monthly', 'priority' => 0.6, 'sort_order' => 2],
-            ['title' => 'Terms & Conditions', 'url' => '/policy/terms', 'category' => 'legal_policies', 'changefreq' => 'monthly', 'priority' => 0.6, 'sort_order' => 3],
-            ['title' => 'Shipping Policy', 'url' => '/policy/shipping', 'category' => 'legal_policies', 'changefreq' => 'monthly', 'priority' => 0.6, 'sort_order' => 4],
-            ['title' => 'Return & Refund Policy', 'url' => '/policy/refund', 'category' => 'legal_policies', 'changefreq' => 'monthly', 'priority' => 0.6, 'sort_order' => 5],
+        // 1. Core Shopping & Account Pages
+        $sections[] = [
+            'category_key' => 'main_pages',
+            'category_name' => 'Main Navigation & Shopping',
+            'icon' => 'ri-compass-3-line',
+            'description' => 'Core shopping destinations, search, cart, and account management.',
+            'links' => [
+                ['id' => 'm1', 'title' => 'Home Page', 'url' => '/', 'changefreq' => 'daily', 'priority' => 1.0],
+                ['id' => 'm2', 'title' => 'All Products & Collections', 'url' => '/allproducts', 'changefreq' => 'daily', 'priority' => 0.9],
+                ['id' => 'm3', 'title' => 'Shopping Cart', 'url' => '/cart', 'changefreq' => 'daily', 'priority' => 0.8],
+                ['id' => 'm4', 'title' => 'My Wishlist', 'url' => '/wishlist', 'changefreq' => 'daily', 'priority' => 0.7],
+                ['id' => 'm5', 'title' => 'Track Your Order', 'url' => '/track-order', 'changefreq' => 'daily', 'priority' => 0.8],
+                ['id' => 'm6', 'title' => 'Printmont Coins & Wallet', 'url' => '/wallet', 'changefreq' => 'weekly', 'priority' => 0.7],
+                ['id' => 'm7', 'title' => 'Customer Reviews Directory', 'url' => '/reviews', 'changefreq' => 'daily', 'priority' => 0.8],
+            ]
         ];
 
-        $stmt = $this->conn->prepare("INSERT IGNORE INTO `{$this->table_name}` (title, url, category, changefreq, priority, is_active, sort_order) VALUES (?, ?, ?, ?, ?, 1, ?)");
-        foreach ($defaults as $d) {
-            $stmt->bind_param("ssssdi", $d['title'], $d['url'], $d['category'], $d['changefreq'], $d['priority'], $d['sort_order']);
-            $stmt->execute();
+        // 2. Live Categories & Subcategories (Tree Structure)
+        $categoriesLinks = [];
+        $categoriesTree = $this->getLiveCategoriesTree(100);
+        foreach ($categoriesTree as $cat) {
+            $categoriesLinks[] = [
+                'id' => 'cat_' . $cat['id'],
+                'title' => $cat['name'],
+                'url' => '/category/' . $cat['slug'],
+                'subcategories' => $cat['subcategories'] ?? [],
+                'changefreq' => 'daily',
+                'priority' => 0.9
+            ];
         }
-        $stmt->close();
+
+        $sections[] = [
+            'category_key' => 'products_categories',
+            'category_name' => 'Product Categories & Departments',
+            'icon' => 'ri-store-2-line',
+            'description' => 'Browse custom apparel, corporate gifting, stationery, drinkware, and packaging.',
+            'links' => $categoriesLinks
+        ];
+
+        // 3. Corporate & B2B Solutions
+        $sections[] = [
+            'category_key' => 'company_info',
+            'category_name' => 'B2B, Enterprise & Corporate Programs',
+            'icon' => 'ri-building-line',
+            'description' => 'Wholesale orders, corporate welcome kits, franchise partnerships, and brand solutions.',
+            'links' => [
+                ['id' => 'c1', 'title' => 'Business Solutions & Enterprise Hub', 'url' => '/business-solutions', 'changefreq' => 'weekly', 'priority' => 0.9],
+                ['id' => 'c2', 'title' => 'Bulk Orders & Wholesale Printing', 'url' => '/bulk-orders', 'changefreq' => 'weekly', 'priority' => 0.9],
+                ['id' => 'c3', 'title' => 'Become a Seller / Supplier', 'url' => '/become-a-seller', 'changefreq' => 'monthly', 'priority' => 0.8],
+                ['id' => 'c4', 'title' => 'Franchise Partner Program', 'url' => '/franchise', 'changefreq' => 'monthly', 'priority' => 0.8],
+                ['id' => 'c5', 'title' => 'Affiliate Program', 'url' => '/affiliate-program', 'changefreq' => 'monthly', 'priority' => 0.8],
+                ['id' => 'c6', 'title' => 'About Printmont & Brand Story', 'url' => '/about', 'changefreq' => 'monthly', 'priority' => 0.8],
+                ['id' => 'c7', 'title' => 'Careers & Open Vacancies', 'url' => '/careers', 'changefreq' => 'weekly', 'priority' => 0.8],
+                ['id' => 'c8', 'title' => 'Download Mobile App', 'url' => '/app-download', 'changefreq' => 'monthly', 'priority' => 0.7],
+            ]
+        ];
+
+        // 4. Live Published Blog Posts & Stories
+        $blogLinks = [
+            ['id' => 'b_hub', 'title' => 'Printmont Blog Hub & Articles', 'url' => '/blog', 'changefreq' => 'daily', 'priority' => 0.8]
+        ];
+        $blogs = $this->getLiveBlogPosts(25);
+        foreach ($blogs as $b) {
+            $blogLinks[] = [
+                'id' => 'blog_' . $b['id'],
+                'title' => $b['title'],
+                'url' => '/blog/' . $b['slug'],
+                'changefreq' => 'weekly',
+                'priority' => 0.7
+            ];
+        }
+
+        $sections[] = [
+            'category_key' => 'blog_articles',
+            'category_name' => 'Official Blog, News & Gifting Guides',
+            'icon' => 'ri-article-line',
+            'description' => 'Printing guides, corporate gifting trends, and design inspiration.',
+            'links' => $blogLinks
+        ];
+
+        // 5. Help & Customer Support
+        $sections[] = [
+            'category_key' => 'help_support',
+            'category_name' => 'Help Center & Customer Support',
+            'icon' => 'ri-customer-service-2-line',
+            'description' => '24x7 support desk, FAQs, contact information, and order assistance.',
+            'links' => [
+                ['id' => 'h1', 'title' => 'Help Center & Knowledge Base', 'url' => '/help-center', 'changefreq' => 'weekly', 'priority' => 0.8],
+                ['id' => 'h2', 'title' => 'Frequently Asked Questions (FAQ)', 'url' => '/faq', 'changefreq' => 'weekly', 'priority' => 0.8],
+                ['id' => 'h3', 'title' => 'Contact Us & Corporate Desk', 'url' => '/contact', 'changefreq' => 'monthly', 'priority' => 0.8],
+                ['id' => 'h4', 'title' => 'Customer Support & Tickets', 'url' => '/support', 'changefreq' => 'weekly', 'priority' => 0.7],
+                ['id' => 'h5', 'title' => 'Quick Navigation Links', 'url' => '/quick-links', 'changefreq' => 'weekly', 'priority' => 0.7],
+                ['id' => 'h6', 'title' => 'Notification Preferences', 'url' => '/notification-preference', 'changefreq' => 'monthly', 'priority' => 0.6],
+                ['id' => 'h7', 'title' => 'Manage Delivery Addresses', 'url' => '/manage-address', 'changefreq' => 'monthly', 'priority' => 0.6],
+            ]
+        ];
+
+        // 6. Legal, Trust & Security Policies
+        $sections[] = [
+            'category_key' => 'legal_policies',
+            'category_name' => 'Legal, Security & Policies',
+            'icon' => 'ri-shield-check-line',
+            'description' => 'Terms of use, privacy policies, secure payments, and shipping guidelines.',
+            'links' => [
+                ['id' => 'l1', 'title' => 'Safe & Secure Shopping Trust', 'url' => '/security', 'changefreq' => 'monthly', 'priority' => 0.7],
+                ['id' => 'l2', 'title' => 'Privacy Policy', 'url' => '/privacy-policy', 'changefreq' => 'monthly', 'priority' => 0.6],
+                ['id' => 'l3', 'title' => 'Terms of Use', 'url' => '/terms-of-use', 'changefreq' => 'monthly', 'priority' => 0.6],
+                ['id' => 'l4', 'title' => 'Terms & Conditions', 'url' => '/terms-and-conditions', 'changefreq' => 'monthly', 'priority' => 0.6],
+                ['id' => 'l5', 'title' => 'Shipping & Delivery Policy', 'url' => '/shipping-policy', 'changefreq' => 'monthly', 'priority' => 0.6],
+                ['id' => 'l6', 'title' => 'Return & Refund Policy', 'url' => '/refund-policy', 'changefreq' => 'monthly', 'priority' => 0.6],
+                ['id' => 'l7', 'title' => 'XML Sitemap (Search Engines)', 'url' => '/sitemap.xml', 'changefreq' => 'daily', 'priority' => 0.9],
+            ]
+        ];
+
+        // 7. Custom Manual Overrides / Entries from Table
+        $customEntries = $this->getCustomEntries();
+        if (!empty($customEntries)) {
+            $sections[] = [
+                'category_key' => 'custom_entries',
+                'category_name' => 'Special Featured & Custom Links',
+                'icon' => 'ri-links-line',
+                'description' => 'Custom pages and seasonal campaign links configured via admin.',
+                'links' => $customEntries
+            ];
+        }
+
+        return $sections;
     }
 
-    public function getAllEntries($category = null, $active_only = false) {
-        $query = "SELECT * FROM `{$this->table_name}` WHERE 1=1";
-        $params = [];
-        $types = "";
+    /**
+     * Get Live Category Tree (Parent Categories + Subcategories + Sub-subcategories)
+     */
+    public function getLiveCategoriesTree($limit = 100) {
+        $tree = [];
+        $pRes = $this->conn->query("SELECT id, name, slug FROM categories WHERE (parent_id IS NULL OR parent_id = 0 OR level = 1) AND status = 'active' ORDER BY display_order ASC, name ASC LIMIT $limit");
+        
+        if ($pRes) {
+            while ($parent = $pRes->fetch_assoc()) {
+                $parentId = (int)$parent['id'];
+                $subRes = $this->conn->query("SELECT id, name, slug FROM categories WHERE parent_id = $parentId AND status = 'active' ORDER BY display_order ASC, name ASC LIMIT 50");
+                $subcategories = [];
+                if ($subRes) {
+                    while ($sub = $subRes->fetch_assoc()) {
+                        $subId = (int)$sub['id'];
+                        // Fetch Level 3 (Sub-sub categories)
+                        $subSubRes = $this->conn->query("SELECT id, name, slug FROM categories WHERE parent_id = $subId AND status = 'active' ORDER BY display_order ASC, name ASC LIMIT 50");
+                        $childCategories = [];
+                        if ($subSubRes) {
+                            while ($child = $subSubRes->fetch_assoc()) {
+                                $childCategories[] = [
+                                    'id' => (int)$child['id'],
+                                    'name' => $child['name'],
+                                    'slug' => $child['slug'],
+                                    'url' => '/category/' . $child['slug']
+                                ];
+                            }
+                        }
 
+                        $subcategories[] = [
+                            'id' => $subId,
+                            'name' => $sub['name'],
+                            'slug' => $sub['slug'],
+                            'url' => '/category/' . $sub['slug'],
+                            'subcategories' => $childCategories
+                        ];
+                    }
+                }
+                $parent['subcategories'] = $subcategories;
+                $tree[] = $parent;
+            }
+        }
+        return $tree;
+    }
+
+    /**
+     * Get Live Published Blog Posts
+     */
+    public function getLiveBlogPosts($limit = 30) {
+        $blogs = [];
+        $res = $this->conn->query("SELECT id, title, slug, created_at FROM blog_posts WHERE status = 'published' ORDER BY created_at DESC LIMIT $limit");
+        if ($res) {
+            while ($b = $res->fetch_assoc()) {
+                $blogs[] = $b;
+            }
+        }
+        return $blogs;
+    }
+
+    /**
+     * Get Live Active Products (for Search Directory / XML)
+     */
+    public function getLiveProducts($limit = 100) {
+        $products = [];
+        $res = $this->conn->query("SELECT id, name, slug, updated_at FROM products WHERE status = 'active' ORDER BY id DESC LIMIT $limit");
+        if ($res) {
+            while ($p = $res->fetch_assoc()) {
+                $products[] = $p;
+            }
+        }
+        return $products;
+    }
+
+    /**
+     * Get Custom Entries from sitemap_entries table
+     */
+    public function getCustomEntries() {
+        $entries = [];
+        $res = $this->conn->query("SELECT id, title, url, changefreq, priority FROM `{$this->table_name}` WHERE is_active = 1 ORDER BY sort_order ASC, title ASC");
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $entries[] = $r;
+            }
+        }
+        return $entries;
+    }
+
+    /**
+     * Real-time Live Stats
+     */
+    public function getSitemapStats() {
+        $catCount = 0;
+        $prodCount = 0;
+        $blogCount = 0;
+        $customCount = 0;
+
+        $cRes = $this->conn->query("SELECT COUNT(*) as cnt FROM categories WHERE status = 'active'");
+        if ($cRes) $catCount = (int)$cRes->fetch_assoc()['cnt'];
+
+        $pRes = $this->conn->query("SELECT COUNT(*) as cnt FROM products WHERE status = 'active'");
+        if ($pRes) $prodCount = (int)$pRes->fetch_assoc()['cnt'];
+
+        $bRes = $this->conn->query("SELECT COUNT(*) as cnt FROM blog_posts WHERE status = 'published'");
+        if ($bRes) $blogCount = (int)$bRes->fetch_assoc()['cnt'];
+
+        $custRes = $this->conn->query("SELECT COUNT(*) as cnt FROM `{$this->table_name}` WHERE is_active = 1");
+        if ($custRes) $customCount = (int)$custRes->fetch_assoc()['cnt'];
+
+        $staticPages = 24; // Core shopping, corporate, help, and legal pages
+        $totalUrls = $staticPages + $catCount + $prodCount + $blogCount + $customCount;
+
+        return [
+            'total_urls' => $totalUrls,
+            'categories_count' => $catCount,
+            'products_count' => $prodCount,
+            'blogs_count' => $blogCount,
+            'static_pages_count' => $staticPages,
+            'custom_entries_count' => $customCount,
+            'last_generated' => date('Y-m-d H:i:s')
+        ];
+    }
+
+    /**
+     * Generate / Update physical XML Sitemap file (sitemap.xml)
+     */
+    public function generateXmlSitemap($baseUrl = 'http://localhost:5173') {
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+
+        $today = date('Y-m-d');
+        $baseUrl = rtrim($baseUrl, '/');
+
+        // Helper to add URL node
+        $addUrl = function($loc, $changefreq = 'weekly', $priority = '0.8', $lastmod = null) use (&$xml, $baseUrl, $today) {
+            $fullUrl = (strpos($loc, 'http://') === 0 || strpos($loc, 'https://') === 0) ? $loc : $baseUrl . $loc;
+            $mod = $lastmod ?: $today;
+            $xml .= "  <url>\n";
+            $xml .= "    <loc>" . htmlspecialchars($fullUrl) . "</loc>\n";
+            $xml .= "    <lastmod>" . $mod . "</lastmod>\n";
+            $xml .= "    <changefreq>" . $changefreq . "</changefreq>\n";
+            $xml .= "    <priority>" . $priority . "</priority>\n";
+            $xml .= "  </url>\n";
+        };
+
+        // 1. Core Pages
+        $corePages = [
+            ['/', 'daily', '1.0'],
+            ['/allproducts', 'daily', '0.9'],
+            ['/cart', 'daily', '0.8'],
+            ['/wishlist', 'daily', '0.7'],
+            ['/track-order', 'daily', '0.8'],
+            ['/wallet', 'weekly', '0.7'],
+            ['/reviews', 'daily', '0.8'],
+            ['/business-solutions', 'weekly', '0.9'],
+            ['/bulk-orders', 'weekly', '0.9'],
+            ['/become-a-seller', 'monthly', '0.8'],
+            ['/franchise', 'monthly', '0.8'],
+            ['/affiliate-program', 'monthly', '0.8'],
+            ['/about', 'monthly', '0.8'],
+            ['/careers', 'weekly', '0.8'],
+            ['/app-download', 'monthly', '0.7'],
+            ['/help-center', 'weekly', '0.8'],
+            ['/faq', 'weekly', '0.8'],
+            ['/contact', 'monthly', '0.8'],
+            ['/support', 'weekly', '0.7'],
+            ['/security', 'monthly', '0.7'],
+            ['/privacy-policy', 'monthly', '0.6'],
+            ['/terms-of-use', 'monthly', '0.6'],
+            ['/terms-and-conditions', 'monthly', '0.6'],
+            ['/shipping-policy', 'monthly', '0.6'],
+            ['/refund-policy', 'monthly', '0.6'],
+            ['/sitemap', 'weekly', '0.8'],
+            ['/blog', 'daily', '0.8']
+        ];
+
+        foreach ($corePages as $p) {
+            $addUrl($p[0], $p[1], $p[2]);
+        }
+
+        // 2. Categories
+        $cRes = $this->conn->query("SELECT slug, updated_at FROM categories WHERE status = 'active'");
+        if ($cRes) {
+            while ($c = $cRes->fetch_assoc()) {
+                $mod = !empty($c['updated_at']) ? date('Y-m-d', strtotime($c['updated_at'])) : $today;
+                $addUrl('/category/' . $c['slug'], 'daily', '0.85', $mod);
+            }
+        }
+
+        // 3. Products
+        $pRes = $this->conn->query("SELECT slug, updated_at FROM products WHERE status = 'active'");
+        if ($pRes) {
+            while ($p = $pRes->fetch_assoc()) {
+                $mod = !empty($p['updated_at']) ? date('Y-m-d', strtotime($p['updated_at'])) : $today;
+                $addUrl('/product/' . ($p['slug'] ?: $p['id']), 'weekly', '0.8', $mod);
+            }
+        }
+
+        // 4. Blogs
+        $bRes = $this->conn->query("SELECT slug, updated_at FROM blog_posts WHERE status = 'published'");
+        if ($bRes) {
+            while ($b = $bRes->fetch_assoc()) {
+                $mod = !empty($b['updated_at']) ? date('Y-m-d', strtotime($b['updated_at'])) : $today;
+                $addUrl('/blog/' . $b['slug'], 'weekly', '0.75', $mod);
+            }
+        }
+
+        // 5. Custom Entries
+        $custRes = $this->conn->query("SELECT url, changefreq, priority, updated_at FROM `{$this->table_name}` WHERE is_active = 1");
+        if ($custRes) {
+            while ($cust = $custRes->fetch_assoc()) {
+                $mod = !empty($cust['updated_at']) ? date('Y-m-d', strtotime($cust['updated_at'])) : $today;
+                $addUrl($cust['url'], $cust['changefreq'] ?: 'weekly', (string)$cust['priority'] ?: '0.7', $mod);
+            }
+        }
+
+        $xml .= '</urlset>';
+
+        // Write to root sitemap.xml and backend sitemap.xml
+        $backendPath = __DIR__ . '/../sitemap.xml';
+        file_put_contents($backendPath, $xml);
+
+        $frontendPublicPath = __DIR__ . '/../../frontend/public/sitemap.xml';
+        if (is_dir(dirname($frontendPublicPath))) {
+            file_put_contents($frontendPublicPath, $xml);
+        }
+
+        return ['success' => true, 'message' => 'Sitemap XML generated successfully! File updated with latest database records.'];
+    }
+
+    /**
+     * CRUD: Get All Entries (with optional category filter)
+     */
+    public function getAllEntries($category = null, $active_only = false) {
+        $sql = "SELECT * FROM `{$this->table_name}` WHERE 1=1";
         if ($category && $category !== 'all') {
-            $query .= " AND category = ?";
-            $params[] = $category;
-            $types .= "s";
+            $catSafe = $this->conn->real_escape_string($category);
+            $sql .= " AND category = '$catSafe'";
         }
         if ($active_only) {
-            $query .= " AND is_active = 1";
+            $sql .= " AND is_active = 1";
         }
+        $sql .= " ORDER BY sort_order ASC, id DESC";
 
-        $query .= " ORDER BY category ASC, sort_order ASC, title ASC";
-
-        if (!empty($params)) {
-            $stmt = $this->conn->prepare($query);
-            $stmt->bind_param($types, ...$params);
-            $stmt->execute();
-            $res = $stmt->get_result();
-            return $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
-        }
-
-        $res = $this->conn->query($query);
-        return $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
-    }
-
-    public function getGroupedEntries($active_only = true) {
-        $entries = $this->getAllEntries(null, $active_only);
-
-        $categoryLabels = [
-            'main_pages' => 'Main Navigation & Shopping',
-            'products_categories' => 'Product Categories',
-            'company_info' => 'Company & About Us',
-            'help_support' => 'Help & Customer Support',
-            'legal_policies' => 'Legal & Policies',
-            'custom' => 'Other Useful Links'
-        ];
-
-        $grouped = [];
-        foreach ($categoryLabels as $key => $label) {
-            $grouped[$key] = [
-                'category_key' => $key,
-                'category_name' => $label,
-                'links' => []
-            ];
-        }
-
-        foreach ($entries as $item) {
-            $cat = $item['category'] ?? 'custom';
-            if (!isset($grouped[$cat])) {
-                $grouped[$cat] = [
-                    'category_key' => $cat,
-                    'category_name' => ucwords(str_replace('_', ' ', $cat)),
-                    'links' => []
-                ];
-            }
-            $grouped[$cat]['links'][] = [
-                'id' => (int)$item['id'],
-                'title' => $item['title'],
-                'url' => $item['url'],
-                'changefreq' => $item['changefreq'],
-                'priority' => (float)$item['priority']
-            ];
-        }
-
-        // Dynamically fetch active product categories
-        $catRes = $this->conn->query("SELECT id, name, slug FROM categories WHERE is_active = 1 ORDER BY display_order ASC, name ASC LIMIT 30");
-        if ($catRes && $catRes->num_rows > 0) {
-            while ($c = $catRes->fetch_assoc()) {
-                $cSlug = !empty($c['slug']) ? $c['slug'] : strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $c['name']), '-'));
-                $grouped['products_categories']['links'][] = [
-                    'id' => 'cat_' . $c['id'],
-                    'title' => $c['name'],
-                    'url' => '/category/' . $cSlug,
-                    'changefreq' => 'weekly',
-                    'priority' => 0.8
-                ];
+        $result = $this->conn->query($sql);
+        $entries = [];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $entries[] = $row;
             }
         }
-
-        // Filter out categories with 0 links
-        return array_values(array_filter($grouped, function($g) {
-            return !empty($g['links']);
-        }));
+        return $entries;
     }
 
+    /**
+     * CRUD: Get single entry by ID
+     */
+    public function getEntryById($id) {
+        $id = (int)$id;
+        $stmt = $this->conn->prepare("SELECT * FROM `{$this->table_name}` WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        return $res->fetch_assoc();
+    }
+
+    /**
+     * CRUD: Create custom entry
+     */
     public function createEntry($data) {
         $title = trim($data['title'] ?? '');
         $url = trim($data['url'] ?? '');
-        $category = $data['category'] ?? 'main_pages';
-        $changefreq = $data['changefreq'] ?? 'weekly';
+        $category = trim($data['category'] ?? 'main_pages');
+        $changefreq = trim($data['changefreq'] ?? 'weekly');
         $priority = floatval($data['priority'] ?? 0.8);
         $is_active = isset($data['is_active']) ? (int)$data['is_active'] : 1;
-        $sort_order = intval($data['sort_order'] ?? 0);
+        $sort_order = (int)($data['sort_order'] ?? 0);
 
         if (empty($title) || empty($url)) {
             return ['success' => false, 'message' => 'Title and URL are required.'];
-        }
-
-        // Ensure URL starts with / or http
-        if (!str_starts_with($url, '/') && !str_starts_with($url, 'http')) {
-            $url = '/' . $url;
         }
 
         $stmt = $this->conn->prepare("INSERT INTO `{$this->table_name}` (title, url, category, changefreq, priority, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssdii", $title, $url, $category, $changefreq, $priority, $is_active, $sort_order);
 
         if ($stmt->execute()) {
-            return ['success' => true, 'message' => 'Sitemap entry created successfully!', 'id' => $stmt->insert_id];
+            // Auto regenerate XML
+            $this->generateXmlSitemap();
+            return ['success' => true, 'message' => 'Sitemap entry created successfully.'];
         } else {
-            return ['success' => false, 'message' => 'Error creating entry: ' . $stmt->error];
+            return ['success' => false, 'message' => 'Error saving entry: ' . $stmt->error];
         }
     }
 
+    /**
+     * CRUD: Update custom entry
+     */
     public function updateEntry($id, $data) {
         $id = (int)$id;
         $title = trim($data['title'] ?? '');
         $url = trim($data['url'] ?? '');
-        $category = $data['category'] ?? 'main_pages';
-        $changefreq = $data['changefreq'] ?? 'weekly';
+        $category = trim($data['category'] ?? 'main_pages');
+        $changefreq = trim($data['changefreq'] ?? 'weekly');
         $priority = floatval($data['priority'] ?? 0.8);
         $is_active = isset($data['is_active']) ? (int)$data['is_active'] : 1;
-        $sort_order = intval($data['sort_order'] ?? 0);
+        $sort_order = (int)($data['sort_order'] ?? 0);
 
         if (empty($title) || empty($url)) {
             return ['success' => false, 'message' => 'Title and URL are required.'];
-        }
-
-        if (!str_starts_with($url, '/') && !str_starts_with($url, 'http')) {
-            $url = '/' . $url;
         }
 
         $stmt = $this->conn->prepare("UPDATE `{$this->table_name}` SET title = ?, url = ?, category = ?, changefreq = ?, priority = ?, is_active = ?, sort_order = ? WHERE id = ?");
         $stmt->bind_param("ssssdiii", $title, $url, $category, $changefreq, $priority, $is_active, $sort_order, $id);
 
         if ($stmt->execute()) {
-            return ['success' => true, 'message' => 'Sitemap entry updated successfully!'];
+            // Auto regenerate XML
+            $this->generateXmlSitemap();
+            return ['success' => true, 'message' => 'Sitemap entry updated successfully.'];
         } else {
             return ['success' => false, 'message' => 'Error updating entry: ' . $stmt->error];
         }
     }
 
+    /**
+     * CRUD: Delete custom entry
+     */
     public function deleteEntry($id) {
         $id = (int)$id;
         $stmt = $this->conn->prepare("DELETE FROM `{$this->table_name}` WHERE id = ?");
         $stmt->bind_param("i", $id);
+
         if ($stmt->execute()) {
-            return ['success' => true, 'message' => 'Sitemap entry deleted successfully!'];
+            $this->generateXmlSitemap();
+            return ['success' => true, 'message' => 'Sitemap entry deleted.'];
+        } else {
+            return ['success' => false, 'message' => 'Error deleting entry: ' . $stmt->error];
         }
-        return ['success' => false, 'message' => 'Failed to delete entry.'];
     }
 
+    /**
+     * Toggle status
+     */
     public function toggleStatus($id) {
         $id = (int)$id;
-        $stmt = $this->conn->prepare("UPDATE `{$this->table_name}` SET is_active = IF(is_active = 1, 0, 1) WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        return $stmt->execute();
-    }
-
-    public function generateXmlSitemap($baseUrl = 'http://localhost:5173') {
-        $baseUrl = rtrim($baseUrl, '/');
-        $entries = $this->getAllEntries(null, true);
-
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' . "\n";
-        $xml .= '        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' . "\n";
-        $xml .= '        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">' . "\n";
-
-        $today = date('Y-m-d');
-        $urlCount = 0;
-
-        // 1. Add static & configured sitemap entries
-        foreach ($entries as $e) {
-            $loc = str_starts_with($e['url'], 'http') ? $e['url'] : $baseUrl . $e['url'];
-            $xml .= "  <url>\n";
-            $xml .= "    <loc>" . htmlspecialchars($loc, ENT_XML1, 'UTF-8') . "</loc>\n";
-            $xml .= "    <lastmod>" . $today . "</lastmod>\n";
-            $xml .= "    <changefreq>" . htmlspecialchars($e['changefreq'], ENT_XML1, 'UTF-8') . "</changefreq>\n";
-            $xml .= "    <priority>" . number_format($e['priority'], 1) . "</priority>\n";
-            $xml .= "  </url>\n";
-            $urlCount++;
-        }
-
-        // 2. Add dynamic active Categories
-        $catRes = $this->conn->query("SELECT id, name, slug, updated_at FROM categories WHERE is_active = 1");
-        if ($catRes && $catRes->num_rows > 0) {
-            while ($c = $catRes->fetch_assoc()) {
-                $cSlug = !empty($c['slug']) ? $c['slug'] : strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $c['name']), '-'));
-                $lastmod = !empty($c['updated_at']) ? date('Y-m-d', strtotime($c['updated_at'])) : $today;
-                $xml .= "  <url>\n";
-                $xml .= "    <loc>" . htmlspecialchars($baseUrl . '/category/' . $cSlug, ENT_XML1, 'UTF-8') . "</loc>\n";
-                $xml .= "    <lastmod>" . $lastmod . "</lastmod>\n";
-                $xml .= "    <changefreq>weekly</changefreq>\n";
-                $xml .= "    <priority>0.8</priority>\n";
-                $xml .= "  </url>\n";
-                $urlCount++;
-            }
-        }
-
-        // 3. Add dynamic active Careers
-        $careerRes = $this->conn->query("SELECT id, slug, job_title, updated_at FROM careers WHERE is_active = 1");
-        if ($careerRes && $careerRes->num_rows > 0) {
-            while ($car = $careerRes->fetch_assoc()) {
-                $carSlug = !empty($car['slug']) ? $car['slug'] : strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $car['job_title']), '-'));
-                $lastmod = !empty($car['updated_at']) ? date('Y-m-d', strtotime($car['updated_at'])) : $today;
-                $xml .= "  <url>\n";
-                $xml .= "    <loc>" . htmlspecialchars($baseUrl . '/careers/' . $carSlug, ENT_XML1, 'UTF-8') . "</loc>\n";
-                $xml .= "    <lastmod>" . $lastmod . "</lastmod>\n";
-                $xml .= "    <changefreq>weekly</changefreq>\n";
-                $xml .= "    <priority>0.7</priority>\n";
-                $xml .= "  </url>\n";
-                $urlCount++;
-            }
-        }
-
-        // 4. Add dynamic active Products (limit 500)
-        $prodRes = $this->conn->query("SELECT id, name, slug, updated_at FROM products WHERE status = 'active' OR is_active = 1 LIMIT 500");
-        if ($prodRes && $prodRes->num_rows > 0) {
-            while ($p = $prodRes->fetch_assoc()) {
-                $pSlug = !empty($p['slug']) ? $p['slug'] : $p['id'];
-                $lastmod = !empty($p['updated_at']) ? date('Y-m-d', strtotime($p['updated_at'])) : $today;
-                $xml .= "  <url>\n";
-                $xml .= "    <loc>" . htmlspecialchars($baseUrl . '/product/' . $pSlug, ENT_XML1, 'UTF-8') . "</loc>\n";
-                $xml .= "    <lastmod>" . $lastmod . "</lastmod>\n";
-                $xml .= "    <changefreq>daily</changefreq>\n";
-                $xml .= "    <priority>0.8</priority>\n";
-                $xml .= "  </url>\n";
-                $urlCount++;
-            }
-        }
-
-        $xml .= "</urlset>\n";
-
-        // Save to backend root and public
-        $targetPaths = [
-            __DIR__ . '/../sitemap.xml',
-            __DIR__ . '/../api/sitemap.xml',
-            __DIR__ . '/../../printmont/public/sitemap.xml'
-        ];
-
-        foreach ($targetPaths as $path) {
-            $dir = dirname($path);
-            if (!is_dir($dir)) {
-                @mkdir($dir, 0755, true);
-            }
-            @file_put_contents($path, $xml);
-        }
-
-        // Save generation metadata
-        $metaPath = __DIR__ . '/../sitemap_meta.json';
-        file_put_contents($metaPath, json_encode([
-            'last_generated' => date('Y-m-d H:i:s'),
-            'total_urls' => $urlCount,
-            'file_size' => strlen($xml),
-            'base_url' => $baseUrl
-        ]));
-
-        return [
-            'success' => true,
-            'message' => "XML Sitemap generated successfully with {$urlCount} URLs!",
-            'total_urls' => $urlCount,
-            'last_generated' => date('Y-m-d H:i:s'),
-            'file_size' => strlen($xml)
-        ];
-    }
-
-    public function getSitemapStats() {
-        $metaPath = __DIR__ . '/../sitemap_meta.json';
-        $xmlPath = __DIR__ . '/../sitemap.xml';
-
-        $totalConfigured = 0;
-        $cntRes = $this->conn->query("SELECT COUNT(*) as cnt FROM `{$this->table_name}` WHERE is_active = 1");
-        if ($cntRes) {
-            $r = $cntRes->fetch_assoc();
-            $totalConfigured = (int)$r['cnt'];
-        }
-
-        if (file_exists($metaPath)) {
-            $data = json_decode(file_get_contents($metaPath), true);
-            $data['total_configured'] = $totalConfigured;
-            $data['xml_exists'] = file_exists($xmlPath);
-            return $data;
-        }
-
-        return [
-            'last_generated' => null,
-            'total_urls' => $totalConfigured,
-            'total_configured' => $totalConfigured,
-            'file_size' => file_exists($xmlPath) ? filesize($xmlPath) : 0,
-            'xml_exists' => file_exists($xmlPath)
-        ];
+        $this->conn->query("UPDATE `{$this->table_name}` SET is_active = IF(is_active=1, 0, 1) WHERE id = $id");
+        $this->generateXmlSitemap();
+        return ['success' => true];
     }
 }
+

@@ -1,6 +1,6 @@
 <?php
-require_once(__DIR__ . '/../models/BannerLayoutModel.php');
-require_once(__DIR__. '/../models/Review.php');
+require_once(__DIR__ . '/../config/database.php');
+require_once(__DIR__ . '/../models/Review.php');
 
 class ReviewController {
     private $db;
@@ -43,8 +43,8 @@ class ReviewController {
         return $this->review->getProductReviews($product_id, $status);
     }
 
-    public function getProductRatingStats($product_id) {
-        return $this->review->getProductRatingStats($product_id);
+    public function getCategoryReviews($category_id = null, $limit = 20) {
+        return $this->review->getCategoryReviews($category_id, $limit);
     }
 }
 ?>

@@ -108,11 +108,17 @@ class Order
         }
 
         if (!empty($filters['search'])) {
-            $where_conditions[] = "(o.order_number LIKE ? OR o.customer_name LIKE ? OR o.customer_email LIKE ?)";
-            $params[] = "%{$filters['search']}%";
-            $params[] = "%{$filters['search']}%";
-            $params[] = "%{$filters['search']}%";
-            $types .= "sss";
+            $where_conditions[] = "(o.order_number LIKE ? OR o.tracking_number LIKE ? OR o.courier_tracking_number LIKE ? OR o.customer_name LIKE ? OR o.customer_email LIKE ? OR EXISTS (SELECT 1 FROM {$this->table_order_items} oi_s WHERE oi_s.order_id = o.id AND (oi_s.product_name LIKE ? OR oi_s.product_sku LIKE ? OR oi_s.sku LIKE ?)))";
+            $search_val = "%{$filters['search']}%";
+            $params[] = $search_val;
+            $params[] = $search_val;
+            $params[] = $search_val;
+            $params[] = $search_val;
+            $params[] = $search_val;
+            $params[] = $search_val;
+            $params[] = $search_val;
+            $params[] = $search_val;
+            $types .= "ssssssss";
         }
 
         if (!empty($filters['date_from'])) {
@@ -416,6 +422,28 @@ class Order
         return $result->fetch_assoc();
     }
 
+    // Get order by ID or Order Number / Tracking Number
+    public function getOrderByIdOrNumber($idOrNumber)
+    {
+        $query = "SELECT o.*, 
+                         COUNT(oi.id) as items_count,
+                         SUM(oi.quantity) as total_quantity
+                  FROM {$this->table_orders} o
+                  LEFT JOIN {$this->table_order_items} oi ON o.id = oi.order_id
+                  WHERE (o.id = ? OR o.order_number = ? OR o.tracking_number = ?)
+                  GROUP BY o.id
+                  LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+        $num = is_numeric($idOrNumber) ? (int)$idOrNumber : 0;
+        $str = (string)$idOrNumber;
+        $stmt->bind_param("iss", $num, $str, $str);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        return $result->fetch_assoc();
+    }
+
     // Get order items
     // Get order items (more robust version)
     public function getOrderItems($order_id)
@@ -452,14 +480,14 @@ class Order
      */
     public function findForTracking($reference, $contact)
     {
-        // Accepts the order number, the generated tracking id, or the courier's
-        // own AWB — a customer may have been given any of the three.
-        $query = "SELECT id, order_number, customer_name, status, payment_status,
-                         grand_total, shipping_method, shipping_address,
+        $num = is_numeric($reference) ? (int)$reference : 0;
+        // Accepts the order number, the generated tracking id, the courier's own AWB, or the numeric ID.
+        $query = "SELECT id, order_number, customer_name, customer_email, customer_phone, status, payment_status,
+                         subtotal, tax_amount, shipping_cost, discount_amount, grand_total, shipping_method, shipping_address,
                          courier_name, tracking_number, courier_tracking_number, tracking_url,
                          created_at, updated_at
                   FROM {$this->table_orders}
-                  WHERE (order_number = ? OR tracking_number = ? OR courier_tracking_number = ?)
+                  WHERE (id = ? OR order_number = ? OR tracking_number = ? OR courier_tracking_number = ?)
                     AND (customer_email = ? OR customer_phone = ?)
                   LIMIT 1";
 
@@ -468,7 +496,40 @@ class Order
             return null;
         }
 
-        $stmt->bind_param('sssss', $reference, $reference, $reference, $contact, $contact);
+        $refStr = (string)$reference;
+        $stmt->bind_param('isssss', $num, $refStr, $refStr, $refStr, $contact, $contact);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        return $row ?: null;
+    }
+
+    /**
+     * Authenticated order lookup for tracking when bearer token is verified.
+     */
+    public function findForUserTracking($reference, $userId)
+    {
+        $column = $this->getCustomerColumn() ?: 'user_id';
+        $num = is_numeric($reference) ? (int)$reference : 0;
+        $refStr = (string)$reference;
+
+        $query = "SELECT id, order_number, customer_name, customer_email, customer_phone, status, payment_status,
+                         subtotal, tax_amount, shipping_cost, discount_amount, grand_total, shipping_method, shipping_address,
+                         courier_name, tracking_number, courier_tracking_number, tracking_url,
+                         created_at, updated_at
+                  FROM {$this->table_orders}
+                  WHERE (id = ? OR order_number = ? OR tracking_number = ? OR courier_tracking_number = ?)
+                    AND {$column} = ?
+                  LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+        if (!$stmt) {
+            return null;
+        }
+
+        $userIdInt = (int)$userId;
+        $stmt->bind_param('isssi', $num, $refStr, $refStr, $refStr, $userIdInt);
         $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
         $stmt->close();
@@ -583,6 +644,12 @@ class Order
             return false;
         }
 
+        // Cancelled / refunded orders lose their unused gift voucher
+        if (in_array($status, ['cancelled', 'refunded', 'returned'], true)) {
+            require_once __DIR__ . '/../config/gift-vouchers-schema.php';
+            cancelGiftVouchersForOrder($this->conn, (int) $order_id);
+        }
+
         // Add to status history
         $history_query = "INSERT INTO {$this->table_status_history} (order_id, status, notes, created_by) VALUES (?, ?, ?, ?)";
         $history_stmt = $this->conn->prepare($history_query);
@@ -599,6 +666,32 @@ class Order
         $stmt->bind_param("si", $payment_status, $order_id);
 
         return $stmt->execute();
+    }
+
+    // Update courier and AWB tracking
+    public function updateCourierTracking($order_id, $courier_name, $courier_tracking_number, $tracking_url = '', $auto_status_ship = false, $user_id = null)
+    {
+        $query = "UPDATE {$this->table_orders} SET courier_name = ?, courier_tracking_number = ?, tracking_url = ?, updated_at = NOW() WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("sssi", $courier_name, $courier_tracking_number, $tracking_url, $order_id);
+        $res = $stmt->execute();
+        $stmt->close();
+
+        if ($res) {
+            $notes = "Logistics tracking updated: " . $courier_name . " (AWB: " . $courier_tracking_number . ")";
+            if ($auto_status_ship) {
+                $this->updateOrderStatus($order_id, 'shipped', $notes, $user_id);
+            } else {
+                $history_query = "INSERT INTO {$this->table_status_history} (order_id, status, notes, created_by) VALUES (?, (SELECT status FROM {$this->table_orders} WHERE id = ?), ?, ?)";
+                $hstmt = $this->conn->prepare($history_query);
+                if ($hstmt) {
+                    $hstmt->bind_param("iisi", $order_id, $order_id, $notes, $user_id);
+                    $hstmt->execute();
+                    $hstmt->close();
+                }
+            }
+        }
+        return $res;
     }
 
     // Delete order
@@ -639,10 +732,19 @@ class Order
     {
         $query = "SELECT 
                     COUNT(*) as total_orders,
-                    SUM(grand_total) as total_revenue,
-                    AVG(grand_total) as avg_order_value,
-                    COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_orders,
-                    COUNT(CASE WHEN payment_status = 'paid' THEN 1 END) as paid_orders
+                    COALESCE(SUM(grand_total), 0) as total_revenue,
+                    COALESCE(AVG(grand_total), 0) as avg_order_value,
+                    COUNT(CASE WHEN status IN ('completed', 'delivered') THEN 1 END) as completed_orders,
+                    COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders,
+                    COUNT(CASE WHEN status = 'processing' THEN 1 END) as processing_orders,
+                    COUNT(CASE WHEN status = 'shipped' THEN 1 END) as shipped_orders,
+                    COUNT(CASE WHEN status = 'delivered' THEN 1 END) as delivered_orders,
+                    COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_orders,
+                    COUNT(CASE WHEN status = 'refunded' THEN 1 END) as refunded_orders,
+                    COUNT(CASE WHEN payment_status = 'paid' THEN 1 END) as paid_orders,
+                    COUNT(CASE WHEN payment_status = 'pending' THEN 1 END) as payment_pending_orders,
+                    COUNT(CASE WHEN LOWER(payment_method) LIKE '%cod%' THEN 1 END) as cod_orders,
+                    COUNT(CASE WHEN LOWER(payment_method) NOT LIKE '%cod%' AND payment_method != '' AND payment_method IS NOT NULL THEN 1 END) as prepaid_orders
                   FROM {$this->table_orders}";
 
         $result = $this->conn->query($query);

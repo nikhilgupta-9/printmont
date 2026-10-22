@@ -82,6 +82,23 @@ class PageEditor
             $source['key_value'] = $pageKey;
         }
 
+        // Dynamically resolve section_id if banner_sections section_key is provided
+        if (($source['table'] ?? '') === 'banners') {
+            $source['columns']['type'] = null;
+            if (!empty($source['section_key'])) {
+                $stmt = $this->db->prepare('SELECT id FROM `banner_sections` WHERE `section_key` = ? LIMIT 1');
+                if ($stmt) {
+                    $stmt->bind_param('s', $source['section_key']);
+                    $stmt->execute();
+                    $res = $stmt->get_result()->fetch_assoc();
+                    if ($res) {
+                        $source['key_value'] = (int) $res['id'];
+                    }
+                    $stmt->close();
+                }
+            }
+        }
+
         return $source;
     }
 
@@ -114,9 +131,9 @@ class PageEditor
         $col = $source['columns'];
 
         $select = [];
-        foreach (['id', 'title', 'content', 'extra', 'image_path', 'order', 'active'] as $field) {
+        foreach (['id', 'title', 'content', 'extra', 'image_path', 'type', 'order', 'active'] as $field) {
             $name = $field === 'order' ? 'display_order' : ($field === 'active' ? 'is_active' : $field);
-            $select[] = $col[$field]
+            $select[] = !empty($col[$field])
                 ? '`' . $col[$field] . '` AS `' . $name . '`'
                 : "'' AS `" . $name . '`';
         }
@@ -234,6 +251,7 @@ class PageEditor
             'content'       => $col['content'] ? (string) $row[$col['content']] : '',
             'extra'         => $col['extra'] ? (string) $row[$col['extra']] : '',
             'image_path'    => $col['image_path'] ? (string) $row[$col['image_path']] : '',
+            'type'          => !empty($col['type']) && isset($row[$col['type']]) ? (string) $row[$col['type']] : '',
             'display_order' => $col['order'] ? (int) $row[$col['order']] : 0,
             'is_active'     => $this->isOn($source, $row[$col['active']] ?? $source['active_on']) ? 1 : 0,
         ];
@@ -252,8 +270,8 @@ class PageEditor
         $types = '';
         $args = [];
 
-        foreach (['title', 'content', 'extra', 'image_path'] as $field) {
-            if (!$col[$field] || !array_key_exists($field, $values)) {
+        foreach (['title', 'content', 'extra', 'image_path', 'type'] as $field) {
+            if (empty($col[$field]) || !array_key_exists($field, $values)) {
                 continue;
             }
             $set[$col[$field]] = 's';
@@ -292,12 +310,12 @@ class PageEditor
         // New rows carry the part's own type and key, and go to the end.
         $columns = array_keys($set);
 
-        if (!empty($col['type']) && !empty($part['type'])) {
+        if (!empty($col['type']) && !empty($part['type']) && !in_array($col['type'], $columns)) {
             $columns[] = $col['type'];
             $types .= 's';
             $args[] = $part['type'];
         }
-        if (!empty($source['key'])) {
+        if (!empty($source['key']) && !in_array($source['key'], $columns)) {
             $columns[] = $source['key'];
             $types .= 's';
             $args[] = $source['key_value'];
@@ -308,17 +326,21 @@ class PageEditor
             $args[] = $this->nextOrder($source, $part);
         }
         foreach ($source['defaults'] ?? [] as $column => $value) {
-            $columns[] = $column;
-            $types .= 's';
-            $args[] = (string) $value;
+            if (!in_array($column, $columns)) {
+                $columns[] = $column;
+                $types .= 's';
+                $args[] = (string) $value;
+            }
         }
 
         // Columns the table insists on but the editor should not ask for —
         // a slug, for instance, which is just the title in another form.
         foreach ($source['derived'] ?? [] as $column => $from) {
-            $columns[] = $column;
-            $types .= 's';
-            $args[] = self::slug($values[$from] ?? '');
+            if (!in_array($column, $columns)) {
+                $columns[] = $column;
+                $types .= 's';
+                $args[] = self::slug($values[$from] ?? '');
+            }
         }
 
         $stmt = $this->db->prepare(
@@ -456,7 +478,7 @@ class PageEditor
         $stmt->close();
     }
 
-    /** Options for a select field, read from whatever table it names. */
+    /** Options for a select or product_picker field, read from whatever table it names. */
     public function options(array $field): array
     {
         $spec = $field['options'] ?? null;
@@ -464,26 +486,38 @@ class PageEditor
             return [];
         }
 
-        $sql = 'SELECT `' . $spec['value'] . '` AS v, `' . $spec['label'] . '` AS l FROM `' . $spec['table'] . '`'
+        $extraCols = '';
+        if (!empty($spec['extra_cols'])) {
+            $extraCols = ', ' . $spec['extra_cols'];
+        }
+
+        $sql = 'SELECT `' . $spec['value'] . '` AS v, `' . $spec['label'] . '` AS l' . $extraCols . ' FROM `' . $spec['table'] . '`'
             . (!empty($spec['where']) ? ' WHERE ' . $spec['where'] : '')
             . ' ORDER BY `' . ($spec['order'] ?? $spec['label']) . '` ASC';
 
         $out = [];
         if ($result = $this->db->query($sql)) {
             while ($row = $result->fetch_assoc()) {
-                $out[] = ['value' => (string) $row['v'], 'label' => (string) $row['l']];
+                $item = ['value' => (string) $row['v'], 'label' => (string) $row['l']];
+                foreach ($row as $k => $val) {
+                    if ($k !== 'v' && $k !== 'l') {
+                        $item[$k] = $val;
+                    }
+                }
+                $out[] = $item;
             }
         }
         return $out;
     }
 
-    /** Fill every select field on the page with its current options. */
+    /** Fill every select and product_picker field on the page with its current options. */
     public function withOptions(array $schema): array
     {
         foreach ($schema['bands'] as $b => $band) {
             foreach ($band['parts'] as $p => $part) {
                 foreach ($part['fields'] as $f => $field) {
-                    if (($field['input'] ?? '') === 'select' && !empty($field['options']['table'])) {
+                    $inp = $field['input'] ?? '';
+                    if (($inp === 'select' || $inp === 'product_picker') && !empty($field['options']['table'])) {
                         $schema['bands'][$b]['parts'][$p]['fields'][$f]['choices'] = $this->options($field);
                     }
                 }

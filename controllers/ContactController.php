@@ -78,12 +78,20 @@ class ContactController {
         return $result;
     }
 
-    public function getInquiries($status = '') {
-        return $this->contactModel->getInquiries($status);
+    public function getInquiries($status = '', $search = '') {
+        return $this->contactModel->getInquiries($status, $search);
+    }
+
+    public function getInquiryStats() {
+        return $this->contactModel->getInquiryStats();
     }
 
     public function updateInquiryStatus($id, $status, $notes = '') {
         return $this->contactModel->updateInquiryStatus($id, $status, $notes);
+    }
+
+    public function deleteInquiry($id) {
+        return $this->contactModel->deleteInquiry($id);
     }
 
     public function updateContactDetails($data) {

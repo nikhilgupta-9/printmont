@@ -70,8 +70,8 @@ class EmailController {
     }
 
     /** @return array{success: bool, error: string} */
-    public function sendTestEmail($data, $recipient) {
-        return $this->emailConfiguration->sendTestEmail($data, $recipient);
+    public function sendTestEmail($data, $recipient, $subject = null, $body = null) {
+        return $this->emailConfiguration->sendTestEmail($data, $recipient, $subject, $body);
     }
 }
 ?>

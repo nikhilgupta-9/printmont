@@ -13,7 +13,14 @@ class ApiCategoryModel {
         return $this->db->fetchAll(
             "SELECT * FROM {$this->table}
              WHERE level = 1 AND status = 'active'
-             ORDER BY display_order ASC, name ASC"
+             ORDER BY 
+                CASE 
+                    WHEN display_order > 0 THEN display_order 
+                    WHEN desktop_menu_order > 0 THEN desktop_menu_order 
+                    ELSE 999999 
+                END ASC, 
+                display_order ASC, 
+                name ASC"
         );
     }
 
@@ -22,14 +29,28 @@ class ApiCategoryModel {
             return $this->db->fetchAll(
                 "SELECT * FROM {$this->table}
                  WHERE level = 2 AND status = 'active' AND parent_id = ?
-                 ORDER BY display_order ASC, name ASC",
+                 ORDER BY 
+                    CASE 
+                        WHEN display_order > 0 THEN display_order 
+                        WHEN desktop_menu_order > 0 THEN desktop_menu_order 
+                        ELSE 999999 
+                    END ASC, 
+                    display_order ASC, 
+                    name ASC",
                 [$parentId]
             );
         }
         return $this->db->fetchAll(
             "SELECT * FROM {$this->table}
              WHERE level = 2 AND status = 'active'
-             ORDER BY display_order ASC, name ASC"
+             ORDER BY 
+                CASE 
+                    WHEN display_order > 0 THEN display_order 
+                    WHEN desktop_menu_order > 0 THEN desktop_menu_order 
+                    ELSE 999999 
+                END ASC, 
+                display_order ASC, 
+                name ASC"
         );
     }
 
@@ -38,14 +59,28 @@ class ApiCategoryModel {
             return $this->db->fetchAll(
                 "SELECT * FROM {$this->table}
                  WHERE level = 3 AND status = 'active' AND parent_id = ?
-                 ORDER BY display_order ASC, name ASC",
+                 ORDER BY 
+                    CASE 
+                        WHEN display_order > 0 THEN display_order 
+                        WHEN desktop_menu_order > 0 THEN desktop_menu_order 
+                        ELSE 999999 
+                    END ASC, 
+                    display_order ASC, 
+                    name ASC",
                 [$parentId]
             );
         }
         return $this->db->fetchAll(
             "SELECT * FROM {$this->table}
              WHERE level = 3 AND status = 'active'
-             ORDER BY display_order ASC, name ASC"
+             ORDER BY 
+                CASE 
+                    WHEN display_order > 0 THEN display_order 
+                    WHEN desktop_menu_order > 0 THEN desktop_menu_order 
+                    ELSE 999999 
+                END ASC, 
+                display_order ASC, 
+                name ASC"
         );
     }
 
@@ -70,7 +105,14 @@ class ApiCategoryModel {
         return $this->db->fetchAll(
             "SELECT * FROM {$this->table}
              WHERE status = 'active'
-             ORDER BY display_order ASC, name ASC"
+             ORDER BY 
+                CASE 
+                    WHEN desktop_menu_order > 0 THEN desktop_menu_order 
+                    WHEN display_order > 0 THEN display_order 
+                    ELSE 999999 
+                END ASC, 
+                display_order ASC, 
+                name ASC"
         );
     }
 }

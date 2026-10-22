@@ -114,23 +114,170 @@ class AuthController {
         }
     }
 
+    // Step 1: Send Registration OTP (Flipkart Style Modal verification)
+    public function sendRegistrationOTP($data) {
+        try {
+            $required = ['firstName', 'lastName', 'mobile', 'email', 'gender', 'password'];
+            foreach ($required as $field) {
+                if (!isset($data[$field]) || empty(trim($data[$field]))) {
+                    throw new Exception("Field $field is required");
+                }
+            }
+
+            $firstName = trim($data['firstName']);
+            $lastName = trim($data['lastName']);
+            $mobile = trim($data['mobile']);
+            $email = trim($data['email']);
+            $gender = trim($data['gender']);
+            $password = trim($data['password']);
+
+            if ($this->userModel->checkEmailExists($email)) {
+                throw new Exception("This email address is already registered. Please log in.");
+            }
+
+            if ($this->userModel->checkPhoneExists($mobile)) {
+                throw new Exception("This mobile number is already registered. Please log in.");
+            }
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception("Invalid email format");
+            }
+
+            if (strlen($password) < 6) {
+                throw new Exception("Password must be at least 6 characters long");
+            }
+
+            $userData = [
+                'firstName' => $firstName,
+                'lastName' => $lastName,
+                'email' => $email,
+                'mobile' => $mobile,
+                'gender' => $gender,
+                'password' => $password
+            ];
+
+            $customerData = [
+                'company_name' => '',
+                'address' => '',
+                'city' => '',
+                'state' => '',
+                'country' => 'India',
+                'postal_code' => ''
+            ];
+
+            $otp = sprintf('%06d', random_int(100000, 999999));
+            $expiry = date('Y-m-d H:i:s', time() + 900); // 15 mins
+
+            $userId = $this->userModel->createPendingUser($userData, $customerData, $otp, $expiry);
+            $this->sendVerificationOtpEmail($email, "$firstName $lastName", $otp);
+
+            return [
+                'success' => true,
+                'message' => 'Verification OTP has been sent to your email address.',
+                'email' => $email,
+                'mobile' => $mobile,
+                'user_id' => $userId
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    // Step 2: Verify Registration OTP & Auto-login
+    public function verifyRegistrationOTP($data) {
+        try {
+            $email = trim($data['email'] ?? '');
+            $otp = trim($data['otp'] ?? '');
+
+            if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception("A valid email address is required.");
+            }
+
+            if (empty($otp) || !preg_match('/^[0-9]{6}$/', $otp)) {
+                throw new Exception("Please enter a valid 6-digit OTP code.");
+            }
+
+            $user = $this->userModel->verifyRegistrationOTP($email, $otp);
+
+            // Create admin notification
+            try {
+                require_once __DIR__ . '/NotificationController.php';
+                $notifController = new NotificationController();
+                $notifController->createNotification([
+                    'title' => 'New Customer Registration',
+                    'message' => "New customer verified: {$user['first_name']} {$user['last_name']} ({$email})",
+                    'type' => 'user',
+                    'icon' => 'user-plus',
+                    'link' => "customers.php"
+                ]);
+            } catch (Exception $notifEx) {
+                error_log("Registration notification error: " . $notifEx->getMessage());
+            }
+
+            // Update last login
+            $this->userModel->updateLastLogin($user['id']);
+
+            return [
+                'success' => true,
+                'message' => 'Account verified successfully! Welcome to Printmont.',
+                'user' => $this->sanitizeUser($user),
+                'tokens' => $this->jwt->generateTokenPair(['id' => $user['id'], 'email' => $user['email']]),
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    // Resend Registration OTP
+    public function resendRegistrationOTP($data) {
+        try {
+            $email = trim($data['email'] ?? '');
+            if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception("A valid email address is required.");
+            }
+
+            $otp = sprintf('%06d', random_int(100000, 999999));
+            $expiry = date('Y-m-d H:i:s', time() + 900); // 15 mins
+
+            $user = $this->userModel->resendRegistrationOTP($email, $otp, $expiry);
+            $fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+            $this->sendVerificationOtpEmail($email, $fullName, $otp);
+
+            return [
+                'success' => true,
+                'message' => 'A new 6-digit OTP has been sent to your email.'
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
     // User Login
     public function login($data) {
         try {
-            // Validation
-            if (!isset($data['email']) || empty(trim($data['email']))) {
-                throw new Exception("Email is required");
+            // Validation - support email, identifier, phone, or mobile
+            $identifier = trim($data['email'] ?? $data['identifier'] ?? $data['mobile'] ?? $data['phone'] ?? '');
+            if (empty($identifier)) {
+                throw new Exception("Email or Mobile number is required");
             }
 
             if (!isset($data['password']) || empty(trim($data['password']))) {
                 throw new Exception("Password is required");
             }
 
-            $email = trim($data['email']);
             $password = trim($data['password']);
 
-            // Verify credentials
-            $user = $this->userModel->verifyPassword($email, $password);
+            // Verify credentials with email or phone
+            $user = $this->userModel->verifyPassword($identifier, $password);
 
             if (!$user) {
                 throw new Exception("Invalid email or password");
@@ -205,7 +352,10 @@ class AuthController {
             ];
 
             $customerData = [
-                'company_name' => $data['company_name'] ?? '',
+                'company_name' => $data['company_name'] ?? ($data['business_name'] ?? ''),
+                'gst_number' => $data['gst_number'] ?? ($data['gstin'] ?? ''),
+                'pan_number' => $data['pan_number'] ?? '',
+                'pan_name' => $data['pan_name'] ?? '',
                 'address' => $data['address'] ?? '',
                 'city' => $data['city'] ?? '',
                 'state' => $data['state'] ?? '',
@@ -223,9 +373,13 @@ class AuthController {
             // touched if actually present in the request, everything else is untouched.
             $this->userModel->updateExtendedProfile($userId, $data);
 
+            // Fetch fresh user profile to return
+            $updatedUser = $this->userModel->getUserById($userId);
+
             return [
                 'success' => true,
-                'message' => 'Profile updated successfully'
+                'message' => 'Profile updated successfully',
+                'user' => $this->sanitizeUser($updatedUser)
             ];
 
         } catch (Exception $e) {
@@ -497,6 +651,84 @@ class AuthController {
                 'error' => $e->getMessage()
             ];
         }
+    }
+
+    // Send Account Verification OTP Email (Flipkart style signup)
+    private function sendVerificationOtpEmail($toEmail, $toName, $otp) {
+        $subject = 'Verify Your Printmont Account - OTP Code';
+        $bodyHtml = '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; max-width: 540px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">'
+            . '<div style="text-align: center; margin-bottom: 20px;">'
+            . '<h2 style="color: #0b53a1; margin: 0 0 6px 0; font-size: 24px; font-weight: 700;">PRINTMONT</h2>'
+            . '<p style="color: #64748b; font-size: 14px; margin: 0;">Account Verification</p>'
+            . '</div>'
+            . '<p style="color: #1e293b; font-size: 15px; line-height: 1.5;">Hi <strong>' . htmlspecialchars($toName ?: 'Customer') . '</strong>,</p>'
+            . '<p style="color: #475569; font-size: 14px; line-height: 1.6;">Thank you for registering on Printmont. Please use the following One-Time Password (OTP) to verify your account and complete your signup:</p>'
+            . '<div style="background-color: #f0f7ff; border: 1.5px dashed #0b53a1; padding: 16px; font-size: 28px; font-weight: 800; letter-spacing: 6px; text-align: center; color: #0b53a1; border-radius: 6px; margin: 24px 0;">'
+            . htmlspecialchars($otp)
+            . '</div>'
+            . '<p style="color: #64748b; font-size: 12px; margin: 16px 0 0 0;">This OTP is valid for 15 minutes. Please do not share this code with anyone.</p>'
+            . '<hr style="border: none; border-top: 1px solid #f1f5f9; margin: 20px 0;" />'
+            . '<p style="color: #94a3b8; font-size: 11.5px; text-align: center; margin: 0;">© ' . date('Y') . ' Printmont. All rights reserved.</p>'
+            . '</div>';
+
+        if (file_exists(__DIR__ . '/../services/MailService.php')) {
+            require_once __DIR__ . '/../services/MailService.php';
+            try {
+                $mailService = new MailService();
+                $sent = $mailService->sendEmail($toEmail, $subject, $bodyHtml, 'Account Verification', 'Printmont');
+                if ($sent) return true;
+                error_log('sendVerificationOtpEmail: MailService failed — ' . $mailService->getLastError());
+            } catch (Throwable $t) {
+                error_log("MailService in sendVerificationOtpEmail error: " . $t->getMessage());
+            }
+        }
+
+        // Fallback using SMTP / mail()
+        $config = null;
+        try {
+            $res = $this->db->query("SELECT * FROM email_configurations WHERE status = 'active' ORDER BY id ASC LIMIT 1");
+            if ($res && $res->num_rows > 0) {
+                $config = $res->fetch_assoc();
+            }
+        } catch (Throwable $t) {}
+
+        $smtpHost = $config['smtp_host'] ?? $config['mail_host'] ?? $_ENV['SMTP_HOST'] ?? getenv('SMTP_HOST') ?: '';
+        $smtpUser = $config['smtp_user'] ?? $config['mail_username'] ?? $_ENV['SMTP_USER'] ?? getenv('SMTP_USER') ?: '';
+        $smtpPass = $config['smtp_pass'] ?? $config['mail_password'] ?? $_ENV['SMTP_PASS'] ?? getenv('SMTP_PASS') ?: '';
+        $smtpPort = (int) ($config['smtp_port'] ?? $config['mail_port'] ?? $_ENV['SMTP_PORT'] ?? getenv('SMTP_PORT') ?: 587);
+        $fromEmail = $config['from_email'] ?? $config['mail_from_address'] ?? $_ENV['MAIL_FROM_ADDRESS'] ?? getenv('MAIL_FROM_ADDRESS') ?: 'noreply@printmont.com';
+        $fromName = $config['from_name'] ?? $config['mail_from_name'] ?? $_ENV['MAIL_FROM_NAME'] ?? getenv('MAIL_FROM_NAME') ?: 'Printmont';
+
+        if (!empty($smtpHost) && !empty($smtpUser)) {
+            try {
+                $mail = new PHPMailer(true);
+                $mail->isSMTP();
+                $mail->Host = $smtpHost;
+                $mail->SMTPAuth = true;
+                $mail->Username = $smtpUser;
+                $mail->Password = $smtpPass;
+                $encryption = strtolower($config['encryption'] ?? $config['mail_encryption'] ?? $_ENV['SMTP_ENCRYPTION'] ?? 'tls');
+                $mail->SMTPSecure = ($encryption === 'ssl' || $smtpPort === 465) ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port = $smtpPort;
+
+                $mail->setFrom($fromEmail, $fromName);
+                $mail->addAddress($toEmail, $toName);
+                $mail->isHTML(true);
+                $mail->Subject = $subject;
+                $mail->Body = $bodyHtml;
+                $mail->AltBody = "Your Printmont verification OTP is: $otp (valid for 15 minutes)";
+
+                $mail->send();
+                return true;
+            } catch (Throwable $e) {
+                error_log('sendVerificationOtpEmail PHPMailer failed: ' . $e->getMessage());
+            }
+        }
+
+        $headers  = "MIME-Version: 1.0\r\n";
+        $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+        $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
+        return @mail($toEmail, $subject, $bodyHtml, $headers);
     }
 
     // Send the OTP email using the active "Password Reset" SMTP config

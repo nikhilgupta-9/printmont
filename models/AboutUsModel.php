@@ -37,24 +37,26 @@ class AboutUsModel {
     }
 
     public function createSection($data) {
-        $stmt = $this->db->prepare("INSERT INTO about_us (section_title, section_content, section_type, image_path, display_order, is_active) VALUES (?, ?, ?, ?, ?, ?)");
+        $extra = $data['extra'] ?? 'right';
+        $stmt = $this->db->prepare("INSERT INTO about_us (section_title, section_content, section_type, image_path, extra, display_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)");
         if (!$stmt) {
             error_log("Prepare failed: " . $this->db->error);
             return false;
         }
         
-        $stmt->bind_param("ssssii", $data['section_title'], $data['section_content'], $data['section_type'], $data['image_path'], $data['display_order'], $data['is_active']);
+        $stmt->bind_param("sssssii", $data['section_title'], $data['section_content'], $data['section_type'], $data['image_path'], $extra, $data['display_order'], $data['is_active']);
         return $stmt->execute();
     }
 
     public function updateSection($id, $data) {
-        $stmt = $this->db->prepare("UPDATE about_us SET section_title = ?, section_content = ?, section_type = ?, image_path = ?, display_order = ?, is_active = ? WHERE id = ?");
+        $extra = $data['extra'] ?? 'right';
+        $stmt = $this->db->prepare("UPDATE about_us SET section_title = ?, section_content = ?, section_type = ?, image_path = ?, extra = ?, display_order = ?, is_active = ? WHERE id = ?");
         if (!$stmt) {
             error_log("Prepare failed: " . $this->db->error);
             return false;
         }
         
-        $stmt->bind_param("ssssiii", $data['section_title'], $data['section_content'], $data['section_type'], $data['image_path'], $data['display_order'], $data['is_active'], $id);
+        $stmt->bind_param("sssssiii", $data['section_title'], $data['section_content'], $data['section_type'], $data['image_path'], $extra, $data['display_order'], $data['is_active'], $id);
         return $stmt->execute();
     }
 

@@ -17079,7 +17079,7 @@ a.list-group-item {
     flex-direction: column;
     min-height: 100vh;
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
     transition: margin-left .35s ease-in-out, left .35s ease-in-out, margin-right .35s ease-in-out, right .35s ease-in-out;
     width: 100%
 }
@@ -17621,6 +17621,15 @@ screen and (-ms-high-contrast:active) {
     direction: ltr;
     max-width: 264px;
     min-width: 264px;
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    max-height: 100vh;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
     transition: margin-left .35s ease-in-out, left .35s ease-in-out, margin-right .35s ease-in-out, right .35s ease-in-out
 }
 
@@ -17641,6 +17650,11 @@ body[data-theme=colored] .sidebar {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    max-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
     transition: margin-left .35s ease-in-out, left .35s ease-in-out, margin-right .35s ease-in-out, right .35s ease-in-out
 }
 
@@ -18858,7 +18872,7 @@ a {
     display: flex;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden
+    overflow: visible
 }
 
 .wrapper,
@@ -35608,24 +35622,107 @@ body[data-theme=light] .simplebar-scrollbar:before {
     background: #adb5bd
 }
 
-body[data-theme=colored] .simplebar-scrollbar:before {
-    background: #fff
+.sidebar-content::-webkit-scrollbar {
+    width: 5px;
+}
+.sidebar-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
 }
 
-.simplebar-content {
+.sidebar .simplebar-wrapper {
+    height: 100vh;
+    max-height: 100vh;
+}
+.sidebar .simplebar-mask {
+    height: 100vh;
+    max-height: 100vh;
+}
+.sidebar .simplebar-content-wrapper {
+    height: 100vh;
+    max-height: 100vh;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+.sidebar .simplebar-content {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    padding-bottom: 0 !important
+    min-height: 100%;
+    height: auto !important;
+    padding-bottom: 3rem !important;
 }
 
-[data-simplebar] {
-    left: 0;
-    position: -webkit-sticky;
-    position: sticky;
-    top: 0;
-    width: 264px
+@media (min-width: 992px) {
+    .sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 264px !important;
+        min-width: 264px !important;
+        max-width: 264px !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        z-index: 1000 !important;
+        overflow: hidden !important;
+        transition: margin-left .3s cubic-bezier(0.4, 0, 0.2, 1), left .3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    body:not([data-sidebar-position=right]) .sidebar.collapsed {
+        margin-left: -264px !important;
+    }
+
+    .main {
+        margin-left: 264px !important;
+        width: calc(100% - 264px) !important;
+        min-width: 0 !important;
+        min-height: 100vh !important;
+        transition: margin-left .3s cubic-bezier(0.4, 0, 0.2, 1), width .3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    body:not([data-sidebar-position=right]) .sidebar.collapsed ~ .main,
+    body:not([data-sidebar-position=right]) .sidebar.collapsed + .main {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
 }
+
+@media (max-width: 991.98px) {
+    .sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 264px !important;
+        min-width: 264px !important;
+        max-width: 264px !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        z-index: 1050 !important;
+        overflow: hidden !important;
+        margin-left: -264px !important;
+        box-shadow: none !important;
+        transition: margin-left .3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow .3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    body:not([data-sidebar-position=right]) .sidebar.collapsed {
+        margin-left: 0 !important;
+        box-shadow: 0 0 25px rgba(0, 0, 0, 0.6) !important;
+    }
+
+    .main {
+        margin-left: 0 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+}
+
 .logout{
     background: #ff00001f;
     color: red;
@@ -35637,4 +35734,46 @@ body[data-theme=colored] .simplebar-scrollbar:before {
 
 body {
     opacity: 1 !important;
+}
+
+/* Persistent Sticky Header System & Stable Sidebar with Scrollable Body */
+html, body {
+    height: 100% !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.wrapper {
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+    display: flex !important;
+    width: 100% !important;
+    position: relative !important;
+}
+
+.main {
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    scroll-behavior: smooth !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+.navbar.navbar-bg {
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1030 !important;
+    background: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(18, 38, 63, 0.08) !important;
+    backdrop-filter: blur(8px);
+    flex-shrink: 0 !important;
 }

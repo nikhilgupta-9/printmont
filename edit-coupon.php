@@ -107,18 +107,29 @@ $mainCategories = array_values(array_filter($categories, fn($c) => (int)$c['leve
                                 <div class="row">
                                     <div class="mb-3 col-md-6">
                                         <label class="form-label required-field">Coupon Code</label>
-                                        <input type="text" class="form-control" name="coupon_code" id="coupon_code"
+                                        <input type="text" class="form-control font-monospace fw-bold" name="coupon_code" id="coupon_code"
                                                required placeholder="e.g. WELCOME20" value="<?php echo val($coupon, 'coupon_code'); ?>">
                                         <small class="text-muted">Letters, numbers, hyphens and underscores only. Saved in uppercase.</small>
                                     </div>
-                                    <div class="mb-3 col-md-3">
+                                    <div class="mb-3 col-md-6">
+                                        <label class="form-label">Offer Title / Headline</label>
+                                        <input type="text" class="form-control" name="title" id="title"
+                                               placeholder="e.g. Flat ₹100 Off on First Order" value="<?php echo val($coupon, 'title'); ?>">
+                                        <small class="text-muted">Displayed to customers on Flipkart-like coupons page.</small>
+                                    </div>
+                                    <div class="mb-3 col-md-12">
+                                        <label class="form-label">Offer Description &amp; Terms</label>
+                                        <textarea class="form-control" name="description" id="description" rows="2"
+                                                  placeholder="e.g. Valid on all Printmont items on orders above ₹499. One-time use per customer."><?php echo val($coupon, 'description'); ?></textarea>
+                                    </div>
+                                    <div class="mb-3 col-md-6">
                                         <label class="form-label required-field">Discount Format</label>
                                         <select name="discount_format" id="discount_format" class="form-control">
                                             <option value="percentage" <?php echo valSel($coupon, 'discount_format', 'percentage'); ?>>Percentage (%)</option>
                                             <option value="fixed" <?php echo valSel($coupon, 'discount_format', 'fixed'); ?>>Fixed Amount (&#8377;)</option>
                                         </select>
                                     </div>
-                                    <div class="mb-3 col-md-3">
+                                    <div class="mb-3 col-md-6">
                                         <label class="form-label required-field" id="discount_value_label">Percentage</label>
                                         <input type="number" step="0.01" min="0" class="form-control"
                                                name="discount_value" id="discount_value" required

@@ -1,15 +1,19 @@
 <?php
-require_once 'config/constants.php';
-require_once 'models/Database.php';
-require_once 'models/FooterPaymentMethod.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../models/FooterPaymentMethod.php';
 
 class FooterPaymentMethodController {
     private $db;
     private $footerPaymentMethod;
 
-    public function __construct() {
-        $this->db = new Database();
-        $this->footerPaymentMethod = new FooterPaymentMethod($this->db->getConnection());
+    public function __construct($db = null) {
+        if ($db instanceof mysqli) {
+            $this->db = $db;
+        } else {
+            $database = new Database();
+            $this->db = $database->getConnection();
+        }
+        $this->footerPaymentMethod = new FooterPaymentMethod($this->db);
     }
 
     public function getAllPaymentMethods() {

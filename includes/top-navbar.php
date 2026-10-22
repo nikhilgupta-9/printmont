@@ -6,9 +6,30 @@ require_once(__DIR__ . '/../controllers/NotificationController.php');
 $notificationController = new NotificationController();
 
 // Get notifications for current user
-$notifications = $notificationController->getUserNotifications($_SESSION['user_id'], 10);
-$unread_count = $notificationController->getUnreadCount($_SESSION['user_id']);
+$currentUserId = $_SESSION['user_id'] ?? 1;
+$notifications = $notificationController->getUserNotifications($currentUserId, 10);
+$unread_count = $notificationController->getUnreadCount($currentUserId);
 ?>
+<style>
+/* Header stability - keeps the top navbar firmly pinned/sticky on all scrolls across admin */
+.navbar.navbar-bg {
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1030 !important;
+    background: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(18, 38, 63, 0.08) !important;
+    backdrop-filter: blur(8px);
+    flex-shrink: 0 !important;
+}
+.notification-item.unread {
+    background-color: rgba(59, 125, 221, 0.06);
+    border-left: 3px solid #3b7ddd;
+}
+.notification-item:hover {
+    background-color: rgba(59, 125, 221, 0.12);
+}
+</style>
 <nav class="navbar navbar-expand navbar-light navbar-bg">
 	<a class="sidebar-toggle js-sidebar-toggle">
 		<i class="hamburger align-self-center"></i>
@@ -256,3 +277,38 @@ $unread_count = $notificationController->getUnreadCount($_SESSION['user_id']);
 		</ul>
 	</div>
 </nav>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const markAllReadBtn = document.getElementById('markAllRead');
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            fetch('notifications.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: 'action=mark_all_read'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const indicator = document.querySelector('#alertsDropdown .indicator');
+                    if (indicator) indicator.remove();
+                    const badgeHeader = document.querySelector('.dropdown-menu-header');
+                    if (badgeHeader) badgeHeader.textContent = '0 New Notifications';
+                    document.querySelectorAll('#notificationList .notification-item').forEach(item => {
+                        item.classList.remove('unread');
+                        const newBadge = item.querySelector('.badge.bg-primary');
+                        if (newBadge) newBadge.remove();
+                    });
+                    markAllReadBtn.remove();
+                }
+            })
+            .catch(err => console.error('Error marking all as read:', err));
+        });
+    }
+});
+</script>

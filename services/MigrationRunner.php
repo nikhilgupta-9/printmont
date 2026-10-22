@@ -391,4 +391,106 @@ class MigrationRunner
 
         return $statements;
     }
+
+    /**
+     * Get the raw SQL contents of a migration file safely.
+     */
+    public function getFileContent(string $name): ?string
+    {
+        $path = $this->dir . '/' . basename($name);
+        if (is_file($path) && is_readable($path)) {
+            return (string) file_get_contents($path);
+        }
+        return null;
+    }
+
+    /**
+     * Compute next sequential migration prefix (e.g. "022_").
+     */
+    public function getNextPrefix(): string
+    {
+        $available = $this->getAvailable();
+        $maxNum = 0;
+
+        foreach ($available as $file) {
+            if (preg_match('/^(\d+)_/i', $file, $matches)) {
+                $num = (int)$matches[1];
+                if ($num > $maxNum) {
+                    $maxNum = $num;
+                }
+            }
+        }
+
+        return sprintf('%03d_', $maxNum + 1);
+    }
+
+    /**
+     * Create a new migration .sql file in database/migrations/.
+     */
+    public function createMigrationFile(string $rawTitle, string $sqlContent): array
+    {
+        $slug = strtolower(trim($rawTitle));
+        $slug = preg_replace('/[^a-z0-9_]+/i', '_', $slug);
+        $slug = trim($slug, '_');
+
+        if (empty($slug)) {
+            return ['ok' => false, 'error' => 'Migration title cannot be empty.'];
+        }
+
+        $prefix = $this->getNextPrefix();
+        $filename = $prefix . $slug . '.sql';
+        $fullPath = $this->dir . '/' . $filename;
+
+        if (file_exists($fullPath)) {
+            return ['ok' => false, 'error' => "Migration file {$filename} already exists."];
+        }
+
+        if (!is_dir($this->dir) && !@mkdir($this->dir, 0755, true)) {
+            return ['ok' => false, 'error' => "Cannot create migrations directory."];
+        }
+
+        $header = "-- Migration: {$filename}\n-- Created at: " . date('Y-m-d H:i:s') . "\n\n";
+        $content = $header . trim($sqlContent) . "\n";
+
+        if (@file_put_contents($fullPath, $content) === false) {
+            return ['ok' => false, 'error' => "Failed to write file to {$fullPath}."];
+        }
+
+        return ['ok' => true, 'filename' => $filename, 'path' => $fullPath];
+    }
+
+    /**
+     * Get Database system stats & table count.
+     */
+    public function getDatabaseInfo(): array
+    {
+        $info = [
+            'db_name' => '',
+            'server_version' => '',
+            'tables_count' => 0,
+            'size_mb' => 0.0,
+            'charset' => 'utf8mb4'
+        ];
+
+        try {
+            $dbRes = $this->conn->query("SELECT DATABASE() as db_name, VERSION() as ver");
+            if ($dbRes && ($row = $dbRes->fetch_assoc())) {
+                $info['db_name'] = $row['db_name'] ?? '';
+                $info['server_version'] = $row['ver'] ?? '';
+            }
+
+            if (!empty($info['db_name'])) {
+                $tblRes = $this->conn->query("SELECT COUNT(*) as cnt, ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as size_mb FROM information_schema.tables WHERE table_schema = '{$info['db_name']}'");
+                if ($tblRes && ($tblRow = $tblRes->fetch_assoc())) {
+                    $info['tables_count'] = (int)($tblRow['cnt'] ?? 0);
+                    $info['size_mb'] = (float)($tblRow['size_mb'] ?? 0);
+                }
+            }
+        } catch (Throwable $e) {
+            // Ignore if permission denied on information_schema
+        }
+
+        return $info;
+    }
 }
+?>

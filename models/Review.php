@@ -121,21 +121,45 @@ class Review {
     // Create review
     public function create($data) {
         $query = "INSERT INTO {$this->table} 
-                 (product_id, user_id, customer_name, customer_email, rating, title, comment, status, is_verified) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                 (product_id, user_id, customer_name, customer_email, rating, title, comment, status, is_verified, occasion, city, images) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
+        $userId = $data['user_id'] ?? null;
+        $customerName = $data['customer_name'] ?? ($data['reviewer_name'] ?? 'Anonymous');
+        $customerEmail = $data['customer_email'] ?? null;
+        $rating = (int)($data['rating'] ?? 5);
+        $title = $data['title'] ?? ($data['review_title'] ?? '');
+        $comment = $data['comment'] ?? ($data['review_text'] ?? '');
+        $status = $data['status'] ?? 'pending';
+        $isVerified = isset($data['is_verified']) ? (int)$data['is_verified'] : 1;
+        $occasion = $data['occasion'] ?? null;
+        $city = $data['city'] ?? null;
+        $productId = (int)($data['product_id'] ?? 0);
+        
+        $images = null;
+        if (isset($data['images'])) {
+            if (is_array($data['images'])) {
+                $images = !empty($data['images']) ? json_encode(array_values($data['images'])) : null;
+            } elseif (is_string($data['images']) && !empty($data['images'])) {
+                $images = $data['images'];
+            }
+        }
+
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param(
-            "isssisssi",
-            $data['product_id'],
-            $data['user_id'],
-            $data['customer_name'],
-            $data['customer_email'],
-            $data['rating'],
-            $data['title'],
-            $data['comment'],
-            $data['status'],
-            $data['is_verified']
+            "iississsisss",
+            $productId,
+            $userId,
+            $customerName,
+            $customerEmail,
+            $rating,
+            $title,
+            $comment,
+            $status,
+            $isVerified,
+            $occasion,
+            $city,
+            $images
         );
         
         return $stmt->execute();
@@ -226,27 +250,47 @@ class Review {
         return $reviews;
     }
 
-    // Get rating distribution for a product
-    public function getProductRatingStats($product_id) {
-        $query = "SELECT 
-                    rating,
-                    COUNT(*) as count
-                  FROM {$this->table} 
-                  WHERE product_id = ? AND status = 'approved'
-                  GROUP BY rating
-                  ORDER BY rating DESC";
-        
+    // Get approved reviews for a category or all categories
+    public function getCategoryReviews($category_id = null, $limit = 20) {
+        $where_conditions = ["r.status = 'approved'"];
+        $params = [];
+        $types = "";
+
+        if (!empty($category_id)) {
+            $where_conditions[] = "(p.category_id = ? OR p.sub_category_id = ?)";
+            $params[] = (int)$category_id;
+            $params[] = (int)$category_id;
+            $types .= "ii";
+        }
+
+        $where_clause = implode(" AND ", $where_conditions);
+
+        $query = "SELECT r.*, 
+                         p.name as product_name,
+                         p.slug as product_slug,
+                         p.thumbnail_image as product_image
+                  FROM {$this->table} r
+                  LEFT JOIN products p ON r.product_id = p.id
+                  WHERE {$where_clause}
+                  ORDER BY r.created_at DESC
+                  LIMIT ?";
+
+        $params[] = (int)$limit;
+        $types .= "i";
+
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("i", $product_id);
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
         $stmt->execute();
         $result = $stmt->get_result();
-        
-        $stats = [];
+
+        $reviews = [];
         while ($row = $result->fetch_assoc()) {
-            $stats[$row['rating']] = $row['count'];
+            $reviews[] = $row;
         }
-        
-        return $stats;
+
+        return $reviews;
     }
 }
 ?>

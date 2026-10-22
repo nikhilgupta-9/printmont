@@ -1,15 +1,19 @@
 <?php
-require_once 'config/constants.php';
-require_once 'models/Database.php';
-require_once 'models/FooterBottomLink.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../models/FooterBottomLink.php';
 
 class FooterBottomLinkController {
     private $db;
     private $footerBottomLink;
 
-    public function __construct() {
-        $this->db = new Database();
-        $this->footerBottomLink = new FooterBottomLink($this->db->getConnection());
+    public function __construct($db = null) {
+        if ($db instanceof mysqli) {
+            $this->db = $db;
+        } else {
+            $database = new Database();
+            $this->db = $database->getConnection();
+        }
+        $this->footerBottomLink = new FooterBottomLink($this->db);
     }
 
     public function getAllBottomLinks() {

@@ -97,6 +97,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_application'])
                                             </p>
                                         </div>
                                         <div class="col-md-4 text-end">
+                                            <a href="http://localhost:5173/careers" target="_blank" class="btn btn-warning btn-sm me-1">
+                                                <i class="fas fa-external-link-alt me-1"></i> Live Careers Page
+                                            </a>
                                             <a href="careers.php" class="btn btn-light btn-sm">
                                                 <i class="fas fa-briefcase"></i> View Jobs
                                             </a>

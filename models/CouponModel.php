@@ -141,14 +141,17 @@ class CouponModel {
     public function createCoupon(array $d): int {
         return $this->db->insert(
             "INSERT INTO {$this->table}
-                (coupon_code, category_id, sub_category_id, sub_sub_category_id, carousel_type,
-                 discount_format, discount_value, min_order_value, quantity,
+                (coupon_code, title, description, category_id, sub_category_id, sub_sub_category_id, carousel_type,
+                 discount_format, discount_type, discount_value, min_order_value, quantity, max_uses,
                  start_date, end_date, status)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             [
-                $d['coupon_code'], $d['category_id'], $d['sub_category_id'], $d['sub_sub_category_id'],
-                $d['carousel_type'], $d['discount_format'], $d['discount_value'], $d['min_order_value'],
-                $d['quantity'], $d['start_date'], $d['end_date'], $d['status'],
+                $d['coupon_code'], $d['title'] ?? null, $d['description'] ?? null,
+                $d['category_id'], $d['sub_category_id'], $d['sub_sub_category_id'],
+                $d['carousel_type'], $d['discount_format'], $d['discount_format'],
+                $d['discount_value'], $d['min_order_value'],
+                $d['quantity'], $d['quantity'],
+                $d['start_date'], $d['end_date'], $d['status'],
             ]
         );
     }
@@ -156,15 +159,55 @@ class CouponModel {
     public function updateCoupon(int $id, array $d): bool {
         return $this->db->execute(
             "UPDATE {$this->table} SET
-                coupon_code = ?, category_id = ?, sub_category_id = ?, sub_sub_category_id = ?,
-                carousel_type = ?, discount_format = ?, discount_value = ?, min_order_value = ?,
-                quantity = ?, start_date = ?, end_date = ?, status = ?
+                coupon_code = ?, title = ?, description = ?, category_id = ?, sub_category_id = ?, sub_sub_category_id = ?,
+                carousel_type = ?, discount_format = ?, discount_type = ?, discount_value = ?, min_order_value = ?,
+                quantity = ?, max_uses = ?, start_date = ?, end_date = ?, status = ?
              WHERE id = ?",
             [
-                $d['coupon_code'], $d['category_id'], $d['sub_category_id'], $d['sub_sub_category_id'],
-                $d['carousel_type'], $d['discount_format'], $d['discount_value'], $d['min_order_value'],
-                $d['quantity'], $d['start_date'], $d['end_date'], $d['status'], $id,
+                $d['coupon_code'], $d['title'] ?? null, $d['description'] ?? null,
+                $d['category_id'], $d['sub_category_id'], $d['sub_sub_category_id'],
+                $d['carousel_type'], $d['discount_format'], $d['discount_format'],
+                $d['discount_value'], $d['min_order_value'],
+                $d['quantity'], $d['quantity'],
+                $d['start_date'], $d['end_date'], $d['status'], $id,
             ]
+        );
+    }
+
+    public function getActiveCouponsForCustomer(): array {
+        return $this->db->fetchAll(
+            "SELECT c.*,
+                    mc.name  AS category_name,
+                    sc.name  AS sub_category_name,
+                    ssc.name AS sub_sub_category_name
+             FROM {$this->table} c
+             LEFT JOIN categories mc  ON mc.id  = c.category_id
+             LEFT JOIN categories sc  ON sc.id  = c.sub_category_id
+             LEFT JOIN categories ssc ON ssc.id = c.sub_sub_category_id
+             WHERE c.status = 'active'
+               AND (c.start_date IS NULL OR c.start_date <= CURDATE())
+               AND (c.end_date IS NULL OR c.end_date >= CURDATE())
+               AND (c.quantity = 0 OR c.used_count < c.quantity)
+             ORDER BY c.discount_value DESC, c.id DESC"
+        );
+    }
+
+    public function getAllCouponsForCustomer(): array {
+        return $this->db->fetchAll(
+            "SELECT c.*,
+                    mc.name  AS category_name,
+                    sc.name  AS sub_category_name,
+                    ssc.name AS sub_sub_category_name
+             FROM {$this->table} c
+             LEFT JOIN categories mc  ON mc.id  = c.category_id
+             LEFT JOIN categories sc  ON sc.id  = c.sub_category_id
+             LEFT JOIN categories ssc ON ssc.id = c.sub_sub_category_id
+             ORDER BY 
+                CASE 
+                    WHEN c.status = 'active' AND (c.end_date IS NULL OR c.end_date >= CURDATE()) THEN 1 
+                    ELSE 2 
+                END,
+                c.id DESC"
         );
     }
 

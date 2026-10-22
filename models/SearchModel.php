@@ -199,7 +199,9 @@ class SearchModel {
         }
 
         if ($categoryId) {
-            $whereClause[] = "(p.category_id = ? OR c.parent_id = ?)";
+            $whereClause[] = "(p.category_id = ? OR p.sub_category_id = ? OR p.sub_sub_category_id = ? OR c.parent_id = ?)";
+            $queryParams[] = $categoryId;
+            $queryParams[] = $categoryId;
             $queryParams[] = $categoryId;
             $queryParams[] = $categoryId;
         }

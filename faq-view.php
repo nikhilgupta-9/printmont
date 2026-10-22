@@ -155,14 +155,17 @@ $form_title = $faq_id ? 'Edit FAQ' : 'Add New FAQ';
                         </div>
 
                         <div class="col-auto ms-auto text-end mt-n1">
+                            <a href="http://localhost:5173/faq" target="_blank" class="btn btn-warning me-2">
+                                <i class="fas fa-external-link-alt me-1"></i> Live FAQ Page
+                            </a>
                             <?php if ($faq_id): ?>
                                 <a href="faq-view.php" class="btn btn-light bg-white me-2">
                                     <i class="fas fa-arrow-left"></i> Back to List
                                 </a>
                             <?php else: ?>
-                                <a href="faq-view-category.php" class="btn btn-info" >
-                                    <i class="fas fa-plus"></i> Add New FAQ Category
-                            </a>
+                                <a href="faq-view-category.php" class="btn btn-info me-2">
+                                    <i class="fas fa-layer-group"></i> FAQ Categories
+                                </a>
                                 <button type="button" class="btn btn-primary" onclick="showAddForm()">
                                     <i class="fas fa-plus"></i> Add New FAQ
                                 </button>

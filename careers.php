@@ -88,11 +88,14 @@ foreach ($applications as $app) {
                                             <p class="card-text text-white-50 mb-0">Manage job postings and applications</p>
                                         </div>
                                         <div class="col-md-4 text-end">
-                                            <a href="add-career.php" class="btn btn-light btn-sm">
-                                                <i class="fas fa-plus me-1"></i> Add Job Posting
+                                            <a href="http://localhost:5173/careers" target="_blank" class="btn btn-warning btn-sm me-1">
+                                                <i class="fas fa-external-link-alt me-1"></i> Live Careers Page
+                                            </a>
+                                            <a href="add-career.php" class="btn btn-light btn-sm me-1">
+                                                <i class="fas fa-plus me-1"></i> Add Job
                                             </a>
                                             <a href="career-applications.php" class="btn btn-outline-light btn-sm">
-                                                <i class="fas fa-users me-1"></i> View Applications
+                                                <i class="fas fa-users me-1"></i> Applications
                                             </a>
                                         </div>
                                     </div>
@@ -241,6 +244,9 @@ foreach ($applications as $app) {
                                                         </td>
                                                         <td class="text-center action-buttons">
                                                             <div class="btn-group" role="group">
+                                                                <a href="http://localhost:5173/careers/<?php echo !empty($career['slug']) ? $career['slug'] : $career['id']; ?>" target="_blank" class="btn btn-sm btn-outline-warning" title="View on Live Website" data-bs-toggle="tooltip">
+                                                                    <i class="fas fa-external-link-alt"></i>
+                                                                </a>
                                                                 <a href="careers.php?id=<?php echo $career['id']; ?>" class="btn btn-sm btn-outline-info" title="View Details" data-bs-toggle="tooltip">
                                                                     <i class="fas fa-eye"></i>
                                                                 </a>

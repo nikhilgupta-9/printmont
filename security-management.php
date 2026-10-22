@@ -54,31 +54,85 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
             <main class="content">
                 <div class="container-fluid p-0">
 
-                    <div class="row mb-3">
-                        <div class="col-auto">
-                            <h3><strong>Security</strong> Page</h3>
-                            <p class="text-muted mb-0">
-                                Shown on the storefront Security page and served by
-                                <code>api/security-api.php</code>.
+                    <div class="row mb-3 align-items-center">
+                        <div class="col-md-6">
+                            <h3 class="fw-bold mb-0 text-dark">
+                                <i class="fas fa-shield-alt text-primary me-2"></i>Security Page Management
+                            </h3>
+                            <p class="text-muted small mb-0">
+                                Manage trust questions &amp; answers served to <code>/security</code> via <code>api/security-api.php</code>.
                             </p>
+                        </div>
+                        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                            <a href="http://localhost:5173/security" target="_blank" class="btn btn-outline-primary">
+                                <i class="fas fa-external-link-alt me-1"></i> View Live Security Page
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Stats Row -->
+                    <?php 
+                        $totalCount = count($sections);
+                        $activeCount = count(array_filter($sections, fn($s) => ($s['status'] ?? '') === 'active'));
+                        $inactiveCount = $totalCount - $activeCount;
+                    ?>
+                    <div class="row mb-4">
+                        <div class="col-sm-4">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h6 class="text-muted small mb-1">Total Q&amp;A Items</h6>
+                                        <h3 class="fw-bold mb-0 text-dark"><?php echo $totalCount; ?></h3>
+                                    </div>
+                                    <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-circle">
+                                        <i class="fas fa-shield-alt fa-lg"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h6 class="text-muted small mb-1">Active on Storefront</h6>
+                                        <h3 class="fw-bold mb-0 text-success"><?php echo $activeCount; ?></h3>
+                                    </div>
+                                    <div class="bg-success bg-opacity-10 text-success p-2 rounded-circle">
+                                        <i class="fas fa-check-circle fa-lg"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h6 class="text-muted small mb-1">Inactive / Drafts</h6>
+                                        <h3 class="fw-bold mb-0 text-secondary"><?php echo $inactiveCount; ?></h3>
+                                    </div>
+                                    <div class="bg-secondary bg-opacity-10 text-secondary p-2 rounded-circle">
+                                        <i class="fas fa-pause-circle fa-lg"></i>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <?php if ($success_message): ?>
-                        <div class="alert alert-success alert-dismissible" role="alert">
-                            <div class="alert-message"><?php echo htmlspecialchars($success_message); ?></div>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i><?php echo htmlspecialchars($success_message); ?>
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     <?php endif; ?>
                     <?php if ($error_message): ?>
-                        <div class="alert alert-danger alert-dismissible" role="alert">
-                            <div class="alert-message"><?php echo htmlspecialchars($error_message); ?></div>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i><?php echo htmlspecialchars($error_message); ?>
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     <?php endif; ?>
 
                     <!-- Add new -->
-                    <div class="section-box">
+                    <div class="section-box shadow-sm border-0">
                         <h5 class="fw-bold mb-3">Add a section</h5>
                         <form method="POST" action="security-management.php">
                             <input type="hidden" name="action" value="add">

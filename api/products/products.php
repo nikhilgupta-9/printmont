@@ -38,6 +38,43 @@ $response = [];
 try {
     switch ($action) {
         // ── Product flag-based sections ────────────────────────────────
+        case 'handpicked':
+        case 'custom':
+            $idsStr = $_GET['ids'] ?? $_GET['product_ids'] ?? '';
+            $ids = array_filter(array_map('intval', explode(',', $idsStr)));
+            if (!empty($ids)) {
+                $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                $query = "SELECT id, name, price, regular_price, offer_price, thumbnail_image, product_slug, category_id, sku, status 
+                          FROM products WHERE id IN ($placeholders) 
+                          ORDER BY FIELD(id, " . implode(',', $ids) . ")";
+                $rawProds = $database->fetchAll($query, $ids);
+                $formatted = [];
+                foreach ($rawProds as $p) {
+                    $formatted[] = [
+                        'id' => (int)$p['id'],
+                        'title' => $p['name'],
+                        'name' => $p['name'],
+                        'slug' => $p['product_slug'],
+                        'price' => (float)$p['price'],
+                        'regular_price' => (float)($p['regular_price'] ?: $p['price']),
+                        'selling_price' => (float)($p['offer_price'] ?: $p['price']),
+                        'offer_price' => (float)($p['offer_price'] ?: $p['price']),
+                        'image' => $p['thumbnail_image'],
+                        'thumbnail_image' => $p['thumbnail_image'],
+                        'rating' => 4.8,
+                        'reviews' => 12
+                    ];
+                }
+                $response = [
+                    'success' => true,
+                    'data'    => $limit ? array_slice($formatted, 0, $limit) : $formatted,
+                    'total'   => count($formatted)
+                ];
+            } else {
+                $response = ['success' => true, 'data' => []];
+            }
+            break;
+
         case 'bestseller':
             $products = $productController->getBestsellerProductsApi();
             $response = [

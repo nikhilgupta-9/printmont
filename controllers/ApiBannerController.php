@@ -100,8 +100,18 @@ class ApiBannerController {
                 'desktop' => $baseUrl . $b['image_url_desktop'],
                 'mobile'  => $baseUrl . $b['image_url_mobile'],
             ],
-            'target_url'    => $b['target_url'],
-            'display_order' => (int) $b['display_order'],
+            'target_url'         => $b['target_url'],
+            'display_order'      => (int) $b['display_order'],
+            'desktop_design'     => $b['desktop_design'] ?? 'desktop_format_1',
+            'mobile_design'      => $b['mobile_design'] ?? 'mobile_format_1',
+            'button_arrows'      => $b['button_arrows'] ?? 'enable',
+            'auto_running'       => $b['auto_running'] ?? 'enable',
+            'auto_play_speed'    => (int)($b['auto_run_speed'] ?? $b['auto_play_speed'] ?? 3000),
+            'auto_run_speed'     => (int)($b['auto_run_speed'] ?? $b['auto_play_speed'] ?? 3000),
+            'position_relation'  => $b['position_relation'] ?? 'after',
+            'target_section'     => $b['target_section'] ?? 'home_hero',
+            'placement_rules'    => $b['placement_rules'] ?? null,
+            'target_pages'       => $b['target_pages'] ?? 'home',
         ];
     }
 
@@ -127,7 +137,11 @@ class ApiBannerController {
         header('Content-Type: application/json');
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: GET, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Cache-Control, Pragma');
+        header('Access-Control-Max-Age: 86400');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
     }
 
     private function baseUrl(): string {

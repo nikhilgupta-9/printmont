@@ -187,7 +187,7 @@ class Database {
         foreach ($attempts as $index => $attempt) {
             $conn = @new mysqli($attempt['host'], $attempt['username'], $attempt['password'], $attempt['db_name']);
             if ($conn && !$conn->connect_error) {
-                $conn->set_charset('utf8');
+                $conn->set_charset('utf8mb4');
                 $this->conn = $conn;
                 return $this->conn;
             }
@@ -195,11 +195,11 @@ class Database {
 
         // 2. Try PDO fallback (which works on Hostinger)
         $dsns = [
-            "mysql:host={$this->host};dbname={$this->db_name};charset=utf8",
-            "mysql:host=127.0.0.1;dbname={$this->db_name};charset=utf8",
-            "mysql:host=localhost;dbname={$this->db_name};charset=utf8",
-            "mysql:unix_socket=/var/lib/mysql/mysql.sock;dbname={$this->db_name};charset=utf8",
-            "mysql:unix_socket=/tmp/mysql.sock;dbname={$this->db_name};charset=utf8"
+            "mysql:host={$this->host};dbname={$this->db_name};charset=utf8mb4",
+            "mysql:host=127.0.0.1;dbname={$this->db_name};charset=utf8mb4",
+            "mysql:host=localhost;dbname={$this->db_name};charset=utf8mb4",
+            "mysql:unix_socket=/var/lib/mysql/mysql.sock;dbname={$this->db_name};charset=utf8mb4",
+            "mysql:unix_socket=/tmp/mysql.sock;dbname={$this->db_name};charset=utf8mb4"
         ];
 
         foreach ($dsns as $dsn) {

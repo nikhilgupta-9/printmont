@@ -62,8 +62,8 @@ class HomeLayoutModel {
         return $this->db->insert(
             "INSERT INTO {$this->table}
              (page_target, section_type, section_key, label, columns_per_row, is_slider, 
-              api_action, product_limit, badge_text, background_image_url, display_order, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              api_action, category_ids, sub_category_ids, product_ids, product_limit, badge_text, background_image_url, display_order, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['page_target'],
                 $data['section_type'],
@@ -72,6 +72,9 @@ class HomeLayoutModel {
                 $data['columns_per_row'] ?? 1,
                 $data['is_slider'] ?? 0,
                 $data['api_action'] ?? null,
+                $data['category_ids'] ?? null,
+                $data['sub_category_ids'] ?? null,
+                $data['product_ids'] ?? null,
                 $data['product_limit'] ?? null,
                 $data['badge_text'] ?? null,
                 $data['background_image_url'] ?? null,
@@ -87,15 +90,20 @@ class HomeLayoutModel {
     public function updateSection(int $id, array $data): bool {
         return (bool)$this->db->execute(
             "UPDATE {$this->table} SET
-             label = ?, columns_per_row = ?, is_slider = ?, api_action = ?, 
+             section_type = ?, label = ?, columns_per_row = ?, is_slider = ?, api_action = ?, 
+             category_ids = ?, sub_category_ids = ?, product_ids = ?,
              product_limit = ?, badge_text = ?, background_image_url = ?, status = ?,
              updated_at = NOW()
              WHERE id = ?",
             [
+                $data['section_type'],
                 $data['label'],
                 $data['columns_per_row'] ?? 1,
                 $data['is_slider'] ?? 0,
                 $data['api_action'] ?? null,
+                $data['category_ids'] ?? null,
+                $data['sub_category_ids'] ?? null,
+                $data['product_ids'] ?? null,
                 $data['product_limit'] ?? null,
                 $data['badge_text'] ?? null,
                 $data['background_image_url'] ?? null,

@@ -195,7 +195,12 @@ function couponIsExpired(array $c): bool {
                                             <?php foreach ($coupons as $c): $rowNum++; ?>
                                                 <tr>
                                                     <td><?php echo $rowNum; ?></td>
-                                                    <td><span class="coupon-code"><?php echo htmlspecialchars($c['coupon_code']); ?></span></td>
+                                                    <td>
+                                                        <span class="coupon-code badge bg-light text-primary border px-2 py-1 fs-6"><?php echo htmlspecialchars($c['coupon_code']); ?></span>
+                                                        <?php if (!empty($c['title'])): ?>
+                                                            <br><small class="text-muted fw-semibold" style="font-size: 0.78rem;"><?php echo htmlspecialchars($c['title']); ?></small>
+                                                        <?php endif; ?>
+                                                    </td>
                                                     <td>
                                                         <?php if ($c['discount_format'] === 'percentage'): ?>
                                                             <?php echo rtrim(rtrim(number_format((float)$c['discount_value'], 2), '0'), '.'); ?>%

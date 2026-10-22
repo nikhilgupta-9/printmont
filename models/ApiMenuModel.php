@@ -9,15 +9,23 @@ class ApiMenuModel {
         $this->db = new Database();
     }
 
-    // Categories flagged to show ON the home page, for one device.
+    // Categories flagged to show in the top menu/bar for one device.
     public function getHomeMenu(string $device): array {
-        $showCol  = $device === 'mobile' ? 'mobile_home_show'  : 'desktop_home_show';
-        $orderCol = $device === 'mobile' ? 'mobile_home_order' : 'desktop_home_order';
+        $statusCol = $device === 'mobile' ? 'mobile_topbar_status' : 'desktop_menu_status';
+        $menuOrderCol = $device === 'mobile' ? 'mobile_topbar_order' : 'desktop_menu_order';
 
         return $this->db->fetchAll(
             "SELECT * FROM {$this->table}
-             WHERE status = 'active' AND {$showCol} = 'yes'
-             ORDER BY {$orderCol} ASC, display_order ASC limit 12"
+             WHERE status = 'active' AND {$statusCol} = 'show'
+             ORDER BY 
+                CASE 
+                    WHEN {$menuOrderCol} > 0 THEN {$menuOrderCol}
+                    WHEN display_order > 0 THEN display_order 
+                    ELSE 999999 
+                END ASC, 
+                display_order ASC, 
+                name ASC 
+             LIMIT 25"
         );
     }
 
@@ -26,7 +34,14 @@ class ApiMenuModel {
         return $this->db->fetchAll(
             "SELECT * FROM {$this->table}
              WHERE status = 'active'
-             ORDER BY display_order ASC, name ASC"
+             ORDER BY 
+                CASE 
+                    WHEN desktop_menu_order > 0 THEN desktop_menu_order
+                    WHEN display_order > 0 THEN display_order 
+                    ELSE 999999 
+                END ASC, 
+                display_order ASC, 
+                name ASC"
         );
     }
 }  

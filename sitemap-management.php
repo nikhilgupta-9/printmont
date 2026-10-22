@@ -151,61 +151,89 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
 
                     <!-- Stats Row -->
                     <div class="row mb-4">
-                        <div class="col-sm-6 col-xl-3">
-                            <div class="card shadow-sm border-0">
+                        <div class="col-sm-6 col-xl-2">
+                            <div class="card shadow-sm border-0 h-100">
                                 <div class="card-body d-flex align-items-center justify-content-between p-3">
                                     <div>
-                                        <h6 class="text-muted small mb-1">Total Configured URLs</h6>
-                                        <h3 class="fw-bold mb-0 text-dark"><?php echo count($entries); ?></h3>
+                                        <h6 class="text-muted small mb-1">Total XML URLs</h6>
+                                        <h3 class="fw-bold mb-0 text-primary"><?php echo $stats['total_urls'] ?? 0; ?></h3>
                                     </div>
                                     <div class="stat-card-icon bg-primary bg-opacity-10 text-primary">
+                                        <i class="fas fa-sitemap"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6 col-xl-2">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body d-flex align-items-center justify-content-between p-3">
+                                    <div>
+                                        <h6 class="text-muted small mb-1">Live Categories</h6>
+                                        <h3 class="fw-bold mb-0 text-success"><?php echo $stats['categories_count'] ?? 0; ?></h3>
+                                        <span class="badge bg-success-subtle text-success small" style="font-size: 10px;">Auto Sync</span>
+                                    </div>
+                                    <div class="stat-card-icon bg-success bg-opacity-10 text-success">
+                                        <i class="fas fa-store"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6 col-xl-2">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body d-flex align-items-center justify-content-between p-3">
+                                    <div>
+                                        <h6 class="text-muted small mb-1">Live Products</h6>
+                                        <h3 class="fw-bold mb-0 text-info"><?php echo $stats['products_count'] ?? 0; ?></h3>
+                                        <span class="badge bg-info-subtle text-info small" style="font-size: 10px;">Auto Sync</span>
+                                    </div>
+                                    <div class="stat-card-icon bg-info bg-opacity-10 text-info">
+                                        <i class="fas fa-boxes-stacked"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6 col-xl-2">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body d-flex align-items-center justify-content-between p-3">
+                                    <div>
+                                        <h6 class="text-muted small mb-1">Blog Articles</h6>
+                                        <h3 class="fw-bold mb-0 text-warning"><?php echo $stats['blogs_count'] ?? 0; ?></h3>
+                                        <span class="badge bg-warning-subtle text-warning small" style="font-size: 10px;">Auto Sync</span>
+                                    </div>
+                                    <div class="stat-card-icon bg-warning bg-opacity-10 text-warning">
+                                        <i class="fas fa-newspaper"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6 col-xl-2">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body d-flex align-items-center justify-content-between p-3">
+                                    <div>
+                                        <h6 class="text-muted small mb-1">Custom Overrides</h6>
+                                        <h3 class="fw-bold mb-0 text-dark"><?php echo $stats['custom_entries_count'] ?? 0; ?></h3>
+                                    </div>
+                                    <div class="stat-card-icon bg-secondary bg-opacity-10 text-secondary">
                                         <i class="fas fa-link"></i>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="col-sm-6 col-xl-3">
-                            <div class="card shadow-sm border-0">
+                        <div class="col-sm-6 col-xl-2">
+                            <div class="card shadow-sm border-0 h-100">
                                 <div class="card-body d-flex align-items-center justify-content-between p-3">
                                     <div>
-                                        <h6 class="text-muted small mb-1">Total XML URLs</h6>
-                                        <h3 class="fw-bold mb-0 text-success"><?php echo $stats['total_urls'] ?? count($entries); ?></h3>
+                                        <h6 class="text-muted small mb-1">XML Status</h6>
+                                        <span class="badge bg-success p-1 px-2 mb-1">Live &amp; Synced</span>
+                                        <div class="text-muted" style="font-size: 10px;">Auto Generated</div>
                                     </div>
                                     <div class="stat-card-icon bg-success bg-opacity-10 text-success">
-                                        <i class="fas fa-file-code"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-sm-6 col-xl-3">
-                            <div class="card shadow-sm border-0">
-                                <div class="card-body d-flex align-items-center justify-content-between p-3">
-                                    <div>
-                                        <h6 class="text-muted small mb-1">XML Sitemap Status</h6>
-                                        <h4 class="fw-bold mb-0 text-<?php echo !empty($stats['xml_exists']) ? 'success' : 'warning'; ?>">
-                                            <?php echo !empty($stats['xml_exists']) ? 'Generated & Live' : 'Not Generated'; ?>
-                                        </h4>
-                                    </div>
-                                    <div class="stat-card-icon bg-info bg-opacity-10 text-info">
-                                        <i class="fas fa-check-double"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-sm-6 col-xl-3">
-                            <div class="card shadow-sm border-0">
-                                <div class="card-body d-flex align-items-center justify-content-between p-3">
-                                    <div>
-                                        <h6 class="text-muted small mb-1">Last Generated</h6>
-                                        <span class="small fw-semibold text-dark">
-                                            <?php echo !empty($stats['last_generated']) ? date('M j, Y g:i A', strtotime($stats['last_generated'])) : 'Never'; ?>
-                                        </span>
-                                    </div>
-                                    <div class="stat-card-icon bg-secondary bg-opacity-10 text-secondary">
-                                        <i class="far fa-clock"></i>
+                                        <i class="fas fa-check-circle"></i>
                                     </div>
                                 </div>
                             </div>

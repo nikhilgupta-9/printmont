@@ -138,8 +138,12 @@ function pe_collect(array $part, array $existing, string $pageKey): array
     $splits = [];
 
     foreach ($part['fields'] as $field) {
-        $column = $field['column'];
+        $column = $field['column'] ?? null;
         $name = $field['name'];
+
+        if (!$column) {
+            continue; // helper UI field (e.g. store_product_picker)
+        }
 
         if (($field['input'] ?? 'text') === 'image') {
             $current = $values[$column];
@@ -150,6 +154,8 @@ function pe_collect(array $part, array $existing, string $pageKey): array
             } elseif (!empty($_POST[$name . '__remove'])) {
                 pe_drop_image($current);
                 $values[$column] = '';
+            } elseif (!empty($_POST['selected_store_image'])) {
+                $values[$column] = trim((string) $_POST['selected_store_image']);
             }
             continue;
         }

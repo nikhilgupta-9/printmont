@@ -12,12 +12,28 @@ class NotificationController {
         return $this->notificationModel->getUserNotifications($user_id, $limit, $unread_only);
     }
 
+    public function getPaginatedNotifications($user_id, $page = 1, $limit = 10, $filter = 'all') {
+        return $this->notificationModel->getPaginatedNotifications($user_id, $page, $limit, $filter);
+    }
+
     public function getUnreadCount($user_id) {
         return $this->notificationModel->getUnreadCount($user_id);
     }
 
     public function getNotification($notification_id) {
         return $this->notificationModel->getNotificationById($notification_id);
+    }
+
+    public function getNotificationDetail($notification_id, $user_id) {
+        $item = $this->notificationModel->getNotificationDetail($notification_id, $user_id);
+        if ($item) {
+            $item['time_ago'] = $this->formatNotificationTime($item['created_at']);
+            $item['formatted_date'] = date('M j, Y g:i A', strtotime($item['created_at']));
+            $item['color'] = $this->getNotificationColor($item['type']);
+            $item['fa_icon'] = $this->getNotificationFontAwesomeIcon($item['type'], $item['icon']);
+            $item['feather_icon'] = $this->getNotificationIcon($item['type'], $item['icon']);
+        }
+        return $item;
     }
 
     public function markAsRead($notification_id, $user_id) {

@@ -97,11 +97,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <p class="card-text text-white-50 mb-0">Manage help categories, articles, and FAQs</p>
                                         </div>
                                         <div class="col-md-4 text-end">
-                                            <a href="add-category.php" class="btn btn-light btn-sm">
-                                                <i class="fas fa-plus"></i> Add Category
+                                            <a href="http://localhost:5173/help-center" target="_blank" class="btn btn-warning btn-sm me-1">
+                                                <i class="fas fa-external-link-alt me-1"></i> Live Help Center
                                             </a>
-                                            <a href="add-article.php" class="btn btn-outline-light btn-sm">
-                                                <i class="fas fa-file-alt"></i> Add Article
+                                            <a href="add-category.php" class="btn btn-light btn-sm me-1">
+                                                <i class="fas fa-plus"></i> Category
                                             </a>
                                             <a href="add-faq.php" class="btn btn-outline-light btn-sm">
                                                 <i class="fas fa-question-circle"></i> Add FAQ

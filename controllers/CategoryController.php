@@ -25,10 +25,6 @@ class CategoryController
         return $this->category->getById($id);
     }
 
-    // public function createCategory($data)
-    // {
-    //     return $this->category->create($data);
-    // }
 
     public function updateCategory($id, $data)
     {
@@ -189,15 +185,24 @@ class CategoryController
     {
         $e = fn($v) => $this->db->real_escape_string($v ?? '');
 
-        $cols = ['name','slug','description','parent_id','image','icon','status','display_order','is_featured','level',
-                 'desktop_menu_status','desktop_menu_order','desktop_menu_view','desktop_menu_design','desktop_menu_tag','desktop_menu_image',
-                 'desktop_home_show','desktop_home_design','desktop_home_order','desktop_bg_color','desktop_bg_image','desktop_image',
-                 'mobile_topbar_status','mobile_topbar_order','mobile_menu_view','mobile_menu_design','mobile_sidebar_order',
-                 'mobile_home_show','mobile_home_design','mobile_home_format','mobile_home_order','mobile_bg_color','mobile_bg_image','mobile_image',
+        if (empty($data['slug']) && !empty($data['name'])) {
+            $baseSlug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $data['name']), '-'));
+            $slug = $baseSlug;
+            $c = 1;
+            while ($this->checkCategoryExists('', $slug)) {
+                $slug = $baseSlug . '-' . $c;
+                $c++;
+            }
+            $data['slug'] = $slug;
+        }
+
+        $cols = ['name','slug','custom_url','description','parent_id','image','icon','status','display_order','is_featured','level',
+                 'desktop_menu_title','desktop_menu_status','desktop_menu_order','desktop_menu_view','desktop_menu_design','desktop_menu_tag','desktop_menu_image',
+                 'mobile_topbar_title','mobile_topbar_status','mobile_topbar_order','mobile_menu_view','mobile_menu_design','mobile_sidebar_order',
                  'meta_title','meta_keywords','meta_description'];
 
         $intCols = ['parent_id','display_order','is_featured','level',
-                    'desktop_menu_order','desktop_home_order','mobile_topbar_order','mobile_sidebar_order','mobile_home_order'];
+                    'desktop_menu_order','mobile_topbar_order','mobile_sidebar_order'];
 
         $setParts = [];
         $vals     = [];
@@ -208,7 +213,10 @@ class CategoryController
         }
 
         $sql = "INSERT INTO categories (" . implode(',', $setParts) . ", created_at) VALUES (" . implode(',', $vals) . ", NOW())";
-        return $this->db->query($sql);
+        if ($this->db->query($sql)) {
+            return $this->db->insert_id ?: true;
+        }
+        return false;
     }
 
     // Check if category exists

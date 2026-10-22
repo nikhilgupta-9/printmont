@@ -21,7 +21,8 @@ class HomeLayoutController {
         
         // For banner/slider sections, fetch their associated banner images
         foreach ($sections as &$section) {
-            if ($section['section_type'] === 'slider' || $section['section_type'] === 'banner') {
+            $isBannerType = in_array($section['section_type'], ['slider', 'banner', 'banner_category_slider', 'one_and_half_carousel', 'peeking_slider', 'small_banner_carousel', 'small_banner_slider', 'small_height_carousel']);
+            if ($isBannerType) {
                 $sectionDbRow = $this->db->fetch(
                     "SELECT id FROM banner_sections WHERE section_key = ? LIMIT 1",
                     [$section['section_key']]
@@ -72,7 +73,8 @@ class HomeLayoutController {
         }
 
         // If it's a banner/slider section, clean up associated banners and files
-        if ($section['section_type'] === 'slider' || $section['section_type'] === 'banner') {
+        $isBannerType = in_array($section['section_type'], ['slider', 'banner', 'banner_category_slider', 'one_and_half_carousel', 'peeking_slider', 'small_banner_carousel', 'small_banner_slider', 'small_height_carousel']);
+        if ($isBannerType) {
             $sectionDbRow = $this->db->fetch(
                 "SELECT id FROM banner_sections WHERE section_key = ? LIMIT 1",
                 [$section['section_key']]
@@ -106,6 +108,92 @@ class HomeLayoutController {
     }
 
     /**
+     * Duplicate a section structure.
+     */
+    public function duplicateSection(int $id): array {
+        $section = $this->layoutModel->getSectionById($id);
+        if (!$section) {
+            return ['success' => false, 'error' => 'Section not found.'];
+        }
+
+        $newKey = $section['section_key'] . '_copy_' . time();
+        $baseLabel = !empty(trim($section['label'] ?? '')) ? trim($section['label']) : ucwords(str_replace(['_', '-'], ' ', $section['section_key']));
+        $newLabel = $baseLabel . ' (Copy)';
+
+        // Position directly below the source section
+        $targetOrder = (int)$section['display_order'] + 1;
+        $this->db->execute(
+            "UPDATE home_sections SET display_order = display_order + 1 WHERE page_target = ? AND display_order >= ?",
+            [$section['page_target'], $targetOrder]
+        );
+
+        $data = [
+            'page_target' => $section['page_target'],
+            'section_type' => $section['section_type'],
+            'section_key' => $newKey,
+            'label' => $newLabel,
+            'columns_per_row' => $section['columns_per_row'],
+            'is_slider' => $section['is_slider'],
+            'api_action' => $section['api_action'],
+            'category_ids' => $section['category_ids'] ?? null,
+            'sub_category_ids' => $section['sub_category_ids'] ?? null,
+            'product_ids' => $section['product_ids'] ?? null,
+            'product_limit' => $section['product_limit'],
+            'badge_text' => $section['badge_text'],
+            'background_image_url' => $section['background_image_url'],
+            'display_order' => $targetOrder,
+            'status' => $section['status'] ?? 'active'
+        ];
+
+        $newId = $this->layoutModel->createSection($data);
+        if (!$newId) {
+            return ['success' => false, 'error' => 'Failed to duplicate section.'];
+        }
+
+        // If it's a banner/slider type, duplicate banner_sections and banner images
+        $isBannerType = in_array($section['section_type'], ['slider', 'banner', 'banner_category_slider', 'one_and_half_carousel', 'peeking_slider', 'small_banner_carousel', 'small_banner_slider', 'small_height_carousel']);
+        if ($isBannerType) {
+            $origBannerSec = $this->db->fetch(
+                "SELECT id FROM banner_sections WHERE section_key = ? LIMIT 1",
+                [$section['section_key']]
+            );
+            if ($origBannerSec) {
+                $newBannerSectionId = $this->db->insert(
+                    "INSERT INTO banner_sections (page, section_key, label, columns_per_row, is_slider, status) 
+                     VALUES (?, ?, ?, ?, ?, 'active')",
+                    [$section['page_target'], $newKey, $newLabel, $section['columns_per_row'], $section['is_slider']]
+                );
+
+                if ($newBannerSectionId) {
+                    $originalBanners = $this->bannerModel->getBannersBySection((int)$origBannerSec['id']);
+                    foreach ($originalBanners as $b) {
+                        $this->bannerModel->createBanner([
+                            'title' => $b['title'] ?? 'Banner',
+                            'description' => $b['description'] ?? '',
+                            'image_url_desktop' => $b['image_url_desktop'] ?? '',
+                            'image_url_mobile' => $b['image_url_mobile'] ?? '',
+                            'target_url' => $b['target_url'] ?? '',
+                            'section_id' => $newBannerSectionId,
+                            'display_order' => $b['display_order'] ?? 1,
+                            'status' => 'active',
+                            'start_date' => $b['start_date'] ?? null,
+                            'end_date' => $b['end_date'] ?? null
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Section duplicated successfully!',
+            'id' => $newId,
+            'display_order' => $targetOrder,
+            'page_target' => $section['page_target']
+        ];
+    }
+
+    /**
      * Create a layout section (Banners, Sliders, or Products).
      */
     public function createSection(array $post, array $files): array {
@@ -113,23 +201,24 @@ class HomeLayoutController {
         $sectionType = $post['section_type'] ?? '';
         $label = trim($post['label'] ?? '');
 
-        if (empty($sectionType) || empty($label)) {
-            return ['success' => false, 'error' => 'Section type and label are required.'];
+        if (empty($sectionType)) {
+            return ['success' => false, 'error' => 'Section type is required.'];
         }
 
         // Determine section key
         $sectionKey = trim($post['section_key'] ?? '');
         if (empty($sectionKey)) {
-            $sectionKey = 'sec_' . strtolower(preg_replace('/[^A-Za-z0-9]/', '_', $label)) . '_' . time();
+            $keyBase = !empty($label) ? $label : $sectionType;
+            $sectionKey = 'sec_' . strtolower(preg_replace('/[^A-Za-z0-9]/', '_', $keyBase)) . '_' . time();
         }
 
         $maxOrder = $this->layoutModel->getMaxOrder($pageTarget);
 
-        if ($sectionType === 'slider' || $sectionType === 'banner') {
-            // Slider / Banner Creation
-            $columnsPerRow = (int)($post['columns_per_row'] ?? 1);
-            $isSlider = ($sectionType === 'slider') ? 1 : 0;
+        $isSlider = in_array($sectionType, ['slider', 'one_and_half_carousel', 'peeking_slider', 'small_banner_carousel', 'small_banner_slider', 'small_height_carousel']) ? 1 : 0;
+        $isBannerType = in_array($sectionType, ['slider', 'banner', 'banner_category_slider', 'one_and_half_carousel', 'peeking_slider', 'small_banner_carousel', 'small_banner_slider', 'small_height_carousel']);
 
+        if ($isBannerType) {
+            $columnsPerRow = (int)($post['columns_per_row'] ?? 1);
             // 1. Create entry in banner_sections
             $bannerSectionId = $this->db->insert(
                 "INSERT INTO banner_sections (page, section_key, label, columns_per_row, is_slider, status) 
@@ -162,12 +251,19 @@ class HomeLayoutController {
             }
         } else {
             // Product or Custom Section Creation
+            $isProductType = in_array($sectionType, ['product_carousel', 'mobile_list', 'compact_grid', 'compact_product_grid', 'featured_grid']);
+            $apiAction = !empty($post['api_action']) ? $post['api_action'] : ($isProductType ? 'bestseller' : null);
+
             $data = [
                 'page_target' => $pageTarget,
                 'section_type' => $sectionType,
                 'section_key' => $sectionKey,
                 'label' => $label,
-                'api_action' => !empty($post['api_action']) ? $post['api_action'] : null,
+                'columns_per_row' => (int)($post['columns_per_row'] ?? 2),
+                'api_action' => $apiAction,
+                'category_ids' => !empty($post['category_ids']) ? $post['category_ids'] : null,
+                'sub_category_ids' => !empty($post['sub_category_ids']) ? $post['sub_category_ids'] : null,
+                'product_ids' => !empty($post['product_ids']) ? $post['product_ids'] : null,
                 'product_limit' => !empty($post['product_limit']) ? (int)$post['product_limit'] : 10,
                 'badge_text' => !empty($post['badge_text']) ? $post['badge_text'] : null,
                 'background_image_url' => !empty($post['background_image_url']) ? $post['background_image_url'] : null,
@@ -193,18 +289,16 @@ class HomeLayoutController {
             return ['success' => false, 'error' => 'Section not found.'];
         }
 
-        $label = trim($post['label'] ?? $section['label']);
-        if (empty($label)) {
-            return ['success' => false, 'error' => 'Section label cannot be empty.'];
-        }
+        $post['page_target'] = $post['page_target'] ?? $section['page_target'] ?? 'desktop';
 
-        $sectionType = $section['section_type'];
+        $label = isset($post['label']) ? trim($post['label']) : ($section['label'] ?? '');
 
-        if ($sectionType === 'slider' || $sectionType === 'banner') {
-            // Update columns / settings for banner sections
-            $columnsPerRow = (int)($post['columns_per_row'] ?? $section['columns_per_row']);
-            $isSlider = ($sectionType === 'slider') ? 1 : 0;
+        $sectionType = trim($post['section_type'] ?? $section['section_type']);
+        $columnsPerRow = (int)($post['columns_per_row'] ?? $section['columns_per_row']);
+        $isSlider = in_array($sectionType, ['slider', 'one_and_half_carousel', 'peeking_slider', 'small_banner_carousel', 'small_banner_slider', 'small_height_carousel']) ? 1 : 0;
+        $isBannerType = in_array($sectionType, ['slider', 'banner', 'banner_category_slider', 'one_and_half_carousel', 'peeking_slider', 'small_banner_carousel', 'small_banner_slider', 'small_height_carousel']);
 
+        if ($isBannerType) {
             $sectionDbRow = $this->db->fetch(
                 "SELECT id FROM banner_sections WHERE section_key = ? LIMIT 1",
                 [$section['section_key']]
@@ -219,29 +313,37 @@ class HomeLayoutController {
 
                 // Re-upload or add new banners
                 $this->saveBannersForSection($bannerSectionId, $post, $files);
+            } else {
+                $bannerSectionId = $this->db->insert(
+                    "INSERT INTO banner_sections (page, section_key, label, columns_per_row, is_slider, status) 
+                     VALUES (?, ?, ?, ?, ?, 'active')",
+                    [$section['page_target'], $section['section_key'], $label, $columnsPerRow, $isSlider]
+                );
+                if ($bannerSectionId) {
+                    $this->saveBannersForSection($bannerSectionId, $post, $files);
+                }
             }
-
-            $data = [
-                'label' => $label,
-                'columns_per_row' => $columnsPerRow,
-                'is_slider' => $isSlider,
-                'status' => $post['status'] ?? $section['status']
-            ];
-
-            $success = $this->layoutModel->updateSection($id, $data);
-        } else {
-            // Update product section config
-            $data = [
-                'label' => $label,
-                'api_action' => !empty($post['api_action']) ? $post['api_action'] : null,
-                'product_limit' => !empty($post['product_limit']) ? (int)$post['product_limit'] : 10,
-                'badge_text' => !empty($post['badge_text']) ? $post['badge_text'] : null,
-                'background_image_url' => !empty($post['background_image_url']) ? $post['background_image_url'] : null,
-                'status' => $post['status'] ?? $section['status']
-            ];
-
-            $success = $this->layoutModel->updateSection($id, $data);
         }
+
+        $isProductType = in_array($sectionType, ['product_carousel', 'mobile_list', 'compact_grid', 'compact_product_grid', 'featured_grid']);
+        $apiAction = !empty($post['api_action']) ? $post['api_action'] : ($isProductType ? (!empty($section['api_action']) ? $section['api_action'] : 'bestseller') : null);
+
+        $data = [
+            'section_type' => $sectionType,
+            'label' => $label,
+            'columns_per_row' => $columnsPerRow,
+            'is_slider' => $isSlider,
+            'api_action' => $apiAction,
+            'category_ids' => !empty($post['category_ids']) ? $post['category_ids'] : null,
+            'sub_category_ids' => !empty($post['sub_category_ids']) ? $post['sub_category_ids'] : null,
+            'product_ids' => !empty($post['product_ids']) ? $post['product_ids'] : null,
+            'product_limit' => !empty($post['product_limit']) ? (int)$post['product_limit'] : 10,
+            'badge_text' => !empty($post['badge_text']) ? $post['badge_text'] : null,
+            'background_image_url' => !empty($post['background_image_url']) ? $post['background_image_url'] : null,
+            'status' => $post['status'] ?? $section['status']
+        ];
+
+        $success = $this->layoutModel->updateSection($id, $data);
 
         if ($success) {
             return ['success' => true, 'message' => 'Section updated successfully!'];
@@ -256,24 +358,30 @@ class HomeLayoutController {
         // Delete all banner database records for this section
         $this->db->execute("DELETE FROM banners WHERE section_id = ?", [$bannerSectionId]);
 
+        $pageTarget = $post['page_target'] ?? 'desktop';
+
         // Iterate through all slots submitted in the post
         if (!empty($post['banner_titles'])) {
             foreach ($post['banner_titles'] as $index => $title) {
                 $desktopPath = $post['existing_desktop'][$index] ?? '';
                 $mobilePath = $post['existing_mobile'][$index] ?? '';
 
+                $newDesktopUploaded = false;
+                $newMobileUploaded = false;
+
                 // Check if a new desktop image was uploaded
                 if (!empty($files['images_desktop']['name'][$index])) {
                     $fileDesktop = [
                         'name' => $files['images_desktop']['name'][$index],
-                        'type' => $files['images_desktop']['type'][$index],
+                        'type' => $files['images_desktop']['type'][$index] ?? '',
                         'tmp_name' => $files['images_desktop']['tmp_name'][$index],
-                        'error' => $files['images_desktop']['error'][$index],
-                        'size' => $files['images_desktop']['size'][$index]
+                        'error' => $files['images_desktop']['error'][$index] ?? 0,
+                        'size' => $files['images_desktop']['size'][$index] ?? 0
                     ];
                     $uploadRes = $this->uploadImageFile($fileDesktop, 'desktop');
-                    if (is_string($uploadRes)) {
+                    if (is_string($uploadRes) && !empty($uploadRes)) {
                         $desktopPath = $uploadRes;
+                        $newDesktopUploaded = true;
                     }
                 }
 
@@ -281,20 +389,37 @@ class HomeLayoutController {
                 if (!empty($files['images_mobile']['name'][$index])) {
                     $fileMobile = [
                         'name' => $files['images_mobile']['name'][$index],
-                        'type' => $files['images_mobile']['type'][$index],
+                        'type' => $files['images_mobile']['type'][$index] ?? '',
                         'tmp_name' => $files['images_mobile']['tmp_name'][$index],
-                        'error' => $files['images_mobile']['error'][$index],
-                        'size' => $files['images_mobile']['size'][$index]
+                        'error' => $files['images_mobile']['error'][$index] ?? 0,
+                        'size' => $files['images_mobile']['size'][$index] ?? 0
                     ];
                     $uploadRes = $this->uploadImageFile($fileMobile, 'mobile');
-                    if (is_string($uploadRes)) {
+                    if (is_string($uploadRes) && !empty($uploadRes)) {
                         $mobilePath = $uploadRes;
+                        $newMobileUploaded = true;
                     }
                 }
 
-                // Skip if we don't have at least a desktop image (might happen if adding a new blank slot and not uploading)
-                if (empty($desktopPath)) {
-                    continue;
+                if ($pageTarget === 'mobile') {
+                    // Mobile section: Clean dedicated mobile handling
+                    $img = $newMobileUploaded ? $mobilePath : ($newDesktopUploaded ? $desktopPath : ($mobilePath ?: $desktopPath));
+                    if (empty($img)) {
+                        continue;
+                    }
+                    $desktopPath = $img;
+                    $mobilePath = $img;
+                } else {
+                    // Desktop section: Clean desktop handling with optional mobile override
+                    if ($newDesktopUploaded && !$newMobileUploaded && empty($mobilePath)) {
+                        $mobilePath = $desktopPath;
+                    }
+                    if (empty($desktopPath)) {
+                        $desktopPath = $mobilePath;
+                    }
+                    if (empty($desktopPath)) {
+                        continue;
+                    }
                 }
 
                 // Create banner record
@@ -324,23 +449,28 @@ class HomeLayoutController {
             return '';
         }
 
-        $allowed = ['image/jpeg','image/jpg','image/png','image/gif','image/webp'];
-        if (!in_array($file['type'], $allowed)) {
-            return ['success' => false, 'error' => 'Invalid image type. Allowed: JPG, PNG, GIF, WebP'];
+        if (isset($file['error']) && $file['error'] !== UPLOAD_ERR_OK) {
+            return ['success' => false, 'error' => 'File upload error code: ' . $file['error']];
         }
 
-        if ($file['size'] > 5 * 1024 * 1024) {
-            return ['success' => false, 'error' => 'Image too large. Max 5 MB'];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif'];
+        if (!in_array($ext, $allowedExts)) {
+            return ['success' => false, 'error' => 'Invalid image extension. Allowed: JPG, PNG, GIF, WebP, SVG, AVIF'];
+        }
+
+        if ($file['size'] > 10 * 1024 * 1024) {
+            return ['success' => false, 'error' => 'Image too large. Max 10 MB'];
         }
 
         $dir = __DIR__ . "/../uploads/banners/{$type}/";
         if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
+            @mkdir($dir, 0777, true);
         }
+        @chmod($dir, 0777);
 
-        $ext      = pathinfo($file['name'], PATHINFO_EXTENSION);
         $filename = uniqid() . '_' . time() . '.' . $ext;
-        $dest     = $dir . $filename;
+        $dest = $dir . $filename;
 
         if (!move_uploaded_file($file['tmp_name'], $dest)) {
             return ['success' => false, 'error' => "Failed to upload {$type} image"];

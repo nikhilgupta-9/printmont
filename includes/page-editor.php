@@ -30,9 +30,11 @@ if (empty($_SESSION['pe_csrf'])) {
     $_SESSION['pe_csrf'] = bin2hex(random_bytes(16));
 }
 
-$pe_preview = defined('BASE_URL')
-    ? rtrim(BASE_URL, '/') . ($pe_schema['preview'] ?? '/')
-    : ($pe_schema['preview'] ?? '');
+$isLocalhost = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'])
+    || strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false;
+
+$frontendOrigin = $isLocalhost ? 'http://localhost:5175' : (defined('BASE_URL') ? rtrim(BASE_URL, '/') : '');
+$pe_preview = $frontendOrigin . ($pe_schema['preview'] ?? '/');
 
 // Current content, so the first paint needs no round trip, and any select
 // field's options, read fresh from whichever table supplies them.
@@ -69,6 +71,11 @@ $pe_payload = [
             </a>
         </div>
     </header>
+
+    <!-- Tabs Navigation Bar for Quick Section Switching -->
+    <div class="pe-tabs-bar" id="peTabsBar">
+        <div class="pe-tabs-scroll" id="peTabsNav"></div>
+    </div>
 
     <div class="pe-layout">
         <nav class="pe-rail" id="peRail" aria-label="Sections of this page"></nav>

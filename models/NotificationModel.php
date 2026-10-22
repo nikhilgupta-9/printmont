@@ -51,6 +51,79 @@ class NotificationModel {
         return $notifications;
     }
 
+    public function getPaginatedNotifications($user_id, $page = 1, $limit = 10, $filter = 'all') {
+        $user_id = $this->conn->real_escape_string($user_id);
+        $page = max(1, (int)$page);
+        $limit = max(1, (int)$limit);
+        $offset = ($page - 1) * $limit;
+        
+        $where = "WHERE (n.user_id = '$user_id' OR n.user_id IS NULL)";
+        
+        if ($filter === 'unread') {
+            $where .= " AND (nr.id IS NULL OR nr.read_at IS NULL)";
+        } elseif ($filter === 'orders') {
+            $where .= " AND n.type IN ('order', 'success')";
+        } elseif ($filter === 'users') {
+            $where .= " AND n.type IN ('user', 'info')";
+        } elseif ($filter === 'system') {
+            $where .= " AND n.type NOT IN ('order', 'success', 'user', 'info')";
+        }
+        
+        // Count total filtered
+        $count_query = "
+            SELECT COUNT(DISTINCT n.id) as total
+            FROM notifications n
+            LEFT JOIN notification_reads nr ON n.id = nr.notification_id AND nr.user_id = '$user_id'
+            $where
+        ";
+        $count_result = $this->conn->query($count_query);
+        $total = 0;
+        if ($count_result && $row = $count_result->fetch_assoc()) {
+            $total = (int)$row['total'];
+        }
+        
+        // Fetch records
+        $query = "
+            SELECT 
+                n.id,
+                n.title,
+                n.message,
+                n.type,
+                n.icon,
+                n.link,
+                n.created_at,
+                nr.read_at,
+                CASE 
+                    WHEN nr.read_at IS NULL THEN 0 
+                    ELSE 1 
+                END as is_read
+            FROM notifications n
+            LEFT JOIN notification_reads nr ON n.id = nr.notification_id AND nr.user_id = '$user_id'
+            $where
+            ORDER BY n.created_at DESC
+            LIMIT $offset, $limit
+        ";
+        
+        $result = $this->conn->query($query);
+        $notifications = [];
+        if ($result && $result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $notifications[] = $row;
+            }
+        }
+        
+        $total_pages = ($total > 0) ? (int)ceil($total / $limit) : 1;
+        
+        return [
+            'data' => $notifications,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'total_pages' => $total_pages,
+            'offset' => $offset
+        ];
+    }
+
     public function getUnreadCount($user_id) {
         $user_id = $this->conn->real_escape_string($user_id);
         
@@ -75,6 +148,37 @@ class NotificationModel {
     public function getNotificationById($notification_id) {
         $notification_id = $this->conn->real_escape_string($notification_id);
         $query = "SELECT * FROM notifications WHERE id = '$notification_id' LIMIT 1";
+        $result = $this->conn->query($query);
+        if ($result && $result->num_rows > 0) {
+            return $result->fetch_assoc();
+        }
+        return null;
+    }
+
+    public function getNotificationDetail($notification_id, $user_id) {
+        $notification_id = $this->conn->real_escape_string($notification_id);
+        $user_id = $this->conn->real_escape_string($user_id);
+        
+        $query = "
+            SELECT 
+                n.id,
+                n.title,
+                n.message,
+                n.type,
+                n.icon,
+                n.link,
+                n.created_at,
+                nr.read_at,
+                CASE 
+                    WHEN nr.read_at IS NULL THEN 0 
+                    ELSE 1 
+                END as is_read
+            FROM notifications n
+            LEFT JOIN notification_reads nr ON n.id = nr.notification_id AND nr.user_id = '$user_id'
+            WHERE n.id = '$notification_id'
+            LIMIT 1
+        ";
+        
         $result = $this->conn->query($query);
         if ($result && $result->num_rows > 0) {
             return $result->fetch_assoc();

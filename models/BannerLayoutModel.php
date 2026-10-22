@@ -92,6 +92,7 @@ class BannerLayoutModel {
             'product' => 'Product Page',
             'cart' => 'Cart Page',
             'checkout' => 'Checkout Page',
+            'orders' => 'Orders Page',
             'about' => 'About Page',
             'contact' => 'Contact Page'
         ];

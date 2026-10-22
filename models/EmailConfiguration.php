@@ -124,7 +124,7 @@ class EmailConfiguration {
      *
      * @return array{success: bool, error: string}
      */
-    public function sendTestEmail($data, $recipient) {
+    public function sendTestEmail($data, $recipient, $subject = null, $body = null) {
         require_once __DIR__ . '/../services/MailService.php';
 
         if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
@@ -139,14 +139,18 @@ class EmailConfiguration {
                 return ['success' => false, 'error' => 'Host and username are required.'];
             }
 
-            $body = '<div style="font-family:Arial,sans-serif;padding:20px;">'
-                . '<h2 style="color:#0b53a1;margin-top:0;">SMTP test successful</h2>'
-                . '<p>This message was sent from the Printmont admin panel to confirm your mail settings.</p>'
-                . '<p style="color:#64748b;font-size:13px;">Host: ' . htmlspecialchars($config['host'])
-                . ':' . (int) $config['port'] . ' (' . htmlspecialchars($config['encryption']) . ')<br>'
-                . 'Sent at ' . date('Y-m-d H:i:s') . '</p></div>';
+            if (empty($body)) {
+                $body = '<div style="font-family:Arial,sans-serif;padding:20px;">'
+                    . '<h2 style="color:#0b53a1;margin-top:0;">SMTP test successful</h2>'
+                    . '<p>This message was sent from the Printmont admin panel to confirm your mail settings.</p>'
+                    . '<p style="color:#64748b;font-size:13px;">Host: ' . htmlspecialchars($config['host'])
+                    . ':' . (int) $config['port'] . ' (' . htmlspecialchars($config['encryption']) . ')<br>'
+                    . 'Sent at ' . date('Y-m-d H:i:s') . '</p></div>';
+            }
 
-            $sent = $mailService->sendEmailWithConfig($config, $recipient, 'Printmont SMTP test', $body);
+            $mailSubject = !empty($subject) ? $subject : 'Printmont SMTP test';
+
+            $sent = $mailService->sendEmailWithConfig($config, $recipient, $mailSubject, $body);
 
             return $sent
                 ? ['success' => true, 'error' => '']

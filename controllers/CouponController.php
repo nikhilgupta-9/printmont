@@ -36,6 +36,14 @@ class CouponController {
         return $this->model->getAllCarousels();
     }
 
+    public function getActiveCouponsForCustomer(): array {
+        return $this->model->getActiveCouponsForCustomer();
+    }
+
+    public function getAllCouponsForCustomer(): array {
+        return $this->model->getAllCouponsForCustomer();
+    }
+
     // ----------------------------------------------------------------
     // Validation + normalisation
     // ----------------------------------------------------------------
@@ -56,6 +64,9 @@ class CouponController {
         if ($this->model->codeExists($code, $ignoreId)) {
             return ['error' => "Coupon code \"{$code}\" already exists. Please choose a different code."];
         }
+
+        $title = trim($post['title'] ?? '');
+        $description = trim($post['description'] ?? '');
 
         $format = ($post['discount_format'] ?? 'percentage') === 'fixed' ? 'fixed' : 'percentage';
         $value  = $post['discount_value'] ?? '';
@@ -86,6 +97,8 @@ class CouponController {
 
         return [
             'coupon_code'         => $code,
+            'title'               => $title !== '' ? $title : null,
+            'description'         => $description !== '' ? $description : null,
             'category_id'         => $toIntOrNull($post['category_id']         ?? ''),
             'sub_category_id'     => $toIntOrNull($post['sub_category_id']     ?? ''),
             'sub_sub_category_id' => $toIntOrNull($post['sub_sub_category_id'] ?? ''),

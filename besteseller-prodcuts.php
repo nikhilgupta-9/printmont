@@ -1,48 +1,117 @@
 <?php
-session_start();
+ob_start();
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 require_once(__DIR__ . '/config/database.php');
+require_once(__DIR__ . '/controllers/AuthController.php');
 require_once(__DIR__ . '/controllers/ProductController.php');
 
 // Create database connection
 $database = new Database();
 $db = $database->getConnection();
 
-// Pass the database connection to the controller
+$auth = new AuthController($db);
+if (!$auth->isLoggedIn()) {
+    header('Location: index.php');
+    exit();
+}
+
 $productController = new ProductController($db);
-
-// Pagination settings
-$products_per_page = 10;
-$current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$offset = ($current_page - 1) * $products_per_page;
-
-// Search functionality
-$search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
-$category_filter = isset($_GET['category']) ? (int)$_GET['category'] : '';
-$status_filter = isset($_GET['status']) ? $_GET['status'] : '';
-
-// Get products with filters and pagination
-$products_result = $productController->getProductsWithPagination(
-    $search_query, 
-    $category_filter, 
-    $status_filter, 
-    $offset, 
-    $products_per_page
-);
-
-$products = $products_result['products'];
-$total_products = $products_result['total'];
-$total_pages = ceil($total_products / $products_per_page);
-
-// Get categories for filter dropdown
-$categories = $productController->getCategories();
 
 // Handle AJAX bestseller toggle
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'toggle_bestseller') {
     header('Content-Type: application/json');
-    $productId = intval($_POST['product_id']);
+    $productId = intval($_POST['product_id'] ?? 0);
     $result = $productController->toggleBestseller($productId);
     echo json_encode($result);
     exit;
+}
+
+// -------------------------------------------------------------
+// FILTER & PAGINATION PARAMETERS
+// -------------------------------------------------------------
+$search_query = trim($_GET['search'] ?? '');
+$category_filter = trim($_GET['category'] ?? '');
+$status_filter = trim($_GET['status'] ?? '');
+$bestseller_only = isset($_GET['only_bestseller']) ? trim($_GET['only_bestseller']) : '1'; // Default show bestsellers
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$limit = isset($_GET['limit']) ? max(5, min(100, (int)$_GET['limit'])) : 15;
+$offset = ($page - 1) * $limit;
+
+// -------------------------------------------------------------
+// KPI STATS OVERVIEW (Database Real Totals)
+// -------------------------------------------------------------
+$stats_sql = "SELECT 
+    COUNT(*) as total_count,
+    COUNT(CASE WHEN our_bestseller = 1 THEN 1 END) as bestseller_count,
+    COUNT(CASE WHEN our_bestseller = 1 AND status = 'active' THEN 1 END) as active_bestseller_count,
+    COUNT(CASE WHEN top_selection = 1 THEN 1 END) as top_selection_count
+    FROM products";
+$stats = $database->fetch($stats_sql) ?: [
+    'total_count' => 0, 'bestseller_count' => 0, 'active_bestseller_count' => 0, 'top_selection_count' => 0
+];
+
+// -------------------------------------------------------------
+// GET PRODUCTS QUERY
+// -------------------------------------------------------------
+$where = ["1=1"];
+$params = [];
+
+if (!empty($search_query)) {
+    $where[] = "(p.name LIKE ? OR p.sku LIKE ? OR p.brand LIKE ?)";
+    $s = "%$search_query%";
+    $params[] = $s;
+    $params[] = $s;
+    $params[] = $s;
+}
+if (!empty($category_filter)) {
+    $where[] = "p.category_id = ?";
+    $params[] = $category_filter;
+}
+if (!empty($status_filter)) {
+    $where[] = "p.status = ?";
+    $params[] = $status_filter;
+}
+if ($bestseller_only === '1') {
+    $where[] = "p.our_bestseller = 1";
+} elseif ($bestseller_only === '0') {
+    $where[] = "(p.our_bestseller = 0 OR p.our_bestseller IS NULL)";
+}
+
+$whereClause = implode(" AND ", $where);
+
+// Count total
+$countSql = "SELECT COUNT(*) as total FROM products p WHERE $whereClause";
+$countResult = $database->fetch($countSql, $params);
+$total_products = $countResult['total'] ?? 0;
+$total_pages = ceil($total_products / $limit);
+
+// Fetch page products
+$sql = "SELECT p.*, c.name as category_name,
+        (SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC, display_order ASC LIMIT 1) as primary_image
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE $whereClause
+        ORDER BY p.our_bestseller DESC, p.created_at DESC
+        LIMIT ? OFFSET ?";
+$fetchParams = array_merge($params, [$limit, $offset]);
+$products = $database->fetchAll($sql, $fetchParams) ?: [];
+
+// Get categories for filter dropdown
+$categories = $productController->getCategories();
+
+// Helper function to build query strings
+function buildBestsellerQuery($newParams = []) {
+    $current = $_GET;
+    foreach ($newParams as $k => $v) {
+        if ($v === null || $v === '') {
+            unset($current[$k]);
+        } else {
+            $current[$k] = $v;
+        }
+    }
+    return 'besteseller-prodcuts.php?' . http_build_query($current);
 }
 
 // Check for messages
@@ -50,96 +119,134 @@ $success_message = $_SESSION['success_message'] ?? '';
 $error_message = $_SESSION['error_message'] ?? '';
 unset($_SESSION['success_message'], $_SESSION['error_message']);
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="Responsive Admin &amp; Dashboard Template based on Bootstrap 5">
-    <meta name="author" content="Nikhil">
-    <link rel="preconnect" href="https://fonts.gstatic.com/">
     <link rel="shortcut icon" href="img/icons/icon-48x48.png" />
-    <title>Products Bestseller | Printmont</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&amp;display=swap" rel="stylesheet">
+    <title>Bestseller Products | Printmont Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="js/settings.js"></script>
     <style>
         body { opacity: 0; }
-        .product-image { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
-        .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; }
-        .status-active { background-color: #d1fae5; color: #065f46; }
-        .status-inactive { background-color: #fee2e2; color: #991b1b; }
-        .status-draft { background-color: #fef3c7; color: #92400e; }
-        .featured-badge { background-color: #e0e7ff; color: #3730a3; }
-        .bestseller-badge { background-color: #ffedd5; color: #9a3412; }
-        .action-buttons .btn { padding: 4px 8px; margin: 0 2px; }
-        
-        /* Toggle Switch Styles */
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
-        }
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        input:checked + .toggle-slider {
-            background-color: #28a745;
-        }
-        input:checked + .toggle-slider:before {
-            transform: translateX(26px);
-        }
-        .toggle-label {
-            margin-left: 10px;
-            font-size: 12px;
-            color: #6c757d;
-        }
-        .search-box {
-            max-width: 400px;
-        }
-        .pagination .page-link {
-            color: #495057;
-        }
-        .pagination .page-item.active .page-link {
-            background-color: #007bff;
-            border-color: #007bff;
-        }
-        .results-info {
-            font-size: 0.9rem;
-            color: #6c757d;
-        }
-        .filter-section {
-            background: #f8f9fa;
+        .product-thumb-box {
+            width: 52px;
+            height: 52px;
             border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
+            overflow: hidden;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e2e8f0;
+            flex-shrink: 0;
+        }
+        .product-thumb-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .product-name-link {
+            color: #1e293b;
+            font-weight: 600;
+            text-decoration: none;
+            line-height: 1.35;
+        }
+        .product-name-link:hover {
+            color: #f59e0b;
+        }
+        .filter-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .table-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+        .stat-card-clean {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card-clean:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        .badge-cat {
+            background: #f8fafc;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+            font-weight: 500;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+        }
+        .badge-sku {
+            font-family: monospace;
+            background: #f1f5f9;
+            color: #334155;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+        .action-icon-btn {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            color: #64748b;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .action-icon-btn:hover {
+            background: #f59e0b;
+            color: #fff;
+            border-color: #f59e0b;
+        }
+        .action-icon-btn.btn-delete:hover {
+            background: #ef4444;
+            color: #fff;
+            border-color: #ef4444;
+        }
+        .action-icon-btn.btn-view:hover {
+            background: #0ea5e9;
+            color: #fff;
+            border-color: #0ea5e9;
+        }
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
         }
     </style>
 </head>
@@ -148,339 +255,428 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         <?php include_once "includes/side-navbar.php"; ?>
         <div class="main">
             <?php include_once "includes/top-navbar.php"; ?>
+            
             <main class="content">
                 <div class="container-fluid p-0">
-                    <div class="row mb-2 mb-xl-3">
-                        <div class="col-auto d-none d-sm-block">
-                            <h3><strong>Product</strong> Management</h3>
+                    
+                    <!-- Top Page Title & Actions -->
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <h1 class="h3 mb-1 text-gray-800"><strong>Bestseller</strong> Products</h1>
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+                                    <li class="breadcrumb-item"><a href="dashboard.php">Dashboard</a></li>
+                                    <li class="breadcrumb-item"><a href="view-products.php">Products</a></li>
+                                    <li class="breadcrumb-item active">Bestsellers</li>
+                                </ol>
+                            </nav>
                         </div>
-                        <div class="col-auto ms-auto text-end mt-n1">
-                            <a href="product.php" class="btn btn-primary">Add New Product</a>
-                            <a href="bestseller-products.php" class="btn btn-warning">View Bestsellers</a>
+                        <div class="d-flex gap-2">
+                            <a href="view-products.php" class="btn btn-outline-secondary">
+                                <i class="fas fa-list me-1"></i> All Products
+                            </a>
+                            <a href="product.php" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i> Add Product
+                            </a>
                         </div>
                     </div>
 
-                    <!-- Messages -->
+                    <!-- Flash Messages -->
                     <?php if ($success_message): ?>
-                        <div class="alert alert-success alert-dismissible" role="alert">
-                            <div class="alert-message"><?php echo htmlspecialchars($success_message); ?></div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i> <?php echo htmlspecialchars($success_message); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     <?php endif; ?>
 
                     <?php if ($error_message): ?>
-                        <div class="alert alert-danger alert-dismissible" role="alert">
-                            <div class="alert-message"><?php echo htmlspecialchars($error_message); ?></div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i> <?php echo htmlspecialchars($error_message); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     <?php endif; ?>
 
-                    <!-- Search and Filter Section -->
-                    <div class="filter-section">
-                        <form method="GET" action="" class="row g-3">
-                            <div class="col-md-4">
-                                <label for="search" class="form-label">Search Products</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="search" name="search" 
-                                           placeholder="Search by name, SKU, or brand..." 
-                                           value="<?php echo htmlspecialchars($search_query); ?>">
-                                    <button class="btn btn-outline-primary" type="submit">
-                                        <i class="fas fa-search"></i>
-                                    </button>
+                    <!-- Real Database KPI Stats Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="stat-card-clean">
+                                <div class="stat-icon" style="background: #fffbeb; color: #d97706;">
+                                    <i class="fas fa-fire"></i>
+                                </div>
+                                <div>
+                                    <span class="text-muted d-block small fw-semibold text-uppercase">Bestsellers</span>
+                                    <h3 class="mb-0 fw-bold text-gray-900"><?php echo number_format($stats['bestseller_count']); ?></h3>
                                 </div>
                             </div>
+                        </div>
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="stat-card-clean">
+                                <div class="stat-icon" style="background: #ecfdf5; color: #10b981;">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div>
+                                    <span class="text-muted d-block small fw-semibold text-uppercase">Active Bestsellers</span>
+                                    <h3 class="mb-0 fw-bold text-gray-900"><?php echo number_format($stats['active_bestseller_count']); ?></h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="stat-card-clean">
+                                <div class="stat-icon" style="background: #eef2ff; color: #6366f1;">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <div>
+                                    <span class="text-muted d-block small fw-semibold text-uppercase">Top Selection</span>
+                                    <h3 class="mb-0 fw-bold text-gray-900"><?php echo number_format($stats['top_selection_count']); ?></h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="stat-card-clean">
+                                <div class="stat-icon" style="background: #f8fafc; color: #475569;">
+                                    <i class="fas fa-boxes-stacked"></i>
+                                </div>
+                                <div>
+                                    <span class="text-muted d-block small fw-semibold text-uppercase">Total Catalog</span>
+                                    <h3 class="mb-0 fw-bold text-gray-900"><?php echo number_format($stats['total_count']); ?></h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter / Search Card -->
+                    <div class="filter-card">
+                        <form method="GET" action="besteseller-prodcuts.php" class="row g-2 align-items-center">
                             <div class="col-md-3">
-                                <label for="category" class="form-label">Category</label>
-                                <select class="form-select" id="category" name="category">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white border-end-0 text-muted">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" name="search" class="form-control form-control-sm border-start-0" 
+                                           placeholder="Search name, SKU, brand..." 
+                                           value="<?php echo htmlspecialchars($search_query); ?>">
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <select name="category" class="form-select form-select-sm">
                                     <option value="">All Categories</option>
-                                    <?php foreach ($categories as $category): ?>
-                                        <option value="<?php echo $category['id']; ?>" 
-                                            <?php echo $category_filter == $category['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($category['name']); ?>
+                                    <?php foreach ($categories as $cat): ?>
+                                        <option value="<?php echo $cat['id']; ?>" <?php echo ($category_filter == $cat['id']) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($cat['name']); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="col-md-3">
-                                <label for="status" class="form-label">Status</label>
-                                <select class="form-select" id="status" name="status">
-                                    <option value="">All Status</option>
-                                    <option value="active" <?php echo $status_filter === 'active' ? 'selected' : ''; ?>>Active</option>
-                                    <option value="inactive" <?php echo $status_filter === 'inactive' ? 'selected' : ''; ?>>Inactive</option>
-                                    <option value="draft" <?php echo $status_filter === 'draft' ? 'selected' : ''; ?>>Draft</option>
+
+                            <div class="col-md-2">
+                                <select name="status" class="form-select form-select-sm">
+                                    <option value="">All Statuses</option>
+                                    <option value="active" <?php echo ($status_filter === 'active') ? 'selected' : ''; ?>>Active Only</option>
+                                    <option value="inactive" <?php echo ($status_filter === 'inactive') ? 'selected' : ''; ?>>Inactive</option>
+                                    <option value="draft" <?php echo ($status_filter === 'draft') ? 'selected' : ''; ?>>Draft</option>
                                 </select>
                             </div>
-                            <div class="col-md-2 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+
+                            <div class="col-md-2">
+                                <select name="only_bestseller" class="form-select form-select-sm">
+                                    <option value="1" <?php echo ($bestseller_only === '1') ? 'selected' : ''; ?>>★ Bestsellers Only</option>
+                                    <option value="0" <?php echo ($bestseller_only === '0') ? 'selected' : ''; ?>>Non-Bestsellers</option>
+                                    <option value="" <?php echo ($bestseller_only === '') ? 'selected' : ''; ?>>All Products</option>
+                                </select>
                             </div>
-                            <?php if ($search_query || $category_filter || $status_filter): ?>
-                                <div class="col-12">
-                                    <a href="view-products.php" class="btn btn-sm btn-outline-secondary">Clear Filters</a>
-                                    <span class="results-info ms-2">
-                                        Filtered results: <?php echo $total_products; ?> product(s) found
-                                    </span>
-                                </div>
-                            <?php endif; ?>
+
+                            <div class="col-md-2 d-flex gap-2">
+                                <button type="submit" class="btn btn-warning text-white btn-sm flex-fill">
+                                    <i class="fas fa-filter me-1"></i> Filter
+                                </button>
+                                <a href="besteseller-prodcuts.php" class="btn btn-light btn-sm border" title="Reset Filters">
+                                    <i class="fas fa-rotate-left"></i>
+                                </a>
+                            </div>
                         </form>
                     </div>
 
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="card-title">All Products</h5>
-                                    <h6 class="card-subtitle text-muted">
-                                        Showing <?php echo count($products); ?> of <?php echo $total_products; ?> products
-                                        <?php if ($current_page > 1): ?>
-                                            - Page <?php echo $current_page; ?> of <?php echo $total_pages; ?>
-                                        <?php endif; ?>
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-striped table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>Image</th>
-                                                    <th>Product Name</th>
-                                                    <th>SKU</th>
-                                                    <th>Category</th>
-                                                    <th>Price</th>
-                                                    <th>Stock</th>
-                                                    <th>Status</th>
-                                                    <th>Featured</th>
-                                                    <th>Bestseller</th>
-                                                    <th>Created</th>
-                                                    <th>Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php if (empty($products)): ?>
-                                                    <tr>
-                                                        <td colspan="11" class="text-center py-4">
-                                                            <div class="text-muted">
-                                                                <?php if ($search_query || $category_filter || $status_filter): ?>
-                                                                    No products found matching your filters. 
-                                                                    <a href="view-products.php">Clear filters</a>
-                                                                <?php else: ?>
-                                                                    No products found. <a href="product.php">Add your first product</a>
-                                                                <?php endif; ?>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                <?php else: ?>
-                                                    <?php foreach ($products as $product): ?>
-                                                        <tr id="product-<?php echo $product['id']; ?>">
-                                                            <td>
-                                                                <?php if (!empty($product['images'][0]['image_url'])): ?>
-                                                                    <img src="<?php echo htmlspecialchars($product['images'][0]['image_url']); ?>" 
-                                                                         alt="<?php echo htmlspecialchars($product['name']); ?>" 
-                                                                         class="product-image">
-                                                                <?php else: ?>
-                                                                    <div class="product-image bg-light d-flex align-items-center justify-content-center">
-                                                                        <small class="text-muted">No Image</small>
-                                                                    </div>
-                                                                <?php endif; ?>
-                                                            </td>
-                                                            <td>
-                                                                <strong><?php echo htmlspecialchars($product['name']); ?></strong>
-                                                                <?php if (!empty($product['brand'])): ?>
-                                                                    <br><small class="text-muted"><?php echo htmlspecialchars($product['brand']); ?></small>
-                                                                <?php endif; ?>
-                                                            </td>
-                                                            <td><?php echo htmlspecialchars($product['sku']); ?></td>
-                                                            <td><?php echo htmlspecialchars($product['category_name'] ?? 'N/A'); ?></td>
-                                                            <td>
-                                                                <strong>$<?php echo number_format($product['price'], 2); ?></strong>
-                                                                <?php if (!empty($product['discount_price']) && $product['discount_price'] > 0): ?>
-                                                                    <br><small class="text-danger"><s>$<?php echo number_format($product['discount_price'], 2); ?></s></small>
-                                                                <?php endif; ?>
-                                                            </td>
-                                                            <td>
-                                                                <span class="<?php echo $product['stock_quantity'] > 10 ? 'text-success' : ($product['stock_quantity'] > 0 ? 'text-warning' : 'text-danger'); ?>">
-                                                                    <?php echo $product['stock_quantity']; ?>
-                                                                </span>
-                                                            </td>
-                                                            <td>
-                                                                <span class="status-badge status-<?php echo $product['status']; ?>">
-                                                                    <?php echo ucfirst($product['status']); ?>
-                                                                </span>
-                                                            </td>
-                                                            <td>
-                                                                <?php if ($product['featured']): ?>
-                                                                    <span class="status-badge featured-badge">Featured</span>
-                                                                <?php else: ?>
-                                                                    <span class="text-muted">-</span>
-                                                                <?php endif; ?>
-                                                            </td>
-                                                            <td class="toggle-container">
-                                                                <label class="toggle-switch">
-                                                                    <input type="checkbox" 
-                                                                           class="bestseller-toggle" 
-                                                                           data-product-id="<?php echo $product['id']; ?>"
-                                                                           <?php echo $product['our_bestseller'] ? 'checked' : ''; ?>>
-                                                                    <span class="toggle-slider"></span>
-                                                                </label>
-                                                                <span class="toggle-label">
-                                                                    <?php echo $product['our_bestseller'] ? 'Yes' : 'No'; ?>
-                                                                </span>
-                                                            </td>
-                                                            <td>
-                                                                <small class="text-muted">
-                                                                    <?php echo date('M j, Y', strtotime($product['created_at'])); ?>
-                                                                </small>
-                                                            </td>
-                                                            <td class="action-buttons">
-                                                                <a href="single-product-version.php?id=<?php echo $product['id']; ?>" 
-                                                                   class="btn btn-sm btn-info" title="View">
-                                                                   <i class="fas fa-eye"></i>
-                                                                </a>
-                                                                <a href="edit-product.php?id=<?php echo $product['id']; ?>" 
-                                                                   class="btn btn-sm btn-primary" title="Edit">
-                                                                   <i class="fas fa-edit"></i>
-                                                                </a>
-                                                                <a href="delete-product.php?id=<?php echo $product['id']; ?>" 
-                                                                   class="btn btn-sm btn-danger" 
-                                                                   onclick="return confirm('Are you sure you want to delete this product?')"
-                                                                   title="Delete">
-                                                                   <i class="fas fa-trash"></i>
-                                                                </a>
-                                                            </td>
-                                                        </tr>
-                                                    <?php endforeach; ?>
-                                                <?php endif; ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    <!-- Pagination -->
-                                    <?php if ($total_pages > 1): ?>
-                                        <nav aria-label="Product pagination">
-                                            <ul class="pagination justify-content-center">
-                                                <!-- Previous Page -->
-                                                <li class="page-item <?php echo $current_page <= 1 ? 'disabled' : ''; ?>">
-                                                    <a class="page-link" 
-                                                       href="?page=<?php echo $current_page - 1; ?><?php echo $search_query ? '&search=' . urlencode($search_query) : ''; ?><?php echo $category_filter ? '&category=' . $category_filter : ''; ?><?php echo $status_filter ? '&status=' . $status_filter : ''; ?>" 
-                                                       aria-label="Previous">
-                                                        <span aria-hidden="true">&laquo;</span>
-                                                    </a>
-                                                </li>
-
-                                                <!-- Page Numbers -->
-                                                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                                                    <?php if ($i == 1 || $i == $total_pages || ($i >= $current_page - 2 && $i <= $current_page + 2)): ?>
-                                                        <li class="page-item <?php echo $i == $current_page ? 'active' : ''; ?>">
-                                                            <a class="page-link" 
-                                                               href="?page=<?php echo $i; ?><?php echo $search_query ? '&search=' . urlencode($search_query) : ''; ?><?php echo $category_filter ? '&category=' . $category_filter : ''; ?><?php echo $status_filter ? '&status=' . $status_filter : ''; ?>">
-                                                                <?php echo $i; ?>
-                                                            </a>
-                                                        </li>
-                                                    <?php elseif ($i == $current_page - 3 || $i == $current_page + 3): ?>
-                                                        <li class="page-item disabled">
-                                                            <span class="page-link">...</span>
-                                                        </li>
-                                                    <?php endif; ?>
-                                                <?php endfor; ?>
-
-                                                <!-- Next Page -->
-                                                <li class="page-item <?php echo $current_page >= $total_pages ? 'disabled' : ''; ?>">
-                                                    <a class="page-link" 
-                                                       href="?page=<?php echo $current_page + 1; ?><?php echo $search_query ? '&search=' . urlencode($search_query) : ''; ?><?php echo $category_filter ? '&category=' . $category_filter : ''; ?><?php echo $status_filter ? '&status=' . $status_filter : ''; ?>" 
-                                                       aria-label="Next">
-                                                        <span aria-hidden="true">&raquo;</span>
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </nav>
-                                    <?php endif; ?>
-                                </div>
+                    <!-- Products Table Card -->
+                    <div class="table-card mb-4">
+                        <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-light">
+                            <span class="text-muted small">
+                                Showing <strong><?php echo count($products) > 0 ? ($offset + 1) : 0; ?></strong> to 
+                                <strong><?php echo min($offset + $limit, $total_products); ?></strong> of 
+                                <strong><?php echo $total_products; ?></strong> products
+                            </span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small">Show:</span>
+                                <select class="form-select form-select-sm" style="width: 75px;" onchange="location.href=this.value;">
+                                    <?php foreach ([10, 15, 25, 50, 100] as $lim): ?>
+                                        <option value="<?php echo buildBestsellerQuery(['limit' => $lim, 'page' => 1]); ?>" <?php echo ($limit == $lim) ? 'selected' : ''; ?>>
+                                            <?php echo $lim; ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light text-uppercase text-secondary" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                                    <tr>
+                                        <th style="width: 70px;">Image</th>
+                                        <th>Product Details</th>
+                                        <th>Category</th>
+                                        <th>Price (₹)</th>
+                                        <th>Stock</th>
+                                        <th>Status</th>
+                                        <th class="text-center" style="width: 140px;">Bestseller Flag</th>
+                                        <th class="text-end" style="width: 120px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($products)): ?>
+                                        <tr>
+                                            <td colspan="8" class="text-center py-5 text-muted">
+                                                <div class="py-4">
+                                                    <i class="fas fa-fire fa-3x text-warning mb-3 opacity-50"></i>
+                                                    <h5>No Bestseller Products Found</h5>
+                                                    <p class="text-muted small mb-3">No products match your active filters or are marked as bestsellers.</p>
+                                                    <a href="besteseller-prodcuts.php?only_bestseller=" class="btn btn-sm btn-outline-warning">
+                                                        Show All Catalog Products
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($products as $prod): 
+                                            $isBestseller = !empty($prod['our_bestseller']);
+                                            $imgUrl = !empty($prod['primary_image']) ? $prod['primary_image'] : 'img/icons/icon-48x48.png';
+                                            $stock = (int)($prod['stock_quantity'] ?? $prod['product_quantity'] ?? $prod['stock'] ?? 0);
+                                        ?>
+                                            <tr id="row-prod-<?php echo $prod['id']; ?>">
+                                                <td>
+                                                    <div class="product-thumb-box cursor-pointer" onclick="showImageModal('<?php echo htmlspecialchars($imgUrl); ?>', '<?php echo htmlspecialchars(addslashes($prod['name'])); ?>')">
+                                                        <img src="<?php echo htmlspecialchars($imgUrl); ?>" 
+                                                             alt="<?php echo htmlspecialchars($prod['name']); ?>"
+                                                             onerror="this.src='img/icons/icon-48x48.png'">
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex flex-column">
+                                                        <a href="edit-product.php?id=<?php echo $prod['id']; ?>" class="product-name-link mb-1">
+                                                            <?php echo htmlspecialchars((string)($prod['name'] ?? '')); ?>
+                                                        </a>
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <span class="badge-sku"><?php echo htmlspecialchars((string)($prod['sku'] ?: 'NO-SKU')); ?></span>
+                                                            <?php if (!empty($prod['brand'])): ?>
+                                                                <small class="text-muted"><i class="fas fa-tag me-1"></i><?php echo htmlspecialchars((string)$prod['brand']); ?></small>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge-cat">
+                                                        <?php echo htmlspecialchars((string)($prod['category_name'] ?? 'Uncategorized')); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="fw-semibold text-dark">
+                                                        ₹<?php echo number_format($prod['discount_price'] > 0 ? $prod['discount_price'] : $prod['price'], 2); ?>
+                                                    </div>
+                                                    <?php if ($prod['discount_price'] > 0 && $prod['discount_price'] < $prod['price']): ?>
+                                                        <small class="text-muted text-decoration-line-through">₹<?php echo number_format($prod['price'], 2); ?></small>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if ($stock > 10): ?>
+                                                        <span class="badge bg-success bg-opacity-10 text-success fw-semibold px-2 py-1">
+                                                            <?php echo $stock; ?> in stock
+                                                        </span>
+                                                    <?php elseif ($stock > 0): ?>
+                                                        <span class="badge bg-warning bg-opacity-10 text-warning fw-semibold px-2 py-1">
+                                                            <?php echo $stock; ?> low stock
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-danger bg-opacity-10 text-danger fw-semibold px-2 py-1">
+                                                            Out of stock
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if ($prod['status'] === 'active'): ?>
+                                                        <span class="badge bg-success bg-opacity-10 text-success fw-medium">Active</span>
+                                                    <?php elseif ($prod['status'] === 'draft'): ?>
+                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary fw-medium">Draft</span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-danger bg-opacity-10 text-danger fw-medium">Inactive</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="text-center">
+                                                    <div class="form-check form-switch d-inline-block">
+                                                        <input class="form-check-input bestseller-toggle" 
+                                                               type="checkbox" 
+                                                               role="switch"
+                                                               data-product-id="<?php echo $prod['id']; ?>"
+                                                               <?php echo $isBestseller ? 'checked' : ''; ?>
+                                                               style="cursor: pointer; width: 2.5rem; height: 1.25rem;">
+                                                    </div>
+                                                    <div class="small text-muted switch-label-<?php echo $prod['id']; ?>">
+                                                        <?php echo $isBestseller ? '<span class="text-warning fw-semibold"><i class="fas fa-fire me-1"></i>Bestseller</span>' : '<span class="text-muted">Standard</span>'; ?>
+                                                    </div>
+                                                </td>
+                                                <td class="text-end">
+                                                    <div class="d-inline-flex gap-1">
+                                                        <a href="single-product-version.php?id=<?php echo $prod['id']; ?>" class="action-icon-btn btn-view" title="Preview Single Product">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <a href="edit-product.php?id=<?php echo $prod['id']; ?>" class="action-icon-btn" title="Edit Product">
+                                                            <i class="fas fa-pen"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination Footer -->
+                        <?php if ($total_pages > 1): ?>
+                            <div class="d-flex align-items-center justify-content-between p-3 border-top bg-light">
+                                <div class="text-muted small">
+                                    Page <strong><?php echo $page; ?></strong> of <strong><?php echo $total_pages; ?></strong>
+                                </div>
+                                <nav aria-label="Product pagination">
+                                    <ul class="pagination pagination-sm mb-0">
+                                        <!-- Prev -->
+                                        <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
+                                            <a class="page-link" href="<?php echo buildBestsellerQuery(['page' => $page - 1]); ?>">
+                                                <i class="fas fa-chevron-left"></i>
+                                            </a>
+                                        </li>
+
+                                        <!-- Pages -->
+                                        <?php
+                                        $start_page = max(1, $page - 2);
+                                        $end_page = min($total_pages, $page + 2);
+                                        if ($start_page > 1) {
+                                            echo '<li class="page-item"><a class="page-link" href="' . buildBestsellerQuery(['page' => 1]) . '">1</a></li>';
+                                            if ($start_page > 2) echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                                        }
+                                        for ($p = $start_page; $p <= $end_page; $p++) {
+                                            $active = ($p == $page) ? 'active' : '';
+                                            echo '<li class="page-item ' . $active . '"><a class="page-link" href="' . buildBestsellerQuery(['page' => $p]) . '">' . $p . '</a></li>';
+                                        }
+                                        if ($end_page < $total_pages) {
+                                            if ($end_page < $total_pages - 1) echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                                            echo '<li class="page-item"><a class="page-link" href="' . buildBestsellerQuery(['page' => $total_pages]) . '">' . $total_pages . '</a></li>';
+                                        }
+                                        ?>
+
+                                        <!-- Next -->
+                                        <li class="page-item <?php echo ($page >= $total_pages) ? 'disabled' : ''; ?>">
+                                            <a class="page-link" href="<?php echo buildBestsellerQuery(['page' => $page + 1]); ?>">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        <?php endif; ?>
                     </div>
+
                 </div>
             </main>
+
             <?php include_once "includes/footer.php"; ?>
+        </div>
+    </div>
+
+    <!-- Image Preview Modal -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title" id="imageModalLabel">Product Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <img id="modalImgPreview" src="" alt="Preview" class="img-fluid rounded shadow-sm" style="max-height: 400px; object-fit: contain;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Toast -->
+    <div class="toast-container">
+        <div id="liveToast" class="toast align-items-center text-white bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center gap-2" id="toastMessage">
+                    <i class="fas fa-check-circle text-success"></i> Updated successfully.
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
         </div>
     </div>
 
     <script src="js/app.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle bestseller toggle
-            document.querySelectorAll('.bestseller-toggle').forEach(toggle => {
-                toggle.addEventListener('change', function() {
-                    const productId = this.getAttribute('data-product-id');
-                    const isChecked = this.checked;
-                    const toggleLabel = this.closest('.toggle-container').querySelector('.toggle-label');
-                    
-                    // Show loading state
-                    toggleLabel.textContent = 'Updating...';
-                    this.disabled = true;
-                    
-                    // Send AJAX request
-                    fetch('', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: 'action=toggle_bestseller&product_id=' + productId
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Update label
-                            toggleLabel.textContent = data.is_bestseller ? 'Yes' : 'No';
-                            
-                            // Show success message
-                            showNotification('Bestseller status updated successfully!', 'success');
-                        } else {
-                            // Revert toggle state
-                            this.checked = !isChecked;
-                            toggleLabel.textContent = isChecked ? 'No' : 'Yes';
-                            showNotification(data.error || 'Failed to update bestseller status', 'error');
-                        }
-                    })
-                    .catch(error => {
-                        // Revert toggle state on error
-                        this.checked = !isChecked;
-                        toggleLabel.textContent = isChecked ? 'No' : 'Yes';
-                        showNotification('Network error occurred', 'error');
-                        console.error('Error:', error);
-                    })
-                    .finally(() => {
-                        this.disabled = false;
-                    });
-                });
-            });
-            
-            function showNotification(message, type) {
-                // Create notification element
-                const notification = document.createElement('div');
-                notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
-                notification.innerHTML = `
-                    <div class="alert-message">${message}</div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                
-                // Insert at the top of the content area
-                const contentArea = document.querySelector('main.content .container-fluid');
-                contentArea.insertBefore(notification, contentArea.firstChild);
-                
-                // Auto remove after 3 seconds
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.remove();
-                    }
-                }, 3000);
+        function showImageModal(url, title) {
+            document.getElementById('modalImgPreview').src = url;
+            document.getElementById('imageModalLabel').innerText = title;
+            const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+            modal.show();
+        }
+
+        function showToast(message, isSuccess = true) {
+            const toastEl = document.getElementById('liveToast');
+            const toastBody = document.getElementById('toastMessage');
+            if (isSuccess) {
+                toastBody.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i> ${message}`;
+                toastEl.className = 'toast align-items-center text-white bg-dark border-0';
+            } else {
+                toastBody.innerHTML = `<i class="fas fa-exclamation-circle text-danger me-2"></i> ${message}`;
+                toastEl.className = 'toast align-items-center text-white bg-danger border-0';
             }
+            const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            toast.show();
+        }
 
-            // Auto-submit form when category or status filter changes
-            document.getElementById('category').addEventListener('change', function() {
-                this.form.submit();
-            });
+        // Live Toggle AJAX for Bestseller Switch
+        document.querySelectorAll('.bestseller-toggle').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                const productId = this.getAttribute('data-product-id');
+                const isChecked = this.checked;
+                const label = document.querySelector(`.switch-label-${productId}`);
 
-            document.getElementById('status').addEventListener('change', function() {
-                this.form.submit();
+                const formData = new FormData();
+                formData.append('action', 'toggle_bestseller');
+                formData.append('product_id', productId);
+
+                fetch('besteseller-prodcuts.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const newStatus = data.is_bestseller;
+                        if (newStatus) {
+                            label.innerHTML = '<span class="text-warning fw-semibold"><i class="fas fa-fire me-1"></i>Bestseller</span>';
+                            showToast('Product marked as Bestseller');
+                        } else {
+                            label.innerHTML = '<span class="text-muted">Standard</span>';
+                            showToast('Product removed from Bestsellers');
+                        }
+                    } else {
+                        // revert
+                        this.checked = !isChecked;
+                        showToast(data.message || 'Failed to update bestseller status', false);
+                    }
+                })
+                .catch(err => {
+                    this.checked = !isChecked;
+                    showToast('Network error while updating status', false);
+                });
             });
         });
     </script>

@@ -2,7 +2,11 @@
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Cache-Control, Pragma');
+header('Access-Control-Max-Age: 86400');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     http_response_code(200);
@@ -67,6 +71,17 @@ try {
             echo json_encode([
                 'success' => $deleted,
                 'message' => $deleted ? 'Page rule removed successfully.' : 'Failed to delete page rule.'
+            ]);
+            exit;
+        }
+
+        if ($action === 'save_category_image_settings') {
+            $shape = $input['category_image_shape'] ?? $input['shape'] ?? 'circle';
+            $size = (int)($input['category_image_size'] ?? $input['size'] ?? 56);
+            $updated = $controller->updateCategoryImageSettings($shape, $size);
+            echo json_encode([
+                'success' => $updated,
+                'message' => $updated ? 'Category image appearance settings updated.' : 'Failed to update settings.'
             ]);
             exit;
         }

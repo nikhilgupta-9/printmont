@@ -58,6 +58,21 @@ function getAuthorizationHeader()
 }
 
 // Function to get bearer token
+// Sends the JSON response and closes the connection, so work queued with
+// register_shutdown_function (order emails) does not keep the customer waiting.
+function sendJsonAndFinish($data)
+{
+    $body = json_encode($data);
+    while (ob_get_level() > 0) ob_end_clean();
+    ignore_user_abort(true);
+    header('Content-Type: application/json');
+    header('Content-Length: ' . strlen($body));
+    header('Connection: close');
+    echo $body;
+    flush();
+    if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+}
+
 function getBearerToken()
 {
     $headers = getAuthorizationHeader();
@@ -83,6 +98,33 @@ try {
 
         switch ($action) {
             // === AUTHENTICATION ENDPOINTS ===
+            case 'send_registration_otp':
+                if ($method == 'POST') {
+                    echo json_encode($authController->sendRegistrationOTP($input));
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
+            case 'verify_registration_otp':
+                if ($method == 'POST') {
+                    echo json_encode($authController->verifyRegistrationOTP($input));
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
+            case 'resend_registration_otp':
+                if ($method == 'POST') {
+                    echo json_encode($authController->resendRegistrationOTP($input));
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
             case 'register':
                 if ($method == 'POST') {
                     echo json_encode($authController->register($input));
@@ -443,14 +485,22 @@ try {
                 }
                 break;
 
-            // Public: no token. The contact check inside trackOrder is what
-            // stops an order number alone from exposing an order.
+            // Track order endpoint: supports authenticated user tokens as well as public guest lookups.
             case 'track_order':
                 if ($method == 'POST' || $method == 'GET') {
-                    $reference = $input['order_number'] ?? $queryParams['order_number'] ?? '';
-                    $contact   = $input['contact'] ?? $queryParams['contact'] ?? '';
+                    $reference = $input['order_number'] ?? $queryParams['order_number'] ?? $input['order_id'] ?? $queryParams['id'] ?? '';
+                    $contact   = $input['contact'] ?? $queryParams['contact'] ?? $input['email'] ?? $input['mobile'] ?? '';
 
-                    $result = $orderController->trackOrder($reference, $contact);
+                    $token = getBearerToken();
+                    $userId = null;
+                    if (!empty($token)) {
+                        $auth = $authController->verifyToken($token);
+                        if ($auth['success'] && !empty($auth['user']['id'])) {
+                            $userId = $auth['user']['id'];
+                        }
+                    }
+
+                    $result = $orderController->trackOrder($reference, $contact, $userId);
 
                     if (!$result['success']) {
                         http_response_code(($result['reason'] ?? '') === 'invalid' ? 400 : 404);
@@ -470,6 +520,94 @@ try {
                     $orderUserId = $auth['success'] ? $auth['user']['id'] : null;
 
                     $result = $orderController->createOrder($input, $orderUserId);
+                    if (!$result['success']) {
+                        http_response_code(400);
+                    }
+                    sendJsonAndFinish($result);
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
+            case 'checkout_quote':
+                // Server price of the cart (cart / checkout screens). Coins need a logged-in user.
+                if ($method == 'POST') {
+                    require_once __DIR__ . '/../controllers/CheckoutPricing.php';
+                    $auth = $authController->verifyToken(getBearerToken());
+                    $quoteUserId = $auth['success'] ? $auth['user']['id'] : null;
+                    $quote = (new CheckoutPricing())->quote(
+                        is_array($input['items'] ?? null) ? $input['items'] : [],
+                        (string) ($input['coupon_code'] ?? ''),
+                        !empty($input['use_coins']),
+                        $quoteUserId
+                    );
+                    echo json_encode($quote);
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
+            case 'verify_payment':
+                if ($method == 'POST') {
+                    $auth = $authController->verifyToken(getBearerToken());
+                    if (!$auth['success']) {
+                        http_response_code(401);
+                        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+                        break;
+                    }
+                    $result = $orderController->verifyPayment($input, $auth['user']['id']);
+                    if (!$result['success']) {
+                        http_response_code(400);
+                    }
+                    sendJsonAndFinish($result);
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
+            case 'cancel_order':
+                if ($method == 'POST') {
+                    $auth = $authController->verifyToken(getBearerToken());
+                    if (!$auth['success']) {
+                        http_response_code(401);
+                        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+                        break;
+                    }
+                    $orderIdOrNumber = $input['order_id'] ?? $input['order_number'] ?? $queryParams['id'] ?? '';
+                    if (empty($orderIdOrNumber)) {
+                        http_response_code(400);
+                        echo json_encode(['success' => false, 'error' => 'Order ID is required']);
+                        break;
+                    }
+                    $result = $orderController->cancelOrder($orderIdOrNumber, $auth['user']['id'], $input);
+                    if (!$result['success']) {
+                        http_response_code(400);
+                    }
+                    echo json_encode($result);
+                } else {
+                    http_response_code(405);
+                    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+                }
+                break;
+
+            case 'request_return_replacement':
+                if ($method == 'POST') {
+                    $auth = $authController->verifyToken(getBearerToken());
+                    if (!$auth['success']) {
+                        http_response_code(401);
+                        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+                        break;
+                    }
+                    $orderIdOrNumber = $input['order_id'] ?? $input['order_number'] ?? $queryParams['id'] ?? '';
+                    if (empty($orderIdOrNumber)) {
+                        http_response_code(400);
+                        echo json_encode(['success' => false, 'error' => 'Order ID is required']);
+                        break;
+                    }
+                    $result = $orderController->requestReturnReplacement($orderIdOrNumber, $auth['user']['id'], $input);
                     if (!$result['success']) {
                         http_response_code(400);
                     }

@@ -10,7 +10,14 @@ class Category {
     public function getAllWithHierarchy() {
         $query = "SELECT * FROM " . $this->table . " 
                  WHERE status = 'active'
-                 ORDER BY display_order ASC, name ASC";
+                 ORDER BY 
+                    CASE 
+                        WHEN display_order > 0 THEN display_order 
+                        WHEN desktop_menu_order > 0 THEN desktop_menu_order 
+                        ELSE 999999 
+                    END ASC, 
+                    display_order ASC, 
+                    name ASC";
         
         $result = $this->conn->query($query);
         
@@ -39,6 +46,13 @@ class Category {
             }
         }
         
+        usort($branch, function($a, $b) {
+            $ordA = isset($a['display_order']) && (int)$a['display_order'] > 0 ? (int)$a['display_order'] : (isset($a['desktop_menu_order']) && (int)$a['desktop_menu_order'] > 0 ? (int)$a['desktop_menu_order'] : 999999);
+            $ordB = isset($b['display_order']) && (int)$b['display_order'] > 0 ? (int)$b['display_order'] : (isset($b['desktop_menu_order']) && (int)$b['desktop_menu_order'] > 0 ? (int)$b['desktop_menu_order'] : 999999);
+            if ($ordA !== $ordB) return $ordA <=> $ordB;
+            return strcmp($a['name'] ?? '', $b['name'] ?? '');
+        });
+
         return $branch;
     }
 
@@ -84,6 +98,10 @@ class Category {
         );
         
         return $stmt->execute();
+    }
+
+    public function getLastInsertId() {
+        return $this->conn->insert_id;
     }
 
     public function update($id, $data) {
