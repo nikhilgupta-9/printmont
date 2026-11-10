@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 700" width="100%" height="100%">
+  <defs>
+    <filter id="diaryShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.16" />
+    </filter>
+    <linearGradient id="leatherGrain" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.12"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="300" cy="650" rx="200" ry="18" fill="#0f172a" opacity="0.12" />
+
+  <g filter="url(#diaryShadow)">
+    <!-- Book Pages Edge on Right -->
+    <path d="M 450,105 L 470,110 L 470,610 L 450,605 Z" fill="#fef08a" opacity="0.8" stroke="#cbd5e1" stroke-width="1" />
+    <!-- Page layers lines -->
+    <line x1="458" y1="110" x2="458" y2="608" stroke="#d4d4d8" stroke-width="1" />
+    <line x1="464" y1="110" x2="464" y2="608" stroke="#d4d4d8" stroke-width="1" />
+
+    <!-- Hard Cover Front Face -->
+    <rect class="pm-mockup-base" x="120" y="90" width="340" height="520" rx="16" 
+          fill="var(--mockup-color, #1e293b)" stroke="#475569" stroke-width="2" />
+    <rect x="120" y="90" width="340" height="520" rx="16" fill="url(#leatherGrain)" />
+
+    <!-- Spine Indentation Groove -->
+    <line x1="150" y1="90" x2="150" y2="610" stroke="#0f172a" stroke-width="3" opacity="0.4" />
+    <line x1="152" y1="90" x2="152" y2="610" stroke="#ffffff" stroke-width="1" opacity="0.25" />
+
+    <!-- Perimeter Stitching -->
+    <rect x="130" y="100" width="320" height="500" rx="10" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,4" />
+
+    <!-- Elastic Pen Loop & Closure Band -->
+    <rect x="420" y="90" width="22" height="520" fill="#0f172a" opacity="0.75" />
+    <rect x="460" y="320" width="16" height="50" rx="4" fill="#0f172a" opacity="0.6" />
+
+    <!-- Satin Ribbon Bookmark sticking out at bottom -->
+    <path d="M 280,605 L 280,645 L 290,638 L 300,645 L 300,605 Z" fill="#ef4444" />
+  </g>
+</svg>

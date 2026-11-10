@@ -1,1 +1,0 @@
-import{j as r}from"./index-DarcP4Gw.js";import o from"./PolicyPage-ChjraOKV.js";import"./Spinner-DS1QDZot.js";import"./Row-tjTPVEXf.js";import"./Col-DAZrtXS1.js";const p=()=>r.jsx(o,{});export{p as default};

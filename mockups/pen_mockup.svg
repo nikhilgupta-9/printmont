@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" width="100%" height="100%">
+  <defs>
+    <filter id="penShadow" x="-5%" y="-10%" width="110%" height="130%">
+      <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.18" />
+    </filter>
+    <linearGradient id="penGloss" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="30%" stop-color="#ffffff" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.3"/>
+    </linearGradient>
+    <linearGradient id="goldTrim" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="50%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Pen shadow on desk -->
+  <ellipse cx="450" cy="180" rx="400" ry="12" fill="#0f172a" opacity="0.12" />
+
+  <g filter="url(#penShadow)">
+    <!-- Pen Clicker Button / Crown -->
+    <path d="M 830,125 L 855,125 C 858,125 860,127 860,130 L 860,150 C 860,153 858,155 855,155 L 830,155 Z" fill="url(#goldTrim)" />
+
+    <!-- Pen Body Barrel -->
+    <path class="pm-mockup-base" d="M 180,120 L 830,120 L 830,160 L 180,160 Z" 
+          fill="var(--mockup-color, #1e293b)" stroke="#475569" stroke-width="1.5" />
+    <!-- Gloss highlight layer -->
+    <path d="M 180,120 L 830,120 L 830,160 L 180,160 Z" fill="url(#penGloss)" opacity="0.4" />
+
+    <!-- Gold Center Ring / Trim Bands -->
+    <rect x="480" y="118" width="12" height="44" rx="2" fill="url(#goldTrim)" />
+    <rect x="500" y="118" width="6" height="44" rx="1" fill="url(#goldTrim)" />
+
+    <!-- Front Cone / Nib Section -->
+    <path d="M 180,120 L 80,135 L 50,140 L 80,145 L 180,160 Z" fill="url(#goldTrim)" stroke="#b45309" stroke-width="1" />
+    <!-- Ballpoint tip -->
+    <path d="M 50,139 L 40,140 L 50,141 Z" fill="#94a3b8" />
+
+    <!-- Metal Pocket Clip -->
+    <path d="M 750,115 L 750,102 C 750,98 755,98 760,102 L 785,115 L 820,115 L 820,122 L 775,122 L 745,110 Z" fill="url(#goldTrim)" />
+    <ellipse cx="660" cy="107" rx="90" ry="4" fill="url(#goldTrim)" />
+    <circle cx="570" cy="107" r="6" fill="url(#goldTrim)" />
+  </g>
+</svg>

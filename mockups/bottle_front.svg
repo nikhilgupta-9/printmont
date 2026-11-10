@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 700" width="100%" height="100%">
+  <defs>
+    <filter id="bottleShadow" x="-10%" y="-5%" width="120%" height="115%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#0f172a" flood-opacity="0.14" />
+    </filter>
+    <linearGradient id="metalSheen" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#334155" stop-opacity="0.3"/>
+      <stop offset="25%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="85%" stop-color="#0f172a" stop-opacity="0.25"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="250" cy="655" rx="100" ry="16" fill="#0f172a" opacity="0.15" />
+
+  <g filter="url(#bottleShadow)">
+    <!-- Cap & Loop -->
+    <path d="M 230,45 C 230,30 270,30 270,45 L 270,65 L 230,65 Z" fill="#334155" stroke="#1e293b" stroke-width="2" />
+    <path d="M 238,30 C 238,20 262,20 262,30" fill="none" stroke="#64748b" stroke-width="4" stroke-linecap="round" />
+    
+    <!-- Neck Collar -->
+    <rect x="210" y="65" width="80" height="28" rx="4" fill="#475569" stroke="#1e293b" stroke-width="1.5" />
+    <line x1="215" y1="74" x2="285" y2="74" stroke="#64748b" stroke-width="2" />
+    <line x1="215" y1="82" x2="285" y2="82" stroke="#64748b" stroke-width="2" />
+
+    <!-- Shoulder Curve -->
+    <path class="pm-mockup-base" d="M 215,93 
+             C 215,130 160,165 160,200 
+             L 160,615 
+             C 160,645 340,645 340,615 
+             L 340,200 
+             C 340,165 285,130 285,93 Z" 
+          fill="var(--mockup-color, #e2e8f0)" stroke="#94a3b8" stroke-width="2" />
+
+    <!-- Metal Highlights -->
+    <path d="M 215,93 C 215,130 160,165 160,200 L 160,615 C 160,645 340,645 340,615 L 340,200 C 340,165 285,130 285,93 Z" 
+          fill="url(#metalSheen)" />
+
+    <!-- Vertical reflection beam -->
+    <rect x="185" y="190" width="22" height="420" fill="#ffffff" opacity="0.35" rx="8" />
+  </g>
+</svg>
