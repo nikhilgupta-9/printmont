@@ -63,6 +63,82 @@ if ($method === 'GET') {
         exit;
     }
 
+    if ($action === 'get_home_categories') {
+        $device = $_GET['device'] ?? 'all'; // 'desktop', 'mobile', or 'all'
+        $categoryId = isset($_GET['category_id']) ? (int)$_GET['category_id'] : 0;
+        $db = new Database();
+        
+        $where = "status = 'active' AND (page_target IN ('home_page', 'both') OR page_target IS NULL)";
+        $params = [];
+
+        if ($categoryId > 0) {
+            $where .= " AND id = ?";
+            $params[] = $categoryId;
+        }
+
+        if ($device === 'desktop') {
+            $where .= " AND desktop_home_show = 'yes'";
+            $orderBy = "desktop_home_order ASC, display_order ASC, id ASC";
+        } elseif ($device === 'mobile') {
+            $where .= " AND mobile_home_show = 'yes'";
+            $orderBy = "mobile_home_order ASC, display_order ASC, id ASC";
+        } else {
+            $where .= " AND (desktop_home_show = 'yes' OR mobile_home_show = 'yes')";
+            $orderBy = "desktop_home_order ASC, mobile_home_order ASC, id ASC";
+        }
+        
+        $categories = $db->fetchAll(
+            "SELECT id, name, slug, level, parent_id, additional_parent_ids, page_target,
+                    desktop_home_show, desktop_home_design, desktop_home_order, desktop_home_tag,
+                    desktop_bg_color, desktop_bg_image, desktop_image,
+                    mobile_topbar_status, mobile_topbar_order, mobile_sidebar_status, mobile_sidebar_order,
+                    mobile_home_show, mobile_home_design, mobile_home_format, mobile_home_order,
+                    mobile_bg_color, mobile_bg_image, mobile_image,
+                    home_featured_product_ids, description, image
+             FROM categories 
+             WHERE $where 
+             ORDER BY $orderBy",
+            $params
+        );
+        
+        // Enrich each category with featured products and direct subcategories
+        foreach ($categories as &$cat) {
+            $productIdsStr = trim($cat['home_featured_product_ids'] ?? '');
+            $cat['featured_products'] = [];
+            if (!empty($productIdsStr)) {
+                $pids = array_filter(array_map('intval', explode(',', $productIdsStr)));
+                if (!empty($pids)) {
+                    $placeholders = implode(',', array_fill(0, count($pids), '?'));
+                    $cat['featured_products'] = $db->fetchAll(
+                        "SELECT id, name, sku, regular_price, offer_price, price, thumbnail_image, product_slug 
+                         FROM products 
+                         WHERE status = 'active' AND id IN ($placeholders) 
+                         ORDER BY FIELD(id, " . implode(',', $pids) . ")",
+                        $pids
+                    );
+                }
+            }
+
+            // Fetch subcategories for pills/tabs if level 1
+            if ((int)$cat['level'] === 1) {
+                $catId = (int)$cat['id'];
+                $cat['subcategories'] = $db->fetchAll(
+                    "SELECT id, name, slug, image, desktop_menu_tag 
+                     FROM categories 
+                     WHERE status = 'active' AND (parent_id = ? OR FIND_IN_SET(?, additional_parent_ids))
+                     ORDER BY display_order ASC, name ASC LIMIT 10",
+                    [$catId, (string)$catId]
+                );
+            } else {
+                $cat['subcategories'] = [];
+            }
+        }
+        unset($cat);
+        
+        echo json_encode(['success' => true, 'data' => $categories]);
+        exit;
+    }
+
     if ($action === 'get_home_services') {
         $db = new Database();
         $services = $db->fetchAll(
@@ -75,14 +151,141 @@ if ($method === 'GET') {
         exit;
     }
 
+    // Helper to resolve page visibility across target_page & other_pages_display
+    $buildPageCondition = function(string $reqPage, string $tablePrefix = '') {
+        $p = $tablePrefix ? "{$tablePrefix}." : '';
+        if (empty($reqPage) || $reqPage === 'all') {
+            return '1=1';
+        }
+        if ($reqPage === 'home' || $reqPage === 'home_page') {
+            return "({$p}target_page = 'home' OR {$p}target_page = 'both' OR {$p}target_page IS NULL OR {$p}target_page = '' OR {$p}page_target = 'home_page' OR {$p}page_target = 'both')";
+        }
+        $colMap = [
+            'category'           => 'show_on_category',
+            'product'            => 'show_on_product',
+            'product_detail'     => 'show_on_product_detail',
+            'franchise'          => 'show_on_franchise',
+            'affiliate_program'  => 'show_on_affiliate',
+            'career'             => 'show_on_career',
+            'business_solutions' => 'show_on_business_solutions',
+            'advertising'        => 'show_on_advertising',
+        ];
+        $col = $colMap[$reqPage] ?? '';
+        if ($col) {
+            return "({$p}target_page = '{$reqPage}' OR {$p}target_page = 'both' OR {$p}{$col} = 'yes' OR {$p}other_pages_display LIKE '%{$reqPage}%')";
+        }
+        return "({$p}target_page = '{$reqPage}' OR {$p}target_page = 'both' OR {$p}other_pages_display LIKE '%{$reqPage}%')";
+    };
+
     if ($action === 'get_carousels') {
+        $device = $_GET['device'] ?? 'all';
+        $carouselType = $_GET['type'] ?? '';
+        $reqPage = $_GET['page'] ?? ($_GET['page_target'] ?? 'all');
         $db = new Database();
+
+        $where = "c.status = 'active'";
+        $params = [];
+
+        if ($reqPage !== 'all') {
+            $where .= " AND " . $buildPageCondition($reqPage, 'c');
+        }
+
+        if (!empty($carouselType)) {
+            $where .= " AND c.carousel_type = ?";
+            $params[] = $carouselType;
+        }
+
+        if ($device === 'mobile') {
+            $where .= " AND c.mobile_status = 'active'";
+            $orderBy = "c.mobile_sort_order ASC, c.id DESC";
+        } elseif ($device === 'desktop') {
+            $where .= " AND c.desktop_status = 'active'";
+            $orderBy = "c.desktop_sort_order ASC, c.id DESC";
+        } else {
+            $orderBy = "c.desktop_sort_order ASC, c.mobile_sort_order ASC, c.id DESC";
+        }
+
         $carousels = $db->fetchAll(
             "SELECT c.*, cat.name as category_name, cat.slug as category_slug 
              FROM carousels c 
              LEFT JOIN categories cat ON c.desktop_home_category_id = cat.id 
-             WHERE c.status = 'active' 
-             ORDER BY c.desktop_sort_order ASC, c.id DESC"
+             WHERE $where 
+             ORDER BY $orderBy",
+            $params
+        );
+        echo json_encode(['success' => true, 'data' => $carousels]);
+        exit;
+    }
+
+    if ($action === 'get_banners') {
+        $device = $_GET['device'] ?? 'desktop';
+        $reqPage = $_GET['page'] ?? ($_GET['page_target'] ?? 'all');
+        $subtype = $_GET['subtype'] ?? '';
+        $db = new Database();
+
+        $where = "status = 'active'";
+        $params = [];
+
+        if ($reqPage !== 'all') {
+            $where .= " AND " . $buildPageCondition($reqPage);
+        }
+
+        if (!empty($subtype)) {
+            $where .= " AND banner_subtype = ?";
+            $params[] = $subtype;
+        }
+
+        if ($device === 'mobile') {
+            $where .= " AND (mobile_status = 'active' OR mobile_same_design = 'yes')";
+            $orderBy = "mobile_sort_order ASC, display_order ASC, id ASC";
+        } else {
+            $where .= " AND desktop_status = 'active'";
+            $orderBy = "desktop_sort_order ASC, display_order ASC, id ASC";
+        }
+
+        $banners = $db->fetchAll(
+            "SELECT * FROM banners WHERE $where 
+             AND (start_date IS NULL OR start_date <= CURDATE())
+             AND (end_date IS NULL OR end_date >= CURDATE())
+             ORDER BY $orderBy",
+            $params
+        );
+        echo json_encode(['success' => true, 'data' => $banners]);
+        exit;
+    }
+
+    if ($action === 'get_banner_carousels') {
+        $device = $_GET['device'] ?? 'desktop';
+        $subtype = $_GET['type'] ?? '';
+        $reqPage = $_GET['page'] ?? 'all';
+        $db = new Database();
+
+        $where = "status = 'active'";
+        $params = [];
+
+        if (!empty($subtype)) {
+            $where .= " AND slider_subtype = ?";
+            $params[] = $subtype;
+        }
+
+        if ($device === 'mobile') {
+            $where .= " AND mobile_status = 'active'";
+            $orderBy = "mobile_sort_order ASC, id DESC";
+        } else {
+            $where .= " AND desktop_status = 'active'";
+            $orderBy = "desktop_sort_order ASC, id DESC";
+        }
+
+        if ($reqPage !== 'all') {
+            $where .= " AND " . $buildPageCondition($reqPage);
+        }
+
+        $carousels = $db->fetchAll(
+            "SELECT * FROM banner_carousels WHERE $where 
+             AND (desktop_start_date IS NULL OR desktop_start_date <= CURDATE())
+             AND (desktop_end_date IS NULL OR desktop_end_date >= CURDATE())
+             ORDER BY $orderBy",
+            $params
         );
         echo json_encode(['success' => true, 'data' => $carousels]);
         exit;

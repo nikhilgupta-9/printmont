@@ -171,10 +171,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
 
         $title1 = trim($_POST['desktop_menu_title_1'] ?? '');
         $url1   = trim($_POST['desktop_menu_url_1'] ?? '');
+        $order1 = (int)($_POST['desktop_menu_order_1'] ?? 1);
+
         $title2 = trim($_POST['desktop_menu_title_2'] ?? '');
         $url2   = trim($_POST['desktop_menu_url_2'] ?? '');
+        $order2 = (int)($_POST['desktop_menu_order_2'] ?? 2);
+
         $title3 = trim($_POST['desktop_menu_title_3'] ?? '');
         $url3   = trim($_POST['desktop_menu_url_3'] ?? '');
+        $order3 = (int)($_POST['desktop_menu_order_3'] ?? 3);
 
         $data = [
             'desktop_menu_title'   => $titleName ?: null,
@@ -184,10 +189,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
             'desktop_menu_image_3' => $img3 ?: null,
             'desktop_menu_title_1' => $title1 ?: null,
             'desktop_menu_url_1'   => $url1 ?: null,
+            'desktop_menu_order_1' => $order1,
             'desktop_menu_title_2' => $title2 ?: null,
             'desktop_menu_url_2'   => $url2 ?: null,
+            'desktop_menu_order_2' => $order2,
             'desktop_menu_title_3' => $title3 ?: null,
             'desktop_menu_url_3'   => $url3 ?: null,
+            'desktop_menu_order_3' => $order3,
             'desktop_menu_order'   => $order,
             'desktop_menu_status'  => $status,
             'custom_url'           => $customUrl ?: null,
@@ -206,6 +214,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
         }
         $selected = $controller->getCategoryById($selectedId);
     }
+}
+
+// Current Design Mode (1 Image, 2 Images, 3 Images per Google Doc)
+$rawDesign = $selected['desktop_menu_design'] ?? '1_image';
+if ($rawDesign === '3_image' || !empty($selected['desktop_menu_image_3'])) {
+    $currentDesignMode = '3_image';
+} elseif ($rawDesign === '2_image' || !empty($selected['desktop_menu_image_2'])) {
+    $currentDesignMode = '2_image';
+} else {
+    $currentDesignMode = '1_image';
 }
 
 // Default URL calculation
@@ -231,32 +249,28 @@ if ($insideMenusRes) {
     <link rel="icon" type="image/png" href="favicon.png" />
     <title>Inside Page Mega Menu Manager &bull; PrintMont Executive CRM</title>
     
-    <!-- Modern Professional Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="js/settings.js"></script>
     
     <style>
         :root {
-            --pm-primary: #0b53a1;
-            --pm-primary-dark: #073b75;
-            --pm-primary-light: #e0edff;
-            --pm-accent: #0284c7;
-            --pm-success: #10b981;
-            --pm-warning: #f59e0b;
-            --pm-danger: #ef4444;
-            --pm-dark: #0f172a;
-            --pm-border: #e2e8f0;
-            --pm-bg-subtle: #f8fafc;
+            --pm-primary: var(--bs-primary, #3b7ddd);
+            --pm-primary-dark: #2f64b1;
+            --pm-primary-light: #d8e5f8;
+            --pm-accent: var(--bs-info, #17a2b8);
+            --pm-success: var(--bs-success, #1cbb8c);
+            --pm-warning: var(--bs-warning, #fcb92c);
+            --pm-danger: var(--bs-danger, #dc3545);
+            --pm-dark: #343a40;
+            --pm-border: #dee2e6;
+            --pm-bg-subtle: #f8f9fa;
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f1f5f9;
-            color: #334155;
+            font-family: var(--bs-body-font-family);
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
             opacity: 1 !important;
         }
 
@@ -543,6 +557,97 @@ if ($insideMenusRes) {
         .badge-hide { background-color: #fee2e2; color: #b91c1c; }
         .icon-thumb { width: 38px; height: 38px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; }
         .required-field::after { content: " *"; color: #dc3545; }
+
+        /* AdminKit theme alignment */
+        .content { background: var(--bs-body-bg); }
+        .content > .container-fluid { max-width: 1600px; }
+        .content h2, .content h3, .content h4, .content h5 { font-family: var(--bs-body-font-family); }
+        .content h3 { font-size: 1.3rem; font-weight: 600 !important; }
+        .content h4 { font-size: 1rem; }
+        .content p { font-size: .875rem; }
+        .content .small, .content small { font-size: .8125rem; }
+        .content .text-muted { color: #6c757d !important; }
+
+        .module-nav-pills { display: flex; flex-wrap: wrap; gap: 4px; max-width: 100%; padding: 4px; border: 1px solid var(--bs-border-color); border-radius: .3rem; box-shadow: none; }
+        .module-nav-link { padding: .45rem .65rem; border-radius: .25rem; font-size: .8125rem; font-weight: 500; white-space: nowrap; }
+        .module-nav-link.active { box-shadow: none; }
+        .kpi-card { border-color: var(--bs-border-color); border-radius: .3rem; padding: .75rem 1rem; box-shadow: 0 .1rem .2rem rgba(0,0,0,.05); }
+        .kpi-card:hover { transform: none; }
+        .kpi-icon-box { width: 36px; height: 36px; border-radius: .3rem; }
+
+        .config-box, .mega-preview-window { border: 1px solid var(--bs-border-color); border-radius: .3rem; box-shadow: 0 .1rem .2rem rgba(0,0,0,.05); }
+        .config-box-header { padding: .85rem 1rem; background: #fff; }
+        .config-box-title { font-size: .95rem; font-weight: 600; color: #343a40; gap: .65rem; }
+        .config-box-body { padding: 1rem; }
+        .category-hero-banner { padding: 1rem 1.25rem; color: #495057; background: #fff; border: 1px solid var(--bs-border-color); border-left: 3px solid var(--bs-primary); border-radius: .3rem; box-shadow: 0 .1rem .2rem rgba(0,0,0,.05); }
+        .category-hero-banner::after { display: none; }
+        .category-hero-banner .text-white { color: #343a40 !important; }
+        .category-hero-banner .text-white-50 { color: #6c757d !important; }
+        .hero-cat-avatar { width: 56px; height: 56px; border: 1px solid #dee2e6; border-radius: .3rem; box-shadow: none; }
+        .category-hero-banner code { color: #6c757d; }
+        .stepper-nav-btn { padding: .4rem .65rem; color: #495057; background: #fff; border-color: #dee2e6; border-radius: .25rem; font-size: .8125rem; backdrop-filter: none; }
+        .stepper-nav-btn:hover { color: var(--bs-primary); background: #f8f9fa; border-color: #ced4da; transform: none; }
+
+        .crm-nav-tabs { display: flex; flex-wrap: wrap; gap: .25rem; padding: .5rem .75rem 0; background: #f8f9fa; border-color: var(--bs-border-color); border-radius: .3rem .3rem 0 0; }
+        .crm-nav-tabs .nav-link { padding: .55rem .75rem; border: 1px solid transparent; border-radius: .25rem .25rem 0 0; color: #6c757d; font-size: .8125rem; font-weight: 500; }
+        .crm-nav-tabs .nav-link:hover { color: var(--bs-primary); background: #fff; }
+        .crm-nav-tabs .nav-link.active { color: var(--bs-primary); background: #fff; border-color: var(--bs-border-color) var(--bs-border-color) #fff; box-shadow: none; }
+
+        .content .form-label { margin-bottom: .35rem; font-size: .8125rem; font-weight: 600 !important; color: #495057 !important; }
+        .content .form-control, .content .form-select, .content .input-group-text { min-height: 38px; padding: .45rem .7rem; border-color: #ced4da; border-radius: .25rem; font-family: var(--bs-body-font-family); font-size: .875rem; line-height: 1.4; }
+        .content .form-control-sm, .content .form-select-sm { min-height: 32px; padding: .3rem .55rem; font-size: .8125rem; }
+        .content .form-control-lg, .content .form-select-lg { min-height: 42px; padding: .5rem .75rem; font-size: .9rem; }
+        .content .form-control:focus, .content .form-select:focus { border-color: #9dbce9; box-shadow: 0 0 0 .2rem rgba(59,125,221,.15); }
+        .content .btn { border-radius: .25rem; font-family: var(--bs-body-font-family); font-size: .8125rem; font-weight: 500; line-height: 1.4; }
+        .content .btn-sm { padding: .3rem .55rem; font-size: .75rem; }
+        .content .btn-lg { padding: .55rem .9rem; font-size: .9rem; }
+        .content .badge { font-weight: 500; }
+        .design-option { border-color: #dee2e6; border-radius: .3rem; }
+        .design-option:hover { border-color: var(--bs-primary); transform: none; box-shadow: 0 .2rem .4rem rgba(0,0,0,.08); }
+        input[type=radio]:checked + .design-option { border-color: var(--bs-primary); background: var(--bs-primary-bg-subtle); box-shadow: inset 0 0 0 1px var(--bs-primary); }
+        .showcase-upload-card { border-color: #ced4da; border-radius: .3rem; background: #f8f9fa; }
+        .showcase-upload-card:hover { box-shadow: 0 .2rem .5rem rgba(0,0,0,.08); }
+        .banner-preview-box { border-color: #dee2e6; border-radius: .25rem; }
+        .mega-preview-window { overflow: hidden; }
+        .mega-preview-bar { background: #343a40; padding: .65rem .85rem; font-size: .8125rem; }
+        .mega-preview-cols { gap: .75rem; padding: .85rem; border-color: #dee2e6; }
+        .mega-preview-showcase { flex-basis: 190px; }
+        .badge-status { min-height: 30px; padding: .3rem .55rem; border-radius: .25rem; font-size: .75rem; font-weight: 500; }
+        .badge-show { background: #d1e7dd; color: #146c43; }
+        .badge-hide { background: #f8d7da; color: #b02a37; }
+        .icon-thumb { border-color: #dee2e6; border-radius: .25rem; }
+        .table { font-size: .8125rem; }
+        .table > :not(caption) > * > * { padding: .65rem .75rem; }
+
+        @media (max-width: 991.98px) {
+            .content > .container-fluid { padding-right: .75rem !important; padding-left: .75rem !important; }
+            .module-nav-pills { width: 100%; flex-wrap: nowrap; overflow-x: auto; }
+            .module-nav-link { flex: 0 0 auto; }
+            .crm-nav-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+            .crm-nav-tabs .nav-item, .crm-nav-tabs .nav-link { flex: 0 0 auto; }
+            .category-hero-banner { padding: .85rem; }
+            .mega-preview-body { flex-direction: column; }
+            .mega-preview-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); border-right: 0; }
+            .mega-preview-showcase { flex: 0 0 auto; width: 100%; }
+        }
+        @media (max-width: 575.98px) {
+            .content h3 { font-size: 1.1rem; }
+            .content > .container-fluid { padding-right: .5rem !important; padding-left: .5rem !important; }
+            .config-box-header { align-items: flex-start; gap: .5rem; padding: .75rem; }
+            .config-box-body { padding: .75rem; }
+            .config-box-title { font-size: .875rem; }
+            .kpi-card { gap: .55rem; padding: .65rem; }
+            .kpi-icon-box { width: 32px; height: 32px; }
+            .category-hero-banner { padding: .75rem; }
+            .hero-cat-avatar { width: 44px; height: 44px; }
+            .category-hero-banner h4 { font-size: .95rem; }
+            .category-hero-banner .d-flex.align-items-center.gap-2.mb-1 { flex-wrap: wrap; }
+            .stepper-nav-btn { padding: .35rem .5rem; font-size: .75rem; }
+            .crm-nav-tabs { padding: .35rem .4rem 0; }
+            .crm-nav-tabs .nav-link { padding: .5rem .6rem; font-size: .75rem; }
+            .mega-preview-cols { grid-template-columns: minmax(0, 1fr); }
+            .table-responsive { border-top: 1px solid #dee2e6; }
+        }
     </style>
 </head>
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
@@ -563,19 +668,28 @@ if ($insideMenusRes) {
                         <p class="text-muted small mb-0">Configure Desktop Top Bar Category Dropdown, Multi-Column Subcategories &amp; Showcase Banners</p>
                     </div>
 
-                    <!-- Clean CRM Nav Pills (Direct Switch Between Header Modules) -->
+                    <!-- Clean CRM Nav Pills: All 7 Items of Section 5 in order -->
                     <div class="module-nav-pills">
-                        <a href="header-menu-list.php" class="module-nav-link">
-                            <i class="fas fa-layer-group"></i> All Menus List
-                        </a>
                         <a href="add-top-icon.php" class="module-nav-link">
-                            <i class="fas fa-icons"></i> Top Icon Settings
+                            <i class="fas fa-star text-warning"></i> 1. Top Icon
                         </a>
                         <a href="add-menu-page.php" class="module-nav-link active">
-                            <i class="fas fa-folder-tree"></i> Inside Page Mega Menu
+                            <i class="fas fa-file-alt text-info"></i> 2. Top Menu Inside Pages
                         </a>
                         <a href="header-menu-design.php" class="module-nav-link">
-                            <i class="fas fa-palette"></i> Header Layouts
+                            <i class="fas fa-palette text-purple"></i> 3. Select Design
+                        </a>
+                        <a href="category-menu-description.php" class="module-nav-link">
+                            <i class="fas fa-align-left text-primary"></i> 4. Category Text Description
+                        </a>
+                        <a href="header-search-settings.php" class="module-nav-link">
+                            <i class="fas fa-search text-success"></i> 5. Search Box Text
+                        </a>
+                        <a href="header-menu-list.php" class="module-nav-link">
+                            <i class="fas fa-layer-group text-secondary"></i> 6. All menus
+                        </a>
+                        <a href="header-settings.php" class="module-nav-link">
+                            <i class="fas fa-sliders-h text-dark"></i> 7. Page Rules &amp; Visibility
                         </a>
                     </div>
                 </div>
@@ -641,12 +755,12 @@ if ($insideMenusRes) {
                     </div>
                 <?php endif; ?>
 
-                <!-- Step 1: Category Selection Card (Clean Cascading Picker) -->
+                <!-- Step 1: Category Select Name Add > Box (Clean Cascading Picker) -->
                 <div class="config-box">
                     <div class="config-box-header">
                         <h4 class="config-box-title">
                             <i class="fas fa-sitemap text-primary"></i>
-                            Select Category to Configure
+                            Category Select Name Add &gt; Box
                         </h4>
                         <?php if ($selected): ?>
                             <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">
@@ -848,24 +962,53 @@ if ($insideMenusRes) {
                                 </div>
                             </div>
 
-                            <!-- TAB 2: Showcase Banners (Up to 3 Columns) -->
+                            <!-- TAB 2: Showcase Banners (1 Image / 2 Images / 3 Images Adaptive Design) -->
                             <div class="tab-pane fade" id="tab-showcase" role="tabpanel">
                                 <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
                                     <div>
                                         <h5 class="mb-0 fw-bold text-dark">Inside Mega Menu Showcase Banners</h5>
-                                        <p class="text-muted small mb-0">Mega menu dropdown me right-side showcase image tiles upload karein (1 se 3 column tak adapt hota hai).</p>
+                                        <p class="text-muted small mb-0">Mega menu dropdown me right-side showcase image tiles upload karein.</p>
                                     </div>
                                     <span class="badge bg-light text-primary border px-3 py-2">
-                                        <i class="fas fa-magic me-1"></i> Multi-Column Adaptive
+                                        <i class="fas fa-magic me-1"></i> Doc Spec: 1/2/3 Images Design
                                     </span>
                                 </div>
 
-                                <div class="row g-3">
+                                <!-- 3. Select Design Add > Add tab Box (1 image 2 image 3 image) -->
+                                <div class="mb-4 p-3 bg-light rounded-3 border" style="border-left: 4px solid #0b53a1 !important;">
+                                    <label class="form-label fw-bold text-dark mb-2 d-flex align-items-center justify-content-between">
+                                        <span><i class="fas fa-layer-group text-primary me-1"></i> 3. Select Design Add &gt; Add tab Box (1 image, 2 image, 3 image)</span>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" id="activeDesignBadge">
+                                            Active: <?php echo ($currentDesignMode === '3_image') ? '3 Images' : (($currentDesignMode === '2_image') ? '2 Images' : '1 Image'); ?>
+                                        </span>
+                                    </label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="desktop_menu_design" id="dmd_1_img" value="1_image" <?php echo ($currentDesignMode === '1_image') ? 'checked' : ''; ?> onchange="switchDesignImages('1_image')">
+                                        <label class="btn btn-outline-primary py-2 fw-bold" for="dmd_1_img">
+                                            <i class="fas fa-image me-1"></i> 1 Image Design
+                                        </label>
+
+                                        <input type="radio" class="btn-check" name="desktop_menu_design" id="dmd_2_img" value="2_image" <?php echo ($currentDesignMode === '2_image') ? 'checked' : ''; ?> onchange="switchDesignImages('2_image')">
+                                        <label class="btn btn-outline-primary py-2 fw-bold" for="dmd_2_img">
+                                            <i class="fas fa-images me-1"></i> 2 Images Design
+                                        </label>
+
+                                        <input type="radio" class="btn-check" name="desktop_menu_design" id="dmd_3_img" value="3_image" <?php echo ($currentDesignMode === '3_image') ? 'checked' : ''; ?> onchange="switchDesignImages('3_image')">
+                                        <label class="btn btn-outline-primary py-2 fw-bold" for="dmd_3_img">
+                                            <i class="fas fa-photo-video me-1"></i> 3 Images Design
+                                        </label>
+                                    </div>
+                                    <small class="text-muted d-block mt-2">
+                                        <i class="fas fa-info-circle me-1 text-primary"></i> Select Design ke according neeche Inside Image Upload box, URL box aur Short Order number dynamically open honge.
+                                    </small>
+                                </div>
+
+                                <div class="row g-3" id="bannerCardsContainer">
                                     <!-- Banner Column 1 (Primary) -->
-                                    <div class="col-md-4">
-                                        <div class="showcase-upload-card">
+                                    <div class="col-md-<?php echo ($currentDesignMode === '1_image') ? '12' : (($currentDesignMode === '2_image') ? '6' : '4'); ?>" id="bannerCol1Wrap">
+                                        <div class="showcase-upload-card h-100">
                                             <div class="d-flex align-items-center justify-content-between mb-2">
-                                                <span class="badge bg-primary px-2 py-1">Column 1 (Primary Banner)</span>
+                                                <span class="badge bg-primary px-2 py-1">Banner 1 (Primary)</span>
                                                 <?php if (!empty($selected['desktop_menu_image'])): ?>
                                                     <span class="badge bg-success-subtle text-success small"><i class="fas fa-check"></i> Active</span>
                                                 <?php endif; ?>
@@ -890,22 +1033,34 @@ if ($insideMenusRes) {
                                                 </div>
                                             <?php endif; ?>
 
-                                            <label class="form-label small fw-bold mb-1">Upload Banner Image 1</label>
+                                            <!-- 4. Inside Image Upload Add > Box -->
+                                            <label class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-cloud-arrow-up text-primary me-1"></i> 4. Inside Image Upload Add &gt; Box (1)
+                                            </label>
                                             <input type="file" class="form-control form-control-sm mb-2" name="desktop_menu_image" accept="image/*" onchange="previewBannerImg(this, 'prvInsideImg1', 'phInsideImg1')">
 
-                                            <label class="form-label small fw-bold mb-1">Banner 1 Footer Label</label>
-                                            <input type="text" class="form-control form-control-sm mb-2" name="desktop_menu_title_1" placeholder="e.g. <?php echo htmlspecialchars($selected['name']); ?>" value="<?php echo htmlspecialchars($selected['desktop_menu_title_1'] ?? ''); ?>">
+                                            <!-- 7. URL Add > Add tab Box -->
+                                            <label class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-link text-info me-1"></i> 7. URL Add &gt; Box (1)
+                                            </label>
+                                            <input type="text" class="form-control form-control-sm mb-2" name="desktop_menu_url_1" placeholder="/category/..." value="<?php echo htmlspecialchars($selected['desktop_menu_url_1'] ?? ''); ?>">
 
-                                            <label class="form-label small fw-bold mb-1">Banner 1 Target URL</label>
-                                            <input type="text" class="form-control form-control-sm" name="desktop_menu_url_1" placeholder="/category/..." value="<?php echo htmlspecialchars($selected['desktop_menu_url_1'] ?? ''); ?>">
+                                            <!-- 5. Short Order Number Add > Box -->
+                                            <label class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-sort-numeric-down text-secondary me-1"></i> 5. Short Order Number Add &gt; Box (1)
+                                            </label>
+                                            <input type="number" class="form-control form-control-sm mb-2" name="desktop_menu_order_1" min="1" placeholder="1" value="<?php echo (int)($selected['desktop_menu_order_1'] ?? 1); ?>">
+
+                                            <label class="form-label small fw-bold mb-1">Banner 1 Footer Label</label>
+                                            <input type="text" class="form-control form-control-sm" name="desktop_menu_title_1" placeholder="e.g. <?php echo htmlspecialchars($selected['name']); ?>" value="<?php echo htmlspecialchars($selected['desktop_menu_title_1'] ?? ''); ?>">
                                         </div>
                                     </div>
 
-                                    <!-- Banner Column 2 (Optional) -->
-                                    <div class="col-md-4">
-                                        <div class="showcase-upload-card">
+                                    <!-- Banner Column 2 (Active in 2-image or 3-image design) -->
+                                    <div class="col-md-<?php echo ($currentDesignMode === '2_image') ? '6' : '4'; ?>" id="bannerCol2Wrap" style="<?php echo ($currentDesignMode === '1_image') ? 'display:none;' : ''; ?>">
+                                        <div class="showcase-upload-card h-100">
                                             <div class="d-flex align-items-center justify-content-between mb-2">
-                                                <span class="badge bg-secondary px-2 py-1">Column 2 (Optional Banner)</span>
+                                                <span class="badge bg-secondary px-2 py-1">Banner 2</span>
                                                 <?php if (!empty($selected['desktop_menu_image_2'])): ?>
                                                     <span class="badge bg-success-subtle text-success small"><i class="fas fa-check"></i> Active</span>
                                                 <?php endif; ?>
@@ -930,22 +1085,34 @@ if ($insideMenusRes) {
                                                 </div>
                                             <?php endif; ?>
 
-                                            <label class="form-label small fw-bold mb-1">Upload Banner Image 2</label>
+                                            <!-- 4. Inside Image Upload Add > Box -->
+                                            <label class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-cloud-arrow-up text-primary me-1"></i> 4. Inside Image Upload Add &gt; Box (2)
+                                            </label>
                                             <input type="file" class="form-control form-control-sm mb-2" name="desktop_menu_image_2" accept="image/*" onchange="previewBannerImg(this, 'prvInsideImg2', 'phInsideImg2')">
 
-                                            <label class="form-label small fw-bold mb-1">Banner 2 Footer Label</label>
-                                            <input type="text" class="form-control form-control-sm mb-2" name="desktop_menu_title_2" placeholder="e.g. Featured Products" value="<?php echo htmlspecialchars($selected['desktop_menu_title_2'] ?? ''); ?>">
+                                            <!-- 7. URL Add > Add tab Box -->
+                                            <label class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-link text-info me-1"></i> 7. URL Add &gt; Box (2)
+                                            </label>
+                                            <input type="text" class="form-control form-control-sm mb-2" name="desktop_menu_url_2" placeholder="/category/..." value="<?php echo htmlspecialchars($selected['desktop_menu_url_2'] ?? ''); ?>">
 
-                                            <label class="form-label small fw-bold mb-1">Banner 2 Target URL</label>
-                                            <input type="text" class="form-control form-control-sm" name="desktop_menu_url_2" placeholder="/category/..." value="<?php echo htmlspecialchars($selected['desktop_menu_url_2'] ?? ''); ?>">
+                                            <!-- 5. Short Order Number Add > Box -->
+                                            <label class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-sort-numeric-down text-secondary me-1"></i> 5. Short Order Number Add &gt; Box (2)
+                                            </label>
+                                            <input type="number" class="form-control form-control-sm mb-2" name="desktop_menu_order_2" min="1" placeholder="2" value="<?php echo (int)($selected['desktop_menu_order_2'] ?? 2); ?>">
+
+                                            <label class="form-label small fw-bold mb-1">Banner 2 Footer Label</label>
+                                            <input type="text" class="form-control form-control-sm" name="desktop_menu_title_2" placeholder="e.g. Featured Products" value="<?php echo htmlspecialchars($selected['desktop_menu_title_2'] ?? ''); ?>">
                                         </div>
                                     </div>
 
-                                    <!-- Banner Column 3 (Optional) -->
-                                    <div class="col-md-4">
-                                        <div class="showcase-upload-card">
+                                    <!-- Banner Column 3 (Active only in 3-image design) -->
+                                    <div class="col-md-4" id="bannerCol3Wrap" style="<?php echo ($currentDesignMode !== '3_image') ? 'display:none;' : ''; ?>">
+                                        <div class="showcase-upload-card h-100">
                                             <div class="d-flex align-items-center justify-content-between mb-2">
-                                                <span class="badge bg-secondary px-2 py-1">Column 3 (Optional Banner)</span>
+                                                <span class="badge bg-secondary px-2 py-1">Banner 3</span>
                                                 <?php if (!empty($selected['desktop_menu_image_3'])): ?>
                                                     <span class="badge bg-success-subtle text-success small"><i class="fas fa-check"></i> Active</span>
                                                 <?php endif; ?>
@@ -970,14 +1137,26 @@ if ($insideMenusRes) {
                                                 </div>
                                             <?php endif; ?>
 
-                                            <label class="form-label small fw-bold mb-1">Upload Banner Image 3</label>
+                                            <!-- 4. Inside Image Upload Add > Box -->
+                                            <label class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-cloud-arrow-up text-primary me-1"></i> 4. Inside Image Upload Add &gt; Box (3)
+                                            </label>
                                             <input type="file" class="form-control form-control-sm mb-2" name="desktop_menu_image_3" accept="image/*" onchange="previewBannerImg(this, 'prvInsideImg3', 'phInsideImg3')">
 
-                                            <label class="form-label small fw-bold mb-1">Banner 3 Footer Label</label>
-                                            <input type="text" class="form-control form-control-sm mb-2" name="desktop_menu_title_3" placeholder="e.g. Special Offers" value="<?php echo htmlspecialchars($selected['desktop_menu_title_3'] ?? ''); ?>">
+                                            <!-- 7. URL Add > Add tab Box -->
+                                            <label class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-link text-info me-1"></i> 7. URL Add &gt; Box (3)
+                                            </label>
+                                            <input type="text" class="form-control form-control-sm mb-2" name="desktop_menu_url_3" placeholder="/category/..." value="<?php echo htmlspecialchars($selected['desktop_menu_url_3'] ?? ''); ?>">
 
-                                            <label class="form-label small fw-bold mb-1">Banner 3 Target URL</label>
-                                            <input type="text" class="form-control form-control-sm" name="desktop_menu_url_3" placeholder="/category/..." value="<?php echo htmlspecialchars($selected['desktop_menu_url_3'] ?? ''); ?>">
+                                            <!-- 5. Short Order Number Add > Box -->
+                                            <label class="form-label small fw-bold mb-1">
+                                                <i class="fas fa-sort-numeric-down text-secondary me-1"></i> 5. Short Order Number Add &gt; Box (3)
+                                            </label>
+                                            <input type="number" class="form-control form-control-sm mb-2" name="desktop_menu_order_3" min="1" placeholder="3" value="<?php echo (int)($selected['desktop_menu_order_3'] ?? 3); ?>">
+
+                                            <label class="form-label small fw-bold mb-1">Banner 3 Footer Label</label>
+                                            <input type="text" class="form-control form-control-sm" name="desktop_menu_title_3" placeholder="e.g. Special Offers" value="<?php echo htmlspecialchars($selected['desktop_menu_title_3'] ?? ''); ?>">
                                         </div>
                                     </div>
                                 </div>
@@ -1269,6 +1448,31 @@ function previewBannerImg(input, imgId, phId) {
             if (ph) ph.style.display = 'none';
         }
         reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Dynamic Design Image Switcher (1 Image, 2 Images, 3 Images per Google Doc)
+function switchDesignImages(mode) {
+    const col1 = document.getElementById('bannerCol1Wrap');
+    const col2 = document.getElementById('bannerCol2Wrap');
+    const col3 = document.getElementById('bannerCol3Wrap');
+    const badge = document.getElementById('activeDesignBadge');
+
+    if (mode === '1_image') {
+        if (col1) { col1.className = 'col-md-12'; col1.style.display = 'block'; }
+        if (col2) col2.style.display = 'none';
+        if (col3) col3.style.display = 'none';
+        if (badge) badge.innerText = 'Active: 1 Image';
+    } else if (mode === '2_image') {
+        if (col1) { col1.className = 'col-md-6'; col1.style.display = 'block'; }
+        if (col2) { col2.className = 'col-md-6'; col2.style.display = 'block'; }
+        if (col3) col3.style.display = 'none';
+        if (badge) badge.innerText = 'Active: 2 Images';
+    } else if (mode === '3_image') {
+        if (col1) { col1.className = 'col-md-4'; col1.style.display = 'block'; }
+        if (col2) { col2.className = 'col-md-4'; col2.style.display = 'block'; }
+        if (col3) { col3.className = 'col-md-4'; col3.style.display = 'block'; }
+        if (badge) badge.innerText = 'Active: 3 Images';
     }
 }
 

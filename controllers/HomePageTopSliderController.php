@@ -1,5 +1,6 @@
 <?php
 require_once(__DIR__ . '/../config/database.php');
+require_once(__DIR__ . '/../includes/image-upload-helper.php');
 
 class HomePageTopSliderController {
     private $db;
@@ -374,26 +375,9 @@ class HomePageTopSliderController {
             return '';
         }
 
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif'];
-        if (!in_array($ext, $allowed)) {
-            return '';
-        }
-
         $dir = __DIR__ . "/../uploads/banners/{$type}/";
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0777, true);
-        }
-        @chmod($dir, 0777);
-
-        $filename = uniqid() . '_' . time() . '.' . $ext;
-        $dest = $dir . $filename;
-
-        if (move_uploaded_file($file['tmp_name'], $dest)) {
-            return "uploads/banners/{$type}/{$filename}";
-        }
-
-        return '';
+        $result = saveUploadedImageAsWebp($file, $dir, "uploads/banners/{$type}");
+        return $result['success'] ? $result['path'] : '';
     }
 }
 ?>

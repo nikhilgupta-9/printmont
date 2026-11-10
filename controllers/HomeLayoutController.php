@@ -1,6 +1,7 @@
 <?php
 require_once(__DIR__ . '/../models/HomeLayoutModel.php');
 require_once(__DIR__ . '/../models/BannerModel.php');
+require_once(__DIR__ . '/../includes/image-upload-helper.php');
 
 class HomeLayoutController {
     private HomeLayoutModel $layoutModel;
@@ -453,30 +454,9 @@ class HomeLayoutController {
             return ['success' => false, 'error' => 'File upload error code: ' . $file['error']];
         }
 
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif'];
-        if (!in_array($ext, $allowedExts)) {
-            return ['success' => false, 'error' => 'Invalid image extension. Allowed: JPG, PNG, GIF, WebP, SVG, AVIF'];
-        }
-
-        if ($file['size'] > 10 * 1024 * 1024) {
-            return ['success' => false, 'error' => 'Image too large. Max 10 MB'];
-        }
-
         $dir = __DIR__ . "/../uploads/banners/{$type}/";
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0777, true);
-        }
-        @chmod($dir, 0777);
-
-        $filename = uniqid() . '_' . time() . '.' . $ext;
-        $dest = $dir . $filename;
-
-        if (!move_uploaded_file($file['tmp_name'], $dest)) {
-            return ['success' => false, 'error' => "Failed to upload {$type} image"];
-        }
-
-        return "uploads/banners/{$type}/{$filename}";
+        $result = saveUploadedImageAsWebp($file, $dir, "uploads/banners/{$type}");
+        return $result['success'] ? $result['path'] : ['success' => false, 'error' => $result['error']];
     }
 }
 ?>

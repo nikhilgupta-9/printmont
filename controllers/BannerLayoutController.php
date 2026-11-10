@@ -1,5 +1,7 @@
 <?php
 require_once(__DIR__ . '/../models/BannerModel.php');
+require_once(__DIR__ . '/../includes/banner-helpers.php');
+require_once(__DIR__ . '/../includes/image-upload-helper.php');
 
 /**
  * Admin banner controller.
@@ -50,8 +52,10 @@ class BannerController {
 
         // Desktop multi-images (for grid formats)
         $desktopImagesPaths = $this->uploadMultipleImages($files['desktop_images'] ?? null, 'desktop');
+        if (isset($desktopImagesPaths['error'])) return $desktopImagesPaths;
         // Mobile multi-images
         $mobileImagesPaths  = $this->uploadMultipleImages($files['mobile_images'] ?? null, 'mobile');
+        if (isset($mobileImagesPaths['error'])) return $mobileImagesPaths;
 
         $desktopUrls = !empty($post['desktop_urls']) && is_array($post['desktop_urls'])
             ? json_encode(array_values(array_filter($post['desktop_urls'])))
@@ -74,17 +78,40 @@ class BannerController {
             $mobileUrlPrimary = $post['mobile_urls'][0] ?? '';
         }
 
+        $desktopAnchorType = trim($post['desktop_anchor_type'] ?? '');
+        $desktopAnchorId   = !empty($post['desktop_anchor_id']) ? (int)$post['desktop_anchor_id'] : null;
+        $desktopAnchorPos  = ($post['desktop_anchor_position'] ?? 'after') === 'before' ? 'before' : 'after';
+
+        $mobileAnchorType  = trim($post['mobile_anchor_type'] ?? '');
+        $mobileAnchorId    = !empty($post['mobile_anchor_id']) ? (int)$post['mobile_anchor_id'] : null;
+        $mobileAnchorPos   = ($post['mobile_anchor_position'] ?? 'after') === 'before' ? 'before' : 'after';
+
+        $dbConn = (new Database())->getConnection();
+
+        $desktopSortOrder  = (isset($post['desktop_sort_order']) && is_numeric($post['desktop_sort_order']) && $post['desktop_sort_order'] !== '')
+            ? (float)$post['desktop_sort_order']
+            : resolveAnchoredSortOrder($dbConn, $desktopAnchorType, $desktopAnchorId, $desktopAnchorPos, 'desktop', 'banners');
+
+        $mobileSortOrder   = (isset($post['mobile_sort_order']) && is_numeric($post['mobile_sort_order']) && $post['mobile_sort_order'] !== '')
+            ? (float)$post['mobile_sort_order']
+            : resolveAnchoredSortOrder($dbConn, $mobileAnchorType, $mobileAnchorId, $mobileAnchorPos, 'mobile', 'banners');
+
         $data = [
             'title'                      => trim($post['title'] ?? ''),
+            'slogan'                     => trim($post['slogan'] ?? '') ?: null,
+            'show_slogan'                => isset($post['show_slogan']) ? (int)$post['show_slogan'] : 1,
             'description'                => trim($post['description'] ?? ''),
             'target_url'                 => $desktopUrlPrimary,
             'section_id'                 => (int)($post['section_id'] ?? $post['desktop_home_carousel_id'] ?? 0) ?: null,
             'layout_format'              => trim($post['desktop_design'] ?? $post['layout_format'] ?? 'desktop_format_1'),
-            'display_order'              => (int)($post['desktop_sort_order'] ?? $post['display_order'] ?? 0),
+            'display_order'              => (float)$desktopSortOrder,
             'status'                     => in_array($post['status'] ?? $post['desktop_status'] ?? '', ['active','inactive']) ? ($post['status'] ?? $post['desktop_status']) : 'active',
-            'start_date'                 => $post['desktop_start_date'] ?? $post['start_date'] ?: null,
-            'end_date'                   => $post['desktop_end_date'] ?? $post['end_date'] ?: null,
+            'start_date'                 => !empty($post['desktop_start_date']) ? $post['desktop_start_date'] : (!empty($post['start_date']) ? $post['start_date'] : null),
+            'end_date'                   => !empty($post['desktop_end_date']) ? $post['desktop_end_date'] : (!empty($post['end_date']) ? $post['end_date'] : null),
             'banner_type'                => trim($post['banner_type'] ?? 'single'),
+            'page_target'                => in_array($post['page_target'] ?? '', ['home_page', 'other_pages', 'both']) ? $post['page_target'] : 'both',
+            'banner_subtype'             => in_array($post['banner_subtype'] ?? '', ['small', 'normal', 'service', 'product_detail', 'dashboard']) ? $post['banner_subtype'] : 'normal',
+            'extra_product_id'           => (int)($post['extra_product_id'] ?? 0) ?: null,
             'image_url_desktop'          => $desktopImgFinal,
             'image_url_mobile'           => $mobileImgFinal,
             'desktop_show_other_pages'   => $post['desktop_show_other_pages'] ?? 'no',
@@ -101,24 +128,33 @@ class BannerController {
             'button_arrows'              => in_array($post['button_arrows'] ?? '', ['enable', 'disable']) ? $post['button_arrows'] : 'enable',
             'auto_running'               => in_array($post['auto_running'] ?? '', ['enable', 'disable']) ? $post['auto_running'] : 'enable',
             'auto_run_speed'             => !empty($post['auto_run_speed']) ? (int)$post['auto_run_speed'] : 3000,
-            'desktop_sort_order'         => (int)($post['desktop_sort_order'] ?? 0),
-            'desktop_start_date'         => $post['desktop_start_date'] ?: null,
-            'desktop_end_date'           => $post['desktop_end_date'] ?: null,
+            'desktop_sort_order'         => (float)$desktopSortOrder,
+            'desktop_anchor_type'        => $desktopAnchorType ?: null,
+            'desktop_anchor_id'          => $desktopAnchorId,
+            'desktop_anchor_position'    => $desktopAnchorPos,
+            'desktop_start_date'         => !empty($post['desktop_start_date']) ? $post['desktop_start_date'] : null,
+            'desktop_end_date'           => !empty($post['desktop_end_date']) ? $post['desktop_end_date'] : null,
             'mobile_show_other_pages'    => $post['mobile_show_other_pages'] ?? 'no',
             'mobile_other_category_id'   => (int)($post['mobile_other_category_id'] ?? 0) ?: null,
             'mobile_other_carousel_id'   => (int)($post['mobile_other_carousel_id'] ?? 0) ?: null,
             'mobile_home_category_id'    => (int)($post['mobile_home_category_id'] ?? 0) ?: null,
             'mobile_home_carousel_id'    => (int)($post['mobile_home_carousel_id'] ?? 0) ?: null,
             'mobile_design'              => trim($post['mobile_design'] ?? ''),
+            'mobile_same_design'         => ($post['mobile_same_design'] ?? 'no') === 'yes' ? 'yes' : 'no',
             'mobile_image'               => $mobileImgFinal,
             'mobile_images'              => !empty($mobileImagesPaths) ? json_encode($mobileImagesPaths) : null,
             'mobile_url'                 => $mobileUrlPrimary,
             'mobile_urls'                => $mobileUrls,
             'mobile_status'              => $post['mobile_status'] ?? 'active',
-            'mobile_sort_order'          => (int)($post['mobile_sort_order'] ?? 0),
-            'mobile_start_date'          => $post['mobile_start_date'] ?: null,
-            'mobile_end_date'            => $post['mobile_end_date'] ?: null,
+            'mobile_sort_order'          => (float)$mobileSortOrder,
+            'mobile_anchor_type'         => $mobileAnchorType ?: null,
+            'mobile_anchor_id'           => $mobileAnchorId,
+            'mobile_anchor_position'     => $mobileAnchorPos,
+            'mobile_start_date'          => !empty($post['mobile_start_date']) ? $post['mobile_start_date'] : null,
+            'mobile_end_date'            => !empty($post['mobile_end_date']) ? $post['mobile_end_date'] : null,
         ];
+
+        $data = array_merge($data, $this->parseMultiPageAndSeo($post));
 
         if (empty($data['title'])) {
             return ['success' => false, 'error' => 'Banner title name is required'];
@@ -307,10 +343,12 @@ class BannerController {
 
         // Desktop multi-images
         $desktopImagesPaths = $this->uploadMultipleImages($files['desktop_images'] ?? null, 'desktop');
+        if (isset($desktopImagesPaths['error'])) return $desktopImagesPaths;
         $desktopImagesJson = !empty($desktopImagesPaths) ? json_encode($desktopImagesPaths) : $existing['desktop_images'];
 
         // Mobile multi-images
         $mobileImagesPaths = $this->uploadMultipleImages($files['mobile_images'] ?? null, 'mobile');
+        if (isset($mobileImagesPaths['error'])) return $mobileImagesPaths;
         $mobileImagesJson = !empty($mobileImagesPaths) ? json_encode($mobileImagesPaths) : $existing['mobile_images'];
 
         $desktopUrls = !empty($post['desktop_urls']) && is_array($post['desktop_urls'])
@@ -324,17 +362,40 @@ class BannerController {
         $desktopUrlPrimary = trim($post['desktop_url'] ?? $post['target_url'] ?? $existing['desktop_url']);
         $mobileUrlPrimary  = trim($post['mobile_url'] ?? $existing['mobile_url'] ?? $desktopUrlPrimary);
 
+        $desktopAnchorType = trim($post['desktop_anchor_type'] ?? ($existing['desktop_anchor_type'] ?? ''));
+        $desktopAnchorId   = !empty($post['desktop_anchor_id']) ? (int)$post['desktop_anchor_id'] : ($existing['desktop_anchor_id'] ?? null);
+        $desktopAnchorPos  = ($post['desktop_anchor_position'] ?? ($existing['desktop_anchor_position'] ?? 'after')) === 'before' ? 'before' : 'after';
+
+        $mobileAnchorType  = trim($post['mobile_anchor_type'] ?? ($existing['mobile_anchor_type'] ?? ''));
+        $mobileAnchorId    = !empty($post['mobile_anchor_id']) ? (int)$post['mobile_anchor_id'] : ($existing['mobile_anchor_id'] ?? null);
+        $mobileAnchorPos   = ($post['mobile_anchor_position'] ?? ($existing['mobile_anchor_position'] ?? 'after')) === 'before' ? 'before' : 'after';
+
+        $dbConn = (new Database())->getConnection();
+
+        $desktopSortOrder  = (isset($post['desktop_sort_order']) && is_numeric($post['desktop_sort_order']) && $post['desktop_sort_order'] !== '')
+            ? (float)$post['desktop_sort_order']
+            : ($existing['desktop_sort_order'] ?? resolveAnchoredSortOrder($dbConn, $desktopAnchorType, $desktopAnchorId, $desktopAnchorPos, 'desktop', 'banners'));
+
+        $mobileSortOrder   = (isset($post['mobile_sort_order']) && is_numeric($post['mobile_sort_order']) && $post['mobile_sort_order'] !== '')
+            ? (float)$post['mobile_sort_order']
+            : ($existing['mobile_sort_order'] ?? resolveAnchoredSortOrder($dbConn, $mobileAnchorType, $mobileAnchorId, $mobileAnchorPos, 'mobile', 'banners'));
+
         $data = [
             'title'                      => trim($post['title'] ?? $existing['title']),
+            'slogan'                     => trim($post['slogan'] ?? ($existing['slogan'] ?? '')) ?: null,
+            'show_slogan'                => isset($post['show_slogan']) ? (int)$post['show_slogan'] : (int)($existing['show_slogan'] ?? 1),
             'description'                => trim($post['description'] ?? $existing['description']),
             'target_url'                 => $desktopUrlPrimary,
             'section_id'                 => (int)($post['section_id'] ?? $post['desktop_home_carousel_id'] ?? $existing['section_id']) ?: null,
             'layout_format'              => trim($post['desktop_design'] ?? $post['layout_format'] ?? $existing['layout_format']),
-            'display_order'              => (int)($post['desktop_sort_order'] ?? $post['display_order'] ?? $existing['display_order']),
+            'display_order'              => (float)$desktopSortOrder,
             'status'                     => in_array($post['status'] ?? $post['desktop_status'] ?? '', ['active','inactive']) ? ($post['status'] ?? $post['desktop_status']) : ($existing['status'] ?? 'active'),
-            'start_date'                 => $post['desktop_start_date'] ?? $post['start_date'] ?: $existing['start_date'],
-            'end_date'                   => $post['desktop_end_date'] ?? $post['end_date'] ?: $existing['end_date'],
+            'start_date'                 => !empty($post['desktop_start_date']) ? $post['desktop_start_date'] : (!empty($post['start_date']) ? $post['start_date'] : $existing['start_date']),
+            'end_date'                   => !empty($post['desktop_end_date']) ? $post['desktop_end_date'] : (!empty($post['end_date']) ? $post['end_date'] : $existing['end_date']),
             'banner_type'                => trim($post['banner_type'] ?? $existing['banner_type'] ?? 'single'),
+            'page_target'                => in_array($post['page_target'] ?? '', ['home_page', 'other_pages', 'both']) ? $post['page_target'] : ($existing['page_target'] ?? 'both'),
+            'banner_subtype'             => in_array($post['banner_subtype'] ?? '', ['small', 'normal', 'service', 'product_detail', 'dashboard']) ? $post['banner_subtype'] : ($existing['banner_subtype'] ?? 'normal'),
+            'extra_product_id'           => (int)($post['extra_product_id'] ?? ($existing['extra_product_id'] ?? 0)) ?: null,
             'image_url_desktop'          => $desktopImgFinal,
             'image_url_mobile'           => $mobileImgFinal ?: $desktopImgFinal,
             'desktop_show_other_pages'   => $post['desktop_show_other_pages'] ?? $existing['desktop_show_other_pages'] ?? 'no',
@@ -351,24 +412,33 @@ class BannerController {
             'button_arrows'              => in_array($post['button_arrows'] ?? '', ['enable', 'disable']) ? $post['button_arrows'] : ($existing['button_arrows'] ?? 'enable'),
             'auto_running'               => in_array($post['auto_running'] ?? '', ['enable', 'disable']) ? $post['auto_running'] : ($existing['auto_running'] ?? 'enable'),
             'auto_run_speed'             => !empty($post['auto_run_speed']) ? (int)$post['auto_run_speed'] : (int)($existing['auto_run_speed'] ?? 3000),
-            'desktop_sort_order'         => (int)($post['desktop_sort_order'] ?? $existing['desktop_sort_order'] ?? 0),
-            'desktop_start_date'         => $post['desktop_start_date'] ?: $existing['desktop_start_date'],
-            'desktop_end_date'           => $post['desktop_end_date'] ?: $existing['desktop_end_date'],
+            'desktop_sort_order'         => (float)$desktopSortOrder,
+            'desktop_anchor_type'        => $desktopAnchorType ?: null,
+            'desktop_anchor_id'          => $desktopAnchorId,
+            'desktop_anchor_position'    => $desktopAnchorPos,
+            'desktop_start_date'         => !empty($post['desktop_start_date']) ? $post['desktop_start_date'] : ($existing['desktop_start_date'] ?? null),
+            'desktop_end_date'           => !empty($post['desktop_end_date']) ? $post['desktop_end_date'] : ($existing['desktop_end_date'] ?? null),
             'mobile_show_other_pages'    => $post['mobile_show_other_pages'] ?? $existing['mobile_show_other_pages'] ?? 'no',
             'mobile_other_category_id'   => (int)($post['mobile_other_category_id'] ?? 0) ?: null,
             'mobile_other_carousel_id'   => (int)($post['mobile_other_carousel_id'] ?? 0) ?: null,
             'mobile_home_category_id'    => (int)($post['mobile_home_category_id'] ?? 0) ?: null,
             'mobile_home_carousel_id'    => (int)($post['mobile_home_carousel_id'] ?? 0) ?: null,
             'mobile_design'              => trim($post['mobile_design'] ?? $existing['mobile_design'] ?? ''),
+            'mobile_same_design'         => ($post['mobile_same_design'] ?? ($existing['mobile_same_design'] ?? 'no')) === 'yes' ? 'yes' : 'no',
             'mobile_image'               => $mobileImgFinal,
             'mobile_images'              => $mobileImagesJson,
             'mobile_url'                 => $mobileUrlPrimary,
             'mobile_urls'                => $mobileUrls,
             'mobile_status'              => $post['mobile_status'] ?? $existing['mobile_status'] ?? 'active',
-            'mobile_sort_order'          => (int)($post['mobile_sort_order'] ?? $existing['mobile_sort_order'] ?? 0),
-            'mobile_start_date'          => $post['mobile_start_date'] ?: $existing['mobile_start_date'],
-            'mobile_end_date'            => $post['mobile_end_date'] ?: $existing['mobile_end_date'],
+            'mobile_sort_order'          => (float)$mobileSortOrder,
+            'mobile_anchor_type'         => $mobileAnchorType ?: null,
+            'mobile_anchor_id'           => $mobileAnchorId,
+            'mobile_anchor_position'     => $mobileAnchorPos,
+            'mobile_start_date'          => !empty($post['mobile_start_date']) ? $post['mobile_start_date'] : ($existing['mobile_start_date'] ?? null),
+            'mobile_end_date'            => !empty($post['mobile_end_date']) ? $post['mobile_end_date'] : ($existing['mobile_end_date'] ?? null),
         ];
+
+        $data = array_merge($data, $this->parseMultiPageAndSeo($post, $existing));
 
         if (empty($data['title'])) {
             return ['success' => false, 'error' => 'Banner title is required'];
@@ -428,7 +498,38 @@ class BannerController {
         if (is_array($mobilePath) && isset($mobilePath['error'])) return $mobilePath;
 
         $desktopImagesPaths = $this->uploadMultipleImages($files['desktop_images'] ?? null, 'desktop');
+        if (isset($desktopImagesPaths['error'])) return $desktopImagesPaths;
         $mobileImagesPaths  = $this->uploadMultipleImages($files['mobile_images'] ?? null, 'mobile');
+        if (isset($mobileImagesPaths['error'])) return $mobileImagesPaths;
+
+        // Service slider with printing / without printing images
+        $desktopWithPrint = $this->uploadImage($files['desktop_with_printing_image'] ?? null, 'desktop');
+        if (is_array($desktopWithPrint) && isset($desktopWithPrint['error'])) return $desktopWithPrint;
+
+        $desktopWithoutPrint = $this->uploadImage($files['desktop_without_printing_image'] ?? null, 'desktop');
+        if (is_array($desktopWithoutPrint) && isset($desktopWithoutPrint['error'])) return $desktopWithoutPrint;
+
+        $mobileWithPrint = $this->uploadImage($files['mobile_with_printing_image'] ?? null, 'mobile');
+        if (is_array($mobileWithPrint) && isset($mobileWithPrint['error'])) return $mobileWithPrint;
+
+        $mobileWithoutPrint = $this->uploadImage($files['mobile_without_printing_image'] ?? null, 'mobile');
+        if (is_array($mobileWithoutPrint) && isset($mobileWithoutPrint['error'])) return $mobileWithoutPrint;
+
+        $mobileSameDesign = ($post['mobile_same_design'] ?? 'no') === 'yes' ? 'yes' : 'no';
+        if ($mobileSameDesign === 'yes') {
+            if (empty($mobileImagesPaths) && !empty($desktopImagesPaths)) {
+                $mobileImagesPaths = $desktopImagesPaths;
+            }
+            if (empty($mobilePath) && !empty($desktopPath)) {
+                $mobilePath = $desktopPath;
+            }
+            if (empty($mobileWithPrint) && !empty($desktopWithPrint)) {
+                $mobileWithPrint = $desktopWithPrint;
+            }
+            if (empty($mobileWithoutPrint) && !empty($desktopWithoutPrint)) {
+                $mobileWithoutPrint = $desktopWithoutPrint;
+            }
+        }
 
         $desktopUrls = !empty($post['desktop_urls']) && is_array($post['desktop_urls'])
             ? json_encode(array_values(array_filter($post['desktop_urls'])))
@@ -436,13 +537,43 @@ class BannerController {
 
         $mobileUrls = !empty($post['mobile_urls']) && is_array($post['mobile_urls'])
             ? json_encode(array_values(array_filter($post['mobile_urls'])))
-            : (!empty($post['mobile_urls']) ? $post['mobile_urls'] : null);
+            : (!empty($post['mobile_urls']) ? $post['mobile_urls'] : ($mobileSameDesign === 'yes' ? $desktopUrls : null));
 
         $desktopImgFinal = $desktopPath ?: ($desktopImagesPaths[0] ?? '');
-        $mobileImgFinal  = $mobilePath ?: ($mobileImagesPaths[0] ?? $desktopImgFinal);
+        $mobileImgFinal  = $mobilePath ?: ($mobileImagesPaths[0] ?? ($mobileSameDesign === 'yes' ? $desktopImgFinal : ''));
+
+        $desktopAnchorType = trim($post['desktop_anchor_type'] ?? '');
+        $desktopAnchorId   = !empty($post['desktop_anchor_id']) ? (int)$post['desktop_anchor_id'] : null;
+        $desktopAnchorPos  = ($post['desktop_anchor_position'] ?? 'after') === 'before' ? 'before' : 'after';
+
+        $mobileAnchorType  = trim($post['mobile_anchor_type'] ?? '');
+        $mobileAnchorId    = !empty($post['mobile_anchor_id']) ? (int)$post['mobile_anchor_id'] : null;
+        $mobileAnchorPos   = ($post['mobile_anchor_position'] ?? 'after') === 'before' ? 'before' : 'after';
+
+        require_once __DIR__ . '/../includes/banner-helpers.php';
+        $dbConn = (new Database())->getConnection();
+
+        $desktopSortOrder = (isset($post['desktop_sort_order']) && is_numeric($post['desktop_sort_order']) && $post['desktop_sort_order'] !== '')
+            ? (float)$post['desktop_sort_order']
+            : resolveAnchoredSortOrder($dbConn, $desktopAnchorType, $desktopAnchorId, $desktopAnchorPos, 'desktop', 'banner_carousels');
+
+        $mobileSortOrder = (isset($post['mobile_sort_order']) && is_numeric($post['mobile_sort_order']) && $post['mobile_sort_order'] !== '')
+            ? (float)$post['mobile_sort_order']
+            : resolveAnchoredSortOrder($dbConn, $mobileAnchorType, $mobileAnchorId, $mobileAnchorPos, 'mobile', 'banner_carousels');
 
         $data = [
             'title'                      => trim($post['title'] ?? ''),
+            'slider_subtype'             => in_array($post['slider_subtype'] ?? '', ['top_slider', 'small_slider', 'offer_slider', 'service_slider', 'product_detail_slider', 'dashboard_slider']) ? $post['slider_subtype'] : 'top_slider',
+            'page_target'                => in_array($post['page_target'] ?? '', ['home_page', 'other_pages', 'both']) ? $post['page_target'] : 'both',
+            'text_tag_name'              => trim($post['text_tag_name'] ?? ''),
+            'extra_product_id'           => (int)($post['extra_product_id'] ?? 0) ?: null,
+            'desktop_anchor_type'        => $desktopAnchorType ?: null,
+            'desktop_anchor_id'          => $desktopAnchorId,
+            'desktop_anchor_position'    => $desktopAnchorPos,
+            'mobile_anchor_type'         => $mobileAnchorType ?: null,
+            'mobile_anchor_id'           => $mobileAnchorId,
+            'mobile_anchor_position'     => $mobileAnchorPos,
+            'mobile_same_design'         => $mobileSameDesign,
             'desktop_page'               => trim($post['desktop_page'] ?? 'home'),
             'desktop_home_category_id'   => (int)($post['desktop_home_category_id'] ?? 0) ?: null,
             'desktop_home_carousel_id'   => (int)($post['desktop_home_carousel_id'] ?? 0) ?: null,
@@ -454,11 +585,13 @@ class BannerController {
             'desktop_images'             => !empty($desktopImagesPaths) ? json_encode($desktopImagesPaths) : null,
             'desktop_url'                => trim($post['desktop_url'] ?? ''),
             'desktop_urls'               => $desktopUrls,
+            'desktop_with_printing_image' => is_string($desktopWithPrint) && $desktopWithPrint !== '' ? $desktopWithPrint : null,
+            'desktop_without_printing_image' => is_string($desktopWithoutPrint) && $desktopWithoutPrint !== '' ? $desktopWithoutPrint : null,
             'desktop_status'             => $post['desktop_status'] ?? 'active',
             'button_arrows'              => in_array($post['button_arrows'] ?? '', ['enable', 'disable']) ? $post['button_arrows'] : 'enable',
             'auto_running'               => in_array($post['auto_running'] ?? '', ['enable', 'disable']) ? $post['auto_running'] : 'enable',
             'auto_run_speed'             => !empty($post['auto_run_speed']) ? (int)$post['auto_run_speed'] : 3000,
-            'desktop_sort_order'         => (int)($post['desktop_sort_order'] ?? 0),
+            'desktop_sort_order'         => $desktopSortOrder,
             'desktop_start_date'         => !empty($post['desktop_start_date']) ? $post['desktop_start_date'] : null,
             'desktop_end_date'           => !empty($post['desktop_end_date']) ? $post['desktop_end_date'] : null,
             'mobile_design'              => trim($post['mobile_design'] ?? ''),
@@ -472,13 +605,25 @@ class BannerController {
             'mobile_images'              => !empty($mobileImagesPaths) ? json_encode($mobileImagesPaths) : null,
             'mobile_url'                 => trim($post['mobile_url'] ?? ''),
             'mobile_urls'                => $mobileUrls,
+            'mobile_with_printing_image' => is_string($mobileWithPrint) && $mobileWithPrint !== '' ? $mobileWithPrint : null,
+            'mobile_without_printing_image' => is_string($mobileWithoutPrint) && $mobileWithoutPrint !== '' ? $mobileWithoutPrint : null,
             'mobile_status'              => $post['mobile_status'] ?? 'active',
-            'mobile_sort_order'          => (int)($post['mobile_sort_order'] ?? 0),
+            'mobile_sort_order'          => $mobileSortOrder,
             'mobile_other_sort_order'    => (int)($post['mobile_other_sort_order'] ?? 0),
             'mobile_start_date'          => !empty($post['mobile_start_date']) ? $post['mobile_start_date'] : null,
             'mobile_end_date'            => !empty($post['mobile_end_date']) ? $post['mobile_end_date'] : null,
+            'show_product_category_carousel' => ($post['show_product_category_carousel'] ?? 'no') === 'yes' ? 'yes' : 'no',
+            'show_home_category'         => ($post['show_home_category'] ?? 'no') === 'yes' ? 'yes' : 'no',
+            'show_category_carousel'     => ($post['show_category_carousel'] ?? 'no') === 'yes' ? 'yes' : 'no',
+            'show_home_product'          => ($post['show_home_product'] ?? 'no') === 'yes' ? 'yes' : 'no',
+            'mobile_show_product_category_carousel' => ($post['mobile_show_product_category_carousel'] ?? 'no') === 'yes' ? 'yes' : 'no',
+            'mobile_show_home_category'  => ($post['mobile_show_home_category'] ?? 'no') === 'yes' ? 'yes' : 'no',
+            'mobile_show_category_carousel' => ($post['mobile_show_category_carousel'] ?? 'no') === 'yes' ? 'yes' : 'no',
+            'mobile_show_home_product'   => ($post['mobile_show_home_product'] ?? 'no') === 'yes' ? 'yes' : 'no',
             'status'                     => $post['status'] ?? $post['desktop_status'] ?? 'active',
         ];
+
+        $data = array_merge($data, $this->parseMultiPageAndSeo($post));
 
         if (empty($data['title'])) {
             return ['success' => false, 'error' => 'Banner carousel title is required'];
@@ -534,15 +679,10 @@ class BannerController {
                         'size'     => $files['desktop_images']['size'][$idx],
                     ];
                     $uploadRes = $this->uploadImage($singleFile, 'desktop');
-                    if (!is_array($uploadRes)) {
-                        $mergedDesktopImages[$idx] = $uploadRes;
-                    }
+                    if (is_array($uploadRes) && isset($uploadRes['error'])) return $uploadRes;
+                    if (is_string($uploadRes) && $uploadRes !== '') $mergedDesktopImages[$idx] = $uploadRes;
                 }
             }
-        }
-        $desktopImagesPaths = $this->uploadMultipleImages($files['desktop_images'] ?? null, 'desktop');
-        if (!empty($desktopImagesPaths) && empty($mergedDesktopImages)) {
-            $mergedDesktopImages = $desktopImagesPaths;
         }
         if (!empty($mergedDesktopImages)) {
             ksort($mergedDesktopImages);
@@ -574,15 +714,10 @@ class BannerController {
                         'size'     => $files['mobile_images']['size'][$idx],
                     ];
                     $uploadRes = $this->uploadImage($singleFile, 'mobile');
-                    if (!is_array($uploadRes)) {
-                        $mergedMobileImages[$idx] = $uploadRes;
-                    }
+                    if (is_array($uploadRes) && isset($uploadRes['error'])) return $uploadRes;
+                    if (is_string($uploadRes) && $uploadRes !== '') $mergedMobileImages[$idx] = $uploadRes;
                 }
             }
-        }
-        $mobileImagesPaths = $this->uploadMultipleImages($files['mobile_images'] ?? null, 'mobile');
-        if (!empty($mobileImagesPaths) && empty($mergedMobileImages)) {
-            $mergedMobileImages = $mobileImagesPaths;
         }
         if (!empty($mergedMobileImages)) {
             ksort($mergedMobileImages);
@@ -599,8 +734,83 @@ class BannerController {
             ? json_encode(array_values(array_filter($post['mobile_urls'])))
             : (!empty($post['mobile_urls']) ? $post['mobile_urls'] : $existing['mobile_urls']);
 
+        // Service slider with printing / without printing images
+        $desktopWithPrint = $existing['desktop_with_printing_image'] ?? null;
+        if (!empty($files['desktop_with_printing_image']['name'])) {
+            $res = $this->uploadImage($files['desktop_with_printing_image'], 'desktop');
+            if (is_array($res) && isset($res['error'])) return $res;
+            $desktopWithPrint = $res;
+        }
+
+        $desktopWithoutPrint = $existing['desktop_without_printing_image'] ?? null;
+        if (!empty($files['desktop_without_printing_image']['name'])) {
+            $res = $this->uploadImage($files['desktop_without_printing_image'], 'desktop');
+            if (is_array($res) && isset($res['error'])) return $res;
+            $desktopWithoutPrint = $res;
+        }
+
+        $mobileWithPrint = $existing['mobile_with_printing_image'] ?? null;
+        if (!empty($files['mobile_with_printing_image']['name'])) {
+            $res = $this->uploadImage($files['mobile_with_printing_image'], 'mobile');
+            if (is_array($res) && isset($res['error'])) return $res;
+            $mobileWithPrint = $res;
+        }
+
+        $mobileWithoutPrint = $existing['mobile_without_printing_image'] ?? null;
+        if (!empty($files['mobile_without_printing_image']['name'])) {
+            $res = $this->uploadImage($files['mobile_without_printing_image'], 'mobile');
+            if (is_array($res) && isset($res['error'])) return $res;
+            $mobileWithoutPrint = $res;
+        }
+
+        $mobileSameDesign = ($post['mobile_same_design'] ?? ($existing['mobile_same_design'] ?? 'no')) === 'yes' ? 'yes' : 'no';
+        if ($mobileSameDesign === 'yes') {
+            if (empty($mobileImagesJson) || $mobileImagesJson === '[]') {
+                $mobileImagesJson = $desktopImagesJson;
+            }
+            if (empty($mobileImgFinal) && !empty($desktopImgFinal)) {
+                $mobileImgFinal = $desktopImgFinal;
+            }
+            if (empty($mobileWithPrint) && !empty($desktopWithPrint)) {
+                $mobileWithPrint = $desktopWithPrint;
+            }
+            if (empty($mobileWithoutPrint) && !empty($desktopWithoutPrint)) {
+                $mobileWithoutPrint = $desktopWithoutPrint;
+            }
+        }
+
+        $desktopAnchorType = trim($post['desktop_anchor_type'] ?? ($existing['desktop_anchor_type'] ?? ''));
+        $desktopAnchorId   = !empty($post['desktop_anchor_id']) ? (int)$post['desktop_anchor_id'] : ($existing['desktop_anchor_id'] ?? null);
+        $desktopAnchorPos  = ($post['desktop_anchor_position'] ?? ($existing['desktop_anchor_position'] ?? 'after')) === 'before' ? 'before' : 'after';
+
+        $mobileAnchorType  = trim($post['mobile_anchor_type'] ?? ($existing['mobile_anchor_type'] ?? ''));
+        $mobileAnchorId    = !empty($post['mobile_anchor_id']) ? (int)$post['mobile_anchor_id'] : ($existing['mobile_anchor_id'] ?? null);
+        $mobileAnchorPos   = ($post['mobile_anchor_position'] ?? ($existing['mobile_anchor_position'] ?? 'after')) === 'before' ? 'before' : 'after';
+
+        require_once __DIR__ . '/../includes/banner-helpers.php';
+        $dbConn = (new Database())->getConnection();
+
+        $desktopSortOrder  = (isset($post['desktop_sort_order']) && is_numeric($post['desktop_sort_order']) && $post['desktop_sort_order'] !== '')
+            ? (float)$post['desktop_sort_order']
+            : ($existing['desktop_sort_order'] ?? resolveAnchoredSortOrder($dbConn, $desktopAnchorType, $desktopAnchorId, $desktopAnchorPos, 'desktop', 'banner_carousels'));
+
+        $mobileSortOrder   = (isset($post['mobile_sort_order']) && is_numeric($post['mobile_sort_order']) && $post['mobile_sort_order'] !== '')
+            ? (float)$post['mobile_sort_order']
+            : ($existing['mobile_sort_order'] ?? resolveAnchoredSortOrder($dbConn, $mobileAnchorType, $mobileAnchorId, $mobileAnchorPos, 'mobile', 'banner_carousels'));
+
         $data = [
             'title'                      => trim($post['title'] ?? $existing['title']),
+            'slider_subtype'             => in_array($post['slider_subtype'] ?? '', ['top_slider', 'small_slider', 'offer_slider', 'service_slider', 'product_detail_slider', 'dashboard_slider']) ? $post['slider_subtype'] : ($existing['slider_subtype'] ?? 'top_slider'),
+            'page_target'                => in_array($post['page_target'] ?? '', ['home_page', 'other_pages', 'both']) ? $post['page_target'] : ($existing['page_target'] ?? 'both'),
+            'text_tag_name'              => trim($post['text_tag_name'] ?? ($existing['text_tag_name'] ?? '')),
+            'extra_product_id'           => (int)($post['extra_product_id'] ?? ($existing['extra_product_id'] ?? 0)) ?: null,
+            'desktop_anchor_type'        => $desktopAnchorType ?: null,
+            'desktop_anchor_id'          => $desktopAnchorId,
+            'desktop_anchor_position'    => $desktopAnchorPos,
+            'mobile_anchor_type'         => $mobileAnchorType ?: null,
+            'mobile_anchor_id'           => $mobileAnchorId,
+            'mobile_anchor_position'     => $mobileAnchorPos,
+            'mobile_same_design'         => $mobileSameDesign,
             'desktop_page'               => trim($post['desktop_page'] ?? ($existing['desktop_page'] ?? 'home')),
             'desktop_home_category_id'   => (int)($post['desktop_home_category_id'] ?? $existing['desktop_home_category_id']) ?: null,
             'desktop_home_carousel_id'   => (int)($post['desktop_home_carousel_id'] ?? $existing['desktop_home_carousel_id']) ?: null,
@@ -612,11 +822,13 @@ class BannerController {
             'desktop_images'             => $desktopImagesJson,
             'desktop_url'                => trim($post['desktop_url'] ?? $existing['desktop_url']),
             'desktop_urls'               => $desktopUrls,
+            'desktop_with_printing_image' => $desktopWithPrint,
+            'desktop_without_printing_image' => $desktopWithoutPrint,
             'desktop_status'             => $post['desktop_status'] ?? $existing['desktop_status'] ?? 'active',
             'button_arrows'              => in_array($post['button_arrows'] ?? '', ['enable', 'disable']) ? $post['button_arrows'] : ($existing['button_arrows'] ?? 'enable'),
             'auto_running'               => in_array($post['auto_running'] ?? '', ['enable', 'disable']) ? $post['auto_running'] : ($existing['auto_running'] ?? 'enable'),
             'auto_run_speed'             => !empty($post['auto_run_speed']) ? (int)$post['auto_run_speed'] : (int)($existing['auto_run_speed'] ?? 3000),
-            'desktop_sort_order'         => (int)($post['desktop_sort_order'] ?? $existing['desktop_sort_order'] ?? 0),
+            'desktop_sort_order'         => $desktopSortOrder,
             'desktop_start_date'         => !empty($post['desktop_start_date']) ? $post['desktop_start_date'] : ($existing['desktop_start_date'] ?? null),
             'desktop_end_date'           => !empty($post['desktop_end_date']) ? $post['desktop_end_date'] : ($existing['desktop_end_date'] ?? null),
             'mobile_design'              => trim($post['mobile_design'] ?? $existing['mobile_design'] ?? ''),
@@ -630,13 +842,25 @@ class BannerController {
             'mobile_images'              => $mobileImagesJson,
             'mobile_url'                 => trim($post['mobile_url'] ?? $existing['mobile_url']),
             'mobile_urls'                => $mobileUrls,
+            'mobile_with_printing_image' => $mobileWithPrint,
+            'mobile_without_printing_image' => $mobileWithoutPrint,
             'mobile_status'              => $post['mobile_status'] ?? $existing['mobile_status'] ?? 'active',
-            'mobile_sort_order'          => (int)($post['mobile_sort_order'] ?? $existing['mobile_sort_order'] ?? 0),
+            'mobile_sort_order'          => $mobileSortOrder,
             'mobile_other_sort_order'    => (int)($post['mobile_other_sort_order'] ?? $existing['mobile_other_sort_order'] ?? 0),
             'mobile_start_date'          => !empty($post['mobile_start_date']) ? $post['mobile_start_date'] : ($existing['mobile_start_date'] ?? null),
             'mobile_end_date'            => !empty($post['mobile_end_date']) ? $post['mobile_end_date'] : ($existing['mobile_end_date'] ?? null),
+            'show_product_category_carousel' => ($post['show_product_category_carousel'] ?? ($existing['show_product_category_carousel'] ?? 'no')) === 'yes' ? 'yes' : 'no',
+            'show_home_category'         => ($post['show_home_category'] ?? ($existing['show_home_category'] ?? 'no')) === 'yes' ? 'yes' : 'no',
+            'show_category_carousel'     => ($post['show_category_carousel'] ?? ($existing['show_category_carousel'] ?? 'no')) === 'yes' ? 'yes' : 'no',
+            'show_home_product'          => ($post['show_home_product'] ?? ($existing['show_home_product'] ?? 'no')) === 'yes' ? 'yes' : 'no',
+            'mobile_show_product_category_carousel' => ($post['mobile_show_product_category_carousel'] ?? ($existing['mobile_show_product_category_carousel'] ?? 'no')) === 'yes' ? 'yes' : 'no',
+            'mobile_show_home_category'  => ($post['mobile_show_home_category'] ?? ($existing['mobile_show_home_category'] ?? 'no')) === 'yes' ? 'yes' : 'no',
+            'mobile_show_category_carousel' => ($post['mobile_show_category_carousel'] ?? ($existing['mobile_show_category_carousel'] ?? 'no')) === 'yes' ? 'yes' : 'no',
+            'mobile_show_home_product'   => ($post['mobile_show_home_product'] ?? ($existing['mobile_show_home_product'] ?? 'no')) === 'yes' ? 'yes' : 'no',
             'status'                     => $post['status'] ?? $existing['status'] ?? 'active',
         ];
+
+        $data = array_merge($data, $this->parseMultiPageAndSeo($post, $existing));
 
         if (empty($data['title'])) {
             return ['success' => false, 'error' => 'Banner carousel title is required'];
@@ -686,12 +910,17 @@ class BannerController {
                 $res = $this->uploadImage($fileItem, $type);
                 if (is_string($res) && !empty($res)) {
                     $paths[] = $res;
+                } elseif (is_array($res) && isset($res['error'])) {
+                    $this->removeUploadedWebpFiles($paths);
+                    return $res;
                 }
             }
         } else {
             $res = $this->uploadImage($files, $type);
             if (is_string($res) && !empty($res)) {
                 $paths[] = $res;
+            } elseif (is_array($res) && isset($res['error'])) {
+                return $res;
             }
         }
         return $paths;
@@ -725,35 +954,115 @@ class BannerController {
         if (empty($file) || empty($file['name'])) {
             return '';
         }
-
-        if (isset($file['error']) && $file['error'] !== UPLOAD_ERR_OK) {
-            return ['success' => false, 'error' => 'File upload error code: ' . $file['error']];
-        }
-
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif'];
-        if (!in_array($ext, $allowedExts)) {
-            return ['success' => false, 'error' => 'Invalid image extension. Allowed: JPG, PNG, GIF, WebP, SVG, AVIF'];
-        }
-
-        if ($file['size'] > 10 * 1024 * 1024) {
-            return ['success' => false, 'error' => 'Image too large. Max 10 MB'];
-        }
-
         $dir = __DIR__ . "/../uploads/banners/{$type}/";
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0777, true);
+        $result = saveUploadedImageAsWebp($file, $dir, "uploads/banners/{$type}", [
+            'max_bytes' => 10 * 1024 * 1024,
+            'quality' => 84,
+        ]);
+        if (!$result['success']) {
+            return ['success' => false, 'error' => $result['error']];
         }
-        @chmod($dir, 0777);
+        return $result['path'];
+    }
 
-        $filename = uniqid() . '_' . time() . '.' . $ext;
-        $dest     = $dir . $filename;
+    private function removeUploadedWebpFiles(array $relativePaths): void {
+        foreach ($relativePaths as $relativePath) {
+            if (is_string($relativePath) && strpos($relativePath, 'uploads/banners/') === 0 && substr($relativePath, -5) === '.webp') {
+                $absolutePath = __DIR__ . '/../' . $relativePath;
+                if (is_file($absolutePath)) @unlink($absolutePath);
+            }
+        }
+    }
 
-        if (!move_uploaded_file($file['tmp_name'], $dest)) {
-            return ['success' => false, 'error' => "Failed to upload {$type} image"];
+    // ----------------------------------------------------------------
+    // Multi-Page & SEO Field Parsing
+    // ----------------------------------------------------------------
+
+    private function parseMultiPageAndSeo(array $post, array $existing = []): array {
+        $targetPage = trim($post['target_page'] ?? ($existing['target_page'] ?? 'home'));
+        if (empty($targetPage)) $targetPage = 'home';
+
+        $showCat   = (!empty($post['show_on_category']) && $post['show_on_category'] !== 'no') ? 'yes' : ($existing['show_on_category'] ?? 'no');
+        $showProd  = (!empty($post['show_on_product']) && $post['show_on_product'] !== 'no') ? 'yes' : ($existing['show_on_product'] ?? 'no');
+        $showPDet  = (!empty($post['show_on_product_detail']) && $post['show_on_product_detail'] !== 'no') ? 'yes' : ($existing['show_on_product_detail'] ?? 'no');
+        $showFran  = (!empty($post['show_on_franchise']) && $post['show_on_franchise'] !== 'no') ? 'yes' : ($existing['show_on_franchise'] ?? 'no');
+        $showAff   = (!empty($post['show_on_affiliate']) || !empty($post['show_on_affiliate_program'])) ? 'yes' : ($existing['show_on_affiliate'] ?? 'no');
+        $showCar   = (!empty($post['show_on_career']) && $post['show_on_career'] !== 'no') ? 'yes' : ($existing['show_on_career'] ?? 'no');
+        $showBiz   = (!empty($post['show_on_business_solutions']) && $post['show_on_business_solutions'] !== 'no') ? 'yes' : ($existing['show_on_business_solutions'] ?? 'no');
+        $showAdv   = (!empty($post['show_on_advertising']) && $post['show_on_advertising'] !== 'no') ? 'yes' : ($existing['show_on_advertising'] ?? 'no');
+
+        // Check if other_pages array is passed directly, e.g. post['other_pages'] = ['category', 'product']
+        if (isset($post['other_pages']) && is_array($post['other_pages'])) {
+            $showCat  = in_array('category', $post['other_pages']) ? 'yes' : 'no';
+            $showProd = in_array('product', $post['other_pages']) ? 'yes' : 'no';
+            $showPDet = in_array('product_detail', $post['other_pages']) ? 'yes' : 'no';
+            $showFran = in_array('franchise', $post['other_pages']) ? 'yes' : 'no';
+            $showAff  = (in_array('affiliate_program', $post['other_pages']) || in_array('affiliate', $post['other_pages'])) ? 'yes' : 'no';
+            $showCar  = in_array('career', $post['other_pages']) ? 'yes' : 'no';
+            $showBiz  = in_array('business_solutions', $post['other_pages']) ? 'yes' : 'no';
+            $showAdv  = in_array('advertising', $post['other_pages']) ? 'yes' : 'no';
         }
 
-        return "uploads/banners/{$type}/{$filename}";
+        $otherPagesList = [];
+        if ($showCat === 'yes') $otherPagesList[] = 'category';
+        if ($showProd === 'yes') $otherPagesList[] = 'product';
+        if ($showPDet === 'yes') $otherPagesList[] = 'product_detail';
+        if ($showFran === 'yes') $otherPagesList[] = 'franchise';
+        if ($showAff === 'yes') $otherPagesList[] = 'affiliate_program';
+        if ($showCar === 'yes') $otherPagesList[] = 'career';
+        if ($showBiz === 'yes') $otherPagesList[] = 'business_solutions';
+        if ($showAdv === 'yes') $otherPagesList[] = 'advertising';
+
+        $otherPagesDisplay = !empty($otherPagesList) ? json_encode($otherPagesList) : null;
+
+        return [
+            'alt_text'                    => trim($post['alt_text'] ?? ($existing['alt_text'] ?? '')),
+            'meta_title'                  => trim($post['meta_title'] ?? ($existing['meta_title'] ?? '')),
+            'meta_keywords'               => trim($post['meta_keywords'] ?? ($existing['meta_keywords'] ?? '')),
+            'meta_description'            => trim($post['meta_description'] ?? ($existing['meta_description'] ?? '')),
+            'target_page'                 => $targetPage,
+            'other_pages_display'         => $otherPagesDisplay,
+            'show_on_category'           => $showCat,
+            'show_on_product'            => $showProd,
+            'show_on_product_detail'     => $showPDet,
+            'show_on_franchise'          => $showFran,
+            'show_on_affiliate'          => $showAff,
+            'show_on_career'             => $showCar,
+            'show_on_business_solutions' => $showBiz,
+            'show_on_advertising'        => $showAdv,
+        ];
+    }
+
+    // ----------------------------------------------------------------
+    // Master Unified Module Handlers
+    // ----------------------------------------------------------------
+
+    public function getAllMasterItems(string $pageFilter = 'all', string $typeFilter = 'all', string $search = '', string $statusFilter = 'all'): array {
+        return $this->bannerModel->getAllMasterItems($pageFilter, $typeFilter, $search, $statusFilter);
+    }
+
+    public function togglePageVisibility(string $itemType, int $id, string $pageKey, string $targetVal): array {
+        $ok = $this->bannerModel->togglePageVisibility($itemType, $id, $pageKey, $targetVal);
+        return [
+            'success' => $ok,
+            'message' => $ok ? 'Page visibility updated successfully' : 'Failed to update page visibility'
+        ];
+    }
+
+    public function toggleMasterStatus(string $itemType, int $id, string $status): array {
+        $ok = $this->bannerModel->toggleMasterStatus($itemType, $id, $status);
+        return [
+            'success' => $ok,
+            'message' => $ok ? 'Status updated successfully' : 'Failed to update status'
+        ];
+    }
+
+    public function deleteMasterItem(string $itemType, int $id): array {
+        $ok = $this->bannerModel->deleteMasterItem($itemType, $id);
+        return [
+            'success' => $ok,
+            'message' => $ok ? 'Item deleted successfully' : 'Failed to delete item'
+        ];
     }
 }
 

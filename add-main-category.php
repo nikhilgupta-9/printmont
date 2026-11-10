@@ -14,11 +14,15 @@ $error   = '';
 $success = '';
 $nextOrder = $controller->getNextDisplayOrder(1);
 
+if (!function_exists('old')) {
 function old($key, $default = '') {
     return htmlspecialchars($_POST[$key] ?? $default);
 }
+}
+if (!function_exists('oldSel')) {
 function oldSel($key, $value, $default = '') {
     return (($_POST[$key] ?? $default) === $value) ? 'selected' : '';
+}
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -47,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 1 & 2: Category Details
         'name'                 => $name,
         'slug'                 => $slug,
+        'page_target'          => in_array($_POST['page_target'] ?? '', ['home_page', 'other_pages', 'both']) ? $_POST['page_target'] : 'both',
         'description'          => trim($_POST['description'] ?? ''),
         'parent_id'            => 0,
         'level'                => 1,
@@ -62,14 +67,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'desktop_menu_view'    => $_POST['desktop_menu_view'] ?? 'yes',
         'desktop_menu_design'  => $_POST['desktop_menu_design'] ?? 'design_dm1',
         'desktop_menu_tag'     => trim($_POST['desktop_menu_tag'] ?? ''),
+        'desktop_menu_tag_bg'  => trim($_POST['desktop_menu_tag_bg'] ?? ''),
         'desktop_menu_image'   => uploadCatImage('desktop_menu_image', 'menu'),
+
+        // Desktop Home Page Settings
+        'desktop_home_show'    => $_POST['desktop_home_show'] ?? 'no',
+        'desktop_home_design'  => $_POST['desktop_home_design'] ?? 'home_design_1',
+        'desktop_home_order'   => (int)($_POST['desktop_home_order'] ?? $nextOrder),
+        'desktop_home_tag'     => trim($_POST['desktop_home_tag'] ?? ''),
+        'desktop_bg_color'     => trim($_POST['desktop_bg_color'] ?? ''),
+        'desktop_bg_image'     => uploadCatImage('desktop_bg_image', 'bg'),
+        'desktop_image'        => uploadCatImage('desktop_image', 'home'),
 
         // Mobile Top Bar & Drawer Settings
         'mobile_topbar_status' => $_POST['mobile_topbar_status'] ?? 'show',
         'mobile_topbar_order'  => (int)($_POST['mobile_topbar_order'] ?? $nextOrder),
         'mobile_menu_view'     => $_POST['mobile_menu_view'] ?? 'yes',
         'mobile_menu_design'   => $_POST['mobile_menu_design'] ?? 'design_mm1',
+        'mobile_sidebar_status'=> $_POST['mobile_sidebar_status'] ?? 'yes',
         'mobile_sidebar_order' => (int)($_POST['mobile_sidebar_order'] ?? 0),
+
+        // Mobile Home Page Settings
+        'mobile_home_show'     => $_POST['mobile_home_show'] ?? 'no',
+        'mobile_home_design'   => $_POST['mobile_home_design'] ?? 'home_design_1',
+        'mobile_home_format'   => in_array($_POST['mobile_home_format'] ?? '', ['4','6','8']) ? $_POST['mobile_home_format'] : '4',
+        'mobile_home_order'    => (int)($_POST['mobile_home_order'] ?? $nextOrder),
+        'mobile_bg_color'      => trim($_POST['mobile_bg_color'] ?? ''),
+        'mobile_bg_image'      => uploadCatImage('mobile_bg_image', 'bg'),
+        'mobile_image'         => uploadCatImage('mobile_image', 'home'),
 
         // SEO & Metadata
         'meta_title'           => trim($_POST['meta_title'] ?? ''),
@@ -111,6 +136,10 @@ unset($_SESSION['success_message']);
     <style>
         body { opacity: 1 !important; font-family: 'Inter', sans-serif; background-color: #f4f6f9; }
         .required-field::after { content: " *"; color: #dc3545; }
+        .module-nav-pills { display: flex; gap: 8px; flex-wrap: wrap; background: #fff; padding: 6px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        .module-nav-link { padding: 8px 14px; font-size: 13px; font-weight: 600; color: #475569; text-decoration: none; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .module-nav-link:hover { color: #0d6efd; background: #e0edff; }
+        .module-nav-link.active { color: #fff; background: #0d6efd; }
         .nav-tabs .nav-link {
             font-size: 14px;
             font-weight: 600;
@@ -260,6 +289,31 @@ unset($_SESSION['success_message']);
         <main class="content">
             <div class="container-fluid p-0">
 
+                <!-- Top Module Navigation Pills: 4 no. Manage Categories -->
+                <div class="module-nav-pills mb-4">
+                    <a href="add-main-category.php" class="module-nav-link active">
+                        <i class="fas fa-folder-plus text-primary"></i> 1. Main Category
+                    </a>
+                    <a href="view-categories.php?level=1" class="module-nav-link">
+                        <i class="fas fa-folder text-secondary"></i> 2. Main All Categories
+                    </a>
+                    <a href="add-sub-category.php" class="module-nav-link">
+                        <i class="fas fa-folder-tree text-success"></i> 3. Sub Category
+                    </a>
+                    <a href="view-categories.php?level=2" class="module-nav-link">
+                        <i class="fas fa-list text-secondary"></i> 4. Sub All Category
+                    </a>
+                    <a href="add-sub-sub-category.php" class="module-nav-link">
+                        <i class="fas fa-tags text-info"></i> 5. Sub Sub Category
+                    </a>
+                    <a href="view-categories.php?level=3" class="module-nav-link">
+                        <i class="fas fa-list-check text-secondary"></i> 6. Sub Sub All Category
+                    </a>
+                    <a href="home-page-categories.php" class="module-nav-link">
+                        <i class="fas fa-home text-warning"></i> 7. Home page Category (Desktop &amp; Mobile)
+                    </a>
+                </div>
+
                 <!-- Page Header -->
                 <div class="d-flex align-items-center justify-content-between mb-4">
                     <div>
@@ -270,7 +324,7 @@ unset($_SESSION['success_message']);
                         <p class="text-muted small mb-0">Configure Category Name, Desktop Top Menu Settings, Mobile Topbar &amp; Menu Settings, and SEO Metadata.</p>
                     </div>
                     <div>
-                        <a href="view-categories.php" class="btn btn-outline-secondary me-2">
+                        <a href="view-categories.php?level=1" class="btn btn-outline-secondary me-2">
                             <i class="fas fa-arrow-left me-1"></i> Main All Category
                         </a>
                         <button type="submit" form="categoryAddForm" class="btn btn-primary px-4 fw-semibold">
@@ -316,6 +370,46 @@ unset($_SESSION['success_message']);
 
                         <!-- TAB 1: CATEGORY BASIC DETAILS -->
                         <div class="tab-pane fade show active" id="tab-basic" role="tabpanel">
+                            
+                            <!-- 0. Scope: Select Home pages and Other pages -->
+                            <div class="card p-3 mb-4 bg-light border" style="border-left: 4px solid #0d6efd !important;">
+                                <label class="form-label fw-bold text-dark mb-2">
+                                    <i class="fas fa-bullseye text-primary me-1"></i> Target Page Selection: Select Home Pages and Other Pages
+                                </label>
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <div class="form-check p-2 bg-white rounded border">
+                                            <input class="form-check-input ms-1" type="radio" name="page_target" id="pt_both" value="both" <?php echo (old('page_target', 'both') === 'both') ? 'checked' : ''; ?>>
+                                            <label class="form-check-label fw-bold text-dark ms-2" for="pt_both">
+                                                Both Home Page &amp; Other Pages
+                                                <small class="d-block text-muted fw-normal">Visible on Home &amp; Shop/Catalog pages</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check p-2 bg-white rounded border">
+                                            <input class="form-check-input ms-1" type="radio" name="page_target" id="pt_home" value="home_page" <?php echo (old('page_target') === 'home_page') ? 'checked' : ''; ?>>
+                                            <label class="form-check-label fw-bold text-dark ms-2" for="pt_home">
+                                                Home Pages Only
+                                                <small class="d-block text-muted fw-normal">Dedicated home category section</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check p-2 bg-white rounded border">
+                                            <input class="form-check-input ms-1" type="radio" name="page_target" id="pt_other" value="other_pages" <?php echo (old('page_target') === 'other_pages') ? 'checked' : ''; ?>>
+                                            <label class="form-check-label fw-bold text-dark ms-2" for="pt_other">
+                                                Other Pages Only
+                                                <small class="d-block text-muted fw-normal">Catalog, category &amp; filter pages only</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="fas fa-info-circle text-primary me-1"></i> Uske according hi category add and show hoga.
+                                </small>
+                            </div>
+
                             <div class="section-header-box bg-light border">
                                 <h5 class="fw-bold mb-1 text-dark"><i class="fas fa-info-circle me-2 text-primary"></i>1. Category Basic Information</h5>
                                 <p class="text-muted small mb-0">Primary category title, auto-slug URL path, visibility status, image, and catalog options.</p>
@@ -546,14 +640,188 @@ unset($_SESSION['success_message']);
                                     </div>
 
                                     <div class="row">
-                                        <div class="col-md-6 mb-2">
+                                        <div class="col-md-4 mb-2">
                                             <label class="form-label fw-semibold small">Desktop Menu Badge Tag (Pill)</label>
                                             <input type="text" class="form-control" name="desktop_menu_tag" value="<?php echo old('desktop_menu_tag'); ?>" placeholder="e.g. New, Hot, 20% Off">
                                         </div>
-                                        <div class="col-md-6 mb-2">
+                                        <div class="col-md-4 mb-2">
+                                            <label class="form-label fw-semibold small">Badge Tag Background Color</label>
+                                            <div class="input-group">
+                                                <input type="color" class="form-control form-control-color" id="tagBgPicker" value="<?php echo old('desktop_menu_tag_bg', '#e11d48'); ?>" onchange="document.getElementById('tagBgText').value=this.value">
+                                                <input type="text" class="form-control" name="desktop_menu_tag_bg" id="tagBgText" value="<?php echo old('desktop_menu_tag_bg'); ?>" placeholder="#e11d48">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-2">
                                             <label class="form-label fw-semibold small">Dropdown Showcase Poster Image</label>
                                             <input type="file" class="form-control" name="desktop_menu_image" accept="image/*" onchange="previewImg(this,'prevMegaImg')">
                                             <img id="prevMegaImg" class="image-preview-box mt-2">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SUB-CARD: DESKTOP HOME PAGE CATEGORY SETTINGS -->
+                            <div class="sub-card mt-4">
+                                <div class="sub-card-title">
+                                    <span><i class="fas fa-home me-2 text-primary"></i>Desktop Home Page Category Settings</span>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border">Home Page Display</span>
+                                </div>
+
+                                <div class="row">
+                                    <!-- 6. Show on home pages Design yes and no add > box -->
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label fw-bold">
+                                            <span class="field-num-badge">6</span>Show on Home Pages Design
+                                        </label>
+                                        <select name="desktop_home_show" class="form-select" id="desktopHomeShowSelect">
+                                            <option value="yes" <?php echo oldSel('desktop_home_show','yes'); ?>>Yes — Show on Desktop Home Page</option>
+                                            <option value="no"  <?php echo oldSel('desktop_home_show','no','no'); ?>>No — Do Not Show on Home Page</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- 10. Show on home pages shorts order number add > box -->
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label fw-bold">
+                                            <span class="field-num-badge">10</span>Home Page Sort Order Number
+                                        </label>
+                                        <input type="number" class="form-control" name="desktop_home_order" value="<?php echo old('desktop_home_order', $nextOrder); ?>" min="0">
+                                        <small class="text-muted">Display sequence on desktop home page.</small>
+                                    </div>
+
+                                    <!-- 11. Show on home Category Text slog add > box -->
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label fw-bold">
+                                            <span class="field-num-badge">11</span>Home Category Text Slug / Slogan
+                                        </label>
+                                        <input type="text" class="form-control" name="desktop_home_tag" value="<?php echo old('desktop_home_tag'); ?>" placeholder="e.g. Up to 40% Off | Best Corporate Picks">
+                                    </div>
+                                </div>
+
+                                <!-- 7. Show in Home page category View Design select add > box (4 Types Design) -->
+                                <div id="desktopHomeDesignBlock" class="p-3 bg-light rounded-3 border mt-2">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div>
+                                            <h6 class="fw-bold mb-1 text-dark"><i class="fas fa-th-large me-1 text-primary"></i> Home Page Category View Design (4 Types)</h6>
+                                            <p class="text-muted small mb-0">Select which layout design format is rendered for this category section on desktop home page.</p>
+                                        </div>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border">4 Home Designs</span>
+                                    </div>
+
+                                    <div class="row g-3 mb-3">
+                                        <!-- Design 1 -->
+                                        <div class="col-12 col-sm-6 col-xl-3">
+                                            <input type="radio" name="desktop_home_design" value="home_design_1" id="dhd_design_1" class="d-none"
+                                                   <?php echo (old('desktop_home_design', 'home_design_1') === 'home_design_1') ? 'checked' : ''; ?>>
+                                            <label for="dhd_design_1" class="design-option-card">
+                                                <span class="check-badge"><i class="fas fa-check-circle"></i></span>
+                                                <div class="layout-wireframe">
+                                                    <div class="d-flex gap-1 h-100">
+                                                        <div style="width:40%;background:#0d6efd;border-radius:2px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:7px;font-weight:700;">FEATURED</div>
+                                                        <div class="d-flex flex-wrap gap-1 flex-grow-1">
+                                                            <div style="width:47%;height:45%;background:#e2e8f0;border-radius:2px;"></div>
+                                                            <div style="width:47%;height:45%;background:#e2e8f0;border-radius:2px;"></div>
+                                                            <div style="width:47%;height:45%;background:#e2e8f0;border-radius:2px;"></div>
+                                                            <div style="width:47%;height:45%;background:#e2e8f0;border-radius:2px;"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <span class="design-tag bg-primary bg-opacity-10 text-primary mb-1">Design 1</span>
+                                                <div class="design-title">Mosaic Split Grid</div>
+                                                <p class="design-desc">Left featured highlight card + right product tile matrix.</p>
+                                            </label>
+                                        </div>
+
+                                        <!-- Design 2 -->
+                                        <div class="col-12 col-sm-6 col-xl-3">
+                                            <input type="radio" name="desktop_home_design" value="home_design_2" id="dhd_design_2" class="d-none"
+                                                   <?php echo (old('desktop_home_design') === 'home_design_2') ? 'checked' : ''; ?>>
+                                            <label for="dhd_design_2" class="design-option-card">
+                                                <span class="check-badge"><i class="fas fa-check-circle"></i></span>
+                                                <div class="layout-wireframe">
+                                                    <div class="d-flex align-items-center justify-content-between h-100 px-1 gap-1">
+                                                        <div style="width:22%;height:80%;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div style="width:12px;height:12px;border-radius:50%;background:#0284c7;margin-bottom:2px;"></div><div style="width:14px;height:2px;background:#94a3b8;"></div></div>
+                                                        <div style="width:22%;height:80%;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div style="width:12px;height:12px;border-radius:50%;background:#0284c7;margin-bottom:2px;"></div><div style="width:14px;height:2px;background:#94a3b8;"></div></div>
+                                                        <div style="width:22%;height:80%;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div style="width:12px;height:12px;border-radius:50%;background:#0284c7;margin-bottom:2px;"></div><div style="width:14px;height:2px;background:#94a3b8;"></div></div>
+                                                        <div style="width:22%;height:80%;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div style="width:12px;height:12px;border-radius:50%;background:#0284c7;margin-bottom:2px;"></div><div style="width:14px;height:2px;background:#94a3b8;"></div></div>
+                                                    </div>
+                                                </div>
+                                                <span class="design-tag bg-info bg-opacity-10 text-info mb-1">Design 2</span>
+                                                <div class="design-title">Horizontal Slide Carousel</div>
+                                                <p class="design-desc">Side-scrolling circular icons or product cards carousel.</p>
+                                            </label>
+                                        </div>
+
+                                        <!-- Design 3 -->
+                                        <div class="col-12 col-sm-6 col-xl-3">
+                                            <input type="radio" name="desktop_home_design" value="home_design_3" id="dhd_design_3" class="d-none"
+                                                   <?php echo (old('desktop_home_design') === 'home_design_3') ? 'checked' : ''; ?>>
+                                            <label for="dhd_design_3" class="design-option-card">
+                                                <span class="check-badge"><i class="fas fa-check-circle"></i></span>
+                                                <div class="layout-wireframe">
+                                                    <div class="d-flex flex-wrap gap-1 h-100 justify-content-between p-1">
+                                                        <div style="width:30%;height:45%;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                        <div style="width:30%;height:45%;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                        <div style="width:30%;height:45%;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                        <div style="width:30%;height:45%;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                        <div style="width:30%;height:45%;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                        <div style="width:30%;height:45%;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                    </div>
+                                                </div>
+                                                <span class="design-tag bg-warning bg-opacity-10 text-dark mb-1">Design 3</span>
+                                                <div class="design-title">Compact Product Tile Grid</div>
+                                                <p class="design-desc">Dense clean product tile grid with price &amp; offer tag.</p>
+                                            </label>
+                                        </div>
+
+                                        <!-- Design 4 -->
+                                        <div class="col-12 col-sm-6 col-xl-3">
+                                            <input type="radio" name="desktop_home_design" value="home_design_4" id="dhd_design_4" class="d-none"
+                                                   <?php echo (old('desktop_home_design') === 'home_design_4') ? 'checked' : ''; ?>>
+                                            <label for="dhd_design_4" class="design-option-card">
+                                                <span class="check-badge"><i class="fas fa-check-circle"></i></span>
+                                                <div class="layout-wireframe">
+                                                    <div style="height:35%;background:linear-gradient(135deg, #0f172a, #334155);border-radius:2px;margin-bottom:3px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:7px;">HERO STRIP</div>
+                                                    <div class="d-flex gap-1 h-50">
+                                                        <div style="flex:1;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                        <div style="flex:1;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                        <div style="flex:1;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                    </div>
+                                                </div>
+                                                <span class="design-tag bg-dark bg-opacity-10 text-dark mb-1">Design 4</span>
+                                                <div class="design-title">Banner + Showcase Strip</div>
+                                                <p class="design-desc">Category header banner with curated bottom products.</p>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <!-- 8. Home pages uploading image Add > Box -->
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label fw-bold">
+                                                <span class="field-num-badge">8</span>Home Page Category Image
+                                            </label>
+                                            <input type="file" class="form-control" name="desktop_image" accept="image/*" onchange="previewImg(this,'prevDeskHomeImg')">
+                                            <small class="text-muted">Featured/card image displayed in selected home design.</small>
+                                            <img id="prevDeskHomeImg" class="image-preview-box mt-2">
+                                        </div>
+
+                                        <!-- 9. Select background colour design add > box -->
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label fw-bold">
+                                                <span class="field-num-badge">9</span>Background Colour Design
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="color" class="form-control form-control-color" id="desktopBgColorPicker" value="<?php echo old('desktop_bg_color', '#ffffff'); ?>" onchange="document.getElementById('desktopBgColorText').value=this.value">
+                                                <input type="text" class="form-control" name="desktop_bg_color" id="desktopBgColorText" value="<?php echo old('desktop_bg_color'); ?>" placeholder="#hex color (e.g. #f8fafc)">
+                                            </div>
+                                            <small class="text-muted">Custom background color for category row on homepage.</small>
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label fw-bold">Upload Background Image</label>
+                                            <input type="file" class="form-control" name="desktop_bg_image" accept="image/*" onchange="previewImg(this,'prevDeskBgImg')">
+                                            <small class="text-muted">Optional subtle patterned background texture/banner.</small>
+                                            <img id="prevDeskBgImg" class="image-preview-box mt-2">
                                         </div>
                                     </div>
                                 </div>
@@ -575,10 +843,10 @@ unset($_SESSION['success_message']);
                                 </div>
 
                                 <div class="row">
-                                    <!-- Mobile top bar status show and hide Add > Box -->
-                                    <div class="col-md-3 mb-3">
+                                    <!-- 1. Mobile top bar status show and hide Add > Box -->
+                                    <div class="col-md-4 mb-3">
                                         <label class="form-label fw-bold">
-                                            <span class="field-num-badge">6</span>Mobile Top Bar Status
+                                            <span class="field-num-badge">1</span>Mobile Top Bar Status
                                         </label>
                                         <select name="mobile_topbar_status" class="form-select">
                                             <option value="show" <?php echo oldSel('mobile_topbar_status','show','show'); ?>>Show in Mobile Top Bar</option>
@@ -586,34 +854,48 @@ unset($_SESSION['success_message']);
                                         </select>
                                     </div>
 
-                                    <!-- Mobile Top bar short order number Add > Box -->
-                                    <div class="col-md-3 mb-3">
+                                    <!-- 2. Mobile Top bar short order number Add > Box -->
+                                    <div class="col-md-4 mb-3">
                                         <label class="form-label fw-bold">
-                                            <span class="field-num-badge">7</span>Mobile Top Bar Sort Order Number
+                                            <span class="field-num-badge">2</span>Mobile Top Bar Sort Order Number
                                         </label>
                                         <input type="number" class="form-control" name="mobile_topbar_order" value="<?php echo old('mobile_topbar_order', $nextOrder); ?>" min="0">
                                         <small class="text-muted">Order sequence in mobile top icon row.</small>
                                     </div>
 
-                                    <!-- Mobile menu side-bar short order number Add > Box -->
-                                    <div class="col-md-3 mb-3">
+                                    <!-- 3. Mobile Top menu main category view design selects yes and no Add > Box (2 type design need) -->
+                                    <div class="col-md-4 mb-3">
                                         <label class="form-label fw-bold">
-                                            <span class="field-num-badge">8</span>Mobile Menu Sidebar Sort Order Number
-                                        </label>
-                                        <input type="number" class="form-control" name="mobile_sidebar_order" value="<?php echo old('mobile_sidebar_order', 0); ?>" min="0">
-                                        <small class="text-muted">Vertical sequence in mobile side drawer.</small>
-                                    </div>
-
-                                    <!-- Mobile Top menu main category view design selects yes and no Add > Box (2 type design need) -->
-                                    <div class="col-md-3 mb-3">
-                                        <label class="form-label fw-bold">
-                                            <span class="field-num-badge">9</span>Mobile Top Menu View Design Select
+                                            <span class="field-num-badge">3</span>Mobile Top Menu View Design Select
                                         </label>
                                         <select name="mobile_menu_view" class="form-select" id="mobileMenuViewSelect">
                                             <option value="yes" <?php echo oldSel('mobile_menu_view','yes','yes'); ?>>Yes — Enable Mobile View Design (2 Types)</option>
                                             <option value="no"  <?php echo oldSel('mobile_menu_view','no'); ?>>No — Standard List Item</option>
                                         </select>
                                         <small class="text-muted">(2 type design needed for mobile menu)</small>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <!-- 4. Top menu Side bar Category Status yes and No > Add box -->
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">
+                                            <span class="field-num-badge">4</span>Mobile Sidebar Category Status
+                                        </label>
+                                        <select name="mobile_sidebar_status" class="form-select">
+                                            <option value="yes" <?php echo oldSel('mobile_sidebar_status','yes','yes'); ?>>Yes — Show in Mobile Side Drawer</option>
+                                            <option value="no"  <?php echo oldSel('mobile_sidebar_status','no'); ?>>No — Hide from Mobile Side Drawer</option>
+                                        </select>
+                                        <small class="text-muted">Control visibility in left hamburger slideout menu.</small>
+                                    </div>
+
+                                    <!-- 5. Top menu side bar category short order number Add > Box -->
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">
+                                            <span class="field-num-badge">5</span>Mobile Sidebar Sort Order Number
+                                        </label>
+                                        <input type="number" class="form-control" name="mobile_sidebar_order" value="<?php echo old('mobile_sidebar_order', 0); ?>" min="0">
+                                        <small class="text-muted">Vertical position in mobile sidebar menu.</small>
                                     </div>
                                 </div>
 
@@ -663,6 +945,168 @@ unset($_SESSION['success_message']);
                                                 <div class="design-title">Icon Thumbnail Drawer View</div>
                                                 <p class="design-desc">Visual drawer with circular thumbnail icons, badge pills, and direct tap links.</p>
                                             </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SUB-CARD: MOBILE HOME PAGE CATEGORY SETTINGS -->
+                            <div class="sub-card mt-4">
+                                <div class="sub-card-title">
+                                    <span><i class="fas fa-home me-2 text-info"></i>Mobile Home Page Category Settings</span>
+                                    <span class="badge bg-info bg-opacity-10 text-info border">Mobile Home Display</span>
+                                </div>
+
+                                <div class="row">
+                                    <!-- 6. show on home pages Category design yes and no Add > Box -->
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label fw-bold">
+                                            <span class="field-num-badge">6</span>Show on Mobile Home Pages
+                                        </label>
+                                        <select name="mobile_home_show" class="form-select">
+                                            <option value="yes" <?php echo oldSel('mobile_home_show','yes'); ?>>Yes — Show on Mobile Home Page</option>
+                                            <option value="no"  <?php echo oldSel('mobile_home_show','no','no'); ?>>No — Do Not Show on Mobile Home Page</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- 8. show on home pages category select format Add> Add like 4 image product box and 6 image product box and 8 image product box -->
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label fw-bold">
+                                            <span class="field-num-badge">8</span>Mobile Category Display Format
+                                        </label>
+                                        <select name="mobile_home_format" class="form-select">
+                                            <option value="4" <?php echo oldSel('mobile_home_format','4','4'); ?>>4 Image Product Box Grid (2x2)</option>
+                                            <option value="6" <?php echo oldSel('mobile_home_format','6'); ?>>6 Image Product Box Grid (2x3)</option>
+                                            <option value="8" <?php echo oldSel('mobile_home_format','8'); ?>>8 Image Product Box Grid (2x4)</option>
+                                        </select>
+                                        <small class="text-muted">Format product grid layout size on mobile screens.</small>
+                                    </div>
+
+                                    <!-- 11. Home pages category shorts order number Add > Box -->
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label fw-bold">
+                                            <span class="field-num-badge">11</span>Mobile Home Sort Order Number
+                                        </label>
+                                        <input type="number" class="form-control" name="mobile_home_order" value="<?php echo old('mobile_home_order', $nextOrder); ?>" min="0">
+                                        <small class="text-muted">Vertical order on mobile homepage.</small>
+                                    </div>
+                                </div>
+
+                                <!-- 7. show on home pages category select deign Add > Box (4 type design check the Drive folder) -->
+                                <div class="p-3 bg-light rounded-3 border mt-2">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div>
+                                            <h6 class="fw-bold mb-1 text-dark"><i class="fas fa-th-large me-1 text-info"></i> Mobile Home Page Category Design (4 Types)</h6>
+                                            <p class="text-muted small mb-0">Select which layout design format is rendered for mobile users on home page.</p>
+                                        </div>
+                                        <span class="badge bg-info bg-opacity-10 text-info border">4 Mobile Designs</span>
+                                    </div>
+
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-12 col-sm-6 col-xl-3">
+                                            <input type="radio" name="mobile_home_design" value="home_design_1" id="mhd_design_1" class="d-none"
+                                                   <?php echo (old('mobile_home_design', 'home_design_1') === 'home_design_1') ? 'checked' : ''; ?>>
+                                            <label for="mhd_design_1" class="design-option-card">
+                                                <span class="check-badge"><i class="fas fa-check-circle"></i></span>
+                                                <div class="layout-wireframe">
+                                                    <div class="d-flex gap-1 h-100">
+                                                        <div style="width:40%;background:#0284c7;border-radius:2px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:7px;font-weight:700;">HIGHLIGHT</div>
+                                                        <div class="d-flex flex-wrap gap-1 flex-grow-1">
+                                                            <div style="width:47%;height:45%;background:#e2e8f0;border-radius:2px;"></div>
+                                                            <div style="width:47%;height:45%;background:#e2e8f0;border-radius:2px;"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <span class="design-tag bg-info bg-opacity-10 text-info mb-1">Design 1</span>
+                                                <div class="design-title">Featured Split Grid</div>
+                                                <p class="design-desc">Banner + dynamic product tiles.</p>
+                                            </label>
+                                        </div>
+
+                                        <div class="col-12 col-sm-6 col-xl-3">
+                                            <input type="radio" name="mobile_home_design" value="home_design_2" id="mhd_design_2" class="d-none"
+                                                   <?php echo (old('mobile_home_design') === 'home_design_2') ? 'checked' : ''; ?>>
+                                            <label for="mhd_design_2" class="design-option-card">
+                                                <span class="check-badge"><i class="fas fa-check-circle"></i></span>
+                                                <div class="layout-wireframe">
+                                                    <div class="d-flex align-items-center justify-content-between h-100 px-1 gap-1">
+                                                        <div style="width:30%;height:80%;background:#f1f5f9;border-radius:50%;border:1px solid #0284c7;"></div>
+                                                        <div style="width:30%;height:80%;background:#f1f5f9;border-radius:50%;border:1px solid #0284c7;"></div>
+                                                        <div style="width:30%;height:80%;background:#f1f5f9;border-radius:50%;border:1px solid #0284c7;"></div>
+                                                    </div>
+                                                </div>
+                                                <span class="design-tag bg-info bg-opacity-10 text-info mb-1">Design 2</span>
+                                                <div class="design-title">Icon Circle Carousel</div>
+                                                <p class="design-desc">Touch-friendly circular carousel.</p>
+                                            </label>
+                                        </div>
+
+                                        <div class="col-12 col-sm-6 col-xl-3">
+                                            <input type="radio" name="mobile_home_design" value="home_design_3" id="mhd_design_3" class="d-none"
+                                                   <?php echo (old('mobile_home_design') === 'home_design_3') ? 'checked' : ''; ?>>
+                                            <label for="mhd_design_3" class="design-option-card">
+                                                <span class="check-badge"><i class="fas fa-check-circle"></i></span>
+                                                <div class="layout-wireframe">
+                                                    <div class="d-flex flex-wrap gap-1 h-100 justify-content-between p-1">
+                                                        <div style="width:48%;height:45%;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                        <div style="width:48%;height:45%;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                        <div style="width:48%;height:45%;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                        <div style="width:48%;height:45%;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                    </div>
+                                                </div>
+                                                <span class="design-tag bg-info bg-opacity-10 text-info mb-1">Design 3</span>
+                                                <div class="design-title">Product Box Matrix</div>
+                                                <p class="design-desc">Compact touchable product matrix.</p>
+                                            </label>
+                                        </div>
+
+                                        <div class="col-12 col-sm-6 col-xl-3">
+                                            <input type="radio" name="mobile_home_design" value="home_design_4" id="mhd_design_4" class="d-none"
+                                                   <?php echo (old('mobile_home_design') === 'home_design_4') ? 'checked' : ''; ?>>
+                                            <label for="mhd_design_4" class="design-option-card">
+                                                <span class="check-badge"><i class="fas fa-check-circle"></i></span>
+                                                <div class="layout-wireframe">
+                                                    <div style="height:45%;background:#0284c7;border-radius:2px;margin-bottom:2px;"></div>
+                                                    <div class="d-flex gap-1 h-45">
+                                                        <div style="flex:1;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                        <div style="flex:1;background:#fff;border:1px solid #cbd5e1;border-radius:2px;"></div>
+                                                    </div>
+                                                </div>
+                                                <span class="design-tag bg-info bg-opacity-10 text-info mb-1">Design 4</span>
+                                                <div class="design-title">Mini Banner + Split</div>
+                                                <p class="design-desc">Mobile banner with bottom cards.</p>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <!-- 10. Home pages category image uploading Add > Box -->
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label fw-bold">
+                                                <span class="field-num-badge">10</span>Mobile Home Category Image
+                                            </label>
+                                            <input type="file" class="form-control" name="mobile_image" accept="image/*" onchange="previewImg(this,'prevMobHomeImg')">
+                                            <small class="text-muted">Featured/card image for mobile layout.</small>
+                                            <img id="prevMobHomeImg" class="image-preview-box mt-2">
+                                        </div>
+
+                                        <!-- 9. Home pages category background Colour Add and upload Add > Box -->
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label fw-bold">
+                                                <span class="field-num-badge">9</span>Mobile Background Colour
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="color" class="form-control form-control-color" id="mobileBgColorPicker" value="<?php echo old('mobile_bg_color', '#ffffff'); ?>" onchange="document.getElementById('mobileBgColorText').value=this.value">
+                                                <input type="text" class="form-control" name="mobile_bg_color" id="mobileBgColorText" value="<?php echo old('mobile_bg_color'); ?>" placeholder="#hex color (e.g. #f8fafc)">
+                                            </div>
+                                            <small class="text-muted">Custom background color on mobile.</small>
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label fw-bold">Mobile Background Image</label>
+                                            <input type="file" class="form-control" name="mobile_bg_image" accept="image/*" onchange="previewImg(this,'prevMobBgImg')">
+                                            <small class="text-muted">Optional background texture on mobile.</small>
+                                            <img id="prevMobBgImg" class="image-preview-box mt-2">
                                         </div>
                                     </div>
                                 </div>

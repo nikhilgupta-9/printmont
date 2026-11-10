@@ -146,6 +146,8 @@ foreach ($groupMeta as $k => $m) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <!-- Dynamic Brand Favicon (Rule 1) -->
     <link rel="shortcut icon" href="favicon.png" />
     <link rel="icon" type="image/png" href="favicon.png" />
@@ -252,7 +254,12 @@ foreach ($groupMeta as $k => $m) {
                 gap: 8px !important;
             }
         }
+        .module-nav-pills { display: flex; gap: 8px; flex-wrap: wrap; background: #fff; padding: 6px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        .module-nav-link { padding: 8px 14px; font-size: 13px; font-weight: 600; color: #475569; text-decoration: none; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .module-nav-link:hover { color: #0b53a1; background: #e0edff; }
+        .module-nav-link.active { color: #fff; background: #0b53a1; }
     </style>
+    <link rel="stylesheet" href="css/header-admin-theme.css">
 </head>
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
 <div class="wrapper">
@@ -266,7 +273,7 @@ foreach ($groupMeta as $k => $m) {
                 <!-- Page Top Title & Actions -->
                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                     <div>
-                        <h1 class="h4 mb-1 fw-bold text-dark">Header &amp; Category Rules</h1>
+                        <h1 class="h4 mb-1 fw-bold text-dark">Header Category Menu &bull; 7. Page Rules &amp; Visibility</h1>
                         <p class="text-muted small mb-0">Customize header style and category bar display for each page on mobile and desktop.</p>
                     </div>
                     <div class="d-flex gap-2 flex-wrap">
@@ -280,6 +287,31 @@ foreach ($groupMeta as $k => $m) {
                             </button>
                         </form>
                     </div>
+                </div>
+
+                <!-- Module Top Navigation: All 7 items -->
+                <div class="module-nav-pills mb-3">
+                    <a href="add-top-icon.php" class="module-nav-link">
+                        <i class="fas fa-star text-warning"></i> 1. Top Icon
+                    </a>
+                    <a href="add-menu-page.php" class="module-nav-link">
+                        <i class="fas fa-file-alt text-info"></i> 2. Top Menu Inside Pages
+                    </a>
+                    <a href="header-menu-design.php" class="module-nav-link">
+                        <i class="fas fa-palette text-purple"></i> 3. Select Design
+                    </a>
+                    <a href="category-menu-description.php" class="module-nav-link">
+                        <i class="fas fa-align-left text-primary"></i> 4. Category Text Description
+                    </a>
+                    <a href="header-search-settings.php" class="module-nav-link">
+                        <i class="fas fa-search text-success"></i> 5. Search Box Text
+                    </a>
+                    <a href="header-menu-list.php" class="module-nav-link">
+                        <i class="fas fa-layer-group text-secondary"></i> 6. All menus
+                    </a>
+                    <a href="header-settings.php" class="module-nav-link active">
+                        <i class="fas fa-sliders-h text-dark"></i> 7. Page Rules &amp; Visibility
+                    </a>
                 </div>
 
                 <?php if ($message): ?>

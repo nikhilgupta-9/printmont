@@ -199,11 +199,22 @@ class SearchModel {
         }
 
         if ($categoryId) {
-            $whereClause[] = "(p.category_id = ? OR p.sub_category_id = ? OR p.sub_sub_category_id = ? OR c.parent_id = ?)";
+            // Primary category/sub/sub-sub columns, plus the JSON "additional ids" columns
+            // set in product.php → Section 4 "Multi-Category Placement" (a product can sit
+            // in several categories at once, not just its one primary assignment).
+            $whereClause[] = "(
+                p.category_id = ? OR p.sub_category_id = ? OR p.sub_sub_category_id = ? OR c.parent_id = ?
+                OR (JSON_VALID(p.additional_category_ids) AND JSON_CONTAINS(p.additional_category_ids, ?))
+                OR (JSON_VALID(p.additional_sub_category_ids) AND JSON_CONTAINS(p.additional_sub_category_ids, ?))
+                OR (JSON_VALID(p.additional_sub_sub_category_ids) AND JSON_CONTAINS(p.additional_sub_sub_category_ids, ?))
+            )";
             $queryParams[] = $categoryId;
             $queryParams[] = $categoryId;
             $queryParams[] = $categoryId;
             $queryParams[] = $categoryId;
+            $queryParams[] = (string) $categoryId;
+            $queryParams[] = (string) $categoryId;
+            $queryParams[] = (string) $categoryId;
         }
 
         if (!empty($brand)) {

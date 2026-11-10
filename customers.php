@@ -146,15 +146,15 @@ function getAvatarColor($name) {
     <!-- Google Fonts & Styles -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
     
     <style>
         :root {
-            --pm-primary: #0b53a1;
-            --pm-primary-dark: #073a72;
-            --pm-primary-light: #e8f1fb;
+            --pm-primary: #3b7ddd;
+            --pm-primary-dark: #2f66b3;
+            --pm-primary-light: #eef4fc;
             --pm-success: #10b981;
             --pm-warning: #f59e0b;
             --pm-danger: #ef4444;
@@ -162,27 +162,15 @@ function getAvatarColor($name) {
             --pm-slate: #475569;
         }
 
-        body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f4f6f9;
-            color: #1e293b;
-        }
-
         /* Stats Cards */
         .pm-stat-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
+            border: 1px solid #dee2e6;
+            border-radius: .375rem;
             background: #ffffff;
-            padding: 20px 22px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            padding: 1rem;
+            box-shadow: none;
             position: relative;
             overflow: hidden;
-        }
-
-        .pm-stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
         }
 
         .pm-stat-card .icon-badge {
@@ -219,27 +207,27 @@ function getAvatarColor($name) {
 
         /* Filter Card */
         .pm-filter-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
+            border: 1px solid #dee2e6;
+            border-radius: .375rem;
             background: #ffffff;
-            padding: 16px 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            padding: 1rem;
+            box-shadow: none;
             margin-bottom: 24px;
         }
 
         /* Table Card */
         .pm-table-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
+            border: 1px solid #dee2e6;
+            border-radius: .375rem;
             background: #ffffff;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            box-shadow: none;
             overflow: hidden;
         }
 
         .pm-table-card .card-header {
             background-color: #ffffff;
             border-bottom: 1px solid #e2e8f0;
-            padding: 18px 24px;
+            padding: 1rem;
         }
 
         .table-responsive {
@@ -466,9 +454,77 @@ function getAvatarColor($name) {
         .copy-email-btn:hover {
             color: var(--pm-primary);
         }
+
+        .customer-table { min-width: 1080px; }
+        .customer-page-actions { display: flex; gap: .5rem; justify-content: flex-end; }
+        .customer-page-actions .btn { white-space: nowrap; }
+        @media (max-width: 767.98px) {
+            main.content { padding: 1rem .75rem !important; }
+            .customer-page-heading { align-items: flex-start !important; }
+            .customer-page-heading > div { width: 100%; }
+            .customer-page-heading h1 { font-size: 1.3rem; }
+            .customer-page-actions { width: 100%; justify-content: stretch; }
+            .customer-page-actions .btn { flex: 1 1 0; justify-content: center; padding: .55rem .4rem; font-size: .8rem; }
+            .pm-stat-card { min-height: 132px; padding: .85rem; }
+            .pm-stat-card .icon-badge { width: 38px; height: 38px; font-size: 16px; }
+            .stat-label { font-size: .67rem; letter-spacing: .025em; }
+            .stat-value { font-size: 1.2rem; overflow-wrap: anywhere; }
+            .pm-filter-card { padding: .85rem; margin-bottom: 1rem; }
+            .pm-filter-card .form-control, .pm-filter-card .form-select { min-height: 42px; font-size: 16px; }
+            .customer-table { min-width: 0; }
+            .customer-table thead { display: none; }
+            .customer-table tbody { display: block; padding: .65rem; }
+            .customer-table tbody tr {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                gap: .2rem .75rem;
+                margin-bottom: .65rem;
+                padding: .55rem .7rem;
+                border: 1px solid #e6ebf2;
+                border-radius: 10px;
+                background: #fff;
+            }
+            .customer-table tbody tr:last-child { margin-bottom: 0; }
+            .customer-table tbody td {
+                display: block;
+                min-width: 0;
+                padding: .45rem 0 !important;
+                border: 0 !important;
+                overflow-wrap: anywhere;
+                text-align: left !important;
+            }
+            .customer-table tbody td::before {
+                display: block;
+                margin-bottom: .2rem;
+                color: #778399;
+                font-size: .63rem;
+                font-weight: 700;
+                letter-spacing: .045em;
+                text-transform: uppercase;
+            }
+            .customer-table tbody td:nth-child(1), .customer-table tbody td:nth-child(2) { grid-column: 1 / -1; }
+            .customer-table tbody td:nth-child(1)::before { content: 'Customer'; }
+            .customer-table tbody td:nth-child(2)::before { content: 'Contact'; }
+            .customer-table tbody td:nth-child(3)::before { content: 'Location'; }
+            .customer-table tbody td:nth-child(4)::before { content: 'Type / company'; }
+            .customer-table tbody td:nth-child(5)::before { content: 'Orders / lifetime value'; }
+            .customer-table tbody td:nth-child(6)::before { content: 'Status'; }
+            .customer-table tbody td:nth-child(7)::before { content: 'Joined'; }
+            .customer-table tbody td:nth-child(8) { grid-column: 1 / -1; padding-top: .55rem !important; border-top: 1px solid #edf0f4 !important; }
+            .customer-table tbody td:nth-child(8)::before { content: 'Actions'; }
+            .customer-table .btn-action-icon { width: 40px; height: 38px; }
+            .pm-table-card .card-header { align-items: flex-start !important; padding: .9rem !important; gap: .6rem; }
+            .customer-table-card-body { padding: 0 !important; }
+            .pm-table-card .table-responsive { overflow: visible; }
+        }
+        @media (max-width: 380px) {
+            .pm-stat-card { padding: .7rem; }
+            .pm-stat-card .icon-badge { display: none; }
+            .customer-page-actions .btn { font-size: .73rem; }
+        }
     </style>
 </head>
-<body>
+<body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
     <div class="wrapper">
         <?php include_once "includes/side-navbar.php"; ?>
         <div class="main">
@@ -478,10 +534,10 @@ function getAvatarColor($name) {
                 <div class="container-fluid p-0">
                     
                     <!-- Page Header & Action Bar -->
-                    <div class="row mb-4 align-items-center">
+                    <div class="row mb-4 align-items-center customer-page-heading">
                         <div class="col-md-6">
                             <div class="d-flex align-items-center gap-3">
-                                <h2 class="h3 fw-bold text-dark mb-0">Customers</h2>
+                                <h1 class="h3 fw-bold text-dark mb-0">Customers</h1>
                                 <span class="badge bg-primary rounded-pill px-3 py-2 fw-semibold">
                                     <?php echo count($customers); ?> Total
                                 </span>
@@ -493,7 +549,7 @@ function getAvatarColor($name) {
                                 </ol>
                             </nav>
                         </div>
-                        <div class="col-md-6 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end gap-2">
+                        <div class="col-md-6 text-md-end mt-3 mt-md-0 customer-page-actions">
                             <a href="customers.php?export=csv<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
                                 <i class="fas fa-file-csv text-success"></i> Export CSV
                             </a>
@@ -522,7 +578,7 @@ function getAvatarColor($name) {
 
                     <!-- Stats Overview Cards -->
                     <div class="row g-3 mb-4">
-                        <div class="col-xl-3 col-sm-6">
+                        <div class="col-6 col-xl-3">
                             <div class="pm-stat-card">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
@@ -537,7 +593,7 @@ function getAvatarColor($name) {
                             </div>
                         </div>
 
-                        <div class="col-xl-3 col-sm-6">
+                        <div class="col-6 col-xl-3">
                             <div class="pm-stat-card">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
@@ -552,7 +608,7 @@ function getAvatarColor($name) {
                             </div>
                         </div>
 
-                        <div class="col-xl-3 col-sm-6">
+                        <div class="col-6 col-xl-3">
                             <div class="pm-stat-card">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
@@ -567,7 +623,7 @@ function getAvatarColor($name) {
                             </div>
                         </div>
 
-                        <div class="col-xl-3 col-sm-6">
+                        <div class="col-6 col-xl-3">
                             <div class="pm-stat-card">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
@@ -639,7 +695,7 @@ function getAvatarColor($name) {
                             </span>
                         </div>
 
-                        <div class="card-body p-0">
+                        <div class="card-body p-0 customer-table-card-body">
                             <?php if (empty($customers)): ?>
                                 <div class="text-center py-5 px-3">
                                     <div class="mb-3 text-muted">
@@ -661,7 +717,7 @@ function getAvatarColor($name) {
                                 </div>
                             <?php else: ?>
                                 <div class="table-responsive">
-                                    <table class="table pm-table table-hover align-middle">
+                                    <table class="table pm-table table-hover align-middle customer-table">
                                         <thead>
                                             <tr>
                                                 <th>Customer Profile</th>

@@ -262,32 +262,28 @@ if (empty($sampleCategories)) {
     <link rel="icon" type="image/png" href="favicon.png" />
     <title>Header Category Menu &bull; Select Design | PrintMont Admin</title>
     
-    <!-- Fonts: Plus Jakarta Sans & Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="js/settings.js"></script>
 
     <style>
         :root {
-            --pm-primary: #0b53a1;
-            --pm-primary-dark: #073b75;
-            --pm-primary-light: #e0edff;
-            --pm-accent: #0284c7;
-            --pm-success: #10b981;
-            --pm-warning: #f59e0b;
-            --pm-danger: #ef4444;
-            --pm-dark: #0f172a;
-            --pm-border: #e2e8f0;
-            --pm-bg-subtle: #f8fafc;
+            --pm-primary: var(--bs-primary, #3b7ddd);
+            --pm-primary-dark: #2f64b1;
+            --pm-primary-light: #d8e5f8;
+            --pm-accent: var(--bs-info, #17a2b8);
+            --pm-success: var(--bs-success, #1cbb8c);
+            --pm-warning: var(--bs-warning, #fcb92c);
+            --pm-danger: var(--bs-danger, #dc3545);
+            --pm-dark: #343a40;
+            --pm-border: #dee2e6;
+            --pm-bg-subtle: #f8f9fa;
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f1f5f9;
-            color: #334155;
+            font-family: var(--bs-body-font-family);
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
             opacity: 1 !important;
         }
 
@@ -816,6 +812,85 @@ if (empty($sampleCategories)) {
             margin-top: 5px;
             white-space: nowrap;
         }
+
+        /* AdminKit theme alignment */
+        .content { background: var(--bs-body-bg); }
+        .content > .container-fluid { max-width: 1600px; }
+        .content h2, .content h3, .content h4, .content h5 { font-family: var(--bs-body-font-family); }
+        .content h2.h3 { font-size: 1.35rem; font-weight: 600 !important; color: #343a40 !important; }
+        .content p { font-size: .875rem; }
+        .content .small, .content small { font-size: .8125rem; }
+        .content .text-muted { color: #6c757d !important; }
+
+        .module-nav-pills { display: flex; flex-wrap: wrap; gap: 4px; max-width: 100%; padding: 4px; border-color: var(--bs-border-color); border-radius: .3rem; box-shadow: none; }
+        .module-nav-link { padding: .45rem .65rem; border-radius: .25rem; font-size: .8125rem; font-weight: 500; white-space: nowrap; }
+        .module-nav-link.active { box-shadow: none; }
+        .active-summary-bar, .config-box { border: 1px solid var(--bs-border-color); border-radius: .3rem; box-shadow: 0 .1rem .2rem rgba(0,0,0,.05); }
+        .active-summary-bar { padding: 1rem; }
+        .summary-badge-item { min-width: 0; padding: .7rem .8rem; gap: .7rem; border-color: #dee2e6; border-radius: .3rem; background: #f8f9fa; }
+        .summary-badge-item strong { display: block; overflow-wrap: anywhere; }
+        .config-box-header { padding: .85rem 1rem; border-color: #dee2e6; }
+        .config-box-title { font-size: .95rem; font-weight: 600; color: #343a40; gap: .65rem; }
+        .config-box-body { padding: 1rem; }
+
+        .main-tab-bar { gap: .35rem; padding: .25rem; border: 1px solid var(--bs-border-color); border-radius: .3rem; box-shadow: none; }
+        .main-tab-btn { min-width: 0; padding: .65rem .8rem; border-radius: .25rem; font-size: .8125rem; font-weight: 500; }
+        .main-tab-btn.active { background: var(--bs-primary); box-shadow: none; }
+
+        .design-choice-card { padding: .85rem; border: 1px solid #dee2e6; border-radius: .3rem; }
+        .design-choice-card:hover { border-color: var(--bs-primary); transform: translateY(-1px); box-shadow: 0 .2rem .5rem rgba(0,0,0,.08); }
+        input[type="radio"]:checked + .design-choice-card { background: #f8fbff; box-shadow: inset 0 0 0 1px var(--bs-primary); }
+        .selection-check-indicator { width: 22px; height: 22px; top: 10px; right: 10px; border-width: 1px; font-size: 11px; }
+        .wireframe-canvas { padding: .65rem; border-color: #dee2e6; border-radius: .3rem; background: #f8f9fa; }
+        input[type="radio"]:checked + .design-choice-card .wireframe-canvas { border-color: #b6d4fe; background: #f8fbff; }
+
+        .shape-picker-card { gap: .7rem; padding: .65rem .75rem; border: 1px solid #dee2e6; border-radius: .3rem; }
+        .shape-picker-card:hover { border-color: #9dbce9; background: #f8f9fa; }
+        .shape-picker-card.active { border-color: var(--bs-primary); background: #f8fbff; box-shadow: inset 0 0 0 1px var(--bs-primary); }
+        .shape-icon-box { width: 36px; height: 36px; background: #f1f3f5; border-color: #dee2e6; color: var(--bs-primary); font-size: 16px; }
+        .shape-picker-card.active .shape-icon-box, .shape-picker-card.active .shape-check { background: var(--bs-primary); border-color: var(--bs-primary); }
+        .shape-check { width: 20px; height: 20px; border-width: 1px; }
+        .size-preset-btn { padding: .3rem .55rem; border-color: #ced4da; border-radius: .25rem; color: #495057; font-size: .75rem; font-weight: 500; }
+        .size-preset-btn:hover { border-color: var(--bs-primary); color: var(--bs-primary); background: #f8fbff; }
+        .size-preset-btn.active { background: var(--bs-primary) !important; border-color: var(--bs-primary) !important; box-shadow: none; }
+
+        .content .form-label { margin-bottom: .35rem; font-size: .8125rem; font-weight: 600 !important; color: #495057 !important; }
+        .content .form-control, .content .form-select, .content .input-group-text { min-height: 38px; padding: .45rem .7rem; border-color: #ced4da; border-radius: .25rem; font-family: var(--bs-body-font-family); font-size: .875rem; line-height: 1.4; }
+        .content .form-control:focus, .content .form-select:focus { border-color: #9dbce9; box-shadow: 0 0 0 .2rem rgba(59,125,221,.15); }
+        .content .btn { border-radius: .25rem; font-family: var(--bs-body-font-family); font-size: .8125rem; font-weight: 500; line-height: 1.4; }
+        .content .btn-sm { padding: .3rem .55rem; font-size: .75rem; }
+        .content .btn-lg { padding: .55rem .9rem; font-size: .9rem; }
+        .content .btn-primary { box-shadow: none; }
+        .content .badge { font-weight: 500; }
+        .sticky-action-bar { border-color: #dee2e6; border-radius: .3rem; padding: .75rem 1rem; box-shadow: 0 .25rem .75rem rgba(0,0,0,.08); }
+
+        @media (max-width: 991.98px) {
+            .content > .container-fluid { padding-right: .75rem !important; padding-left: .75rem !important; }
+            .module-nav-pills { width: 100%; flex-wrap: nowrap; overflow-x: auto; }
+            .module-nav-link { flex: 0 0 auto; }
+            .summary-badge-item { height: 100%; }
+            .main-tab-bar { overflow-x: auto; }
+            .main-tab-btn { flex: 0 0 auto; }
+            .sticky-action-bar { position: sticky; bottom: .5rem; gap: .75rem; margin-top: 1rem; }
+        }
+        @media (max-width: 575.98px) {
+            .content h2.h3 { font-size: 1.15rem; }
+            .content > .container-fluid { padding-right: .5rem !important; padding-left: .5rem !important; }
+            .active-summary-bar { padding: .75rem; }
+            .active-summary-bar > .d-flex { align-items: flex-start !important; flex-direction: column; }
+            .summary-badge-item { gap: .5rem; padding: .55rem; }
+            .summary-badge-item > div:first-child { font-size: 1.1rem !important; }
+            .summary-badge-item strong { font-size: .75rem; line-height: 1.3; }
+            .config-box-header, .config-box-body { padding: .75rem; }
+            .config-box-title { font-size: .875rem; }
+            .main-tab-bar { gap: .2rem; }
+            .main-tab-btn { padding: .55rem .65rem; font-size: .75rem; }
+            .sticky-action-bar { align-items: stretch; flex-direction: column; padding: .75rem; }
+            .sticky-action-bar > .d-flex:last-child { display: grid !important; grid-template-columns: 1fr 1.5fr; }
+            .sticky-action-bar .btn { padding-right: .5rem; padding-left: .5rem; }
+            .design-choice-card { padding: .65rem; }
+            .live-preview-stage { padding: .65rem; }
+        }
     </style>
 </head>
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
@@ -844,19 +919,28 @@ if (empty($sampleCategories)) {
                         </p>
                     </div>
 
-                    <!-- Top Submenu Links -->
+                    <!-- Top Submenu Links: All 7 Items of Section 5 in order -->
                     <div class="module-nav-pills">
                         <a href="add-top-icon.php" class="module-nav-link">
-                            <i class="fas fa-star text-warning"></i> Top Icon
+                            <i class="fas fa-star text-warning"></i> 1. Top Icon
                         </a>
                         <a href="add-menu-page.php" class="module-nav-link">
-                            <i class="fas fa-file-alt"></i> Top Menu Inside Pages
+                            <i class="fas fa-file-alt text-info"></i> 2. Top Menu Inside Pages
                         </a>
                         <a href="header-menu-design.php" class="module-nav-link active">
-                            <i class="fas fa-palette"></i> Select Design
+                            <i class="fas fa-palette text-purple"></i> 3. Select Design
+                        </a>
+                        <a href="category-menu-description.php" class="module-nav-link">
+                            <i class="fas fa-align-left text-primary"></i> 4. Category Text Description
+                        </a>
+                        <a href="header-search-settings.php" class="module-nav-link">
+                            <i class="fas fa-search text-success"></i> 5. Search Box Text
                         </a>
                         <a href="header-menu-list.php" class="module-nav-link">
-                            <i class="fas fa-layer-group"></i> All menus
+                            <i class="fas fa-layer-group text-secondary"></i> 6. All menus
+                        </a>
+                        <a href="header-settings.php" class="module-nav-link">
+                            <i class="fas fa-sliders-h text-dark"></i> 7. Page Rules &amp; Visibility
                         </a>
                     </div>
                 </div>

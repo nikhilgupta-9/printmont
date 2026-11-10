@@ -38,18 +38,19 @@ if (strlen($cleanPhone) === 10) $cleanPhone = '91' . $cleanPhone;
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title><?php echo htmlspecialchars($fullName); ?> | Customer 360 | Printmont Admin</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="js/settings.js"></script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .customer-hero {
-            background: linear-gradient(135deg, #0b53a1 0%, #1e293b 100%);
+            background: #ffffff;
             border-radius: 12px;
-            color: #ffffff;
+            color: #212529;
             padding: 28px;
             margin-bottom: 24px;
+            border: 1px solid #e3e8ef;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
         }
         .stat-badge-card {
             background: #ffffff;
@@ -62,14 +63,14 @@ if (strlen($cleanPhone) === 10) $cleanPhone = '91' . $cleanPhone;
             width: 64px;
             height: 64px;
             border-radius: 50%;
-            background: #ffffff;
-            color: #0b53a1;
+            background: #eaf1fb;
+            color: #1f509a;
             font-size: 22px;
             font-weight: 800;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            box-shadow: none;
         }
         .info-group {
             margin-bottom: 14px;
@@ -105,6 +106,19 @@ if (strlen($cleanPhone) === 10) $cleanPhone = '91' . $cleanPhone;
         .badge-shipped { background-color: #f3e8ff; color: #6b21a8; }
         .badge-delivered { background-color: #dcfce7; color: #166534; }
         .badge-cancelled { background-color: #fee2e2; color: #991b1b; }
+        .customer-orders-table { min-width: 620px; }
+        @media (max-width: 767.98px) {
+            main.content { padding: 1rem .75rem !important; }
+            .customer-hero { padding: 1rem; margin-bottom: 1rem; }
+            .customer-hero h2 { font-size: 1.2rem; overflow-wrap: anywhere; }
+            .customer-hero .row { row-gap: .8rem; }
+            .customer-hero-actions { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .customer-hero-actions .btn { width: 100%; min-height: 40px; padding: .5rem .35rem; font-size: .75rem; }
+            .customer-orders-table { min-width: 620px; }
+            .stat-badge-card { padding: .85rem; }
+            .stat-badge-card h3 { font-size: 1.15rem; }
+            .customer-info-card .card-body { padding: .9rem !important; }
+        }
     </style>
 </head>
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
@@ -126,7 +140,7 @@ if (strlen($cleanPhone) === 10) $cleanPhone = '91' . $cleanPhone;
                                     </div>
                                     <div>
                                         <div class="d-flex align-items-center gap-2">
-                                            <h2 class="text-white fw-bold mb-0"><?php echo htmlspecialchars($fullName); ?></h2>
+                                            <h2 class="fw-bold text-dark mb-0"><?php echo htmlspecialchars($fullName); ?></h2>
                                             <?php if ($isVerified): ?>
                                                 <span class="badge bg-success font-11"><i class="fas fa-circle-check me-1"></i>Verified</span>
                                             <?php endif; ?>
@@ -134,7 +148,7 @@ if (strlen($cleanPhone) === 10) $cleanPhone = '91' . $cleanPhone;
                                                 <?php echo ucfirst($customer['status'] ?? 'active'); ?>
                                             </span>
                                         </div>
-                                        <div class="text-white-50 font-13 mt-1">
+                                        <div class="text-muted font-13 mt-1">
                                             <i class="far fa-envelope me-1"></i><?php echo htmlspecialchars($customer['email'] ?? 'N/A'); ?>
                                             <?php if (!empty($customer['phone'])): ?>
                                                 &nbsp;•&nbsp; <i class="fas fa-phone me-1"></i><?php echo htmlspecialchars($customer['phone']); ?>
@@ -147,19 +161,19 @@ if (strlen($cleanPhone) === 10) $cleanPhone = '91' . $cleanPhone;
                                 </div>
                             </div>
                             <div class="col-lg-5 text-lg-end mt-3 mt-lg-0">
-                                <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                                <div class="d-flex flex-wrap gap-2 justify-content-lg-end customer-hero-actions">
                                     <?php if (!empty($cleanPhone)): ?>
                                         <a href="https://wa.me/<?php echo $cleanPhone; ?>" target="_blank" class="btn btn-success btn-sm fw-semibold">
                                             <i class="fab fa-whatsapp me-1"></i> WhatsApp
                                         </a>
                                     <?php endif; ?>
-                                    <a href="mailto:<?php echo htmlspecialchars($customer['email']); ?>" class="btn btn-light btn-sm fw-semibold">
+                                    <a href="mailto:<?php echo htmlspecialchars($customer['email']); ?>" class="btn btn-outline-primary btn-sm fw-semibold">
                                         <i class="fas fa-envelope text-primary me-1"></i> Email
                                     </a>
-                                    <a href="edit-customer.php?id=<?php echo $customer['id']; ?>" class="btn btn-outline-light btn-sm fw-semibold">
+                                    <a href="edit-customer.php?id=<?php echo $customer['id']; ?>" class="btn btn-primary btn-sm fw-semibold">
                                         <i class="fas fa-edit me-1"></i> Edit Profile
                                     </a>
-                                    <a href="customers.php" class="btn btn-secondary btn-sm fw-semibold">
+                                    <a href="customers.php" class="btn btn-light border btn-sm fw-semibold">
                                         <i class="fas fa-arrow-left me-1"></i> Back
                                     </a>
                                 </div>
@@ -169,28 +183,28 @@ if (strlen($cleanPhone) === 10) $cleanPhone = '91' . $cleanPhone;
 
                     <!-- KPI Metric Summary Row -->
                     <div class="row g-3 mb-4">
-                        <div class="col-xl-3 col-sm-6">
+                        <div class="col-6 col-xl-3">
                             <div class="stat-badge-card">
                                 <span class="text-muted text-uppercase fw-bold font-11">Lifetime Spend (LTV)</span>
                                 <h3 class="fw-bold text-success mt-1 mb-0">₹<?php echo number_format($customerStats['total_spent'] ?? 0, 2); ?></h3>
                                 <span class="text-muted font-11">Avg Order: ₹<?php echo number_format($customerStats['avg_order_value'] ?? 0, 2); ?></span>
                             </div>
                         </div>
-                        <div class="col-xl-3 col-sm-6">
+                        <div class="col-6 col-xl-3">
                             <div class="stat-badge-card">
                                 <span class="text-muted text-uppercase fw-bold font-11">Total Orders</span>
                                 <h3 class="fw-bold text-primary mt-1 mb-0"><?php echo count($customerOrders); ?></h3>
                                 <span class="text-muted font-11"><?php echo $customerStats['completed_orders'] ?? 0; ?> fulfilled successfully</span>
                             </div>
                         </div>
-                        <div class="col-xl-3 col-sm-6">
+                        <div class="col-6 col-xl-3">
                             <div class="stat-badge-card">
                                 <span class="text-muted text-uppercase fw-bold font-11">Pending Orders</span>
                                 <h3 class="fw-bold text-warning mt-1 mb-0"><?php echo $customerStats['pending_orders'] ?? 0; ?></h3>
                                 <span class="text-muted font-11">Currently in fulfillment</span>
                             </div>
                         </div>
-                        <div class="col-xl-3 col-sm-6">
+                        <div class="col-6 col-xl-3">
                             <div class="stat-badge-card">
                                 <span class="text-muted text-uppercase fw-bold font-11">Registered Since</span>
                                 <h3 class="fw-bold text-dark mt-1 mb-0 font-16">
@@ -216,7 +230,7 @@ if (strlen($cleanPhone) === 10) $cleanPhone = '91' . $cleanPhone;
                                 </div>
                                 <div class="card-body p-0">
                                     <div class="table-responsive">
-                                        <table class="table table-hover mb-0">
+                                        <table class="table table-hover mb-0 customer-orders-table">
                                             <thead class="table-light font-12 text-uppercase">
                                                 <tr>
                                                     <th>Order #</th>

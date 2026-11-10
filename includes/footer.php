@@ -354,9 +354,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             notificationList.innerHTML = html;
             
-            // Refresh Feather icons
-            if (typeof feather !== 'undefined') {
-                feather.replace();
+            // Refresh Feather icons — prefer the full icon set loaded in side-navbar.php
+            // (app.js only bundles a partial/tree-shaken set and throws on unknown names)
+            var __feather = window.__fullFeather || (typeof feather !== 'undefined' ? feather : null);
+            if (__feather) {
+                try { __feather.replace(); } catch (e) {}
             }
         }
     }

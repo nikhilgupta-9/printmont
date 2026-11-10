@@ -342,7 +342,7 @@ while ($cat = $categories_res->fetch_assoc()) {
                 </div>
             `;
             container.appendChild(div);
-            if (typeof feather !== 'undefined') feather.replace();
+            if (window.__fullFeather || typeof feather !== 'undefined') (window.__fullFeather || feather).replace();
         }
 
         function addGiftTypeRow() {
@@ -374,7 +374,7 @@ while ($cat = $categories_res->fetch_assoc()) {
                 </div>
             `;
             container.appendChild(div);
-            if (typeof feather !== 'undefined') feather.replace();
+            if (window.__fullFeather || typeof feather !== 'undefined') (window.__fullFeather || feather).replace();
         }
     </script>
 </body>

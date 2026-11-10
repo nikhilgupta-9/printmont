@@ -787,6 +787,8 @@ class HeaderSettingsController {
             }
         }
 
+        $searchSettings = $this->getSearchSettings();
+
         return [
             'menu_design' => $menuDesign,
             'home_desktop_design' => $headerConfig['home_desktop_design'] ?? 'design1',
@@ -796,9 +798,64 @@ class HeaderSettingsController {
             'category_image_shape' => $headerConfig['category_image_shape'] ?? 'circle',
             'category_image_size' => (int)($headerConfig['category_image_size'] ?? 56),
             'header_config' => $headerConfig,
+            'search_settings' => $searchSettings,
             'rules' => $rules,
             'generated_at' => date('Y-m-d H:i:s')
         ];
+    }
+
+    /**
+     * Get Header Search Box settings
+     */
+    public function getSearchSettings() {
+        $searchFile = __DIR__ . '/../config/header_search_settings.json';
+        $defaults = [
+            'search_mode' => 'rotating',
+            'rotation_interval' => 3.2,
+            'static_placeholder' => 'Search for customized t-shirts, mugs, gifts and corporate items...',
+            'placeholders' => [
+                'Search for Customized T-Shirts, Hoodies & Polos...',
+                'Search for Photo Mugs, Magic Mugs & Drinkware...',
+                'Search for Corporate Joining Kits & Gift Combos...',
+                'Search for Personalized Photo Frames & Canvas...',
+                'Search for Visiting Cards, Diaries & Engraved Pens...',
+                'Search for Stickers, Labels, Badges & Signages...'
+            ],
+            'popular_searches' => [
+                'Custom T-Shirt',
+                'Coffee Mug',
+                'Photo Frame',
+                'Visiting Cards',
+                'Corporate Gift',
+                'Hoodies',
+                'Water Bottle',
+                'Keychains'
+            ],
+            'search_box_style' => 'expanded',
+            'show_clear_btn' => true,
+            'enable_history' => true,
+            'max_history_items' => 6,
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+
+        if (file_exists($searchFile)) {
+            $data = json_decode(file_get_contents($searchFile), true);
+            if (is_array($data)) {
+                return array_merge($defaults, $data);
+            }
+        }
+        return $defaults;
+    }
+
+    /**
+     * Save Header Search Box settings
+     */
+    public function saveSearchSettings(array $settings) {
+        $searchFile = __DIR__ . '/../config/header_search_settings.json';
+        $current = $this->getSearchSettings();
+        $merged = array_merge($current, $settings);
+        $merged['updated_at'] = date('Y-m-d H:i:s');
+        return (bool)file_put_contents($searchFile, json_encode($merged, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 
     /**

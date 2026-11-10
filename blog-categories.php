@@ -169,7 +169,7 @@ $categories = $categoryController->getAllCategories();
 
     <script src="js/app.js"></script>
     <script>
-        feather.replace();
+        (window.__fullFeather || feather).replace();
     </script>
 </body>
 </html>

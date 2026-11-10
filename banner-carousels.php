@@ -2,7 +2,8 @@
 /**
  * Banner Carousels Management — Printmont Admin
  * 
- * View, manage, and toggle multi-banner sliders and format carousels.
+ * View, manage, and toggle multi-banner sliders, subtypes, and format carousels.
+ * Complies with Document 6: "6 no. Home Pages Banner Slider Setting".
  */
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -32,9 +33,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete' && !empty($_GET['id']
     $delStmt = $db->prepare("DELETE FROM banner_carousels WHERE id = ?");
     $delStmt->bind_param('i', $delId);
     if ($delStmt->execute()) {
-        $message = "Banner Carousel #$delId deleted successfully!";
+        $message = "Banner Slider #$delId deleted successfully!";
     } else {
-        $error = "Failed to delete banner carousel: " . $delStmt->error;
+        $error = "Failed to delete banner slider: " . $delStmt->error;
     }
     $delStmt->close();
 }
@@ -45,9 +46,23 @@ if (isset($_GET['action']) && $_GET['action'] === 'toggle' && !empty($_GET['id']
     $tStmt = $db->prepare("UPDATE banner_carousels SET status = IF(status = 'active', 'inactive', 'active') WHERE id = ?");
     $tStmt->bind_param('i', $toggleId);
     if ($tStmt->execute()) {
-        $message = "Banner Carousel #$toggleId status updated!";
+        $message = "Banner Slider #$toggleId status updated!";
     }
     $tStmt->close();
+}
+
+$subtypeTitles = [
+    'top_slider'            => '1. Top Banner Slider',
+    'small_slider'          => '2. Banner Small Slider',
+    'offer_slider'          => '3. Banner Offer Slider',
+    'service_slider'        => '4. Category Service Slider',
+    'product_detail_slider' => '5. Product Details Slider',
+    'dashboard_slider'      => '6. User Dashboard Slider',
+];
+
+$typeFilter = $_GET['type'] ?? '';
+if (!empty($typeFilter) && !array_key_exists($typeFilter, $subtypeTitles)) {
+    $typeFilter = '';
 }
 
 // Fetch stats
@@ -65,20 +80,40 @@ if ($statRes && $r = $statRes->fetch_assoc()) {
     $stats = $r;
 }
 
-// Fetch all banner carousels
+// Fetch banner carousels
+$whereClause = "1=1";
+$params = [];
+$types = "";
+
+if (!empty($typeFilter)) {
+    $whereClause .= " AND bc.slider_subtype = ?";
+    $params[] = $typeFilter;
+    $types .= "s";
+}
+
 $query = "SELECT bc.*, 
     c.name as desktop_cat_name, 
     car.title as desktop_carousel_name 
 FROM banner_carousels bc
 LEFT JOIN categories c ON bc.desktop_home_category_id = c.id
 LEFT JOIN carousels car ON bc.desktop_home_carousel_id = car.id
+WHERE {$whereClause}
 ORDER BY bc.desktop_sort_order ASC, bc.id DESC";
 
 $bannerCarousels = [];
-$res = $db->query($query);
-if ($res) {
-    while ($r = $res->fetch_assoc()) {
-        $bannerCarousels[] = $r;
+if (!empty($params)) {
+    $stmt = $db->prepare($query);
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if ($res) {
+        while ($r = $res->fetch_assoc()) $bannerCarousels[] = $r;
+    }
+    $stmt->close();
+} else {
+    $res = $db->query($query);
+    if ($res) {
+        while ($r = $res->fetch_assoc()) $bannerCarousels[] = $r;
     }
 }
 ?>
@@ -88,11 +123,16 @@ if ($res) {
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Banner Carousels | Printmont Admin</title>
+    <title>Banner Sliders &amp; Carousels | Printmont Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        .module-nav-pills { display: flex; gap: 8px; flex-wrap: wrap; background: #fff; padding: 6px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        .module-nav-link { padding: 8px 14px; font-size: 13px; font-weight: 600; color: #475569; text-decoration: none; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .module-nav-link:hover { color: #0d6efd; background: #e0edff; }
+        .module-nav-link.active { color: #fff; background: #0d6efd; }
+
         .stat-card {
             border-radius: 10px;
             border: 1px solid #e2e8f0;
@@ -133,14 +173,43 @@ if ($res) {
             
             <main class="content">
                 <div class="container-fluid p-0">
+
+                    <!-- Document 6 Banner Slider Navigation Pills -->
+                    <div class="module-nav-pills mb-4">
+                        <a href="banner-carousels.php" class="module-nav-link <?php echo empty($typeFilter) ? 'active' : ''; ?>">
+                            <i class="fas fa-list"></i> All Banner Sliders
+                        </a>
+                        <a href="banner-carousels.php?type=top_slider" class="module-nav-link <?php echo $typeFilter === 'top_slider' ? 'active' : ''; ?>">
+                            <i class="fas fa-desktop"></i> Top Slider
+                        </a>
+                        <a href="banner-carousels.php?type=small_slider" class="module-nav-link <?php echo $typeFilter === 'small_slider' ? 'active' : ''; ?>">
+                            <i class="fas fa-compress-arrows-alt"></i> Small Slider
+                        </a>
+                        <a href="banner-carousels.php?type=offer_slider" class="module-nav-link <?php echo $typeFilter === 'offer_slider' ? 'active' : ''; ?>">
+                            <i class="fas fa-tags"></i> Offer Slider
+                        </a>
+                        <a href="banner-carousels.php?type=service_slider" class="module-nav-link <?php echo $typeFilter === 'service_slider' ? 'active' : ''; ?>">
+                            <i class="fas fa-concierge-bell"></i> Service Slider
+                        </a>
+                        <a href="banner-carousels.php?type=product_detail_slider" class="module-nav-link <?php echo $typeFilter === 'product_detail_slider' ? 'active' : ''; ?>">
+                            <i class="fas fa-boxes"></i> Product Detail Slider
+                        </a>
+                        <a href="banner-carousels.php?type=dashboard_slider" class="module-nav-link <?php echo $typeFilter === 'dashboard_slider' ? 'active' : ''; ?>">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard Slider
+                        </a>
+                        <a href="add-banner-carousel.php<?php echo !empty($typeFilter) ? '?type=' . urlencode($typeFilter) : ''; ?>" class="module-nav-link ms-auto text-primary fw-bold">
+                            <i class="fas fa-plus-circle"></i> Add New Slider
+                        </a>
+                    </div>
+
                     <div class="row mb-3 align-items-center">
                         <div class="col-auto">
-                            <h1 class="h3 mb-0"><strong>Banner</strong> Carousels</h1>
-                            <p class="text-muted small">Multi-banner promotional sliders, format carousels & responsive display rules.</p>
+                            <h1 class="h3 mb-0"><strong>Banner</strong> Sliders &amp; Carousels</h1>
+                            <p class="text-muted small">Multi-banner promotional sliders, subtypes &amp; responsive display rules (Document 6).</p>
                         </div>
                         <div class="col-auto ms-auto">
-                            <a href="add-banner-carousel.php" class="btn btn-primary px-3">
-                                <i class="fas fa-plus me-1"></i> Add Banner Carousel
+                            <a href="add-banner-carousel.php<?php echo !empty($typeFilter) ? '?type=' . urlencode($typeFilter) : ''; ?>" class="btn btn-primary px-3">
+                                <i class="fas fa-plus me-1"></i> Add <?php echo !empty($typeFilter) ? htmlspecialchars($subtypeTitles[$typeFilter]) : 'Banner Slider'; ?>
                             </a>
                         </div>
                     </div>
@@ -168,7 +237,7 @@ if ($res) {
                                 </div>
                                 <div>
                                     <h4 class="mb-0 fw-bold"><?php echo (int)$stats['total']; ?></h4>
-                                    <div class="text-muted small">Total Carousels</div>
+                                    <div class="text-muted small">Total Sliders</div>
                                 </div>
                             </div>
                         </div>
@@ -199,16 +268,16 @@ if ($res) {
                     <!-- Main Table -->
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">Banner Carousel List (<?php echo count($bannerCarousels); ?>)</h5>
+                            <h5 class="card-title mb-0">Banner Slider List (<?php echo count($bannerCarousels); ?>)</h5>
                         </div>
                         <div class="card-body p-0">
                             <?php if (empty($bannerCarousels)): ?>
                                 <div class="text-center py-5">
                                     <i class="fas fa-images text-muted mb-3" style="font-size: 48px;"></i>
-                                    <h5>No Banner Carousels Found</h5>
+                                    <h5>No Banner Sliders Found</h5>
                                     <p class="text-muted small mb-3">Create sliding promotional banners across home and other pages.</p>
-                                    <a href="add-banner-carousel.php" class="btn btn-primary btn-sm">
-                                        <i class="fas fa-plus me-1"></i> Add Banner Carousel
+                                    <a href="add-banner-carousel.php<?php echo !empty($typeFilter) ? '?type=' . urlencode($typeFilter) : ''; ?>" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus me-1"></i> Add Banner Slider
                                     </a>
                                 </div>
                             <?php else: ?>
@@ -217,10 +286,10 @@ if ($res) {
                                         <thead class="table-light">
                                             <tr>
                                                 <th style="width: 50px;">#</th>
-                                                <th>Title & Target</th>
+                                                <th>Type &amp; Title</th>
+                                                <th>Scope &amp; Anchor Placement</th>
                                                 <th>Desktop Design</th>
                                                 <th>Mobile Design</th>
-                                                <th>Speed</th>
                                                 <th>Order</th>
                                                 <th>Status</th>
                                                 <th class="text-end" style="width: 120px;">Actions</th>
@@ -231,13 +300,27 @@ if ($res) {
                                                 <tr>
                                                     <td><span class="text-muted fw-bold">#<?php echo $bc['id']; ?></span></td>
                                                     <td>
+                                                        <span class="badge bg-primary-subtle text-primary fw-semibold mb-1">
+                                                            <?php echo htmlspecialchars($subtypeTitles[$bc['slider_subtype']] ?? 'Top Slider'); ?>
+                                                        </span>
                                                         <div class="fw-bold text-dark"><?php echo htmlspecialchars($bc['title']); ?></div>
-                                                        <small class="text-muted">
-                                                            Page: <span class="badge bg-light text-dark border"><?php echo htmlspecialchars($bc['desktop_page'] ?? 'home'); ?></span>
-                                                            <?php if (!empty($bc['desktop_cat_name'])): ?>
-                                                                | Cat: <?php echo htmlspecialchars($bc['desktop_cat_name']); ?>
-                                                            <?php endif; ?>
-                                                        </small>
+                                                        <?php if (!empty($bc['text_tag_name'])): ?>
+                                                            <span class="badge bg-warning-subtle text-warning border border-warning" style="font-size:10px;">
+                                                                Tag: <?php echo htmlspecialchars($bc['text_tag_name']); ?>
+                                                            </span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <div>
+                                                            <span class="badge bg-light text-dark border"><?php echo htmlspecialchars($bc['page_target'] ?? 'both'); ?></span>
+                                                            Page: <strong><?php echo htmlspecialchars($bc['desktop_page'] ?? 'home'); ?></strong>
+                                                        </div>
+                                                        <?php if (!empty($bc['desktop_anchor_type'])): ?>
+                                                            <small class="text-muted d-block mt-1">
+                                                                <i class="fas fa-arrows-alt-v text-primary"></i> 
+                                                                <?php echo ucfirst($bc['desktop_anchor_position'] ?? 'after'); ?> <?php echo htmlspecialchars($bc['desktop_anchor_type']); ?> #<?php echo (int)$bc['desktop_anchor_id']; ?>
+                                                            </small>
+                                                        <?php endif; ?>
                                                     </td>
                                                     <td>
                                                         <span class="badge-design"><?php echo strtoupper($bc['desktop_design'] ?: 'DEFAULT'); ?></span>
@@ -246,16 +329,17 @@ if ($res) {
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <span class="badge-design"><?php echo strtoupper($bc['mobile_design'] ?: 'DEFAULT'); ?></span>
+                                                        <?php if (($bc['mobile_same_design'] ?? 'no') === 'yes'): ?>
+                                                            <span class="badge bg-info-subtle text-info border border-info mb-1" style="font-size:10px;">Same as Desktop</span>
+                                                        <?php else: ?>
+                                                            <span class="badge-design"><?php echo strtoupper($bc['mobile_design'] ?: 'DEFAULT'); ?></span>
+                                                        <?php endif; ?>
                                                         <span class="badge <?php echo $bc['mobile_status'] === 'active' ? 'bg-success' : 'bg-secondary'; ?>" style="font-size: 10px;">
                                                             <?php echo $bc['mobile_status']; ?>
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <small class="text-muted"><?php echo (int)($bc['auto_run_speed'] ?? 3000); ?>ms</small>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-light text-dark border"><?php echo (int)$bc['desktop_sort_order']; ?></span>
+                                                        <span class="badge bg-light text-dark border"><?php echo (float)$bc['desktop_sort_order']; ?></span>
                                                     </td>
                                                     <td>
                                                         <a href="banner-carousels.php?action=toggle&id=<?php echo $bc['id']; ?>" class="status-badge <?php echo $bc['status']; ?>" title="Toggle status">

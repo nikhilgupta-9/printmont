@@ -166,11 +166,11 @@ function renderProductsTbodyHtml($products) {
 
         // Stock pill
         if ($stock > 10) {
-            $stockHtml = '<span class="stock-pill in-stock"><i class="fas fa-check-circle" style="font-size: 9px;"></i> ' . $stock . ' in stock</span>';
+            $stockHtml = '<span class="stock-pill in-stock"><i class="fas fa-check-circle text-2xs"></i> ' . $stock . ' in stock</span>';
         } elseif ($stock > 0) {
-            $stockHtml = '<span class="stock-pill low-stock"><i class="fas fa-exclamation-triangle" style="font-size: 9px;"></i> ' . $stock . ' left</span>';
+            $stockHtml = '<span class="stock-pill low-stock"><i class="fas fa-exclamation-triangle text-2xs"></i> ' . $stock . ' left</span>';
         } else {
-            $stockHtml = '<span class="stock-pill out-stock"><i class="fas fa-times-circle" style="font-size: 9px;"></i> Out of stock</span>';
+            $stockHtml = '<span class="stock-pill out-stock"><i class="fas fa-times-circle text-2xs"></i> Out of stock</span>';
         }
 
         // Highlight tags
@@ -181,11 +181,11 @@ function renderProductsTbodyHtml($products) {
         // Price HTML
         $priceHtml = '<div class="badge-price-curr">₹' . number_format($activePrice, 2) . '</div>';
         if ($discPct > 0) {
-            $priceHtml .= '<div class="d-flex align-items-center gap-1 mt-0.5"><span class="badge-price-old">₹' . number_format($regPrice, 2) . '</span><span class="badge-discount">-' . $discPct . '%</span></div>';
+            $priceHtml .= '<div class="price-sub-row"><span class="badge-price-old">₹' . number_format($regPrice, 2) . '</span><span class="badge-discount">-' . $discPct . '%</span></div>';
         }
 
         $brandHtml = !empty($pBrand) ? '<span class="badge bg-light text-secondary border text-2xs">' . $pBrand . '</span>' : '';
-        $slugHtml = !empty($pSlug) ? '<small class="text-muted" style="font-size: 11px;">/' . $pSlug . '</small>' : '';
+        $slugHtml = !empty($pSlug) ? '<small class="text-muted text-xs">/' . $pSlug . '</small>' : '';
 
         $html .= '<tr id="row-prod-' . $pId . '">
             <td class="text-center">
@@ -205,20 +205,20 @@ function renderProductsTbodyHtml($products) {
             <td>' . $stockHtml . '</td>
             <td>
                 <div class="d-flex flex-wrap gap-1">
-                    <button type="button" class="tag-toggle-btn ' . $featActive . '" onclick="toggleProductFlag(' . $pId . ', \'toggle_featured\', this)" title="Click to toggle Featured"><i class="fas fa-bolt me-0.5"></i> Featured</button>
-                    <button type="button" class="tag-toggle-btn ' . $bestActive . '" onclick="toggleProductFlag(' . $pId . ', \'toggle_bestseller\', this)" title="Click to toggle Bestseller"><i class="fas fa-star me-0.5"></i> Bestseller</button>
-                    <button type="button" class="tag-toggle-btn ' . $assuredActive . '" onclick="toggleProductFlag(' . $pId . ', \'toggle_assured\', this)" title="Click to toggle Printmont Assured Quality Badge"><i class="fas fa-shield-alt me-0.5"></i> Assured</button>
+                    <button type="button" class="tag-toggle-btn ' . $featActive . '" onclick="toggleProductFlag(' . $pId . ', \'toggle_featured\', this)" title="Click to toggle Featured"><i class="fas fa-bolt"></i> Featured</button>
+                    <button type="button" class="tag-toggle-btn ' . $bestActive . '" onclick="toggleProductFlag(' . $pId . ', \'toggle_bestseller\', this)" title="Click to toggle Bestseller"><i class="fas fa-star"></i> Bestseller</button>
+                    <button type="button" class="tag-toggle-btn ' . $assuredActive . '" onclick="toggleProductFlag(' . $pId . ', \'toggle_assured\', this)" title="Click to toggle Printmont Assured Quality Badge"><i class="fas fa-shield-alt"></i> Assured</button>
                 </div>
             </td>
             <td>
                 <span class="status-switch-pill ' . $pStatus . '" onclick="toggleProductStatus(' . $pId . ', this)" title="Click to toggle Status">● ' . ucfirst($pStatus) . '</span>
             </td>
-            <td class="text-muted" style="font-size: 11.5px;">' . $pDate . '</td>
+            <td class="text-muted text-xs">' . $pDate . '</td>
             <td class="text-end">
                 <div class="d-flex justify-content-end gap-1">
-                    <a href="http://localhost:5173/product/' . urlencode($pSlug ?: 'item') . '-p' . $pId . '" target="_blank" class="action-icon-btn btn-view" title="Preview Live Single Product Page"><i class="fas fa-external-link-alt" style="font-size: 11px;"></i></a>
-                    <a href="edit-product.php?id=' . $pId . '" class="action-icon-btn btn-edit" title="Edit Product"><i class="fas fa-pen" style="font-size: 11px;"></i></a>
-                    <a href="delete-product.php?id=' . $pId . '" class="action-icon-btn btn-del" onclick="return confirm(\'Are you sure you want to permanently delete \\\'' . $pNameJs . '\\\'?\')" title="Delete Product"><i class="fas fa-trash-alt" style="font-size: 11px;"></i></a>
+                    <a href="http://localhost:5173/product/' . urlencode($pSlug ?: 'item') . '-p' . $pId . '" target="_blank" class="action-icon-btn btn-view" title="Preview Live Single Product Page"><i class="fas fa-external-link-alt text-xs"></i></a>
+                    <a href="edit-product.php?id=' . $pId . '" class="action-icon-btn btn-edit" title="Edit Product"><i class="fas fa-pen text-xs"></i></a>
+                    <a href="delete-product.php?id=' . $pId . '" class="action-icon-btn btn-del" onclick="return confirm(\'Are you sure you want to permanently delete \\\'' . $pNameJs . '\\\'?\')" title="Delete Product"><i class="fas fa-trash-alt text-xs"></i></a>
                 </div>
             </td>
         </tr>';
@@ -239,7 +239,7 @@ function renderProductsPaginationHtml($page, $totalPages, $totalProducts) {
     // Prev
     $prevDis = ($page <= 1) ? 'disabled' : '';
     $prevPage = max(1, $page - 1);
-    $html .= '<li class="page-item ' . $prevDis . '"><a class="page-link" href="' . buildProductQuery(['page' => $prevPage]) . '" onclick="gotoProductPage(' . $prevPage . '); return false;"><i class="fas fa-chevron-left" style="font-size: 10px;"></i></a></li>';
+    $html .= '<li class="page-item ' . $prevDis . '"><a class="page-link" href="' . buildProductQuery(['page' => $prevPage]) . '" onclick="gotoProductPage(' . $prevPage . '); return false;"><i class="fas fa-chevron-left text-2xs"></i></a></li>';
 
     for ($i = 1; $i <= $totalPages; $i++) {
         if ($i == 1 || $i == $totalPages || ($i >= $page - 2 && $i <= $page + 2)) {
@@ -253,7 +253,7 @@ function renderProductsPaginationHtml($page, $totalPages, $totalProducts) {
     // Next
     $nextDis = ($page >= $totalPages) ? 'disabled' : '';
     $nextPage = min($totalPages, $page + 1);
-    $html .= '<li class="page-item ' . $nextDis . '"><a class="page-link" href="' . buildProductQuery(['page' => $nextPage]) . '" onclick="gotoProductPage(' . $nextPage . '); return false;"><i class="fas fa-chevron-right" style="font-size: 10px;"></i></a></li>';
+    $html .= '<li class="page-item ' . $nextDis . '"><a class="page-link" href="' . buildProductQuery(['page' => $nextPage]) . '" onclick="gotoProductPage(' . $nextPage . '); return false;"><i class="fas fa-chevron-right text-2xs"></i></a></li>';
 
     $html .= '</ul></nav></div>';
     return $html;
@@ -317,209 +317,217 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="js/settings.js"></script>
     <style>
+        /* ── Design tokens: one source of truth for colors/radius/spacing on this page ── */
+        :root {
+            --vp-border: #e2e8f0;
+            --vp-border-strong: #cbd5e1;
+            --vp-bg-muted: #f8fafc;
+            --vp-bg-muted-2: #f1f5f9;
+            --vp-text: #0f172a;
+            --vp-text-2: #1e293b;
+            --vp-muted: #64748b;
+            --vp-muted-2: #94a3b8;
+            --vp-primary: #0d6efd;
+
+            --vp-green-bg: #dcfce7; --vp-green-fg: #166534; --vp-green-bd: #86efac;
+            --vp-amber-bg: #fef3c7; --vp-amber-fg: #92400e; --vp-amber-bd: #fde68a;
+            --vp-red-bg:   #fee2e2; --vp-red-fg:   #991b1b; --vp-red-bd:   #fca5a5;
+            --vp-blue-bg:  #e0f2fe; --vp-blue-fg:  #0369a1; --vp-blue-bd:  #bae6fd;
+            --vp-indigo-bg:#e0e7ff; --vp-indigo-fg:#4338ca; --vp-indigo-bd:#a5b4fc;
+
+            --vp-radius-sm: 6px;
+            --vp-radius-md: 8px;
+            --vp-radius-lg: 10px;
+            --vp-radius-pill: 20px;
+
+            --vp-gap-xs: 4px;
+            --vp-gap-sm: 8px;
+            --vp-gap-md: 12px;
+        }
+
         body { opacity: 0; }
+
+        /* ── Shared text-size scale (used instead of ad hoc inline font-size) ── */
+        .text-2xs { font-size: 10px; }
+        .text-xs  { font-size: 11px; }
+        .text-sm  { font-size: 12px; }
+        .vp-tbody-font { font-size: 13px; transition: opacity 0.15s ease; }
+
+        /* ── Product thumbnail ── */
         .product-thumb-box {
             width: 54px;
             height: 54px;
-            border-radius: 8px;
+            border-radius: var(--vp-radius-md);
             overflow: hidden;
-            background: #f1f5f9;
+            background: var(--vp-bg-muted-2);
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--vp-border);
             cursor: pointer;
             transition: transform 0.15s ease, box-shadow 0.15s ease;
             flex-shrink: 0;
         }
         .product-thumb-box:hover {
             transform: scale(1.08);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
         }
         .product-thumb-box img {
             width: 100%;
             height: 100%;
             object-fit: contain;
         }
+
         .product-name-link {
-            color: #1e293b;
+            color: var(--vp-text-2);
             font-weight: 600;
             text-decoration: none;
             transition: color 0.15s;
             display: -webkit-box;
             -webkit-line-clamp: 2;
+            line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             line-height: 1.35;
         }
-        .product-name-link:hover {
-            color: #0d6efd;
-        }
+        .product-name-link:hover { color: var(--vp-primary); }
+
         .badge-sku {
             font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-            background: #f1f5f9;
+            background: var(--vp-bg-muted-2);
             color: #475569;
             font-size: 11px;
             padding: 3px 6px;
-            border-radius: 4px;
-            border: 1px solid #e2e8f0;
+            border-radius: var(--vp-radius-sm);
+            border: 1px solid var(--vp-border);
         }
         .badge-category {
-            background: #e0f2fe;
-            color: #0369a1;
+            background: var(--vp-blue-bg);
+            color: var(--vp-blue-fg);
             font-weight: 500;
             font-size: 11px;
             padding: 3px 8px;
-            border-radius: 12px;
+            border-radius: var(--vp-radius-pill);
             display: inline-block;
             max-width: 160px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .badge-price-curr {
-            font-size: 13.5px;
-            font-weight: 700;
-            color: #0f172a;
-        }
-        .badge-price-old {
-            font-size: 11px;
-            color: #94a3b8;
-            text-decoration: line-through;
-        }
+
+        .badge-price-curr { font-size: 14px; font-weight: 700; color: var(--vp-text); }
+        .badge-price-old  { font-size: 11px; color: var(--vp-muted-2); text-decoration: line-through; }
         .badge-discount {
             font-size: 10px;
             font-weight: 700;
-            background: #dcfce7;
+            background: var(--vp-green-bg);
             color: #15803d;
             padding: 1px 5px;
-            border-radius: 4px;
+            border-radius: var(--vp-radius-sm);
         }
+        .price-sub-row { display: flex; align-items: center; gap: var(--vp-gap-xs); margin-top: 2px; }
+
         .stock-pill {
             padding: 3px 8px;
-            border-radius: 12px;
+            border-radius: var(--vp-radius-pill);
             font-size: 11px;
             font-weight: 600;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: var(--vp-gap-xs);
         }
-        .stock-pill.in-stock { background: #dcfce7; color: #166534; }
-        .stock-pill.low-stock { background: #fef3c7; color: #92400e; }
-        .stock-pill.out-stock { background: #fee2e2; color: #991b1b; }
+        .stock-pill.in-stock  { background: var(--vp-green-bg); color: var(--vp-green-fg); }
+        .stock-pill.low-stock { background: var(--vp-amber-bg); color: var(--vp-amber-fg); }
+        .stock-pill.out-stock { background: var(--vp-red-bg);   color: var(--vp-red-fg); }
 
         .status-switch-pill {
             cursor: pointer;
             padding: 4px 10px;
-            border-radius: 20px;
+            border-radius: var(--vp-radius-pill);
             font-size: 11px;
             font-weight: 600;
             border: 1px solid transparent;
             transition: all 0.2s ease;
             user-select: none;
         }
-        .status-switch-pill.active {
-            background: #dcfce7;
-            color: #15803d;
-            border-color: #86efac;
-        }
-        .status-switch-pill.inactive {
-            background: #fee2e2;
-            color: #b91c1c;
-            border-color: #fca5a5;
-        }
-        .status-switch-pill.draft {
-            background: #f1f5f9;
-            color: #475569;
-            border-color: #cbd5e1;
-        }
-        
+        .status-switch-pill.active   { background: var(--vp-green-bg); color: #15803d; border-color: var(--vp-green-bd); }
+        .status-switch-pill.inactive { background: var(--vp-red-bg);   color: #b91c1c; border-color: var(--vp-red-bd); }
+        .status-switch-pill.draft    { background: var(--vp-bg-muted-2); color: #475569; border-color: var(--vp-border-strong); }
+
         .tag-toggle-btn {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            color: #94a3b8;
+            background: var(--vp-bg-muted);
+            border: 1px solid var(--vp-border);
+            color: var(--vp-muted-2);
             font-size: 11px;
             padding: 2px 7px;
-            border-radius: 4px;
+            border-radius: var(--vp-radius-sm);
             cursor: pointer;
             transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--vp-gap-xs);
         }
-        .tag-toggle-btn.is-active-feat {
-            background: #e0e7ff;
-            color: #4338ca;
-            border-color: #a5b4fc;
-            font-weight: 600;
-        }
-        .tag-toggle-btn.is-active-best {
-            background: #ffedd5;
-            color: #c2410c;
-            border-color: #fdba74;
-            font-weight: 600;
-        }
-        .tag-toggle-btn.is-active-assured {
-            background: #dbeafe;
-            color: #1d4ed8;
-            border-color: #93c5fd;
-            font-weight: 600;
-        }
+        .tag-toggle-btn.is-active-feat    { background: var(--vp-indigo-bg); color: var(--vp-indigo-fg); border-color: var(--vp-indigo-bd); font-weight: 600; }
+        .tag-toggle-btn.is-active-best    { background: #ffedd5; color: #c2410c; border-color: #fdba74; font-weight: 600; }
+        .tag-toggle-btn.is-active-assured { background: var(--vp-blue-bg); color: #1d4ed8; border-color: var(--vp-blue-bd); font-weight: 600; }
 
+        /* ── Cards ── */
         .filter-card {
             background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            border: 1px solid var(--vp-border);
+            border-radius: var(--vp-radius-lg);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
         .kpi-card {
             background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
+            border: 1px solid var(--vp-border);
+            border-radius: var(--vp-radius-lg);
             padding: 16px;
             transition: transform 0.15s, box-shadow 0.15s;
         }
         .kpi-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
         }
         .kpi-icon-wrap {
             width: 44px;
             height: 44px;
-            border-radius: 10px;
+            border-radius: var(--vp-radius-lg);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 18px;
+            flex-shrink: 0;
         }
+
+        /* ── Action icon buttons (view / edit / delete) ── */
         .action-icon-btn {
             width: 32px;
             height: 32px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 6px;
-            border: 1px solid #e2e8f0;
+            border-radius: var(--vp-radius-sm);
+            border: 1px solid var(--vp-border);
             background: #ffffff;
             color: #475569;
             transition: all 0.15s ease;
             text-decoration: none;
         }
-        .action-icon-btn:hover {
-            background: #f1f5f9;
-            color: #0f172a;
-        }
-        .action-icon-btn.btn-edit:hover {
-            background: #e0f2fe;
-            color: #0284c7;
-            border-color: #bae6fd;
-        }
-        .action-icon-btn.btn-del:hover {
-            background: #fee2e2;
-            color: #dc2626;
-            border-color: #fecaca;
-        }
-        .action-icon-btn.btn-view:hover {
-            background: #fef3c7;
-            color: #d97706;
-            border-color: #fde68a;
+        .action-icon-btn:hover { background: var(--vp-bg-muted-2); color: var(--vp-text); }
+        .action-icon-btn.btn-edit:hover { background: var(--vp-blue-bg); color: #0284c7; border-color: var(--vp-blue-bd); }
+        .action-icon-btn.btn-del:hover  { background: var(--vp-red-bg); color: #dc2626; border-color: var(--vp-red-bd); }
+        .action-icon-btn.btn-view:hover { background: var(--vp-amber-bg); color: #d97706; border-color: var(--vp-amber-bd); }
+
+        /* ── Desktop table polish: a little more breathing room, a clearer hover row ── */
+        @media (min-width: 992px) {
+            #productsTableBody td { padding-top: 14px; padding-bottom: 14px; }
+            .table-hover > tbody > tr:hover > * { background-color: var(--vp-bg-muted); }
+            .filter-card .form-control:focus,
+            .filter-card .form-select:focus {
+                border-color: var(--vp-primary);
+                box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+            }
         }
     </style>
 </head>
@@ -536,7 +544,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                         <div>
                             <h3 class="mb-0"><strong>Product</strong> Management</h3>
                             <nav aria-label="breadcrumb">
-                                <ol class="breadcrumb mb-0 text-muted" style="font-size: 12px;">
+                                <ol class="breadcrumb mb-0 text-muted text-sm">
                                     <li class="breadcrumb-item"><a href="index.php">Dashboard</a></li>
                                     <li class="breadcrumb-item">Catalog</li>
                                     <li class="breadcrumb-item active" aria-current="page">All Products</li>
@@ -544,10 +552,10 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                             </nav>
                         </div>
                         <div class="d-flex gap-2">
-                            <a href="view-products.php" class="btn btn-outline-secondary d-flex align-items-center gap-1.5" title="Refresh">
+                            <a href="view-products.php" class="btn btn-outline-secondary d-flex align-items-center gap-2" title="Refresh">
                                 <i class="align-middle" data-feather="rotate-ccw"></i> Refresh
                             </a>
-                            <a href="product.php" class="btn btn-primary d-flex align-items-center gap-1.5 shadow-sm">
+                            <a href="product.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm">
                                 <i class="align-middle" data-feather="plus"></i> Add New Product
                             </a>
                         </div>
@@ -579,7 +587,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                         <div class="col-6 col-md-3">
                             <div class="kpi-card d-flex align-items-center justify-content-between">
                                 <div>
-                                    <span class="text-muted text-uppercase fw-bold" style="font-size: 11px;">Total Products</span>
+                                    <span class="text-muted text-uppercase fw-bold text-xs">Total Products</span>
                                     <h3 class="fw-bold mb-0 text-dark mt-1"><?php echo number_format($stats['total_count']); ?></h3>
                                     <span class="text-muted text-xs">In Catalog</span>
                                 </div>
@@ -591,7 +599,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                         <div class="col-6 col-md-3">
                             <div class="kpi-card d-flex align-items-center justify-content-between">
                                 <div>
-                                    <span class="text-muted text-uppercase fw-bold" style="font-size: 11px;">Active Products</span>
+                                    <span class="text-muted text-uppercase fw-bold text-xs">Active Products</span>
                                     <h3 class="fw-bold mb-0 text-success mt-1"><?php echo number_format($stats['active_count']); ?></h3>
                                     <span class="text-muted text-xs">Live in store</span>
                                 </div>
@@ -603,7 +611,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                         <div class="col-6 col-md-3">
                             <div class="kpi-card d-flex align-items-center justify-content-between">
                                 <div>
-                                    <span class="text-muted text-uppercase fw-bold" style="font-size: 11px;">Low / Out of Stock</span>
+                                    <span class="text-muted text-uppercase fw-bold text-xs">Low / Out of Stock</span>
                                     <h3 class="fw-bold mb-0 text-warning mt-1"><?php echo number_format($stats['low_stock_count']); ?></h3>
                                     <span class="text-muted text-xs"><?php echo $stats['out_of_stock_count']; ?> Out of stock</span>
                                 </div>
@@ -615,7 +623,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                         <div class="col-6 col-md-3">
                             <div class="kpi-card d-flex align-items-center justify-content-between">
                                 <div>
-                                    <span class="text-muted text-uppercase fw-bold" style="font-size: 11px;">Featured / Best</span>
+                                    <span class="text-muted text-uppercase fw-bold text-xs">Featured / Best</span>
                                     <h3 class="fw-bold mb-0 text-info mt-1"><?php echo number_format($stats['bestseller_count'] + $stats['featured_count']); ?></h3>
                                     <span class="text-muted text-xs"><?php echo $stats['bestseller_count']; ?> Bestsellers</span>
                                 </div>
@@ -643,7 +651,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                value="<?php echo htmlspecialchars($search); ?>" 
                                                placeholder="Name, SKU, brand..." autocomplete="off">
                                         <button type="button" class="btn btn-outline-secondary border-start-0" id="searchClearBtn" style="display: <?php echo !empty($search) ? 'block' : 'none'; ?>;" onclick="clearSearchInput()" title="Clear Search">
-                                            <i class="fas fa-times text-muted" style="font-size: 11px;"></i>
+                                            <i class="fas fa-times text-muted text-xs"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -694,7 +702,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                 </div>
 
                                 <!-- Action Buttons -->
-                                <div class="col-12 col-md-2 col-lg-2 d-flex gap-1.5">
+                                <div class="col-12 col-md-2 col-lg-2 d-flex gap-2">
                                     <button type="submit" class="btn btn-sm btn-primary w-50 fw-semibold">
                                         <i class="fas fa-filter me-1"></i> Filter
                                     </button>
@@ -712,7 +720,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                         <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                             <div>
                                 <h5 class="card-title mb-0 fw-bold" id="productsTitleText">All Products (<?php echo number_format($totalProducts); ?>)</h5>
-                                <div class="text-muted" style="font-size: 12px;" id="productsShowingText">
+                                <div class="text-muted text-sm" id="productsShowingText">
                                     Showing <?php echo $totalProducts > 0 ? ($offset + 1) : 0; ?>–<?php echo min($offset + $limit, $totalProducts); ?> of <?php echo $totalProducts; ?> products
                                     <?php if ($search || $category_id || $status || $bestseller !== '' || $featured !== ''): ?>
                                         <span class="badge bg-primary-subtle text-primary ms-1">Filtered</span>
@@ -724,7 +732,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light text-muted" style="font-size: 12px; font-weight: 600;">
+                                    <thead class="table-light text-muted text-sm fw-semibold">
                                         <tr>
                                             <th style="width: 60px;" class="text-center">Image</th>
                                             <th style="min-width: 240px;">Product Details</th>
@@ -737,7 +745,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                             <th style="width: 120px;" class="text-end">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="productsTableBody" style="font-size: 13px; transition: opacity 0.15s ease;">
+                                    <tbody id="productsTableBody" class="vp-tbody-font">
                                         <?php echo renderProductsTbodyHtml($products); ?>
                                     </tbody>
                                 </table>

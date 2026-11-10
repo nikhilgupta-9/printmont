@@ -1,5 +1,6 @@
 <?php
 require_once(__DIR__ . '/../config/database.php');
+require_once(__DIR__ . '/../includes/image-upload-helper.php');
 
 class SmallBannerSliderController {
     private $db;
@@ -395,56 +396,37 @@ class SmallBannerSliderController {
     }
 
     public function uploadFile(array $file, string $subfolder): ?string {
+        if (empty($file['name'])) {
+            return null;
+        }
         if (!isset($file['error']) || $file['error'] !== UPLOAD_ERR_OK) {
             return null;
         }
-
-        $allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'];
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-
-        if (!in_array($ext, $allowedExts)) {
-            throw new Exception("Invalid file extension: $ext. Allowed: " . implode(', ', $allowedExts));
-        }
-
         $uploadBaseDir = __DIR__ . '/../uploads/banners/' . $subfolder . '/';
-        if (!is_dir($uploadBaseDir)) {
-            @mkdir($uploadBaseDir, 0777, true);
+        $result = saveUploadedImageAsWebp($file, $uploadBaseDir, 'uploads/banners/' . $subfolder);
+        if (!$result['success']) {
+            throw new Exception($result['error']);
         }
-
-        $filename = uniqid('small_') . '_' . time() . '.' . $ext;
-        $destination = $uploadBaseDir . $filename;
-
-        if (!move_uploaded_file($file['tmp_name'], $destination)) {
-            if (!copy($file['tmp_name'], $destination)) {
-                throw new Exception("Failed to save uploaded file to $destination");
-            }
-        }
-
-        return 'uploads/banners/' . $subfolder . '/' . $filename;
+        return $result['path'];
     }
 
     public function uploadMultipleFiles(array $filesArray, string $subfolder): array {
         $uploaded = [];
-        $allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'];
         $uploadBaseDir = __DIR__ . '/../uploads/banners/' . $subfolder . '/';
-        
-        if (!is_dir($uploadBaseDir)) {
-            @mkdir($uploadBaseDir, 0777, true);
-        }
 
         $count = is_array($filesArray['name']) ? count($filesArray['name']) : 0;
         for ($i = 0; $i < $count; $i++) {
             if ($filesArray['error'][$i] === UPLOAD_ERR_OK) {
-                $ext = strtolower(pathinfo($filesArray['name'][$i], PATHINFO_EXTENSION));
-                if (!in_array($ext, $allowedExts)) {
-                    continue;
-                }
-
-                $filename = uniqid('small_') . '_' . time() . '_' . $i . '.' . $ext;
-                $destination = $uploadBaseDir . $filename;
-
-                if (move_uploaded_file($filesArray['tmp_name'][$i], $destination) || copy($filesArray['tmp_name'][$i], $destination)) {
-                    $uploaded[] = 'uploads/banners/' . $subfolder . '/' . $filename;
+                $file = [
+                    'name' => $filesArray['name'][$i],
+                    'type' => $filesArray['type'][$i] ?? '',
+                    'tmp_name' => $filesArray['tmp_name'][$i],
+                    'error' => $filesArray['error'][$i],
+                    'size' => $filesArray['size'][$i] ?? 0,
+                ];
+                $result = saveUploadedImageAsWebp($file, $uploadBaseDir, 'uploads/banners/' . $subfolder);
+                if ($result['success']) {
+                    $uploaded[] = $result['path'];
                 }
             }
         }

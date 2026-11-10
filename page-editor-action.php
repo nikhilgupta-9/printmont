@@ -129,12 +129,12 @@ function pe_drop_image(?string $path): void
  */
 function pe_collect(array $part, array $existing, string $pageKey): array
 {
-    $values = [
-        'title'      => $existing['title'] ?? '',
-        'content'    => $existing['content'] ?? '',
-        'extra'      => $existing['extra'] ?? '',
-        'image_path' => $existing['image_path'] ?? '',
-    ];
+    $values = array_merge([
+        'title'      => '',
+        'content'    => '',
+        'extra'      => '',
+        'image_path' => '',
+    ], $existing);
     $splits = [];
 
     foreach ($part['fields'] as $field) {
@@ -146,7 +146,7 @@ function pe_collect(array $part, array $existing, string $pageKey): array
         }
 
         if (($field['input'] ?? 'text') === 'image') {
-            $current = $values[$column];
+            $current = $values[$column] ?? ($existing[$column] ?? '');
 
             if (!empty($_FILES[$name]) && $_FILES[$name]['error'] === UPLOAD_ERR_OK) {
                 $values[$column] = pe_store_image($_FILES[$name], $pageKey);
@@ -154,8 +154,10 @@ function pe_collect(array $part, array $existing, string $pageKey): array
             } elseif (!empty($_POST[$name . '__remove'])) {
                 pe_drop_image($current);
                 $values[$column] = '';
-            } elseif (!empty($_POST['selected_store_image'])) {
+            } elseif (!empty($_POST['selected_store_image']) && empty($values[$column])) {
                 $values[$column] = trim((string) $_POST['selected_store_image']);
+            } else {
+                $values[$column] = $current;
             }
             continue;
         }
@@ -171,6 +173,10 @@ function pe_collect(array $part, array $existing, string $pageKey): array
         } else {
             $values[$column] = $value;
         }
+    }
+
+    if (empty($values['image_path']) && !empty($values['desktop_image'])) {
+        $values['image_path'] = $values['desktop_image'];
     }
 
     // Re-join the columns that hold two values behind a separator.
@@ -240,12 +246,10 @@ try {
 
             // The copy starts hidden so a half-finished duplicate never
             // appears on the live site, and shares the original's image.
-            $newId = $editor->save($schema, $part, $pageKey, 0, [
-                'title'      => $copy['title'] . ' (copy)',
-                'content'    => $copy['content'],
-                'extra'      => $copy['extra'],
-                'image_path' => '',
-            ], false);
+            $copyValues = $copy;
+            $copyValues['title'] = ($copy['title'] ?? '') . ' (copy)';
+            $copyValues['image_path'] = '';
+            $newId = $editor->save($schema, $part, $pageKey, 0, $copyValues, false);
 
             pe_ok([
                 'message' => 'Copied. The copy is hidden until you show it.',
@@ -264,7 +268,10 @@ try {
             }
 
             $source = $editor->source($schema, $part, $pageKey);
-            pe_drop_image($editor->normalise($source, $raw)['image_path']);
+            $norm = $editor->normalise($source, $raw);
+            pe_drop_image($norm['image_path'] ?? null);
+            pe_drop_image($norm['desktop_image'] ?? null);
+            pe_drop_image($norm['mobile_image'] ?? null);
             $editor->delete($schema, $part, $pageKey, $id);
 
             pe_ok(['message' => 'Deleted.']);

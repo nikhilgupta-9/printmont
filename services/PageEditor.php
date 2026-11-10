@@ -131,11 +131,25 @@ class PageEditor
         $col = $source['columns'];
 
         $select = [];
+        $selectedKeys = [];
+
+        // Canonical base fields
         foreach (['id', 'title', 'content', 'extra', 'image_path', 'type', 'order', 'active'] as $field) {
             $name = $field === 'order' ? 'display_order' : ($field === 'active' ? 'is_active' : $field);
+            $selectedKeys[$field] = true;
+            $selectedKeys[$name] = true;
             $select[] = !empty($col[$field])
                 ? '`' . $col[$field] . '` AS `' . $name . '`'
                 : "'' AS `" . $name . '`';
+        }
+
+        // Additional columns configured in the schema (e.g. desktop_image, mobile_image, alt_text)
+        foreach ($col as $field => $dbCol) {
+            if (empty($dbCol) || isset($selectedKeys[$field])) {
+                continue;
+            }
+            $selectedKeys[$field] = true;
+            $select[] = '`' . $dbCol . '` AS `' . $field . '`';
         }
 
         $where = [];
@@ -245,16 +259,31 @@ class PageEditor
     public function normalise(array $source, array $row): array
     {
         $col = $source['columns'];
-        return [
-            'id'            => (int) $row[$col['id']],
-            'title'         => $col['title'] ? (string) $row[$col['title']] : '',
-            'content'       => $col['content'] ? (string) $row[$col['content']] : '',
-            'extra'         => $col['extra'] ? (string) $row[$col['extra']] : '',
-            'image_path'    => $col['image_path'] ? (string) $row[$col['image_path']] : '',
-            'type'          => !empty($col['type']) && isset($row[$col['type']]) ? (string) $row[$col['type']] : '',
-            'display_order' => $col['order'] ? (int) $row[$col['order']] : 0,
-            'is_active'     => $this->isOn($source, $row[$col['active']] ?? $source['active_on']) ? 1 : 0,
+        $res = [
+            'id'            => (int) ($row[$col['id'] ?? 'id'] ?? $row['id'] ?? 0),
+            'title'         => !empty($col['title']) ? (string) ($row[$col['title']] ?? $row['title'] ?? '') : '',
+            'content'       => !empty($col['content']) ? (string) ($row[$col['content']] ?? $row['content'] ?? '') : '',
+            'extra'         => !empty($col['extra']) ? (string) ($row[$col['extra']] ?? $row['extra'] ?? '') : '',
+            'image_path'    => !empty($col['image_path']) ? (string) ($row[$col['image_path']] ?? $row['image_path'] ?? '') : '',
+            'type'          => !empty($col['type']) && isset($row[$col['type']]) ? (string) $row[$col['type']] : ($row['type'] ?? ''),
+            'display_order' => !empty($col['order']) ? (int) ($row[$col['order']] ?? $row['display_order'] ?? 0) : 0,
+            'is_active'     => $this->isOn($source, $row[$col['active'] ?? 'status'] ?? $row['is_active'] ?? $source['active_on']) ? 1 : 0,
         ];
+
+        // Populate any extra column mappings (desktop_image, mobile_image, alt_text, etc.)
+        foreach ($col as $field => $dbCol) {
+            if (in_array($field, ['id', 'title', 'content', 'extra', 'image_path', 'type', 'order', 'active'], true) || empty($dbCol)) {
+                continue;
+            }
+            $res[$field] = isset($row[$dbCol]) ? (string) $row[$dbCol] : ($row[$field] ?? '');
+        }
+
+        // Fallback for image preview
+        if (empty($res['image_path']) && !empty($res['desktop_image'])) {
+            $res['image_path'] = $res['desktop_image'];
+        }
+
+        return $res;
     }
 
     /**
@@ -266,28 +295,61 @@ class PageEditor
         $source = $this->source($schema, $part, $pageKey);
         $col = $source['columns'];
 
-        $set = [];
-        $types = '';
-        $args = [];
+        $fieldsToSave = [];
 
-        foreach (['title', 'content', 'extra', 'image_path', 'type'] as $field) {
-            if (empty($col[$field]) || !array_key_exists($field, $values)) {
+        // Save canonical and custom columns configured in $col
+        foreach ($col as $field => $dbCol) {
+            if (in_array($field, ['id', 'order', 'active'], true) || empty($dbCol)) {
                 continue;
             }
-            $set[$col[$field]] = 's';
-            $types .= 's';
-            $args[] = (string) $values[$field];
+            if (!array_key_exists($field, $values)) {
+                continue;
+            }
+            $fieldsToSave[$dbCol] = ['value' => (string) $values[$field], 'type' => 's'];
         }
 
-        if ($col['active']) {
-            $set[$col['active']] = 's';
-            $types .= 's';
-            $args[] = (string) ($active ? $source['active_on'] : $source['active_off']);
+        if (!empty($col['active'])) {
+            $fieldsToSave[$col['active']] = ['value' => (string) ($active ? $source['active_on'] : $source['active_off']), 'type' => 's'];
+        }
+
+        // Special column synchronization for banners table (Desktop & Mobile images, URLs, Status, Targets)
+        if (($source['table'] ?? '') === 'banners') {
+            $deskImg = $values['desktop_image'] ?? $values['image_path'] ?? '';
+            $mobImg  = $values['mobile_image']  ?? '';
+            $tgtUrl  = $values['extra'] ?? $values['target_url'] ?? '';
+
+            if ($deskImg !== '') {
+                $fieldsToSave['desktop_image']     = ['value' => $deskImg, 'type' => 's'];
+                $fieldsToSave['image_url_desktop'] = ['value' => $deskImg, 'type' => 's'];
+                $fieldsToSave['image_url']         = ['value' => $deskImg, 'type' => 's'];
+            }
+            if ($mobImg !== '') {
+                $fieldsToSave['mobile_image']     = ['value' => $mobImg, 'type' => 's'];
+                $fieldsToSave['image_url_mobile'] = ['value' => $mobImg, 'type' => 's'];
+            }
+            if ($tgtUrl !== '') {
+                $fieldsToSave['target_url']  = ['value' => $tgtUrl, 'type' => 's'];
+                $fieldsToSave['desktop_url'] = ['value' => $tgtUrl, 'type' => 's'];
+                $fieldsToSave['mobile_url']  = ['value' => $tgtUrl, 'type' => 's'];
+            }
+
+            $statusVal = $active ? 'active' : 'inactive';
+            $fieldsToSave['status']         = ['value' => $statusVal, 'type' => 's'];
+            $fieldsToSave['desktop_status'] = ['value' => $statusVal, 'type' => 's'];
+            $fieldsToSave['mobile_status']  = ['value' => $statusVal, 'type' => 's'];
+
+            $fieldsToSave['target_page']      = ['value' => 'about_us', 'type' => 's'];
+            $fieldsToSave['position']         = ['value' => 'about', 'type' => 's'];
+            $fieldsToSave['show_on_about_us'] = ['value' => 'yes', 'type' => 's'];
         }
 
         if ($id > 0) {
+            $columns = array_keys($fieldsToSave);
+            $types = implode('', array_column($fieldsToSave, 'type'));
+            $args = array_column($fieldsToSave, 'value');
+
             $sql = 'UPDATE `' . $source['table'] . '` SET '
-                . implode(', ', array_map(fn($c) => '`' . $c . '` = ?', array_keys($set)))
+                . implode(', ', array_map(fn($c) => '`' . $c . '` = ?', $columns))
                 . ' WHERE `' . $col['id'] . '` = ?';
             $types .= 'i';
             $args[] = $id;
@@ -301,47 +363,49 @@ class PageEditor
             $stmt = $this->db->prepare($sql);
             $stmt->bind_param($types, ...$args);
             if (!$stmt->execute()) {
-                throw new Exception('The section could not be saved.');
+                throw new Exception('The section could not be saved: ' . $stmt->error);
             }
             $stmt->close();
             return $id;
         }
 
         // New rows carry the part's own type and key, and go to the end.
-        $columns = array_keys($set);
-
-        if (!empty($col['type']) && !empty($part['type']) && !in_array($col['type'], $columns)) {
-            $columns[] = $col['type'];
-            $types .= 's';
-            $args[] = $part['type'];
+        if (!empty($col['type']) && !empty($part['type']) && !isset($fieldsToSave[$col['type']])) {
+            $fieldsToSave[$col['type']] = ['value' => $part['type'], 'type' => 's'];
         }
-        if (!empty($source['key']) && !in_array($source['key'], $columns)) {
-            $columns[] = $source['key'];
-            $types .= 's';
-            $args[] = $source['key_value'];
+        if (!empty($source['key']) && !isset($fieldsToSave[$source['key']])) {
+            $fieldsToSave[$source['key']] = ['value' => $source['key_value'], 'type' => 's'];
         }
         if (!empty($col['order'])) {
-            $columns[] = $col['order'];
-            $types .= 'i';
-            $args[] = $this->nextOrder($source, $part);
+            $orderVal = $this->nextOrder($source, $part);
+            $fieldsToSave[$col['order']] = ['value' => $orderVal, 'type' => 'i'];
+
+            if (($source['table'] ?? '') === 'banners') {
+                if (!isset($fieldsToSave['desktop_sort_order'])) {
+                    $fieldsToSave['desktop_sort_order'] = ['value' => (float) $orderVal, 'type' => 'd'];
+                }
+                if (!isset($fieldsToSave['mobile_sort_order'])) {
+                    $fieldsToSave['mobile_sort_order'] = ['value' => (float) $orderVal, 'type' => 'd'];
+                }
+            }
         }
         foreach ($source['defaults'] ?? [] as $column => $value) {
-            if (!in_array($column, $columns)) {
-                $columns[] = $column;
-                $types .= 's';
-                $args[] = (string) $value;
+            if (!isset($fieldsToSave[$column])) {
+                $fieldsToSave[$column] = ['value' => (string) $value, 'type' => 's'];
             }
         }
 
         // Columns the table insists on but the editor should not ask for —
         // a slug, for instance, which is just the title in another form.
         foreach ($source['derived'] ?? [] as $column => $from) {
-            if (!in_array($column, $columns)) {
-                $columns[] = $column;
-                $types .= 's';
-                $args[] = self::slug($values[$from] ?? '');
+            if (!isset($fieldsToSave[$column])) {
+                $fieldsToSave[$column] = ['value' => self::slug($values[$from] ?? ''), 'type' => 's'];
             }
         }
+
+        $columns = array_keys($fieldsToSave);
+        $types = implode('', array_column($fieldsToSave, 'type'));
+        $args = array_column($fieldsToSave, 'value');
 
         $stmt = $this->db->prepare(
             'INSERT INTO `' . $source['table'] . '` (`' . implode('`, `', $columns) . '`) VALUES ('
@@ -349,7 +413,7 @@ class PageEditor
         );
         $stmt->bind_param($types, ...$args);
         if (!$stmt->execute()) {
-            throw new Exception('The section could not be added.');
+            throw new Exception('The section could not be added: ' . $stmt->error);
         }
         $newId = $this->db->insert_id;
         $stmt->close();
@@ -428,9 +492,17 @@ class PageEditor
             throw new Exception('This section cannot be hidden.');
         }
 
-        $sql = 'UPDATE `' . $source['table'] . '` SET `' . $col['active'] . '` = ? WHERE `' . $col['id'] . '` = ?';
-        $types = 'si';
-        $args = [(string) ($active ? $source['active_on'] : $source['active_off']), $id];
+        $val = (string) ($active ? $source['active_on'] : $source['active_off']);
+
+        if (($source['table'] ?? '') === 'banners') {
+            $sql = 'UPDATE `' . $source['table'] . '` SET `' . $col['active'] . '` = ?, `desktop_status` = ?, `mobile_status` = ? WHERE `' . $col['id'] . '` = ?';
+            $types = 'sssi';
+            $args = [$val, $val, $val, $id];
+        } else {
+            $sql = 'UPDATE `' . $source['table'] . '` SET `' . $col['active'] . '` = ? WHERE `' . $col['id'] . '` = ?';
+            $types = 'si';
+            $args = [$val, $id];
+        }
 
         if (!empty($source['key'])) {
             $sql .= ' AND `' . $source['key'] . '` = ?';
@@ -453,7 +525,14 @@ class PageEditor
             throw new Exception('These sections cannot be reordered.');
         }
 
-        $sql = 'UPDATE `' . $source['table'] . '` SET `' . $col['order'] . '` = ? WHERE `' . $col['id'] . '` = ?';
+        $isBanners = (($source['table'] ?? '') === 'banners');
+
+        if ($isBanners) {
+            $sql = 'UPDATE `' . $source['table'] . '` SET `' . $col['order'] . '` = ?, `desktop_sort_order` = ?, `mobile_sort_order` = ? WHERE `' . $col['id'] . '` = ?';
+        } else {
+            $sql = 'UPDATE `' . $source['table'] . '` SET `' . $col['order'] . '` = ? WHERE `' . $col['id'] . '` = ?';
+        }
+
         if (!empty($source['key'])) {
             $sql .= ' AND `' . $source['key'] . '` = ?';
         }
@@ -466,10 +545,19 @@ class PageEditor
             if ($id <= 0) {
                 continue;
             }
-            if (!empty($source['key'])) {
-                $stmt->bind_param('iis', $position, $id, $source['key_value']);
+            if ($isBanners) {
+                $posFloat = (float) $position;
+                if (!empty($source['key'])) {
+                    $stmt->bind_param('iddsi', $position, $posFloat, $posFloat, $source['key_value'], $id);
+                } else {
+                    $stmt->bind_param('iddi', $position, $posFloat, $posFloat, $id);
+                }
             } else {
-                $stmt->bind_param('ii', $position, $id);
+                if (!empty($source['key'])) {
+                    $stmt->bind_param('iis', $position, $id, $source['key_value']);
+                } else {
+                    $stmt->bind_param('ii', $position, $id);
+                }
             }
             $stmt->execute();
             $position++;

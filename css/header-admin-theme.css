@@ -1,0 +1,140 @@
+/* Shared AdminKit polish for Header Category Menu administration pages. */
+:root {
+  --pm-primary: var(--bs-primary, #3b7ddd);
+  --pm-primary-dark: #2f64b1;
+  --pm-primary-light: #d8e5f8;
+  --pm-border: var(--bs-border-color, #dee2e6);
+}
+
+body {
+  font-family: var(--bs-body-font-family, Inter, Arial, sans-serif) !important;
+  color: var(--bs-body-color, #495057);
+  background: var(--bs-body-bg, #f5f7fb) !important;
+}
+.content { background: var(--bs-body-bg, #f5f7fb); }
+.content > .container-fluid { max-width: 1600px; }
+.content h1, .content h2, .content h3, .content h4, .content h5, .content h6 { font-family: var(--bs-body-font-family, Inter, Arial, sans-serif); }
+.content h2.h3 { color: #343a40 !important; font-size: 1.35rem; font-weight: 600 !important; }
+.content h3 { font-size: 1.25rem; font-weight: 600 !important; }
+.content h4 { font-size: 1rem; font-weight: 600; }
+.content p { font-size: .875rem; }
+.content .small, .content small { font-size: .8125rem; }
+.content .text-muted { color: #6c757d !important; }
+
+.module-nav-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: .3rem;
+  box-shadow: none;
+}
+.module-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: .45rem .65rem;
+  border-radius: .25rem;
+  color: #6c757d;
+  font-size: .8125rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color .15s ease, color .15s ease;
+}
+.module-nav-link:hover { color: var(--bs-primary, #3b7ddd); background: #f8f9fa; }
+.module-nav-link.active { color: #fff; background: var(--bs-primary, #3b7ddd); box-shadow: none; }
+
+.content .config-box,
+.content .page-card,
+.content .card-executive,
+.content .active-summary-bar {
+  border-color: var(--bs-border-color, #dee2e6);
+  border-radius: .3rem;
+  box-shadow: 0 .1rem .2rem rgba(0,0,0,.05);
+}
+.content .config-box-header { padding: .85rem 1rem; border-color: #dee2e6; }
+.content .config-box-title { color: #343a40; font-size: .95rem; font-weight: 600; }
+.content .config-box-body { padding: 1rem; }
+.content .kpi-card, .content .stat-mini-card {
+  min-width: 0;
+  padding: .75rem 1rem;
+  gap: .7rem;
+  border: 1px solid #dee2e6;
+  border-radius: .3rem;
+  box-shadow: 0 .1rem .2rem rgba(0,0,0,.05);
+}
+.content .kpi-card:hover { transform: none; }
+.content .kpi-icon-box, .content .stat-mini-icon { width: 36px; height: 36px; border-radius: .3rem; }
+
+.content .form-label, .content .control-label {
+  margin-bottom: .35rem;
+  color: #495057;
+  font-size: .8125rem;
+  font-weight: 600;
+}
+.content .control-label { text-transform: uppercase; letter-spacing: .02em; }
+.content .form-control, .content .form-select, .content .input-group-text {
+  min-height: 38px;
+  padding: .45rem .7rem;
+  border-color: #ced4da;
+  border-radius: .25rem;
+  font-family: var(--bs-body-font-family, Inter, Arial, sans-serif);
+  font-size: .875rem;
+  line-height: 1.4;
+}
+.content .form-control-sm, .content .form-select-sm { min-height: 32px; padding: .3rem .55rem; font-size: .8125rem; }
+.content .form-control-lg, .content .form-select-lg { min-height: 42px; padding: .5rem .75rem; font-size: .9rem; }
+.content .form-control:focus, .content .form-select:focus { border-color: #9dbce9; box-shadow: 0 0 0 .2rem rgba(59,125,221,.15); }
+.content .btn { border-radius: .25rem; font-family: var(--bs-body-font-family, Inter, Arial, sans-serif); font-size: .8125rem; font-weight: 500; line-height: 1.4; }
+.content .btn-sm { padding: .3rem .55rem; font-size: .75rem; }
+.content .btn-lg { padding: .55rem .9rem; font-size: .9rem; }
+.content .btn-primary { box-shadow: none; }
+.content .badge { font-weight: 500; }
+.content .table { font-size: .8125rem; }
+.content .table > :not(caption) > * > * { padding: .65rem .75rem; }
+
+.content .group-pill { border-radius: .25rem; padding: .35rem .65rem; font-size: .8125rem; }
+.content .group-pill.active { background: var(--bs-primary, #3b7ddd); border-color: var(--bs-primary, #3b7ddd); box-shadow: none; }
+.content .page-card { padding: .85rem; }
+.content input[type="radio"]:checked + .page-card { border-color: var(--bs-primary, #3b7ddd); background: #f8fbff; box-shadow: inset 0 0 0 1px var(--bs-primary, #3b7ddd); }
+.content .search-filter-input { border-radius: .25rem; padding: .45rem .7rem; border-color: #ced4da; }
+.content .menu-tree-node { border-color: #dee2e6; border-radius: .3rem; box-shadow: none; }
+.content .menu-tree-node:hover { border-color: #ced4da; box-shadow: 0 .15rem .35rem rgba(0,0,0,.06); }
+.content .level-1-node { border-left-width: 3px; }
+.content .level-2-node { border-left-width: 3px; background: #f8f9fa; }
+.content .level-3-node { border-left-width: 3px; }
+.content .toggle-chevron { border-radius: .25rem; }
+.content .thumb-preview { border-color: #dee2e6; border-radius: .25rem; }
+.content .preview-header-bar { border-radius: .3rem; }
+.content .tag-pill { border-radius: 1rem; padding: .3rem .6rem; font-size: .75rem; font-weight: 500; }
+.content .placeholder-item { border-color: #dee2e6; border-radius: .3rem; padding: .5rem .65rem; }
+
+@media (max-width: 991.98px) {
+  .content > .container-fluid { padding-right: .75rem !important; padding-left: .75rem !important; }
+  .module-nav-pills { width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+  .module-nav-link { flex: 0 0 auto; }
+  .content .preview-sticky-card { position: static; }
+  .content .page-card { padding: .75rem; }
+}
+@media (max-width: 767.98px) {
+  .content .level-2-node { margin-left: 10px; }
+  .content .level-3-node { margin-left: 20px; }
+  .content .mobile-stack { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
+}
+@media (max-width: 575.98px) {
+  .content h2.h3 { font-size: 1.12rem; }
+  .content > .container-fluid { padding-right: .5rem !important; padding-left: .5rem !important; }
+  .content .config-box-header, .content .config-box-body { padding: .75rem; }
+  .content .config-box-title { font-size: .875rem; }
+  .content .kpi-card, .content .stat-mini-card { padding: .6rem; gap: .5rem; }
+  .content .kpi-icon-box, .content .stat-mini-icon { width: 32px; height: 32px; }
+  .content .placeholder-item { gap: .4rem; padding: .45rem; }
+  .content .placeholder-item .form-control { min-width: 0; }
+  .content .page-card { padding: .65rem; }
+  .content .group-header-banner { flex-wrap: wrap; gap: .5rem; }
+  .content .card-header .d-flex { min-width: 0; }
+}

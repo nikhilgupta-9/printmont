@@ -72,7 +72,6 @@ $menu_access = [
 	'master_modules' => ['admin'],
 	'contact_inquiries' => ['admin', 'manager', 'staff'],
 	'cod' => ['admin'],
-	'product_filters' => ['admin', 'manager'],
 	'careers' => ['admin', 'manager'],
 	'notifications' => ['all']
 ];
@@ -149,7 +148,9 @@ $page_groups = [
 		'header-menu-list.php',
 		'add-top-icon.php',
 		'add-menu-page.php',
-		'header-menu-design.php'
+		'header-menu-design.php',
+		'category-menu-description.php',
+		'header-search-settings.php'
 	],
 
 	// Products Management
@@ -161,15 +162,9 @@ $page_groups = [
 		'besteseller-prodcuts.php',
 		'deactive-products.php',
 		'single-product-version.php',
-		'category-banner-texts.php',
-		'customization-options.php',
+		'product-page-middle-banner.php',
 		'product-sales.php',
 		'gift-vouchers.php'
-	],
-
-	// Product Filters
-	'product_filters' => [
-		'product-filters.php'
 	],
 
 	// Products Review
@@ -382,12 +377,6 @@ $page_groups = [
 	'migrations' => [
 		'migrations.php'
 	],
-
-	// Product Filters (standalone)
-	'product_filters_setting' => [
-		'product-filters.php'
-	],
-
 
 	// Analytics
 	'analytics' => [
@@ -602,11 +591,11 @@ body[data-theme=dark] .sidebar-content {
 	display: flex !important;
 	align-items: center !important;
 	justify-content: space-between !important;
-	padding: 1.15rem 1.25rem !important;
-	background: rgba(255, 255, 255, 0.03) !important;
-	border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+	min-height: 72px !important;
+	padding: 1rem 1.1rem !important;
+	background: rgba(255,255,255,.025) !important;
+	border-bottom: 1px solid rgba(255,255,255,.07) !important;
 	text-decoration: none !important;
-	min-height: 64px;
 }
 
 .sidebar-brand-logo {
@@ -966,7 +955,232 @@ a.sidebar-link {
 	70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
 	100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
+
+/* Refined Printmont admin navigation */
+.sidebar,
+body[data-theme=default] .sidebar,
+body[data-theme=dark] .sidebar {
+	background: #101b2b !important;
+	background-image: linear-gradient(180deg, #142238 0%, #101b2b 45%, #0d1725 100%) !important;
+	border-right: 1px solid rgba(255,255,255,.07) !important;
+	box-shadow: 8px 0 28px rgba(15, 23, 42, .12) !important;
+}
+
+.sidebar-brand-logo {
+	height: 30px !important;
+	max-width: 158px !important;
+}
+
+.sidebar-brand-badge {
+	background: rgba(59,130,246,.12) !important;
+	border: 1px solid rgba(96,165,250,.22) !important;
+	color: #a9c9ff !important;
+	font-size: .6rem !important;
+	letter-spacing: .08em !important;
+	padding: 4px 8px !important;
+}
+
+.sidebar-user {
+	margin: 14px 12px 12px !important;
+	padding: 11px 12px !important;
+	background: rgba(255,255,255,.045) !important;
+	border-color: rgba(255,255,255,.075) !important;
+	border-radius: 11px !important;
+	box-shadow: inset 0 1px rgba(255,255,255,.025) !important;
+}
+
+.sidebar-user:hover {
+	background: rgba(255,255,255,.065) !important;
+	border-color: rgba(148,181,235,.24) !important;
+	box-shadow: none !important;
+}
+
+.sidebar-user .avatar {
+	width: 38px !important;
+	height: 38px !important;
+	border: 2px solid rgba(148,181,235,.45) !important;
+	box-shadow: none !important;
+}
+
+.sidebar-user-name { font-size: .82rem !important; letter-spacing: 0 !important; }
+.sidebar-role-pill {
+	background: rgba(59,130,246,.12) !important;
+	border-color: rgba(96,165,250,.2) !important;
+	color: #b6cefa !important;
+	font-size: .61rem !important;
+	letter-spacing: .045em !important;
+	padding: 2px 7px !important;
+}
+
+.sidebar-search-box { margin: 2px 12px 10px !important; }
+.sidebar-search-input {
+	background: rgba(255,255,255,.055) !important;
+	border-color: rgba(255,255,255,.09) !important;
+	border-radius: 8px !important;
+	height: 37px !important;
+}
+.sidebar-search-input:focus {
+	background: rgba(255,255,255,.085) !important;
+	border-color: rgba(96,165,250,.7) !important;
+	box-shadow: 0 0 0 3px rgba(59,130,246,.14) !important;
+}
+
+.sidebar-header {
+	color: #8293ad !important;
+	font-size: .63rem !important;
+	letter-spacing: .11em !important;
+	padding: 1.15rem 1.1rem .45rem !important;
+}
+.sidebar-header::after {
+	background: linear-gradient(90deg, rgba(148,163,184,.2), transparent) !important;
+}
+
+.sidebar-item { margin: 2px 9px !important; }
+.sidebar-link,
+a.sidebar-link {
+	min-height: 40px !important;
+	padding: .58rem .78rem !important;
+	gap: 11px !important;
+	border-radius: 8px !important;
+	color: #c1ccdc !important;
+	font-size: .82rem !important;
+	font-weight: 500 !important;
+}
+.sidebar-link i,
+.sidebar-link svg {
+	color: #8e9db2 !important;
+	width: 17px !important;
+	height: 17px !important;
+}
+.sidebar-link:hover {
+	background: rgba(255,255,255,.065) !important;
+	color: #fff !important;
+	transform: none !important;
+}
+.sidebar-link:hover i,
+.sidebar-link:hover svg { color: #a9c9ff !important; transform: none !important; }
+
+.sidebar-item.active > .sidebar-link,
+.sidebar-item.active .sidebar-link:hover {
+	position: relative !important;
+	background: rgba(59,130,246,.17) !important;
+	color: #f5f8ff !important;
+	font-weight: 650 !important;
+	box-shadow: inset 0 0 0 1px rgba(96,165,250,.16) !important;
+	transform: none !important;
+}
+.sidebar-item.active > .sidebar-link::before {
+	content: "";
+	position: absolute;
+	left: -1px;
+	top: 9px;
+	bottom: 9px;
+	width: 3px;
+	border-radius: 0 4px 4px 0;
+	background: #72a8ff;
+}
+.sidebar-item.active > .sidebar-link i,
+.sidebar-item.active > .sidebar-link svg { color: #a9c9ff !important; }
+.sidebar-item.active .sidebar-badge {
+	width: 6px !important;
+	height: 6px !important;
+	padding: 0 !important;
+	font-size: 0 !important;
+	background: #7bb1ff !important;
+	border: 0 !important;
+	box-shadow: 0 0 0 3px rgba(123,177,255,.12) !important;
+}
+
+.sidebar-dropdown {
+	background: rgba(5,12,22,.28) !important;
+	border-color: rgba(123,177,255,.25) !important;
+	margin-left: 13px !important;
+}
+.sidebar-dropdown .sidebar-link { min-height: 35px !important; }
+.sidebar-dropdown .sidebar-item.active > .sidebar-link {
+	background: rgba(59,130,246,.13) !important;
+	color: #b8d0fa !important;
+}
+.sidebar-status-card {
+	background: rgba(255,255,255,.035) !important;
+	border-color: rgba(255,255,255,.07) !important;
+}
+
+@media (max-width: 575.98px) {
+	.sidebar { width: min(288px, 86vw) !important; min-width: min(288px, 86vw) !important; max-width: min(288px, 86vw) !important; }
+	.sidebar-content { padding-bottom: env(safe-area-inset-bottom) !important; }
+}
 </style>
+
+<?php
+/*
+ * js/app.js bundles only a tree-shaken subset of feather-icons (whatever icon names existed
+ * in the original template at build time). Many icon names used across this admin's sidebar
+ * and pages (home, bell, menu, package, users, gift, box, ...) aren't in that subset, so
+ * feather.replace() throws on the first unknown name and aborts — leaving every icon after
+ * that point un-rendered. We load the full feather-icons library here (before app.js runs)
+ * and stash it on window.__fullFeather so it survives app.js later overwriting window.feather
+ * with its partial copy; the DOMContentLoaded handler below calls replace() from that saved
+ * full copy instead of window.feather.
+ */
+?>
+<script src="js/feather.min.js"></script>
+<script>
+(function() {
+	function initSafeFeather() {
+		var f = window.feather;
+		if (!f) return;
+		window.__fullFeather = f;
+
+		// Provide common aliases to prevent missing icon crashes
+		if (f.icons) {
+			if (!f.icons['boxes'] && f.icons['box']) f.icons['boxes'] = f.icons['box'];
+			if (!f.icons['sliders-h'] && f.icons['sliders']) f.icons['sliders-h'] = f.icons['sliders'];
+			if (!f.icons['th-large'] && f.icons['grid']) f.icons['th-large'] = f.icons['grid'];
+		}
+
+		// Safe replace wrapper: replaces each icon individually inside try-catch
+		var origReplace = f.replace;
+		f.replace = function(options) {
+			var elements = document.querySelectorAll('[data-feather]');
+			Array.from(elements).forEach(function(el) {
+				try {
+					var iconName = el.getAttribute('data-feather');
+					if (f.icons && f.icons[iconName]) {
+						var attrs = {};
+						Array.from(el.attributes).forEach(function(attr) {
+							if (attr.name !== 'data-feather') attrs[attr.name] = attr.value;
+						});
+						var svgString = f.icons[iconName].toSvg(Object.assign({}, options || {}, attrs));
+						var svg = new DOMParser().parseFromString(svgString, 'image/svg+xml').querySelector('svg');
+						if (svg) {
+							if (el.className) {
+								svg.setAttribute('class', (svg.getAttribute('class') ? svg.getAttribute('class') + ' ' : '') + el.className);
+							}
+							el.parentNode.replaceChild(svg, el);
+						}
+					}
+				} catch (err) {
+					console.warn('Feather icon render error for ' + el.getAttribute('data-feather') + ':', err);
+				}
+			});
+		};
+		if (window.__fullFeather) {
+			window.__fullFeather.replace = f.replace;
+		}
+	}
+
+	if (window.feather) {
+		initSafeFeather();
+	} else {
+		// Fallback to CDN if local script didn't load
+		var cdnScript = document.createElement('script');
+		cdnScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.1/feather.min.js';
+		cdnScript.onload = initSafeFeather;
+		document.head.appendChild(cdnScript);
+	}
+})();
+</script>
 
 <nav id="sidebar" class="sidebar js-sidebar">
 	<div class="sidebar-content js-simplebar">
@@ -978,43 +1192,6 @@ a.sidebar-link {
 			<span class="sidebar-brand-badge">ADMIN</span>
 		</a>
 
-		<div class="sidebar-user">
-			<div class="d-flex align-items-center justify-content-between">
-				<div class="d-flex align-items-center gap-2 min-width-0">
-					<div class="position-relative flex-shrink-0">
-						<img src="img/avatars/avatar.jpg" class="avatar rounded-circle"
-							alt="<?php echo htmlspecialchars($current_user['username']); ?>"
-							onerror="this.src='https://ui-avatars.com/api/?name=<?php echo urlencode($current_user['username'] ?? 'Admin'); ?>&background=00529b&color=fff';" />
-						<span class="sidebar-online-indicator" title="Online"></span>
-					</div>
-					<div class="min-width-0 text-truncate">
-						<div class="sidebar-user-name text-truncate">
-							<?php echo htmlspecialchars($current_user['username'] ?? 'Admin User'); ?>
-						</div>
-						<div class="sidebar-user-role">
-							<span class="sidebar-role-pill"><?php echo htmlspecialchars(ucfirst($current_user['role'] ?? 'Administrator')); ?></span>
-						</div>
-					</div>
-				</div>
-				<div class="dropdown">
-					<a class="sidebar-user-options dropdown-toggle no-caret" href="#" data-bs-toggle="dropdown" aria-expanded="false" title="Account settings">
-						<i data-feather="more-vertical" class="align-middle"></i>
-					</a>
-					<div class="dropdown-menu dropdown-menu-end shadow-lg border-0 py-2">
-						<a class='dropdown-item d-flex align-items-center gap-2 py-2 text-dark' href='pages-profile.php'>
-							<i data-feather="user" class="text-primary" style="width:15px;height:15px;"></i> Profile
-						</a>
-						<a class="dropdown-item d-flex align-items-center gap-2 py-2 text-dark" href="footer-management.php">
-							<i data-feather="settings" class="text-primary" style="width:15px;height:15px;"></i> Settings
-						</a>
-						<div class="dropdown-divider my-1"></div>
-						<a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger logout" href="<?= BASE_URL ?>api/auth/logout.php">
-							<i data-feather="log-out" class="text-danger" style="width:15px;height:15px;"></i> Log out
-						</a>
-					</div>
-				</div>
-			</div>
-		</div>
 
 		<!-- Quick Menu Search -->
 		<div class="sidebar-search-box">
@@ -1312,16 +1489,10 @@ a.sidebar-link {
 								<span class="align-middle">Single Product Version</span>
 							</a>
 						</li>
-						<li class="sidebar-item <?php echo isActivePage('category-banner-texts.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='category-banner-texts.php'>
+						<li class="sidebar-item <?php echo isActivePage('product-page-middle-banner.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='product-page-middle-banner.php'>
 								<i class="align-middle" data-feather="circle"></i>
-								<span class="align-middle">Category Banner Texts</span>
-							</a>
-						</li>
-						<li class="sidebar-item <?php echo isActivePage('customization-options.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='customization-options.php'>
-								<i class="align-middle" data-feather="circle"></i>
-								<span class="align-middle">Customization Options</span>
+								<span class="align-middle">Product Page – Middle Banner</span>
 							</a>
 						</li>
 						<li class="sidebar-item <?php echo isActivePage('product-sales.php', $current_page) ? 'active' : ''; ?>">
@@ -1389,25 +1560,19 @@ a.sidebar-link {
 								<span class="align-middle">Sub Sub All Category</span>
 							</a>
 						</li>
+						<li class="sidebar-item <?php echo isActivePage('home-page-categories.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='home-page-categories.php'>
+								<i class="align-middle" data-feather="home"></i>
+								<span class="align-middle">Home page Category (Desktop &amp; Mobile)</span>
+							</a>
+						</li>
 						<li class="sidebar-item <?php echo (isActivePage('view-categories.php', $current_page) && empty($_GET['level'])) ? 'active' : ''; ?>">
 							<a class='sidebar-link' href='view-categories.php'>
-								<i class="align-middle" data-feather="circle"></i>
+								<i class="align-middle" data-feather="list"></i>
 								<span class="align-middle">All Categories Overview</span>
 							</a>
 						</li>
 					</ul>
-				</li>
-			<?php endif; ?>
-
-			<?php if (shouldDisplay($menu_access['product_filters'], $user_role)): ?>
-				<li class="sidebar-item <?php echo isActivePage('product-filters.php', $current_page) ? 'active' : ''; ?>">
-					<a class='sidebar-link' href='product-filters.php'>
-						<i class="align-middle" data-feather="filter"></i>
-						<span class="align-middle">Product Filters</span>
-						<?php if (isActivePage('product-filters.php', $current_page)): ?>
-							<span class="sidebar-badge">●</span>
-						<?php endif; ?>
-					</a>
 				</li>
 			<?php endif; ?>
 
@@ -1458,6 +1623,85 @@ a.sidebar-link {
 				Storefront &amp; Design
 			</li>
 
+			<?php if (shouldDisplay($menu_access['home_page'], $user_role)): ?>
+				<li class="sidebar-item">
+					<a data-bs-target="#master-module" data-bs-toggle="collapse"
+						class="sidebar-link <?php echo (isActivePage('customization-options.php', $current_page) || isActivePage('customizer-manager.php', $current_page) || isActiveGroup('home_settings', $current_page, $page_groups) || isActiveGroup('carousels', $current_page, $page_groups) || isActiveGroup('home_products', $current_page, $page_groups)) ? '' : 'collapsed'; ?>">
+						<i class="align-middle" data-feather="box"></i>
+						<span class="align-middle">Master Module</span>
+						<?php if (isActivePage('customization-options.php', $current_page) || isActivePage('customizer-manager.php', $current_page) || isActiveGroup('home_settings', $current_page, $page_groups) || isActiveGroup('carousels', $current_page, $page_groups) || isActiveGroup('home_products', $current_page, $page_groups)): ?>
+							<span class="sidebar-badge">●</span>
+						<?php endif; ?>
+					</a>
+					<ul id="master-module"
+						class="sidebar-dropdown list-unstyled collapse <?php echo (isActivePage('customization-options.php', $current_page) || isActivePage('customizer-manager.php', $current_page) || isActiveGroup('home_settings', $current_page, $page_groups) || isActiveGroup('carousels', $current_page, $page_groups) || isActiveGroup('home_products', $current_page, $page_groups)) ? 'show' : ''; ?>"
+						data-bs-parent="#sidebar">
+						<li class="sidebar-item <?php echo isActivePage('customization-options.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='customization-options.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Product Attribute Master</span>
+							</a>
+						</li>
+						<li class="sidebar-item <?php echo isActivePage('customizer-manager.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='customizer-manager.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Master Design Customizer</span>
+							</a>
+						</li>
+
+						<li class="sidebar-item">
+							<a data-bs-target="#home-settings" data-bs-toggle="collapse"
+								class="sidebar-link <?php echo (isActiveGroup('home_settings', $current_page, $page_groups) || isActiveGroup('carousels', $current_page, $page_groups) || isActiveGroup('home_products', $current_page, $page_groups)) ? '' : 'collapsed'; ?>">
+								<i class="align-middle" data-feather="layout"></i>
+								<span class="align-middle">Home Page Layout</span>
+								<?php if (isActiveGroup('home_settings', $current_page, $page_groups) || isActiveGroup('carousels', $current_page, $page_groups) || isActiveGroup('home_products', $current_page, $page_groups)): ?>
+									<span class="sidebar-badge">●</span>
+								<?php endif; ?>
+							</a>
+							<ul id="home-settings"
+								class="sidebar-dropdown list-unstyled collapse <?php echo (isActiveGroup('home_settings', $current_page, $page_groups) || isActiveGroup('carousels', $current_page, $page_groups) || isActiveGroup('home_products', $current_page, $page_groups)) ? 'show' : ''; ?>">
+								<li class="sidebar-item <?php echo isActivePage('home-layout-manager.php', $current_page) ? 'active' : ''; ?>">
+									<a class='sidebar-link' href='home-layout-manager.php'>
+										<i class="align-middle" data-feather="circle"></i>
+										<span class="align-middle">Home Layout Manager</span>
+									</a>
+								</li>
+								<li class="sidebar-item <?php echo isActivePage('product-layout-manager.php', $current_page) ? 'active' : ''; ?>">
+									<a class='sidebar-link' href='product-layout-manager.php'>
+										<i class="align-middle" data-feather="smartphone"></i>
+										<span class="align-middle">Product Detail Layout (Mobile)</span>
+									</a>
+								</li>
+								<li class="sidebar-item <?php echo isActivePage('carousels.php', $current_page) ? 'active' : ''; ?>">
+									<a class='sidebar-link' href='carousels.php'>
+										<i class="align-middle" data-feather="circle"></i>
+										<span class="align-middle">All Carousels</span>
+									</a>
+								</li>
+								<li class="sidebar-item <?php echo isActivePage('add-carousel.php', $current_page) ? 'active' : ''; ?>">
+									<a class='sidebar-link' href='add-carousel.php'>
+										<i class="align-middle" data-feather="circle"></i>
+										<span class="align-middle">Add Carousel</span>
+									</a>
+								</li>
+								<li class="sidebar-item <?php echo isActivePage('home-products.php', $current_page) ? 'active' : ''; ?>">
+									<a class='sidebar-link' href='home-products.php'>
+										<i class="align-middle" data-feather="circle"></i>
+										<span class="align-middle">Home Featured Products</span>
+									</a>
+								</li>
+								<li class="sidebar-item <?php echo isActivePage('add-home-product.php', $current_page) ? 'active' : ''; ?>">
+									<a class='sidebar-link' href='add-home-product.php'>
+										<i class="align-middle" data-feather="circle"></i>
+										<span class="align-middle">Add Home Product</span>
+									</a>
+								</li>
+							</ul>
+						</li>
+					</ul>
+				</li>
+			<?php endif; ?>
+
 			<?php if (shouldDisplay($menu_access['header_menu'], $user_role)): ?>
 				<li class="sidebar-item">
 					<a data-bs-target="#headerMenu" data-bs-toggle="collapse"
@@ -1489,6 +1733,18 @@ a.sidebar-link {
 								<span class="align-middle">Select Design</span>
 							</a>
 						</li>
+						<li class="sidebar-item <?php echo isActivePage('category-menu-description.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='category-menu-description.php'>
+								<i class="align-middle" data-feather="circle"></i>
+								<span class="align-middle">Category Text Description</span>
+							</a>
+						</li>
+						<li class="sidebar-item <?php echo isActivePage('header-search-settings.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='header-search-settings.php'>
+								<i class="align-middle" data-feather="search"></i>
+								<span class="align-middle">Search Box Text setting</span>
+							</a>
+						</li>
 						<li class="sidebar-item <?php echo isActivePage('header-menu-list.php', $current_page) ? 'active' : ''; ?>">
 							<a class='sidebar-link' href='header-menu-list.php'>
 								<i class="align-middle" data-feather="circle"></i>
@@ -1510,7 +1766,7 @@ a.sidebar-link {
 					<a data-bs-target="#banner-management" data-bs-toggle="collapse"
 						class="sidebar-link <?php echo isActiveGroup('banners', $current_page, $page_groups) ? '' : 'collapsed'; ?>">
 						<i class="align-middle" data-feather="image"></i>
-						<span class="align-middle">Home Page Banners</span>
+						<span class="align-middle">Banners &amp; Carousels</span>
 						<?php if (isActiveGroup('banners', $current_page, $page_groups)): ?>
 							<span class="sidebar-badge">●</span>
 						<?php endif; ?>
@@ -1518,28 +1774,46 @@ a.sidebar-link {
 					<ul id="banner-management"
 						class="sidebar-dropdown list-unstyled collapse <?php echo isActiveGroup('banners', $current_page, $page_groups) ? 'show' : ''; ?>"
 						data-bs-parent="#sidebar">
+						<li class="sidebar-item <?php echo isActivePage('view-banner.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='view-banner.php'>
+								<i class="align-middle" data-feather="grid"></i>
+								<span class="align-middle fw-bold text-primary">Master Manager</span>
+							</a>
+						</li>
 						<li class="sidebar-item <?php echo isActivePage('add-banner.php', $current_page) ? 'active' : ''; ?>">
 							<a class='sidebar-link' href='add-banner.php'>
 								<i class="align-middle" data-feather="plus-circle"></i>
-								<span class="align-middle">Add Home Banner</span>
+								<span class="align-middle">Add Banner</span>
+							</a>
+						</li>
+						<li class="sidebar-item <?php echo isActivePage('add-carousel.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='add-carousel.php'>
+								<i class="align-middle" data-feather="plus-circle"></i>
+								<span class="align-middle">Add Carousel</span>
 							</a>
 						</li>
 						<li class="sidebar-item <?php echo isActivePage('add-banner-carousel.php', $current_page) ? 'active' : ''; ?>">
 							<a class='sidebar-link' href='add-banner-carousel.php'>
 								<i class="align-middle" data-feather="sliders"></i>
-								<span class="align-middle">Add Home Carousel</span>
+								<span class="align-middle">Add Banner Slider</span>
 							</a>
 						</li>
-						<li class="sidebar-item <?php echo isActivePage('view-banner.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='view-banner.php?filter_page=home'>
+						<li class="sidebar-item <?php echo isActivePage('banner-carousels.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='banner-carousels.php'>
 								<i class="align-middle" data-feather="layers"></i>
-								<span class="align-middle">All Home Banners</span>
+								<span class="align-middle">All Banner Sliders</span>
+							</a>
+						</li>
+						<li class="sidebar-item <?php echo isActivePage('carousels.php', $current_page) ? 'active' : ''; ?>">
+							<a class='sidebar-link' href='carousels.php'>
+								<i class="align-middle" data-feather="box"></i>
+								<span class="align-middle">All Carousels</span>
 							</a>
 						</li>
 						<li class="sidebar-item <?php echo isActivePage('deactivated-banners.php', $current_page) ? 'active' : ''; ?>">
 							<a class='sidebar-link' href='deactivated-banners.php'>
 								<i class="align-middle" data-feather="slash"></i>
-								<span class="align-middle text-danger">Deactivated Banner</span>
+								<span class="align-middle text-danger">Deactivated Items</span>
 							</a>
 						</li>
 					</ul>
@@ -1569,59 +1843,6 @@ a.sidebar-link {
 							<a class='sidebar-link' href='page-banners.php'>
 								<i class="align-middle" data-feather="layers"></i>
 								<span class="align-middle">All Page Banners</span>
-							</a>
-						</li>
-					</ul>
-				</li>
-			<?php endif; ?>
-
-			<?php if (shouldDisplay($menu_access['home_page'], $user_role)): ?>
-				<li class="sidebar-item">
-					<a data-bs-target="#home-settings" data-bs-toggle="collapse"
-						class="sidebar-link <?php echo (isActiveGroup('home_settings', $current_page, $page_groups) || isActiveGroup('carousels', $current_page, $page_groups) || isActiveGroup('home_products', $current_page, $page_groups)) ? '' : 'collapsed'; ?>">
-						<i class="align-middle" data-feather="layout"></i>
-						<span class="align-middle">Home Page Layout</span>
-						<?php if (isActiveGroup('home_settings', $current_page, $page_groups) || isActiveGroup('carousels', $current_page, $page_groups) || isActiveGroup('home_products', $current_page, $page_groups)): ?>
-							<span class="sidebar-badge">●</span>
-						<?php endif; ?>
-					</a>
-					<ul id="home-settings"
-						class="sidebar-dropdown list-unstyled collapse <?php echo (isActiveGroup('home_settings', $current_page, $page_groups) || isActiveGroup('carousels', $current_page, $page_groups) || isActiveGroup('home_products', $current_page, $page_groups)) ? 'show' : ''; ?>"
-						data-bs-parent="#sidebar">
-						<li class="sidebar-item <?php echo isActivePage('home-layout-manager.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='home-layout-manager.php'>
-								<i class="align-middle" data-feather="circle"></i>
-								<span class="align-middle">Home Layout Manager</span>
-							</a>
-						</li>
-						<li class="sidebar-item <?php echo isActivePage('product-layout-manager.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='product-layout-manager.php'>
-								<i class="align-middle" data-feather="smartphone"></i>
-								<span class="align-middle">Product Detail Layout (Mobile)</span>
-							</a>
-						</li>
-						<li class="sidebar-item <?php echo isActivePage('carousels.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='carousels.php'>
-								<i class="align-middle" data-feather="circle"></i>
-								<span class="align-middle">All Carousels</span>
-							</a>
-						</li>
-						<li class="sidebar-item <?php echo isActivePage('add-carousel.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='add-carousel.php'>
-								<i class="align-middle" data-feather="circle"></i>
-								<span class="align-middle">Add Carousel</span>
-							</a>
-						</li>
-						<li class="sidebar-item <?php echo isActivePage('home-products.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='home-products.php'>
-								<i class="align-middle" data-feather="circle"></i>
-								<span class="align-middle">Home Featured Products</span>
-							</a>
-						</li>
-						<li class="sidebar-item <?php echo isActivePage('add-home-product.php', $current_page) ? 'active' : ''; ?>">
-							<a class='sidebar-link' href='add-home-product.php'>
-								<i class="align-middle" data-feather="circle"></i>
-								<span class="align-middle">Add Home Product</span>
 							</a>
 						</li>
 					</ul>
@@ -2189,7 +2410,7 @@ a.sidebar-link {
 				<span class="d-flex align-items-center gap-2 text-white small fw-bold">
 					<span class="sidebar-live-dot"></span> System Live
 				</span>
-				<span class="sidebar-badge" style="margin-left:0; font-size:0.62rem; padding: 1px 7px;">v2.6 PRO</span>
+				<!-- <span class="sidebar-badge" style="margin-left:0; font-size:0.62rem; padding: 1px 7px;">v2.6 PRO</span> -->
 			</div>
 			<div style="font-size: 0.72rem; color: #94a3b8; display:flex; justify-content:space-between; align-items:center;">
 				<span>Printmont Admin Core</span>
@@ -2291,9 +2512,11 @@ a.sidebar-link {
 		window.addEventListener('beforeunload', saveScrollPos);
 
 		document.addEventListener('DOMContentLoaded', function () {
-			// Ensure feather icons rendered
-			if (window.feather) {
-				try { feather.replace(); } catch (e) {}
+			// Ensure feather icons rendered — use the full icon set we stashed earlier
+			// (window.feather gets overwritten with app.js's partial/tree-shaken copy by now)
+			var __feather = window.__fullFeather || window.feather;
+			if (__feather) {
+				try { __feather.replace(); } catch (e) {}
 			}
 
 			// Store active state in session storage

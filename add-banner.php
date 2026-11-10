@@ -1,16 +1,59 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once(__DIR__ . '/config/database.php');
+require_once(__DIR__ . '/includes/banner-helpers.php');
 require_once(__DIR__ . '/controllers/BannerLayoutController.php');
+
+$database = new Database();
+$db       = $database->getConnection();
 
 $bannerController = new BannerController();
 $categories       = $bannerController->getAllCategories();
 $carousels        = $bannerController->getAllCarousels();
 
+// Document 7 Banner Subtypes:
+// 1. small (Small Banner)
+// 2. normal (Normal Banner)
+// 3. service (Service Banner)
+// 4. product_detail (Product details pages banner)
+// 5. dashboard (User Dashboard Banner setting)
+$subtype = $_GET['type'] ?? 'normal';
+if (!in_array($subtype, ['small', 'normal', 'service', 'product_detail', 'dashboard'])) {
+    $subtype = 'normal';
+}
+
+$subtypeTitles = [
+    'small'          => '1. Small Banner',
+    'normal'         => '2. Normal Banner',
+    'service'        => '3. Service Banner',
+    'product_detail' => '4. Product Details Pages Banner',
+    'dashboard'      => '5. User Dashboard Banner',
+];
+
+// Load Anchor Section Options for Before/After Relative Positioning
+$anchorSectionTypes = ANCHOR_SECTION_TYPES();
+$anchorOptionsByDevice = [
+    'desktop' => [],
+    'mobile'  => [],
+];
+foreach (array_keys($anchorSectionTypes) as $anchorType) {
+    $anchorOptionsByDevice['desktop'][$anchorType] = getAnchorSectionOptions($db, $anchorType, 'desktop');
+    $anchorOptionsByDevice['mobile'][$anchorType]  = getAnchorSectionOptions($db, $anchorType, 'mobile');
+}
+
+// Load products for "Home pages product select (Jo home page pe extra product show ho rha he uska hai ye)"
+$extraProductsRes = $db->query("SELECT id, name, sku FROM products WHERE status = 'active' ORDER BY name ASC LIMIT 100");
+$productList = [];
+if ($extraProductsRes) {
+    while ($p = $extraProductsRes->fetch_assoc()) $productList[] = $p;
+}
+
 $error_message   = '';
 $success_message = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $result = $bannerController->createBanner($_POST, $_FILES);
     if ($result['success']) {
         $_SESSION['success_message'] = $result['message'];
@@ -40,6 +83,12 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
     <style>
         body { opacity: 0; background-color: #f1f5f9; }
         .required-field::after { content: " *"; color: #dc3545; font-weight: bold; }
+
+        /* Module Top Navigation Pills (Standard across Document 7 Home Pages Banners) */
+        .module-nav-pills { display: flex; gap: 8px; flex-wrap: wrap; background: #fff; padding: 6px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        .module-nav-link { padding: 8px 14px; font-size: 13px; font-weight: 600; color: #475569; text-decoration: none; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .module-nav-link:hover { color: #0d6efd; background: #e0edff; }
+        .module-nav-link.active { color: #fff; background: #0d6efd; }
         
         /* Modern Glass/Card Styling */
         .admin-card {
@@ -354,11 +403,33 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         <main class="content">
             <div class="container-fluid p-0">
 
+                <!-- Document 7 Banner Navigation Pills -->
+                <div class="module-nav-pills mb-4">
+                    <a href="add-banner.php?type=small" class="module-nav-link <?php echo $subtype === 'small' ? 'active' : ''; ?>">
+                        <i class="fas fa-compress-arrows-alt"></i> 1. Small Banner
+                    </a>
+                    <a href="add-banner.php?type=normal" class="module-nav-link <?php echo $subtype === 'normal' ? 'active' : ''; ?>">
+                        <i class="fas fa-image"></i> 2. Normal Banner
+                    </a>
+                    <a href="add-banner.php?type=service" class="module-nav-link <?php echo $subtype === 'service' ? 'active' : ''; ?>">
+                        <i class="fas fa-concierge-bell"></i> 3. Service Banner
+                    </a>
+                    <a href="add-banner.php?type=product_detail" class="module-nav-link <?php echo $subtype === 'product_detail' ? 'active' : ''; ?>">
+                        <i class="fas fa-tags"></i> 4. Product Details Pages Banner
+                    </a>
+                    <a href="add-banner.php?type=dashboard" class="module-nav-link <?php echo $subtype === 'dashboard' ? 'active' : ''; ?>">
+                        <i class="fas fa-tachometer-alt"></i> 5. User Dashboard Banner
+                    </a>
+                    <a href="view-banner.php" class="module-nav-link ms-auto">
+                        <i class="fas fa-list"></i> All Banners
+                    </a>
+                </div>
+
                 <!-- Header Breadcrumb & Actions -->
                 <div class="row mb-3 align-items-center">
                     <div class="col-md-6">
                         <h3 class="mb-0 fw-bold text-dark">
-                            <i class="fas fa-plus-circle text-primary me-2"></i>Add New Banner
+                            <i class="fas fa-plus-circle text-primary me-2"></i>Add New <?php echo htmlspecialchars($subtypeTitles[$subtype]); ?>
                         </h3>
                         <p class="text-muted small mb-0">Create and configure desktop &amp; mobile responsive banners across pages.</p>
                     </div>
@@ -387,19 +458,210 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
 
                 <form method="POST" enctype="multipart/form-data" id="addBannerForm">
                     <input type="hidden" name="banner_type" value="single">
+                    <input type="hidden" name="banner_subtype" value="<?php echo htmlspecialchars($subtype); ?>">
 
                     <!-- Basic Banner Information Card -->
                     <div class="admin-card">
                         <div class="admin-card-header">
-                            <h5><i class="fas fa-heading text-primary"></i> 1. Banner Title &amp; General Information</h5>
+                            <h5><i class="fas fa-heading text-primary"></i> 1. Banner Scope &amp; General Information</h5>
+                            <span class="badge bg-primary text-white fw-bold px-3 py-1"><?php echo htmlspecialchars($subtypeTitles[$subtype]); ?></span>
                         </div>
                         <div class="admin-card-body">
                             <div class="row g-3">
-                                <div class="col-md-12">
+                                <div class="col-md-8">
                                     <label class="form-label required-field fw-semibold">Banner Title Name</label>
                                     <input type="text" class="form-control form-control-lg" name="title" required
                                            placeholder="e.g. Mega Festival Offer - Up to 50% Off Personalised Gifts">
-                                    <small class="text-muted">Descriptive name for admin reference and accessibility alt text.</small>
+                                    <small class="text-muted">Descriptive name for admin reference and storefront display.</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required-field fw-semibold">Primary Target Page</label>
+                                    <select name="target_page" id="targetPageSelect" class="form-select form-select-lg">
+                                        <option value="home" selected>Home Page (Main Storefront)</option>
+                                        <option value="category">Category Page</option>
+                                        <option value="product">Product Page</option>
+                                        <option value="product_detail">Product Detail Page</option>
+                                        <option value="franchise">Franchise Page</option>
+                                        <option value="affiliate_program">Affiliate Program Page</option>
+                                        <option value="career">Career Page</option>
+                                        <option value="business_solutions">Business Solutions Page</option>
+                                        <option value="advertising">Advertising Page</option>
+                                        <option value="about_us">About Us Page</option>
+                                    </select>
+                                    <small class="text-muted">Choose where this banner primarily belongs.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Image Alt Text (SEO &amp; Accessibility)</label>
+                                    <input type="text" class="form-control" name="alt_text" placeholder="e.g. Corporate Gifts Promotional Offer Banner">
+                                    <small class="text-muted">Search engine image alt description.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Banner Slogan / Subtitle</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="slogan" placeholder="e.g. Fast 24-Hour Dispatch Available">
+                                        <div class="input-group-text bg-light">
+                                            <div class="form-check form-switch mb-0">
+                                                <input class="form-check-input" type="checkbox" role="switch" name="show_slogan" id="showSlogan" value="1" checked>
+                                                <label class="form-check-label small ms-1" for="showSlogan">Show</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label fw-semibold">Banner Description / Promotional Copy</label>
+                                    <textarea class="form-control" name="description" rows="2" placeholder="Brief banner description, promo text, or admin notes..."></textarea>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Home page Extra Product Select (Optional)</label>
+                                    <select name="extra_product_id" class="form-select">
+                                        <option value="">— None (No extra featured product) —</option>
+                                        <?php foreach ($productList as $p): ?>
+                                            <option value="<?php echo (int)$p['id']; ?>">
+                                                <?php echo htmlspecialchars($p['name'] . (!empty($p['sku']) ? ' (' . $p['sku'] . ')' : '')); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <small class="text-muted">Links banner relative to extra featured product.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Multi-Page Visibility Card: Show on Other Pages -->
+                    <div class="admin-card border-primary-subtle">
+                        <div class="admin-card-header bg-light d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0"><i class="fas fa-layer-group text-primary me-2"></i> Also Show on Other Pages (Multi-Page Display)</h5>
+                                <small class="text-muted">Client Requirement: Use checkboxes to easily display this Home page banner on other storefront pages.</small>
+                            </div>
+                            <span class="badge bg-primary-subtle text-primary fw-bold px-3 py-1">8 Specific Pages</span>
+                        </div>
+                        <div class="admin-card-body">
+                            <div class="row g-3">
+                                <div class="col-6 col-md-3">
+                                    <div class="card p-3 h-100 border bg-light-subtle shadow-none">
+                                        <div class="form-check form-switch mb-1">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="show_on_category" id="chkCat" value="yes">
+                                            <label class="form-check-label fw-bold text-dark ms-1" for="chkCat">
+                                                <i class="fas fa-th-large text-primary me-1"></i> Category Page
+                                            </label>
+                                        </div>
+                                        <small class="text-muted ps-4">Shop category pages</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card p-3 h-100 border bg-light-subtle shadow-none">
+                                        <div class="form-check form-switch mb-1">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="show_on_product" id="chkProd" value="yes">
+                                            <label class="form-check-label fw-bold text-dark ms-1" for="chkProd">
+                                                <i class="fas fa-box text-success me-1"></i> Product Page
+                                            </label>
+                                        </div>
+                                        <small class="text-muted ps-4">All products listing</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card p-3 h-100 border bg-light-subtle shadow-none">
+                                        <div class="form-check form-switch mb-1">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="show_on_product_detail" id="chkPDet" value="yes">
+                                            <label class="form-check-label fw-bold text-dark ms-1" for="chkPDet">
+                                                <i class="fas fa-tag text-info me-1"></i> Product Detail
+                                            </label>
+                                        </div>
+                                        <small class="text-muted ps-4">Product details page</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card p-3 h-100 border bg-light-subtle shadow-none">
+                                        <div class="form-check form-switch mb-1">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="show_on_franchise" id="chkFran" value="yes">
+                                            <label class="form-check-label fw-bold text-dark ms-1" for="chkFran">
+                                                <i class="fas fa-store text-warning me-1"></i> Franchise Page
+                                            </label>
+                                        </div>
+                                        <small class="text-muted ps-4">Franchise portal</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card p-3 h-100 border bg-light-subtle shadow-none">
+                                        <div class="form-check form-switch mb-1">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="show_on_affiliate" id="chkAff" value="yes">
+                                            <label class="form-check-label fw-bold text-dark ms-1" for="chkAff">
+                                                <i class="fas fa-handshake text-purple me-1"></i> Affiliate Program
+                                            </label>
+                                        </div>
+                                        <small class="text-muted ps-4">Affiliate landing</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card p-3 h-100 border bg-light-subtle shadow-none">
+                                        <div class="form-check form-switch mb-1">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="show_on_career" id="chkCar" value="yes">
+                                            <label class="form-check-label fw-bold text-dark ms-1" for="chkCar">
+                                                <i class="fas fa-user-tie text-danger me-1"></i> Career Page
+                                            </label>
+                                        </div>
+                                        <small class="text-muted ps-4">Jobs &amp; careers</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card p-3 h-100 border bg-light-subtle shadow-none">
+                                        <div class="form-check form-switch mb-1">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="show_on_business_solutions" id="chkBiz" value="yes">
+                                            <label class="form-check-label fw-bold text-dark ms-1" for="chkBiz">
+                                                <i class="fas fa-briefcase text-primary me-1"></i> Business Solutions
+                                            </label>
+                                        </div>
+                                        <small class="text-muted ps-4">Corporate gifting / B2B</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card p-3 h-100 border bg-light-subtle shadow-none">
+                                        <div class="form-check form-switch mb-1">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="show_on_advertising" id="chkAdv" value="yes">
+                                            <label class="form-check-label fw-bold text-dark ms-1" for="chkAdv">
+                                                <i class="fas fa-bullhorn text-secondary me-1"></i> Advertising Page
+                                            </label>
+                                        </div>
+                                        <small class="text-muted ps-4">Brand ads &amp; promo</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card p-3 h-100 border bg-light-subtle shadow-none">
+                                        <div class="form-check form-switch mb-1">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="show_on_about_us" id="chkAbout" value="yes">
+                                            <label class="form-check-label fw-bold text-dark ms-1" for="chkAbout">
+                                                <i class="fas fa-info-circle text-info me-1"></i> About Us Page
+                                            </label>
+                                        </div>
+                                        <small class="text-muted ps-4">About Printmont page</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SEO & Search Optimization Card -->
+                    <div class="admin-card">
+                        <div class="admin-card-header bg-light">
+                            <h5><i class="fas fa-search text-primary me-2"></i> SEO Meta Tags &amp; Search Optimization</h5>
+                            <span class="badge bg-secondary text-white fw-semibold px-2 py-1">Optional SEO</span>
+                        </div>
+                        <div class="admin-card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Meta Title</label>
+                                    <input type="text" class="form-control" name="meta_title" placeholder="e.g. Personalized Gifts & Corporate Printing | Printmont">
+                                    <small class="text-muted">Search engine title tag.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Meta Keywords</label>
+                                    <input type="text" class="form-control" name="meta_keywords" placeholder="e.g. gifts, corporate printing, mug printing, t-shirt printing">
+                                    <small class="text-muted">Comma-separated keywords.</small>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Meta Description</label>
+                                    <textarea class="form-control" name="meta_description" rows="2" placeholder="Brief SEO description snippet (up to 160 characters)..."></textarea>
                                 </div>
                             </div>
                         </div>
@@ -583,6 +845,35 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
+
+                                        <!-- Desktop Relative Positioning (Position Before / After an existing section) -->
+                                        <div class="col-12 mt-3 pt-3 border-top">
+                                            <label class="form-label fw-bold mb-1"><i class="fas fa-arrows-alt-v text-primary me-1"></i> Position This Banner (optional)</label>
+                                            <div class="text-muted small mb-2">Pick an existing section to position this banner before or after it. Leave blank to manually set the Sort Order number below.</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-semibold">Relative to section type</label>
+                                            <select class="form-select anchor-type-select" data-device="desktop" onchange="pmOnAnchorTypeChange('desktop', this.value)">
+                                                <option value="">-- None --</option>
+                                                <?php foreach ($anchorSectionTypes as $aKey => $aLabel): ?>
+                                                    <option value="<?php echo $aKey; ?>"><?php echo htmlspecialchars($aLabel); ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <input type="hidden" name="desktop_anchor_type" id="desktopAnchorType" value="">
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label class="form-label small fw-semibold">Specific section</label>
+                                            <select name="desktop_anchor_id" id="desktopAnchorSection" class="form-select" onchange="pmApplyAnchorOrder('desktop')">
+                                                <option value="">-- Pick a section type first --</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-semibold">Place</label>
+                                            <select name="desktop_anchor_position" id="desktopAnchorPosition" class="form-select" onchange="pmApplyAnchorOrder('desktop')">
+                                                <option value="after">After</option>
+                                                <option value="before">Before</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -634,8 +925,8 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                         </div>
                                         <div class="col-md-3">
                                             <label class="form-label fw-semibold">Desktop banner Sort Order number</label>
-                                            <input type="number" class="form-control" name="desktop_sort_order" value="0" min="0">
-                                            <small class="text-muted">Lower number displays first.</small>
+                                            <input type="number" step="0.01" class="form-control" name="desktop_sort_order" id="desktopSortOrder" value="0">
+                                            <small class="text-muted">Auto-filled from section pick; editable by hand.</small>
                                         </div>
                                         <div class="col-md-3">
                                             <label class="form-label fw-semibold">Desktop Start Date Calendar</label>
@@ -667,6 +958,23 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                     <!-- ======================================================== -->
                     <div id="mobileSectionPane" style="display: none;">
                         
+                        <!-- Service Banner: Show in Same Design as Desktop Option -->
+                        <?php if ($subtype === 'service'): ?>
+                        <div class="admin-card border-warning mb-3">
+                            <div class="admin-card-body p-3 bg-light">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h6 class="fw-bold mb-1 text-dark"><i class="fas fa-clone text-warning me-2"></i>Show in Banner Same Design as Desktop?</h6>
+                                        <p class="text-muted small mb-0">For Service Banners, if Yes, mobile view uses desktop images &amp; layout; separate mobile uploads are hidden.</p>
+                                    </div>
+                                    <div class="form-check form-switch fs-5">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="mobile_same_design" id="mobileSameDesign" value="yes" onchange="toggleMobileSameDesign(this.checked)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+
                         <!-- 1. Select Mobile Design -->
                         <div class="admin-card">
                             <div class="admin-card-header">
@@ -828,6 +1136,35 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
+
+                                        <!-- Mobile Relative Positioning (Position Before / After an existing section) -->
+                                        <div class="col-12 mt-3 pt-3 border-top">
+                                            <label class="form-label fw-bold mb-1"><i class="fas fa-arrows-alt-v text-success me-1"></i> Position This Banner on Mobile (optional)</label>
+                                            <div class="text-muted small mb-2">Pick an existing section to position this banner before or after it on mobile. Leave blank to manually set the Sort Order number below.</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-semibold">Relative to section type</label>
+                                            <select class="form-select anchor-type-select" data-device="mobile" onchange="pmOnAnchorTypeChange('mobile', this.value)">
+                                                <option value="">-- None --</option>
+                                                <?php foreach ($anchorSectionTypes as $aKey => $aLabel): ?>
+                                                    <option value="<?php echo $aKey; ?>"><?php echo htmlspecialchars($aLabel); ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <input type="hidden" name="mobile_anchor_type" id="mobileAnchorType" value="">
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label class="form-label small fw-semibold">Specific section</label>
+                                            <select name="mobile_anchor_id" id="mobileAnchorSection" class="form-select" onchange="pmApplyAnchorOrder('mobile')">
+                                                <option value="">-- Pick a section type first --</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-semibold">Place</label>
+                                            <select name="mobile_anchor_position" id="mobileAnchorPosition" class="form-select" onchange="pmApplyAnchorOrder('mobile')">
+                                                <option value="after">After</option>
+                                                <option value="before">Before</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -878,8 +1215,8 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                         </div>
                                         <div class="col-md-3">
                                             <label class="form-label fw-semibold">Mobile banner Short Order number</label>
-                                            <input type="number" class="form-control" name="mobile_sort_order" value="0" min="0">
-                                            <small class="text-muted">Sort order index for mobile.</small>
+                                            <input type="number" step="0.01" class="form-control" name="mobile_sort_order" id="mobileSortOrder" value="0">
+                                            <small class="text-muted">Auto-filled from section pick; editable by hand.</small>
                                         </div>
                                         <div class="col-md-3">
                                             <label class="form-label fw-semibold">Mobile Start date Calendar</label>
@@ -1133,6 +1470,45 @@ function toggleMobileOtherPages(val) {
     document.querySelectorAll('.mobile-other-group').forEach(el => {
         el.style.display = (val === 'yes') ? 'block' : 'none';
     });
+}
+
+// Relative section positioning (Document 7 & 8 spec)
+const PM_ANCHOR_OPTIONS = <?php echo json_encode($anchorOptionsByDevice, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+
+function pmOnAnchorTypeChange(device, anchorType) {
+    document.getElementById(`${device}AnchorType`).value = anchorType;
+    const sectionSelect = document.getElementById(`${device}AnchorSection`);
+    const options = (PM_ANCHOR_OPTIONS[device] && PM_ANCHOR_OPTIONS[device][anchorType]) || [];
+    sectionSelect.innerHTML = '<option value="">-- Select --</option>' +
+        options.map(o => `<option value="${o.id}">${o.label.replace(/</g, '&lt;')}</option>`).join('');
+    pmApplyAnchorOrder(device);
+}
+
+function pmApplyAnchorOrder(device) {
+    const anchorType = document.getElementById(`${device}AnchorType`).value;
+    const anchorId = document.getElementById(`${device}AnchorSection`).value;
+    if (!anchorType || !anchorId) return;
+    const position = document.getElementById(`${device}AnchorPosition`).value;
+    const options = (PM_ANCHOR_OPTIONS[device] && PM_ANCHOR_OPTIONS[device][anchorType]) || [];
+    const idx = options.findIndex(o => String(o.id) === String(anchorId));
+    if (idx === -1) return;
+    const anchorOrder = parseFloat(options[idx].sort_order) || 0;
+    let suggested;
+    if (position === 'before') {
+        const prevOrder = idx > 0 ? parseFloat(options[idx - 1].sort_order) || 0 : null;
+        suggested = prevOrder !== null ? (prevOrder + anchorOrder) / 2 : anchorOrder - 1;
+    } else {
+        const nextOrder = idx < options.length - 1 ? parseFloat(options[idx + 1].sort_order) || 0 : null;
+        suggested = nextOrder !== null ? (anchorOrder + nextOrder) / 2 : anchorOrder + 1;
+    }
+    document.getElementById(`${device}SortOrder`).value = suggested.toFixed(2);
+}
+
+function toggleMobileSameDesign(isSame) {
+    const uploadCard = document.getElementById('mobileUploadContainer') ? document.getElementById('mobileUploadContainer').closest('.admin-card') : null;
+    if (uploadCard) {
+        uploadCard.style.display = isSame ? 'none' : '';
+    }
 }
 </script>
 </body>

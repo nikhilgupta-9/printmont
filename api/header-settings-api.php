@@ -21,6 +21,15 @@ try {
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
     if ($method === 'GET') {
+        $action = $_GET['action'] ?? '';
+        if ($action === 'search_settings') {
+            echo json_encode([
+                'success' => true,
+                'data' => $controller->getSearchSettings()
+            ]);
+            exit;
+        }
+
         $config = $controller->getFrontendConfig();
         echo json_encode([
             'success' => true,
@@ -32,6 +41,18 @@ try {
     if ($method === 'POST') {
         $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
         $action = $input['action'] ?? '';
+
+        if ($action === 'save_search_settings') {
+            $settings = $input['settings'] ?? $input;
+            unset($settings['action']);
+            $saved = $controller->saveSearchSettings($settings);
+            echo json_encode([
+                'success' => $saved,
+                'message' => $saved ? 'Search box text settings saved successfully.' : 'Failed to save search settings.',
+                'data' => $controller->getSearchSettings()
+            ]);
+            exit;
+        }
 
         if ($action === 'toggle') {
             $id = (int)($input['id'] ?? 0);

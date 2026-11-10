@@ -29,6 +29,36 @@
         trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
     };
 
+    // ---------- rich text (CKEditor) ----------
+
+    var RICHTEXT_CONFIG = {
+        height: 220,
+        removePlugins: 'elementspath',
+        resize_enabled: true,
+        toolbar: [
+            { name: 'styles', items: ['Format'] },
+            { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', '-', 'RemoveFormat'] },
+            { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote'] },
+            { name: 'links', items: ['Link', 'Unlink'] },
+            { name: 'tools', items: ['Maximize'] },
+            { name: 'document', items: ['Source'] }
+        ]
+    };
+
+    /** Replaces a plain textarea with CKEditor, keeping the textarea in sync
+     *  so the rest of the editor (dirty tracking, FormData submit) needs no
+     *  special case for a richtext field. */
+    function initRichText(textarea) {
+        if (typeof CKEDITOR === 'undefined') return;
+        if (CKEDITOR.instances[textarea.id]) CKEDITOR.instances[textarea.id].destroy(true);
+
+        var instance = CKEDITOR.replace(textarea.id, RICHTEXT_CONFIG);
+        instance.on('change', function () {
+            textarea.value = instance.getData();
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+    }
+
     // ---------- small helpers ----------
 
     function el(tag, className, text) {
@@ -191,7 +221,7 @@
         var wrap = el('div', 'pe-field');
         var inputId = idPrefix + '-' + field.name;
 
-        if (field.input === 'textarea' || field.input === 'image' || field.input === 'html') {
+        if (field.input === 'textarea' || field.input === 'image' || field.input === 'html' || field.input === 'richtext') {
             wrap.classList.add('is-wide');
         }
 
@@ -289,14 +319,15 @@
                 select.appendChild(option);
             });
             wrap.appendChild(select);
-        } else if (field.input === 'textarea' || field.input === 'html') {
-            var area = el('textarea', field.input === 'html' ? 'pe-code' : null);
+        } else if (field.input === 'textarea' || field.input === 'html' || field.input === 'richtext') {
+            var area = el('textarea', field.input === 'html' ? 'pe-code' : (field.input === 'richtext' ? 'pe-richtext' : null));
             area.id = inputId;
             area.name = field.name;
             area.rows = field.rows || (field.input === 'html' ? 10 : 3);
             area.value = value || '';
             if (field.placeholder) area.placeholder = field.placeholder;
             wrap.appendChild(area);
+            if (field.input === 'richtext') initRichText(area);
         } else {
             var input = el('input');
             input.type = 'text';
@@ -591,9 +622,10 @@
         node.appendChild(icon('handle', 'pe-handle'));
 
         if (imageField(part.fields)) {
-            if (row.image_path) {
+            var thumbSrc = row.desktop_image || row.image_path || row.mobile_image;
+            if (thumbSrc) {
                 var img = el('img', 'pe-thumb');
-                img.src = row.image_path;
+                img.src = thumbSrc;
                 img.alt = '';
                 node.appendChild(img);
             } else {
@@ -609,6 +641,25 @@
         if (secondary) {
             var sub = fieldValue(row, secondary);
             if (sub) text.appendChild(el('div', 'pe-row-sub', sub));
+        }
+        if (row.desktop_image || row.mobile_image) {
+            var badges = el('div', 'pe-device-badges');
+            badges.style.cssText = 'display:flex; gap:6px; margin-top:4px; font-size:10px; font-weight:600;';
+            if (row.desktop_image) {
+                var dBadge = el('span', 'pe-badge pe-badge-desk', '🖥️ Desktop');
+                dBadge.style.cssText = 'background:#e0f2fe; color:#0369a1; padding:2px 6px; border-radius:4px; border:1px solid #bae6fd;';
+                badges.appendChild(dBadge);
+            }
+            if (row.mobile_image) {
+                var mBadge = el('span', 'pe-badge pe-badge-mob', '📱 Mobile');
+                mBadge.style.cssText = 'background:#fef3c7; color:#b45309; padding:2px 6px; border-radius:4px; border:1px solid #fde68a;';
+                badges.appendChild(mBadge);
+            } else {
+                var mBadge = el('span', 'pe-badge pe-badge-mob-fallback', '📱 Mobile (uses desktop)');
+                mBadge.style.cssText = 'background:#f1f5f9; color:#64748b; padding:2px 6px; border-radius:4px; border:1px solid #e2e8f0;';
+                badges.appendChild(mBadge);
+            }
+            text.appendChild(badges);
         }
         node.appendChild(text);
 

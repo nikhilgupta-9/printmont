@@ -121,9 +121,9 @@ class CategoryController
     {
         if ($parent_id) {
             $parent_id = (int) $parent_id;
-            $sql = "SELECT id, name, slug FROM categories WHERE parent_id = $parent_id AND level = 3 AND status = 'active' ORDER BY display_order, name";
+            $sql = "SELECT id, name, slug, parent_id FROM categories WHERE parent_id = $parent_id AND level = 3 AND status = 'active' ORDER BY display_order, name";
         } else {
-            $sql = "SELECT id, name, slug FROM categories WHERE level = 3 AND status = 'active' ORDER BY display_order, name";
+            $sql = "SELECT id, name, slug, parent_id FROM categories WHERE level = 3 AND status = 'active' ORDER BY display_order, name";
         }
 
         $result = $this->db->query($sql);
@@ -196,13 +196,23 @@ class CategoryController
             $data['slug'] = $slug;
         }
 
-        $cols = ['name','slug','custom_url','description','parent_id','image','icon','status','display_order','is_featured','level',
-                 'desktop_menu_title','desktop_menu_status','desktop_menu_order','desktop_menu_view','desktop_menu_design','desktop_menu_tag','desktop_menu_image',
-                 'mobile_topbar_title','mobile_topbar_status','mobile_topbar_order','mobile_menu_view','mobile_menu_design','mobile_sidebar_order',
+        $cols = ['name','slug','custom_url','description','parent_id','additional_parent_ids','image','icon','status','display_order','is_featured','level','page_target',
+                 'desktop_menu_title','desktop_menu_status','desktop_menu_order','desktop_menu_view','desktop_menu_design','desktop_menu_tag','desktop_menu_tag_bg','desktop_menu_image',
+                 'desktop_menu_image_2','desktop_menu_image_3','desktop_menu_title_1','desktop_menu_title_2','desktop_menu_title_3',
+                 'desktop_menu_url_1','desktop_menu_url_2','desktop_menu_url_3',
+                 'desktop_menu_order_1','desktop_menu_order_2','desktop_menu_order_3',
+                 'desktop_menu_desc','desktop_menu_desc_status',
+                 'desktop_home_show','desktop_home_design','desktop_home_order','desktop_home_tag','home_featured_product_ids','desktop_bg_color','desktop_bg_image','desktop_image',
+                 'mobile_topbar_title','mobile_topbar_status','mobile_topbar_order','mobile_menu_view','mobile_menu_design','mobile_sidebar_status','mobile_sidebar_order',
+                 'mobile_sidebar_title','mobile_sidebar_image',
+                 'mobile_menu_desc','mobile_menu_desc_status',
+                 'mobile_home_show','mobile_home_design','mobile_home_format','mobile_home_order','mobile_bg_color','mobile_bg_image','mobile_image',
                  'meta_title','meta_keywords','meta_description'];
 
         $intCols = ['parent_id','display_order','is_featured','level',
-                    'desktop_menu_order','mobile_topbar_order','mobile_sidebar_order'];
+                    'desktop_menu_order','desktop_home_order',
+                    'desktop_menu_order_1','desktop_menu_order_2','desktop_menu_order_3',
+                    'mobile_topbar_order','mobile_sidebar_order','mobile_home_order'];
 
         $setParts = [];
         $vals     = [];

@@ -130,19 +130,19 @@ $isCancelled = in_array($currStatus, ['cancelled', 'refunded', 'declined']);
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Order #<?php echo htmlspecialchars($order['order_number']); ?> | Printmont Admin</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="js/settings.js"></script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        
         .order-hero {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: #ffffff;
             border-radius: 12px;
-            color: #ffffff;
+            color: #1f2937;
             padding: 24px 28px;
             margin-bottom: 24px;
+            border: 1px solid #e3e8ef;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
         }
 
         .stepper-container {
@@ -272,6 +272,24 @@ $isCancelled = in_array($currStatus, ['cancelled', 'refunded', 'declined']);
             font-weight: 700;
             font-size: 13px;
         }
+
+        .order-items-table { min-width: 620px; }
+        @media (max-width: 767.98px) {
+            main.content { padding: 1rem .75rem !important; }
+            .order-hero { padding: 1rem; margin-bottom: 1rem; }
+            .order-hero h1, .order-hero h2 { font-size: 1.25rem; overflow-wrap: anywhere; }
+            .order-hero-actions { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .order-hero-actions .btn { width: 100%; min-height: 40px; padding: .5rem .35rem; font-size: .75rem; }
+            .stepper-container { padding: .9rem; overflow-x: auto; margin-bottom: 1rem; }
+            .order-stepper { min-width: 570px; }
+            .step-title { font-size: .7rem; }
+            .step-icon { width: 36px; height: 36px; }
+            .sidebar-card { margin-bottom: 1rem; }
+            .sidebar-card .card-header { padding: .8rem .9rem !important; }
+            .sidebar-card .card-body { padding: .9rem !important; }
+            .order-items-table { min-width: 620px; }
+            .order-hero .row { row-gap: .8rem; }
+        }
     </style>
 </head>
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
@@ -305,12 +323,12 @@ $isCancelled = in_array($currStatus, ['cancelled', 'refunded', 'declined']);
                         <div class="row align-items-center">
                             <div class="col-lg-6">
                                 <div class="d-flex align-items-center gap-2 mb-2">
-                                    <h2 class="text-white fw-bold mb-0">Order #<?php echo htmlspecialchars($order['order_number']); ?></h2>
-                                    <span class="badge bg-primary text-uppercase px-2 py-1 font-11">
+                                    <h2 class="fw-bold mb-0 text-dark">Order #<?php echo htmlspecialchars($order['order_number']); ?></h2>
+                                    <span class="badge bg-primary-subtle text-primary text-uppercase px-2 py-1 font-11">
                                         <?php echo strtoupper($order['payment_method'] ?? 'COD'); ?>
                                     </span>
                                 </div>
-                                <p class="text-white-50 font-13 mb-0">
+                                <p class="text-muted font-13 mb-0">
                                     <i class="far fa-calendar-alt me-1"></i> Placed on <?php echo date('F j, Y \a\t g:i A', strtotime($order['created_at'])); ?>
                                     <?php if (!empty($order['tracking_number'])): ?>
                                         &nbsp;•&nbsp; <i class="fas fa-hashtag me-1"></i> Tracking Ref: <strong><?php echo htmlspecialchars($order['tracking_number']); ?></strong>
@@ -318,17 +336,17 @@ $isCancelled = in_array($currStatus, ['cancelled', 'refunded', 'declined']);
                                 </p>
                             </div>
                             <div class="col-lg-6 text-lg-end mt-3 mt-lg-0">
-                                <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
-                                    <a href="print-invoice.php?id=<?php echo $orderId; ?>" target="_blank" class="btn btn-light fw-semibold btn-sm">
+                                <div class="d-flex flex-wrap gap-2 justify-content-lg-end order-hero-actions">
+                                    <a href="print-invoice.php?id=<?php echo $orderId; ?>" target="_blank" rel="noopener" class="btn btn-outline-primary fw-semibold btn-sm">
                                         <i class="fas fa-file-invoice text-primary me-1"></i> Tax Invoice
                                     </a>
-                                    <a href="print-packing-slip.php?id=<?php echo $orderId; ?>" target="_blank" class="btn btn-outline-light fw-semibold btn-sm">
+                                    <a href="print-packing-slip.php?id=<?php echo $orderId; ?>" target="_blank" rel="noopener" class="btn btn-outline-secondary fw-semibold btn-sm">
                                         <i class="fas fa-box-open me-1"></i> Packing Slip
                                     </a>
-                                    <a href="edit-order.php?id=<?php echo $orderId; ?>" class="btn btn-outline-light fw-semibold btn-sm">
+                                    <a href="edit-order.php?id=<?php echo $orderId; ?>" class="btn btn-primary fw-semibold btn-sm">
                                         <i class="fas fa-pen-to-square me-1"></i> Edit Order
                                     </a>
-                                    <a href="orders.php" class="btn btn-secondary fw-semibold btn-sm">
+                                    <a href="orders.php" class="btn btn-light border fw-semibold btn-sm">
                                         <i class="fas fa-arrow-left me-1"></i> All Orders
                                     </a>
                                 </div>
@@ -398,7 +416,7 @@ $isCancelled = in_array($currStatus, ['cancelled', 'refunded', 'declined']);
                                 </div>
                                 <div class="card-body p-0">
                                     <div class="table-responsive">
-                                        <table class="table table-hover mb-0">
+                                        <table class="table table-hover mb-0 order-items-table">
                                             <thead class="table-light">
                                                 <tr>
                                                     <th style="width: 50%;">Product Details & Customization</th>

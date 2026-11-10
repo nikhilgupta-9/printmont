@@ -21,9 +21,13 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
         .status-active { background-color: #d4edda; color: #155724; }
         .status-inactive { background-color: #f8d7da; color: #721c24; }
         .action-buttons .btn { padding: 4px 8px; margin: 0 2px; }
+        @media (max-width: 767.98px) {
+            main.content { padding: 1rem .75rem !important; }
+            .customer-images-card .card-header, .customer-images-card .card-body { padding: .9rem !important; }
+        }
     </style>
 </head>
-<body>
+<body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
     <div class="wrapper">
         <?php include_once "includes/side-navbar.php"; ?>
         <div class="main">
@@ -32,8 +36,8 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
             <main class="content">
                 <div class="container-fluid p-0">
                     <div class="row mb-2 mb-xl-3">
-                        <div class="col-auto d-none d-sm-block">
-                            <h3><strong>Customer</strong> Default Images</h3>
+                        <div class="col-auto">
+                            <h1 class="h3 mb-0"><strong>Customer</strong> Default Images</h1>
                         </div>
 
                     </div>
@@ -54,7 +58,7 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
 
                     <div class="row">
                         <div class="col-12">
-                            <div class="card">
+                            <div class="card customer-images-card">
                                 <div class="card-header">
                                     <h5 class="card-title">Customer Images</h5>
                                     <h6 class="card-subtitle text-muted">Manage default customer profile images.</h6>

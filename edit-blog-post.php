@@ -317,8 +317,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         });
 
-        // Initialize Feather icons
-        feather.replace();
+        // Initialize Feather icons (prefer the full icon set from side-navbar.php)
+        (window.__fullFeather || feather).replace();
     </script>
 </body>
 </html>

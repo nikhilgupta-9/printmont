@@ -1,0 +1,110 @@
+/* Website Content — content block builder */
+
+.cb-group {
+    margin-bottom: 1.75rem;
+}
+
+.cb-group-head {
+    display: flex;
+    align-items: baseline;
+    gap: .6rem;
+    margin-bottom: .6rem;
+}
+
+.cb-group-head h5 {
+    margin: 0;
+}
+
+.cb-group-head .badge {
+    font-size: .75rem;
+}
+
+.cb-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: #fff;
+    border: 1px solid #e3e6ef;
+    border-radius: .5rem;
+    padding: .85rem 1rem;
+    margin-bottom: .6rem;
+}
+
+.cb-card.is-hidden {
+    opacity: .55;
+}
+
+.cb-card-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.cb-card-title {
+    font-weight: 600;
+    margin-bottom: .15rem;
+}
+
+.cb-card-pattern {
+    font-size: .8rem;
+    color: #8a93a3;
+}
+
+.cb-card-actions {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    flex-shrink: 0;
+}
+
+.cb-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #8a93a3;
+    border: 1px dashed #d8dce6;
+    border-radius: .5rem;
+}
+
+.cb-field {
+    margin-bottom: 1rem;
+}
+
+.cb-field label {
+    font-weight: 500;
+    margin-bottom: .3rem;
+    display: block;
+}
+
+.cb-repeater-item {
+    border: 1px solid #e3e6ef;
+    border-radius: .4rem;
+    padding: .75rem;
+    margin-bottom: .6rem;
+    position: relative;
+}
+
+.cb-repeater-item .cb-repeater-remove {
+    position: absolute;
+    top: .5rem;
+    right: .5rem;
+}
+
+.cb-image-preview {
+    width: 160px;
+    height: 100px;
+    border: 1px dashed #d8dce6;
+    border-radius: .4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: .5rem;
+    background: #f7f8fb;
+    font-size: .75rem;
+    color: #8a93a3;
+}
+
+.cb-image-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+}

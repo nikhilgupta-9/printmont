@@ -34,12 +34,10 @@ if (!$current_user) {
 $admin_name = !empty($current_user['username']) ? htmlspecialchars($current_user['username']) : (!empty($current_user['first_name']) ? htmlspecialchars($current_user['first_name']) : 'Admin');
 
 // --- 1. KEY PERFORMANCE METRICS ---
-// Orders & Revenue
+// Order workload and current-month collected revenue
 $order_stats_query = "
     SELECT 
         COUNT(*) as total_orders,
-        SUM(COALESCE(grand_total, total_amount, 0)) as total_revenue,
-        SUM(CASE WHEN payment_status = 'paid' THEN COALESCE(grand_total, total_amount, 0) ELSE 0 END) as paid_revenue,
         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_orders,
         SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing_orders,
         SUM(CASE WHEN status = 'shipped' THEN 1 ELSE 0 END) as shipped_orders,
@@ -49,21 +47,31 @@ $order_stats_query = "
 ";
 $order_stats = $conn->query($order_stats_query)->fetch_assoc();
 $total_orders = (int)($order_stats['total_orders'] ?? 0);
-$total_revenue = (float)($order_stats['total_revenue'] ?? 0);
-$paid_revenue = (float)($order_stats['paid_revenue'] ?? 0);
 $pending_orders = (int)($order_stats['pending_orders'] ?? 0);
 $processing_orders = (int)($order_stats['processing_orders'] ?? 0);
 $shipped_orders = (int)($order_stats['shipped_orders'] ?? 0);
 $delivered_orders = (int)($order_stats['delivered_orders'] ?? 0);
 $cancelled_orders = (int)($order_stats['cancelled_orders'] ?? 0);
-$avg_order_value = $total_orders > 0 ? ($total_revenue / $total_orders) : 0;
+// Current month performance is more useful for day-to-day store operations.
+$month_stats = $conn->query("
+    SELECT
+        COUNT(*) AS orders_this_month,
+        COALESCE(SUM(CASE WHEN payment_status = 'paid' AND status <> 'cancelled'
+            THEN COALESCE(grand_total, total_amount, 0) ELSE 0 END), 0) AS paid_revenue_this_month
+    FROM orders
+    WHERE created_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+      AND created_at < DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 1 MONTH), '%Y-%m-01')
+")->fetch_assoc();
+$orders_this_month = (int)($month_stats['orders_this_month'] ?? 0);
+$paid_revenue_this_month = (float)($month_stats['paid_revenue_this_month'] ?? 0);
+$orders_need_attention = $pending_orders + $processing_orders;
 
 // Products & Inventory
 $prod_stats_query = "
     SELECT 
         COUNT(*) as total_products,
-        SUM(CASE WHEN status = 'active' OR status = '1' THEN 1 ELSE 0 END) as active_products,
-        SUM(CASE WHEN stock_quantity <= 20 THEN 1 ELSE 0 END) as low_stock_count
+        SUM(CASE WHEN status IN ('active', '1') THEN 1 ELSE 0 END) as active_products,
+        SUM(CASE WHEN status IN ('active', '1') AND stock_quantity <= 20 THEN 1 ELSE 0 END) as low_stock_count
     FROM products
 ";
 $prod_stats = $conn->query($prod_stats_query)->fetch_assoc();
@@ -81,6 +89,7 @@ $user_stats_query = "
         COUNT(*) as total_users,
         SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_users
     FROM users
+    WHERE role IN ('user', 'customer')
 ";
 $user_stats = $conn->query($user_stats_query)->fetch_assoc();
 $total_users = (int)($user_stats['total_users'] ?? 0);
@@ -95,39 +104,39 @@ $review_count_res = $conn->query("SELECT COUNT(*) as cnt FROM product_reviews")-
 $total_reviews = (int)($review_count_res['cnt'] ?? 0);
 
 // --- 2. CHART DATA AGGREGATIONS ---
-// Monthly Sales (Revenue & Orders)
+// Monthly paid revenue for the latest 12 calendar months (no demo/fallback values).
 $monthly_res = $conn->query("
     SELECT 
         DATE_FORMAT(created_at, '%b %Y') as label,
         DATE_FORMAT(created_at, '%Y-%m') as ym,
-        COUNT(*) as total_orders,
-        SUM(COALESCE(grand_total, total_amount, 0)) as revenue
+        SUM(CASE WHEN payment_status = 'paid' AND status <> 'cancelled'
+            THEN COALESCE(grand_total, total_amount, 0) ELSE 0 END) as revenue
     FROM orders
-    WHERE created_at IS NOT NULL
+    WHERE created_at >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 11 MONTH), '%Y-%m-01')
+      AND created_at < DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 1 MONTH), '%Y-%m-01')
     GROUP BY ym
     ORDER BY ym ASC
-    LIMIT 12
 ");
+$monthly_revenue = [];
+while ($row = $monthly_res->fetch_assoc()) {
+    $monthly_revenue[$row['ym']] = round((float)$row['revenue'], 2);
+}
 $chart_months = [];
 $chart_revenue = [];
-$chart_orders = [];
-while ($row = $monthly_res->fetch_assoc()) {
-    $chart_months[] = $row['label'];
-    $chart_revenue[] = round((float)$row['revenue'], 2);
-    $chart_orders[] = (int)$row['total_orders'];
-}
-if (count($chart_months) < 3) {
-    // Graceful presentation padding if new system
-    $chart_months = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
-    $chart_revenue = [1200, 2450, 3100, 7990, 959, round($total_revenue, 2)];
-    $chart_orders = [2, 3, 4, 1, 1, $total_orders];
+for ($monthOffset = 11; $monthOffset >= 0; $monthOffset--) {
+    $monthDate = new DateTimeImmutable('first day of this month');
+    if ($monthOffset > 0) $monthDate = $monthDate->modify('-' . $monthOffset . ' months');
+    $monthKey = $monthDate->format('Y-m');
+    $chart_months[] = $monthDate->format('M y');
+    $chart_revenue[] = $monthly_revenue[$monthKey] ?? 0;
 }
 
 // Top Categories Distribution
 $cat_dist_res = $conn->query("
     SELECT c.name, COUNT(p.id) as count
     FROM categories c
-    INNER JOIN products p ON p.category_id = c.id
+    INNER JOIN products p ON p.category_id = c.id AND p.status = 'active'
+    WHERE c.status = 'active'
     GROUP BY c.id
     ORDER BY count DESC
     LIMIT 6
@@ -151,7 +160,8 @@ $recent_orders = $conn->query($recent_orders_query)->fetch_all(MYSQLI_ASSOC);
 // --- 4. LOW STOCK INVENTORY ALERTS ---
 $low_stock_query = "
     SELECT id, name, sku, stock_quantity, price, discount_price, thumbnail_image 
-    FROM products 
+    FROM products
+    WHERE status = 'active'
     ORDER BY stock_quantity ASC 
     LIMIT 5
 ";
@@ -160,7 +170,8 @@ $low_stock_items = $conn->query($low_stock_query)->fetch_all(MYSQLI_ASSOC);
 // --- 5. RECENT USERS ---
 $recent_users_query = "
     SELECT id, username, email, first_name, last_name, role, status, created_at 
-    FROM users 
+    FROM users
+    WHERE role IN ('user', 'customer')
     ORDER BY id DESC 
     LIMIT 5
 ";
@@ -365,6 +376,24 @@ if ($hour < 12) {
 		.dashboard-card:hover {
 			box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 		}
+
+		.dashboard-kpis .dashboard-card {
+			min-height: 156px;
+			color: inherit;
+		}
+		.dashboard-kpis a.dashboard-card { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+		.dashboard-kpis a.dashboard-card:hover {
+			color: inherit;
+			transform: translateY(-2px);
+			border-color: #cbdaf0;
+			box-shadow: 0 10px 24px rgba(25, 55, 99, .1);
+		}
+		.stat-caption { color: #718096; font-size: .75rem; line-height: 1.4; margin-top: .55rem; }
+		.dashboard-section-heading { min-width: 0; }
+		.dashboard-card .table-responsive { -webkit-overflow-scrolling: touch; }
+		.dashboard-card .table-modern { min-width: 730px; }
+		.dashboard-card .table-modern th { white-space: nowrap; }
+		.chart-wrap { min-width: 0; }
 
 		/* Metric Cards */
 		.stat-widget {
@@ -668,14 +697,27 @@ if ($hour < 12) {
 
 		/* Responsive tweaks */
 		@media (max-width: 767.98px) {
+			main.content { padding: 1rem .75rem !important; }
 			.welcome-banner {
 				padding: 1.25rem 1rem;
+				border-radius: 14px;
+				margin-bottom: 1rem;
 			}
 			.welcome-title {
-				font-size: 1.25rem;
+				font-size: 1.2rem;
+				line-height: 1.3;
 			}
+			.welcome-subtitle { font-size: .82rem; line-height: 1.5; }
+			.welcome-banner .col-lg-5 { text-align: left !important; }
+			.welcome-banner .justify-content-lg-end { justify-content: flex-start !important; }
+			.quick-btn { flex: 1 1 auto; justify-content: center; }
+			.dashboard-kpis { --bs-gutter-x: .65rem; --bs-gutter-y: .65rem; }
+			.dashboard-kpis > div { min-width: 0; }
+			.dashboard-kpis .stat-widget { min-height: 142px; padding: .85rem .75rem; border-radius: 12px; }
+			.dashboard-kpis .stat-title { font-size: .66rem; line-height: 1.25; letter-spacing: .025em; }
 			.stat-value {
-				font-size: 1.35rem;
+				font-size: clamp(1.1rem, 5vw, 1.35rem);
+				overflow-wrap: anywhere;
 			}
 			.stat-widget {
 				padding: 1rem 0.85rem;
@@ -689,6 +731,20 @@ if ($hour < 12) {
 				font-size: 0.775rem;
 				padding: 0.4rem 0.75rem;
 			}
+			.dashboard-card h5 { font-size: 1rem !important; }
+			.dashboard-card .chart { height: 230px !important; }
+			.dashboard-card .chart.chart-sm { height: 180px !important; }
+			.dashboard-card.p-3.p-md-4 { padding: 1rem !important; }
+			.hub-tile { min-height: 76px; padding: .7rem; }
+			.hub-tile-icon { width: 36px; height: 36px; margin-right: .55rem; }
+			.hub-tile-title { font-size: .78rem; }
+			.hub-tile-desc { font-size: .68rem; }
+		}
+		@media (max-width: 380px) {
+			.dashboard-kpis .stat-icon-wrapper { width: 34px !important; height: 34px !important; font-size: .95rem !important; }
+			.dashboard-kpis .stat-value { font-size: 1.05rem; }
+			.dashboard-kpis .stat-caption { font-size: .68rem; }
+			.quick-btn { padding: .4rem .55rem; }
 		}
 	</style>
 </head>
@@ -708,11 +764,11 @@ if ($hour < 12) {
 						<div class="row align-items-center gy-3">
 							<div class="col-lg-7 col-md-12">
 								<div class="d-flex align-items-center gap-2 mb-1">
-									<span class="badge bg-white text-primary fw-bold px-2 py-1" style="font-size: 0.75rem;">LIVE CONTROL CENTER</span>
+									<span class="badge bg-white text-primary fw-bold px-2 py-1" style="font-size: 0.75rem;">PRINTMONT STORE</span>
 									<span class="text-white-50" style="font-size: 0.8rem;">• <?php echo date('l, d F Y'); ?></span>
 								</div>
 								<h1 class="welcome-title"><?php echo $greeting; ?>, <?php echo $admin_name; ?>!</h1>
-								<p class="welcome-subtitle">Here is your high-level overview of orders, revenue performance, and store activity.</p>
+								<p class="welcome-subtitle">Track paid sales, orders to process, product availability and customer activity.</p>
 							</div>
 							<div class="col-lg-5 col-md-12 text-lg-end text-start">
 								<div class="d-flex flex-wrap gap-2 justify-content-lg-end">
@@ -722,7 +778,7 @@ if ($hour < 12) {
 									<a href="orders.php" class="quick-btn">
 										<i data-feather="shopping-bag" style="width: 16px; height: 16px;"></i> All Orders
 									</a>
-									<a href="http://localhost:5173/" target="_blank" class="quick-btn">
+									<a href="http://localhost:5174/" target="_blank" rel="noopener" class="quick-btn">
 										<i data-feather="external-link" style="width: 16px; height: 16px;"></i> View Store
 									</a>
 								</div>
@@ -730,115 +786,32 @@ if ($hour < 12) {
 						</div>
 					</div>
 
-					<!-- Executive KPI Cards Grid -->
-					<div class="row g-3 mb-4">
-						<!-- 1. Total Gross Revenue -->
-						<div class="col-6 col-md-4 col-xl-2">
-							<div class="dashboard-card stat-widget h-100">
-								<div class="d-flex justify-content-between align-items-start mb-2">
-									<span class="stat-title">Gross Revenue</span>
-									<div class="stat-icon-wrapper primary">
-										<i data-feather="dollar-sign"></i>
-									</div>
-								</div>
-								<div class="stat-value text-primary">₹<?php echo number_format($total_revenue, 2); ?></div>
-								<div class="mt-2">
-									<span class="stat-pill success">
-										<i data-feather="check-circle" style="width: 11px; height: 11px;"></i> ₹<?php echo number_format($paid_revenue, 0); ?> Paid
-									</span>
-								</div>
-							</div>
-						</div>
-
-						<!-- 2. Total Orders -->
-						<div class="col-6 col-md-4 col-xl-2">
-							<div class="dashboard-card stat-widget h-100">
-								<div class="d-flex justify-content-between align-items-start mb-2">
-									<span class="stat-title">Total Orders</span>
-									<div class="stat-icon-wrapper warning">
-										<i data-feather="shopping-cart"></i>
-									</div>
-								</div>
-								<div class="stat-value"><?php echo number_format($total_orders); ?></div>
-								<div class="mt-2">
-									<?php if ($pending_orders > 0): ?>
-										<span class="stat-pill warning">
-											<i data-feather="clock" style="width: 11px; height: 11px;"></i> <?php echo $pending_orders; ?> Pending
-										</span>
-									<?php else: ?>
-										<span class="stat-pill success">All fulfilled</span>
-									<?php endif; ?>
-								</div>
-							</div>
-						</div>
-
-						<!-- 3. Avg Order Value -->
-						<div class="col-6 col-md-4 col-xl-2">
-							<div class="dashboard-card stat-widget h-100">
-								<div class="d-flex justify-content-between align-items-start mb-2">
-									<span class="stat-title">Avg Order Value</span>
-									<div class="stat-icon-wrapper info">
-										<i data-feather="trending-up"></i>
-									</div>
-								</div>
-								<div class="stat-value">₹<?php echo number_format($avg_order_value, 0); ?></div>
-								<div class="mt-2">
-									<span class="stat-pill neutral">Per Transaction</span>
-								</div>
-							</div>
-						</div>
-
-						<!-- 4. Active Catalog Products -->
-						<div class="col-6 col-md-4 col-xl-2">
-							<div class="dashboard-card stat-widget h-100">
-								<div class="d-flex justify-content-between align-items-start mb-2">
-									<span class="stat-title">Catalog</span>
-									<div class="stat-icon-wrapper purple">
-										<i data-feather="package"></i>
-									</div>
-								</div>
-								<div class="stat-value"><?php echo number_format($total_products); ?></div>
-								<div class="mt-2">
-									<span class="stat-pill success">
-										<i data-feather="check" style="width: 11px; height: 11px;"></i> <?php echo $active_products; ?> Active
-									</span>
-								</div>
-							</div>
-						</div>
-
-						<!-- 5. Categories -->
-						<div class="col-6 col-md-4 col-xl-2">
-							<div class="dashboard-card stat-widget h-100">
-								<div class="d-flex justify-content-between align-items-start mb-2">
-									<span class="stat-title">Categories</span>
-									<div class="stat-icon-wrapper accent">
-										<i data-feather="grid"></i>
-									</div>
-								</div>
-								<div class="stat-value"><?php echo number_format($total_categories); ?></div>
-								<div class="mt-2">
-									<span class="stat-pill neutral">Multi-tiered</span>
-								</div>
-							</div>
-						</div>
-
-						<!-- 6. Customers -->
-						<div class="col-6 col-md-4 col-xl-2">
-							<div class="dashboard-card stat-widget h-100">
-								<div class="d-flex justify-content-between align-items-start mb-2">
-									<span class="stat-title">Customers</span>
-									<div class="stat-icon-wrapper success">
-										<i data-feather="users"></i>
-									</div>
-								</div>
-								<div class="stat-value"><?php echo number_format($total_users); ?></div>
-								<div class="mt-2">
-									<span class="stat-pill success">
-										<i data-feather="user-check" style="width: 11px; height: 11px;"></i> <?php echo $active_users; ?> Active
-									</span>
-								</div>
-							</div>
-						</div>
+					<!-- Store performance KPIs -->
+					<div class="row g-3 mb-4 dashboard-kpis">
+						<div class="col-6 col-md-4 col-xl-2"><div class="dashboard-card stat-widget h-100">
+							<div class="d-flex justify-content-between align-items-start mb-2"><span class="stat-title">Paid this month</span><div class="stat-icon-wrapper primary"><i data-feather="credit-card"></i></div></div>
+							<div class="stat-value text-primary">₹<?php echo number_format($paid_revenue_this_month, 0); ?></div><div class="stat-caption">Collected revenue</div>
+						</div></div>
+						<div class="col-6 col-md-4 col-xl-2"><div class="dashboard-card stat-widget h-100">
+							<div class="d-flex justify-content-between align-items-start mb-2"><span class="stat-title">Orders this month</span><div class="stat-icon-wrapper info"><i data-feather="shopping-bag"></i></div></div>
+							<div class="stat-value"><?php echo number_format($orders_this_month); ?></div><div class="stat-caption">All order statuses</div>
+						</div></div>
+						<div class="col-6 col-md-4 col-xl-2"><a class="dashboard-card stat-widget h-100 d-block text-decoration-none" href="orders.php">
+							<div class="d-flex justify-content-between align-items-start mb-2"><span class="stat-title">Needs attention</span><div class="stat-icon-wrapper warning"><i data-feather="clock"></i></div></div>
+							<div class="stat-value"><?php echo number_format($orders_need_attention); ?></div><div class="stat-caption">Pending + in production <span class="ms-1 text-primary">Review →</span></div>
+						</a></div>
+						<div class="col-6 col-md-4 col-xl-2"><a class="dashboard-card stat-widget h-100 d-block text-decoration-none" href="view-products.php">
+							<div class="d-flex justify-content-between align-items-start mb-2"><span class="stat-title">Active products</span><div class="stat-icon-wrapper purple"><i data-feather="package"></i></div></div>
+							<div class="stat-value"><?php echo number_format($active_products); ?></div><div class="stat-caption">Live in your catalog <span class="ms-1 text-primary">Manage →</span></div>
+						</a></div>
+						<div class="col-6 col-md-4 col-xl-2"><a class="dashboard-card stat-widget h-100 d-block text-decoration-none" href="view-products.php">
+							<div class="d-flex justify-content-between align-items-start mb-2"><span class="stat-title">Low stock</span><div class="stat-icon-wrapper accent"><i data-feather="alert-triangle"></i></div></div>
+							<div class="stat-value"><?php echo number_format($low_stock_count); ?></div><div class="stat-caption">Active products • 20 or fewer</div>
+						</a></div>
+						<div class="col-6 col-md-4 col-xl-2"><a class="dashboard-card stat-widget h-100 d-block text-decoration-none" href="customers.php">
+							<div class="d-flex justify-content-between align-items-start mb-2"><span class="stat-title">Customers</span><div class="stat-icon-wrapper success"><i data-feather="users"></i></div></div>
+							<div class="stat-value"><?php echo number_format($total_users); ?></div><div class="stat-caption"><?php echo number_format($active_users); ?> active accounts</div>
+						</a></div>
 					</div>
 
 					<!-- Visual Analytics Section (Charts) -->
@@ -848,12 +821,12 @@ if ($hour < 12) {
 							<div class="dashboard-card h-100 p-3 p-md-4">
 								<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
 									<div>
-										<h5 class="fw-bold mb-1 text-dark" style="font-size: 1.1rem;">Sales & Revenue Trajectory</h5>
-										<p class="text-muted mb-0" style="font-size: 0.825rem;">Gross revenue (₹) & volume over monthly billing cycles</p>
+										<h5 class="fw-bold mb-1 text-dark" style="font-size: 1.1rem;">Paid revenue</h5>
+										<p class="text-muted mb-0" style="font-size: 0.825rem;">Collected order value by month · last 12 months</p>
 									</div>
 									<div class="d-flex gap-2 align-items-center">
-										<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size: 0.75rem;">
-											● Revenue (₹)
+											<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size: 0.75rem;">
+											● Paid revenue (₹)
 										</span>
 									</div>
 								</div>
@@ -883,6 +856,10 @@ if ($hour < 12) {
 												<td class="text-end fw-bold"><?php echo $delivered_orders; ?></td>
 											</tr>
 											<tr>
+												<td><span class="badge bg-info me-2" style="width: 10px; height: 10px; border-radius: 50%; display: inline-block; padding: 0;"></span>In production</td>
+												<td class="text-end fw-bold"><?php echo $processing_orders; ?></td>
+											</tr>
+											<tr>
 												<td><span class="badge bg-primary me-2" style="width: 10px; height: 10px; border-radius: 50%; display: inline-block; padding: 0;"></span>Shipped</td>
 												<td class="text-end fw-bold"><?php echo $shipped_orders; ?></td>
 											</tr>
@@ -908,8 +885,8 @@ if ($hour < 12) {
 							<div class="dashboard-card h-100 p-3 p-md-4">
 								<div class="d-flex justify-content-between align-items-center mb-3">
 									<div>
-										<h5 class="fw-bold mb-1 text-dark" style="font-size: 1.1rem;">Top Product Categories</h5>
-										<p class="text-muted mb-0" style="font-size: 0.825rem;">Inventory concentration across top categories</p>
+										<h5 class="fw-bold mb-1 text-dark" style="font-size: 1.1rem;">Catalog by category</h5>
+										<p class="text-muted mb-0" style="font-size: 0.825rem;">Product assortment across your leading categories</p>
 									</div>
 									<a href="view-categories.php" class="btn btn-sm btn-outline-primary fw-semibold" style="font-size: 0.775rem;">Manage All</a>
 								</div>
@@ -947,7 +924,7 @@ if ($hour < 12) {
 											</div>
 											<div>
 												<div class="hub-tile-title">Orders Hub</div>
-												<p class="hub-tile-desc"><?php echo $pending_orders; ?> need review</p>
+												<p class="hub-tile-desc"><?php echo $orders_need_attention; ?> need attention</p>
 											</div>
 										</a>
 									</div>
@@ -1180,7 +1157,7 @@ if ($hour < 12) {
 					data: {
 						labels: <?php echo json_encode($chart_months); ?>,
 						datasets: [{
-							label: "Revenue (₹)",
+							label: "Paid revenue (₹)",
 							fill: true,
 							backgroundColor: gradientLight,
 							borderColor: "#1f509a",
@@ -1201,7 +1178,7 @@ if ($hour < 12) {
 						tooltips: {
 							callbacks: {
 								label: function(tooltipItem, data) {
-									return "Revenue: ₹" + tooltipItem.yLabel.toLocaleString();
+									return "Paid revenue: ₹" + tooltipItem.yLabel.toLocaleString();
 								}
 							}
 						},
@@ -1241,17 +1218,19 @@ if ($hour < 12) {
 				new Chart(statusCtx, {
 					type: "doughnut",
 					data: {
-						labels: ["Delivered", "Shipped", "Pending", "Cancelled"],
+						labels: ["Delivered", "Shipped", "In production", "Pending", "Cancelled"],
 						datasets: [{
 							data: [
 								<?php echo $delivered_orders; ?>, 
 								<?php echo $shipped_orders; ?>, 
+								<?php echo $processing_orders; ?>,
 								<?php echo $pending_orders; ?>, 
 								<?php echo $cancelled_orders; ?>
 							],
 							backgroundColor: [
 								"#10b981", // green (Delivered)
 								"#1f509a", // blue (Shipped)
+								"#06b6d4", // cyan (In production)
 								"#f59e0b", // yellow (Pending)
 								"#ef4444"  // red (Cancelled)
 							],
@@ -1331,9 +1310,10 @@ if ($hour < 12) {
 				});
 			}
 
-			// Refresh feather icons
-			if (typeof feather !== 'undefined') {
-				feather.replace();
+			// Refresh feather icons (prefer the full icon set from side-navbar.php)
+			var __feather = window.__fullFeather || (typeof feather !== 'undefined' ? feather : null);
+			if (__feather) {
+				try { __feather.replace(); } catch (e) {}
 			}
 		});
 	</script>

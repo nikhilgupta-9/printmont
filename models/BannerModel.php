@@ -264,21 +264,45 @@ class BannerModel {
 
         return $this->db->insert(
             "INSERT INTO {$this->table}
-             (title, description, image_url_desktop, image_url_mobile, target_url, section_id,
-              layout_format, display_order, status, start_date, end_date, banner_type,
+             (title, alt_text, slogan, show_slogan, description, meta_title, meta_keywords, meta_description,
+              target_page, other_pages_display,
+              show_on_category, show_on_product, show_on_product_detail,
+              show_on_franchise, show_on_affiliate, show_on_career,
+              show_on_business_solutions, show_on_advertising,
+              image_url_desktop, image_url_mobile, target_url, section_id,
+              layout_format, display_order, status, start_date, end_date, banner_type, page_target, banner_subtype,
+              extra_product_id,
               desktop_show_other_pages, desktop_other_category_id, desktop_other_carousel_id,
               desktop_home_category_id, desktop_home_carousel_id, desktop_design,
               desktop_image, desktop_images, desktop_url, desktop_urls,
               desktop_status, button_arrows, auto_running, auto_run_speed,
-              desktop_sort_order, desktop_start_date, desktop_end_date,
+              desktop_sort_order, desktop_anchor_type, desktop_anchor_id, desktop_anchor_position,
+              desktop_start_date, desktop_end_date,
               mobile_show_other_pages, mobile_other_category_id, mobile_other_carousel_id,
-              mobile_home_category_id, mobile_home_carousel_id, mobile_design,
+              mobile_home_category_id, mobile_home_carousel_id, mobile_design, mobile_same_design,
               mobile_image, mobile_images, mobile_url, mobile_urls,
-              mobile_status, mobile_sort_order, mobile_start_date, mobile_end_date)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              mobile_status, mobile_sort_order, mobile_anchor_type, mobile_anchor_id, mobile_anchor_position,
+              mobile_start_date, mobile_end_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['title'],
+                $data['alt_text'] ?? null,
+                $data['slogan'] ?? null,
+                isset($data['show_slogan']) ? (int)$data['show_slogan'] : 1,
                 $data['description'] ?? '',
+                $data['meta_title'] ?? null,
+                $data['meta_keywords'] ?? null,
+                $data['meta_description'] ?? null,
+                $data['target_page'] ?? 'home',
+                $data['other_pages_display'] ?? null,
+                $data['show_on_category'] ?? 'no',
+                $data['show_on_product'] ?? 'no',
+                $data['show_on_product_detail'] ?? 'no',
+                $data['show_on_franchise'] ?? 'no',
+                $data['show_on_affiliate'] ?? 'no',
+                $data['show_on_career'] ?? 'no',
+                $data['show_on_business_solutions'] ?? 'no',
+                $data['show_on_advertising'] ?? 'no',
                 $desktopImg,
                 $mobileImg,
                 $desktopUrl,
@@ -289,6 +313,9 @@ class BannerModel {
                 $data['start_date'] ?: null,
                 $data['end_date'] ?: null,
                 $data['banner_type'] ?? 'single',
+                $data['page_target'] ?? 'both',
+                $data['banner_subtype'] ?? 'normal',
+                $data['extra_product_id'] ?: null,
                 $data['desktop_show_other_pages'] ?? 'no',
                 $data['desktop_other_category_id'] ?: null,
                 $data['desktop_other_carousel_id'] ?: null,
@@ -303,7 +330,10 @@ class BannerModel {
                 $data['button_arrows'] ?? 'enable',
                 $data['auto_running'] ?? 'enable',
                 (int)($data['auto_run_speed'] ?? 3000),
-                $data['desktop_sort_order'] ?? 0,
+                (float)($data['desktop_sort_order'] ?? 0),
+                $data['desktop_anchor_type'] ?: null,
+                $data['desktop_anchor_id'] ?: null,
+                $data['desktop_anchor_position'] ?? 'after',
                 $data['desktop_start_date'] ?: null,
                 $data['desktop_end_date'] ?: null,
                 $data['mobile_show_other_pages'] ?? 'no',
@@ -312,12 +342,16 @@ class BannerModel {
                 $data['mobile_home_category_id'] ?: null,
                 $data['mobile_home_carousel_id'] ?: null,
                 $data['mobile_design'] ?? '',
+                $data['mobile_same_design'] ?? 'no',
                 $mobileImg,
                 $data['mobile_images'] ?? null,
                 $mobileUrl,
                 $data['mobile_urls'] ?? null,
                 $data['mobile_status'] ?? 'active',
-                $data['mobile_sort_order'] ?? 0,
+                (float)($data['mobile_sort_order'] ?? 0),
+                $data['mobile_anchor_type'] ?: null,
+                $data['mobile_anchor_id'] ?: null,
+                $data['mobile_anchor_position'] ?? 'after',
                 $data['mobile_start_date'] ?: null,
                 $data['mobile_end_date'] ?: null,
             ]
@@ -332,22 +366,46 @@ class BannerModel {
 
         return (bool)$this->db->execute(
             "UPDATE {$this->table} SET
-             title = ?, description = ?, image_url_desktop = ?, image_url_mobile = ?, target_url = ?,
+             title = ?, alt_text = ?, slogan = ?, show_slogan = ?, description = ?, meta_title = ?, meta_keywords = ?, meta_description = ?,
+             target_page = ?, other_pages_display = ?,
+             show_on_category = ?, show_on_product = ?, show_on_product_detail = ?,
+             show_on_franchise = ?, show_on_affiliate = ?, show_on_career = ?,
+             show_on_business_solutions = ?, show_on_advertising = ?,
+             image_url_desktop = ?, image_url_mobile = ?, target_url = ?,
              section_id = ?, layout_format = ?, display_order = ?, status = ?, start_date = ?, end_date = ?, banner_type = ?,
+             page_target = ?, banner_subtype = ?, extra_product_id = ?,
              desktop_show_other_pages = ?, desktop_other_category_id = ?, desktop_other_carousel_id = ?,
              desktop_home_category_id = ?, desktop_home_carousel_id = ?, desktop_design = ?,
              desktop_image = ?, desktop_images = ?, desktop_url = ?, desktop_urls = ?,
              desktop_status = ?, button_arrows = ?, auto_running = ?, auto_run_speed = ?,
-             desktop_sort_order = ?, desktop_start_date = ?, desktop_end_date = ?,
+             desktop_sort_order = ?, desktop_anchor_type = ?, desktop_anchor_id = ?, desktop_anchor_position = ?,
+             desktop_start_date = ?, desktop_end_date = ?,
              mobile_show_other_pages = ?, mobile_other_category_id = ?, mobile_other_carousel_id = ?,
-             mobile_home_category_id = ?, mobile_home_carousel_id = ?, mobile_design = ?,
+             mobile_home_category_id = ?, mobile_home_carousel_id = ?, mobile_design = ?, mobile_same_design = ?,
              mobile_image = ?, mobile_images = ?, mobile_url = ?, mobile_urls = ?,
-             mobile_status = ?, mobile_sort_order = ?, mobile_start_date = ?, mobile_end_date = ?,
+             mobile_status = ?, mobile_sort_order = ?, mobile_anchor_type = ?, mobile_anchor_id = ?, mobile_anchor_position = ?,
+             mobile_start_date = ?, mobile_end_date = ?,
              updated_at = NOW()
              WHERE id = ?",
             [
                 $data['title'],
+                $data['alt_text'] ?? null,
+                $data['slogan'] ?? null,
+                isset($data['show_slogan']) ? (int)$data['show_slogan'] : 1,
                 $data['description'] ?? '',
+                $data['meta_title'] ?? null,
+                $data['meta_keywords'] ?? null,
+                $data['meta_description'] ?? null,
+                $data['target_page'] ?? 'home',
+                $data['other_pages_display'] ?? null,
+                $data['show_on_category'] ?? 'no',
+                $data['show_on_product'] ?? 'no',
+                $data['show_on_product_detail'] ?? 'no',
+                $data['show_on_franchise'] ?? 'no',
+                $data['show_on_affiliate'] ?? 'no',
+                $data['show_on_career'] ?? 'no',
+                $data['show_on_business_solutions'] ?? 'no',
+                $data['show_on_advertising'] ?? 'no',
                 $desktopImg,
                 $mobileImg,
                 $desktopUrl,
@@ -358,6 +416,9 @@ class BannerModel {
                 $data['start_date'] ?: null,
                 $data['end_date'] ?: null,
                 $data['banner_type'] ?? 'single',
+                $data['page_target'] ?? 'both',
+                $data['banner_subtype'] ?? 'normal',
+                $data['extra_product_id'] ?: null,
                 $data['desktop_show_other_pages'] ?? 'no',
                 $data['desktop_other_category_id'] ?: null,
                 $data['desktop_other_carousel_id'] ?: null,
@@ -372,7 +433,10 @@ class BannerModel {
                 $data['button_arrows'] ?? 'enable',
                 $data['auto_running'] ?? 'enable',
                 (int)($data['auto_run_speed'] ?? 3000),
-                $data['desktop_sort_order'] ?? 0,
+                (float)($data['desktop_sort_order'] ?? 0),
+                $data['desktop_anchor_type'] ?: null,
+                $data['desktop_anchor_id'] ?: null,
+                $data['desktop_anchor_position'] ?? 'after',
                 $data['desktop_start_date'] ?: null,
                 $data['desktop_end_date'] ?: null,
                 $data['mobile_show_other_pages'] ?? 'no',
@@ -381,12 +445,16 @@ class BannerModel {
                 $data['mobile_home_category_id'] ?: null,
                 $data['mobile_home_carousel_id'] ?: null,
                 $data['mobile_design'] ?? '',
+                $data['mobile_same_design'] ?? 'no',
                 $mobileImg,
                 $data['mobile_images'] ?? null,
                 $mobileUrl,
                 $data['mobile_urls'] ?? null,
                 $data['mobile_status'] ?? 'active',
-                $data['mobile_sort_order'] ?? 0,
+                (float)($data['mobile_sort_order'] ?? 0),
+                $data['mobile_anchor_type'] ?: null,
+                $data['mobile_anchor_id'] ?: null,
+                $data['mobile_anchor_position'] ?? 'after',
                 $data['mobile_start_date'] ?: null,
                 $data['mobile_end_date'] ?: null,
                 $id,
@@ -451,19 +519,58 @@ class BannerModel {
     public function createBannerCarousel(array $data): int|false {
         return $this->db->insert(
             "INSERT INTO banner_carousels
-             (title, desktop_page, desktop_home_category_id, desktop_home_carousel_id,
+             (title, alt_text, description, meta_title, meta_keywords, meta_description,
+              target_page, other_pages_display,
+              show_on_category, show_on_product, show_on_product_detail,
+              show_on_franchise, show_on_affiliate, show_on_career,
+              show_on_business_solutions, show_on_advertising,
+              slider_subtype, page_target, text_tag_name, extra_product_id,
+              desktop_anchor_type, desktop_anchor_id, desktop_anchor_position,
+              mobile_anchor_type, mobile_anchor_id, mobile_anchor_position, mobile_same_design,
+              desktop_page, desktop_home_category_id, desktop_home_carousel_id,
               desktop_show_other_pages, desktop_other_category_id, desktop_other_carousel_id,
               desktop_design, desktop_image, desktop_images, desktop_url, desktop_urls,
+              desktop_with_printing_image, desktop_without_printing_image,
               desktop_status, button_arrows, auto_running, auto_run_speed,
               desktop_sort_order, desktop_start_date, desktop_end_date,
               mobile_design, mobile_page, mobile_category_id, mobile_carousel_id,
               mobile_other_pages, mobile_other_category_id, mobile_other_carousel_id,
               mobile_image, mobile_images, mobile_url, mobile_urls,
+              mobile_with_printing_image, mobile_without_printing_image,
               mobile_status, mobile_sort_order, mobile_other_sort_order,
-              mobile_start_date, mobile_end_date, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              mobile_start_date, mobile_end_date,
+              show_product_category_carousel, show_home_category, show_category_carousel, show_home_product,
+              mobile_show_product_category_carousel, mobile_show_home_category, mobile_show_category_carousel, mobile_show_home_product,
+              status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['title'],
+                $data['alt_text'] ?? null,
+                $data['description'] ?? '',
+                $data['meta_title'] ?? null,
+                $data['meta_keywords'] ?? null,
+                $data['meta_description'] ?? null,
+                $data['target_page'] ?? 'home',
+                $data['other_pages_display'] ?? null,
+                $data['show_on_category'] ?? 'no',
+                $data['show_on_product'] ?? 'no',
+                $data['show_on_product_detail'] ?? 'no',
+                $data['show_on_franchise'] ?? 'no',
+                $data['show_on_affiliate'] ?? 'no',
+                $data['show_on_career'] ?? 'no',
+                $data['show_on_business_solutions'] ?? 'no',
+                $data['show_on_advertising'] ?? 'no',
+                $data['slider_subtype'] ?? 'top_slider',
+                $data['page_target'] ?? 'both',
+                $data['text_tag_name'] ?: null,
+                $data['extra_product_id'] ?: null,
+                $data['desktop_anchor_type'] ?: null,
+                $data['desktop_anchor_id'] ?: null,
+                $data['desktop_anchor_position'] ?? 'after',
+                $data['mobile_anchor_type'] ?: null,
+                $data['mobile_anchor_id'] ?: null,
+                $data['mobile_anchor_position'] ?? 'after',
+                $data['mobile_same_design'] ?? 'no',
                 $data['desktop_page'] ?? 'home',
                 $data['desktop_home_category_id'] ?: null,
                 $data['desktop_home_carousel_id'] ?: null,
@@ -475,6 +582,8 @@ class BannerModel {
                 $data['desktop_images'] ?? null,
                 $data['desktop_url'] ?? '',
                 $data['desktop_urls'] ?? null,
+                $data['desktop_with_printing_image'] ?? null,
+                $data['desktop_without_printing_image'] ?? null,
                 $data['desktop_status'] ?? 'active',
                 $data['button_arrows'] ?? 'enable',
                 $data['auto_running'] ?? 'enable',
@@ -493,11 +602,21 @@ class BannerModel {
                 $data['mobile_images'] ?? null,
                 $data['mobile_url'] ?? '',
                 $data['mobile_urls'] ?? null,
+                $data['mobile_with_printing_image'] ?? null,
+                $data['mobile_without_printing_image'] ?? null,
                 $data['mobile_status'] ?? 'active',
                 $data['mobile_sort_order'] ?? 0,
                 $data['mobile_other_sort_order'] ?? 0,
                 $data['mobile_start_date'] ?: null,
                 $data['mobile_end_date'] ?: null,
+                $data['show_product_category_carousel'] ?? 'yes',
+                $data['show_home_category'] ?? 'yes',
+                $data['show_category_carousel'] ?? 'yes',
+                $data['show_home_product'] ?? 'yes',
+                $data['mobile_show_product_category_carousel'] ?? 'yes',
+                $data['mobile_show_home_category'] ?? 'yes',
+                $data['mobile_show_category_carousel'] ?? 'yes',
+                $data['mobile_show_home_product'] ?? 'yes',
                 $data['status'] ?? 'active',
             ]
         );
@@ -506,20 +625,59 @@ class BannerModel {
     public function updateBannerCarousel(int $id, array $data): bool {
         return (bool)$this->db->execute(
             "UPDATE banner_carousels SET
-             title = ?, desktop_page = ?, desktop_home_category_id = ?, desktop_home_carousel_id = ?,
+             title = ?, alt_text = ?, description = ?, meta_title = ?, meta_keywords = ?, meta_description = ?,
+             target_page = ?, other_pages_display = ?,
+             show_on_category = ?, show_on_product = ?, show_on_product_detail = ?,
+             show_on_franchise = ?, show_on_affiliate = ?, show_on_career = ?,
+             show_on_business_solutions = ?, show_on_advertising = ?,
+             slider_subtype = ?, page_target = ?, text_tag_name = ?, extra_product_id = ?,
+             desktop_anchor_type = ?, desktop_anchor_id = ?, desktop_anchor_position = ?,
+             mobile_anchor_type = ?, mobile_anchor_id = ?, mobile_anchor_position = ?, mobile_same_design = ?,
+             desktop_page = ?, desktop_home_category_id = ?, desktop_home_carousel_id = ?,
              desktop_show_other_pages = ?, desktop_other_category_id = ?, desktop_other_carousel_id = ?,
              desktop_design = ?, desktop_image = ?, desktop_images = ?, desktop_url = ?, desktop_urls = ?,
+             desktop_with_printing_image = ?, desktop_without_printing_image = ?,
              desktop_status = ?, button_arrows = ?, auto_running = ?, auto_run_speed = ?,
              desktop_sort_order = ?, desktop_start_date = ?, desktop_end_date = ?,
              mobile_design = ?, mobile_page = ?, mobile_category_id = ?, mobile_carousel_id = ?,
              mobile_other_pages = ?, mobile_other_category_id = ?, mobile_other_carousel_id = ?,
              mobile_image = ?, mobile_images = ?, mobile_url = ?, mobile_urls = ?,
+             mobile_with_printing_image = ?, mobile_without_printing_image = ?,
              mobile_status = ?, mobile_sort_order = ?, mobile_other_sort_order = ?,
-             mobile_start_date = ?, mobile_end_date = ?, status = ?,
+             mobile_start_date = ?, mobile_end_date = ?,
+             show_product_category_carousel = ?, show_home_category = ?, show_category_carousel = ?, show_home_product = ?,
+             mobile_show_product_category_carousel = ?, mobile_show_home_category = ?, mobile_show_category_carousel = ?, mobile_show_home_product = ?,
+             status = ?,
              updated_at = NOW()
              WHERE id = ?",
             [
                 $data['title'],
+                $data['alt_text'] ?? null,
+                $data['description'] ?? '',
+                $data['meta_title'] ?? null,
+                $data['meta_keywords'] ?? null,
+                $data['meta_description'] ?? null,
+                $data['target_page'] ?? 'home',
+                $data['other_pages_display'] ?? null,
+                $data['show_on_category'] ?? 'no',
+                $data['show_on_product'] ?? 'no',
+                $data['show_on_product_detail'] ?? 'no',
+                $data['show_on_franchise'] ?? 'no',
+                $data['show_on_affiliate'] ?? 'no',
+                $data['show_on_career'] ?? 'no',
+                $data['show_on_business_solutions'] ?? 'no',
+                $data['show_on_advertising'] ?? 'no',
+                $data['slider_subtype'] ?? 'top_slider',
+                $data['page_target'] ?? 'both',
+                $data['text_tag_name'] ?: null,
+                $data['extra_product_id'] ?: null,
+                $data['desktop_anchor_type'] ?: null,
+                $data['desktop_anchor_id'] ?: null,
+                $data['desktop_anchor_position'] ?? 'after',
+                $data['mobile_anchor_type'] ?: null,
+                $data['mobile_anchor_id'] ?: null,
+                $data['mobile_anchor_position'] ?? 'after',
+                $data['mobile_same_design'] ?? 'no',
                 $data['desktop_page'] ?? 'home',
                 $data['desktop_home_category_id'] ?: null,
                 $data['desktop_home_carousel_id'] ?: null,
@@ -531,6 +689,8 @@ class BannerModel {
                 $data['desktop_images'] ?? null,
                 $data['desktop_url'] ?? '',
                 $data['desktop_urls'] ?? null,
+                $data['desktop_with_printing_image'] ?? null,
+                $data['desktop_without_printing_image'] ?? null,
                 $data['desktop_status'] ?? 'active',
                 $data['button_arrows'] ?? 'enable',
                 $data['auto_running'] ?? 'enable',
@@ -549,11 +709,21 @@ class BannerModel {
                 $data['mobile_images'] ?? null,
                 $data['mobile_url'] ?? '',
                 $data['mobile_urls'] ?? null,
+                $data['mobile_with_printing_image'] ?? null,
+                $data['mobile_without_printing_image'] ?? null,
                 $data['mobile_status'] ?? 'active',
                 $data['mobile_sort_order'] ?? 0,
                 $data['mobile_other_sort_order'] ?? 0,
                 $data['mobile_start_date'] ?: null,
                 $data['mobile_end_date'] ?: null,
+                $data['show_product_category_carousel'] ?? 'yes',
+                $data['show_home_category'] ?? 'yes',
+                $data['show_category_carousel'] ?? 'yes',
+                $data['show_home_product'] ?? 'yes',
+                $data['mobile_show_product_category_carousel'] ?? 'yes',
+                $data['mobile_show_home_category'] ?? 'yes',
+                $data['mobile_show_category_carousel'] ?? 'yes',
+                $data['mobile_show_home_product'] ?? 'yes',
                 $data['status'] ?? 'active',
                 $id,
             ]
@@ -570,6 +740,234 @@ class BannerModel {
 
     public function deleteBannerCarousel(int $id): bool {
         return (bool)$this->db->execute("DELETE FROM banner_carousels WHERE id = ?", [$id]);
+    }
+
+    // ----------------------------------------------------------------
+    // Master Module Unified Retrieval & Instant Toggles
+    // ----------------------------------------------------------------
+
+    public function getAllMasterItems(string $pageFilter = 'all', string $typeFilter = 'all', string $search = '', string $statusFilter = 'all'): array {
+        $items = [];
+        $searchLike = !empty($search) ? "%{$search}%" : '';
+
+        // Helper to build page where condition
+        $getPageCond = function(string $pFilter, string $table = 'banners') {
+            if (empty($pFilter) || $pFilter === 'all') return '1=1';
+            if ($pFilter === 'home') {
+                return "(target_page = 'home' OR target_page = 'both' OR target_page IS NULL OR target_page = '')";
+            }
+            if ($pFilter === 'about' || $pFilter === 'about_us') {
+                if ($table === 'banners') {
+                    return "(target_page IN ('about', 'about_us') OR target_page = 'both' OR show_on_about_us = 'yes' OR other_pages_display LIKE '%about%' OR position = 'about' OR section_id IN (28, 29, 49, 50, 51))";
+                }
+                return "(target_page IN ('about', 'about_us') OR target_page = 'both' OR show_on_about_us = 'yes' OR other_pages_display LIKE '%about%')";
+            }
+            $colMap = [
+                'category'           => 'show_on_category',
+                'product'            => 'show_on_product',
+                'product_detail'     => 'show_on_product_detail',
+                'franchise'          => 'show_on_franchise',
+                'affiliate_program'  => 'show_on_affiliate',
+                'career'             => 'show_on_career',
+                'business_solutions' => 'show_on_business_solutions',
+                'advertising'        => 'show_on_advertising',
+                'about_us'           => 'show_on_about_us',
+            ];
+            $col = $colMap[$pFilter] ?? '';
+            if ($col) {
+                return "(target_page = '{$pFilter}' OR target_page = 'both' OR {$col} = 'yes' OR other_pages_display LIKE '%{$pFilter}%')";
+            }
+            return "(target_page = '{$pFilter}' OR target_page = 'both' OR other_pages_display LIKE '%{$pFilter}%')";
+        };
+
+        // 1. Fetch Banners
+        if ($typeFilter === 'all' || $typeFilter === 'banner') {
+            $where = $getPageCond($pageFilter, 'banners');
+            $params = [];
+            if ($statusFilter !== 'all') {
+                $where .= " AND status = ?";
+                $params[] = $statusFilter;
+            }
+            if (!empty($searchLike)) {
+                $where .= " AND (title LIKE ? OR alt_text LIKE ? OR description LIKE ? OR meta_title LIKE ?)";
+                $params[] = $searchLike;
+                $params[] = $searchLike;
+                $params[] = $searchLike;
+                $params[] = $searchLike;
+            }
+            $rows = $this->db->fetchAll(
+                "SELECT id, 'banner' as item_type, title, alt_text, description, meta_title, meta_keywords, meta_description,
+                        image_url_desktop, image_url_mobile, desktop_image, mobile_image, target_url,
+                        target_page, other_pages_display,
+                        show_on_category, show_on_product, show_on_product_detail,
+                        show_on_franchise, show_on_affiliate, show_on_career,
+                        show_on_business_solutions, show_on_advertising, show_on_about_us,
+                        desktop_design as layout_format, banner_subtype,
+                        desktop_sort_order, desktop_anchor_type, desktop_anchor_id, desktop_anchor_position,
+                        status, desktop_status, mobile_status, created_at, updated_at
+                 FROM banners
+                 WHERE {$where}
+                 ORDER BY desktop_sort_order ASC, id DESC",
+                $params
+            );
+            foreach ($rows as $r) {
+                $r['thumb'] = $r['desktop_image'] ?: ($r['image_url_desktop'] ?: ($r['mobile_image'] ?: ''));
+                $items[] = $r;
+            }
+        }
+
+        // 2. Fetch Carousels (Product & Category carousels)
+        if ($typeFilter === 'all' || $typeFilter === 'carousel') {
+            $where = $getPageCond($pageFilter, 'carousels');
+            $params = [];
+            if ($statusFilter !== 'all') {
+                $where .= " AND status = ?";
+                $params[] = $statusFilter;
+            }
+            if (!empty($searchLike)) {
+                $where .= " AND (title LIKE ? OR alt_text LIKE ? OR description LIKE ? OR meta_title LIKE ?)";
+                $params[] = $searchLike;
+                $params[] = $searchLike;
+                $params[] = $searchLike;
+                $params[] = $searchLike;
+            }
+            $rows = $this->db->fetchAll(
+                "SELECT id, 'carousel' as item_type, title, alt_text, description, meta_title, meta_keywords, meta_description,
+                        desktop_bg_image as image_url_desktop, mobile_bg_image as image_url_mobile, desktop_bg_image as desktop_image, mobile_bg_image as mobile_image, '' as target_url,
+                        target_page, other_pages_display,
+                        show_on_category, show_on_product, show_on_product_detail,
+                        show_on_franchise, show_on_affiliate, show_on_career,
+                        show_on_business_solutions, show_on_advertising, show_on_about_us,
+                        desktop_home_design as layout_format, carousel_type as banner_subtype,
+                        desktop_sort_order, desktop_anchor_type, desktop_anchor_id, desktop_anchor_position,
+                        status, desktop_status, mobile_status, created_at, updated_at
+                 FROM carousels
+                 WHERE {$where}
+                 ORDER BY desktop_sort_order ASC, id DESC",
+                $params
+            );
+            foreach ($rows as $r) {
+                $r['thumb'] = $r['desktop_image'] ?? ($r['mobile_image'] ?? '');
+                $items[] = $r;
+            }
+        }
+
+        // 3. Fetch Banner Carousels / Sliders from banner_carousels
+        if ($typeFilter === 'all' || $typeFilter === 'carousel' || $typeFilter === 'banner_carousel') {
+            $where = $getPageCond($pageFilter, 'banner_carousels');
+            $params = [];
+            if ($statusFilter !== 'all') {
+                $where .= " AND status = ?";
+                $params[] = $statusFilter;
+            }
+            if (!empty($searchLike)) {
+                $where .= " AND (title LIKE ? OR alt_text LIKE ? OR description LIKE ? OR meta_title LIKE ?)";
+                $params[] = $searchLike;
+                $params[] = $searchLike;
+                $params[] = $searchLike;
+                $params[] = $searchLike;
+            }
+            $rowsBC = $this->db->fetchAll(
+                "SELECT id, 'banner_carousel' as item_type, title, alt_text, description, meta_title, meta_keywords, meta_description,
+                        desktop_image as image_url_desktop, mobile_image as image_url_mobile, desktop_image, mobile_image, desktop_url as target_url,
+                        target_page, other_pages_display,
+                        show_on_category, show_on_product, show_on_product_detail,
+                        show_on_franchise, show_on_affiliate, show_on_career,
+                        show_on_business_solutions, show_on_advertising, show_on_about_us,
+                        desktop_design as layout_format, slider_subtype as banner_subtype,
+                        desktop_sort_order, desktop_anchor_type, desktop_anchor_id, desktop_anchor_position,
+                        status, desktop_status, mobile_status, created_at, updated_at
+                 FROM banner_carousels
+                 WHERE {$where}
+                 ORDER BY desktop_sort_order ASC, id DESC",
+                $params
+            );
+            foreach ($rowsBC as $r) {
+                $r['thumb'] = $r['desktop_image'] ?: ($r['mobile_image'] ?: '');
+                $items[] = $r;
+            }
+        }
+
+        // Sort combined items by sort_order
+        usort($items, function($a, $b) {
+            $oa = (float)($a['desktop_sort_order'] ?? 0);
+            $ob = (float)($b['desktop_sort_order'] ?? 0);
+            if ($oa == $ob) {
+                return (int)$b['id'] - (int)$a['id'];
+            }
+            return $oa <=> $ob;
+        });
+
+        return $items;
+    }
+
+    public function togglePageVisibility(string $itemType, int $id, string $pageKey, string $targetVal): bool {
+        $colMap = [
+            'category'           => 'show_on_category',
+            'product'            => 'show_on_product',
+            'product_detail'     => 'show_on_product_detail',
+            'franchise'          => 'show_on_franchise',
+            'affiliate_program'  => 'show_on_affiliate',
+            'career'             => 'show_on_career',
+            'business_solutions' => 'show_on_business_solutions',
+            'advertising'        => 'show_on_advertising',
+            'about_us'           => 'show_on_about_us',
+        ];
+
+        $col = $colMap[$pageKey] ?? null;
+        if (!$col) return false;
+
+        $val = ($targetVal === 'yes') ? 'yes' : 'no';
+        $table = ($itemType === 'carousel') ? 'carousels' : (($itemType === 'banner_carousel') ? 'banner_carousels' : 'banners');
+
+        // Fetch current other_pages_display JSON
+        $row = $this->db->fetch("SELECT other_pages_display FROM {$table} WHERE id = ?", [$id]);
+        $currentList = [];
+        if (!empty($row['other_pages_display'])) {
+            $decoded = json_decode($row['other_pages_display'], true);
+            if (is_array($decoded)) $currentList = $decoded;
+        }
+
+        if ($val === 'yes') {
+            if (!in_array($pageKey, $currentList)) $currentList[] = $pageKey;
+        } else {
+            $currentList = array_values(array_diff($currentList, [$pageKey]));
+        }
+        $updatedJson = json_encode($currentList);
+
+        return (bool)$this->db->execute(
+            "UPDATE {$table} SET {$col} = ?, other_pages_display = ?, updated_at = NOW() WHERE id = ?",
+            [$val, $updatedJson, $id]
+        );
+    }
+
+    public function toggleCarouselStatus(int $id, string $status): bool {
+        $status = ($status === 'active') ? 'active' : 'inactive';
+        return (bool)$this->db->execute("UPDATE carousels SET status = ?, desktop_status = ?, mobile_status = ?, updated_at = NOW() WHERE id = ?", [$status, $status, $status, $id]);
+    }
+
+    public function deleteCarousel(int $id): bool {
+        return (bool)$this->db->execute("DELETE FROM carousels WHERE id = ?", [$id]);
+    }
+
+    public function toggleMasterStatus(string $itemType, int $id, string $status): bool {
+        if ($itemType === 'carousel') {
+            return $this->toggleCarouselStatus($id, $status);
+        } elseif ($itemType === 'banner_carousel') {
+            return $this->toggleBannerCarouselStatus($id, $status);
+        } else {
+            return $this->toggleBannerStatus($id, $status);
+        }
+    }
+
+    public function deleteMasterItem(string $itemType, int $id): bool {
+        if ($itemType === 'carousel') {
+            return $this->deleteCarousel($id);
+        } elseif ($itemType === 'banner_carousel') {
+            return $this->deleteBannerCarousel($id);
+        } else {
+            return $this->deleteBanner($id);
+        }
     }
 }
 ?>

@@ -16855,7 +16855,7 @@ aa.badge-dark-light:focus {
     direction: ltr;
     flex: 1 1 auto;
     max-width: 100%;
-    padding: 1.5rem 1.5rem .75rem;
+    padding: 1rem;
     width: 100%;
     box-sizing: border-box
 }
@@ -16869,7 +16869,7 @@ aa.badge-dark-light:focus {
 
 @media(min-width:992px) {
     .content {
-        padding: 3rem 3rem 1.5rem
+        padding: 1rem;
     }
 }
 
@@ -18017,7 +18017,7 @@ body[data-theme=light] .sidebar-dropdown .sidebar-item.active .sidebar-link {
     display: block;
     font-size: 1.15rem;
     font-weight: 600;
-    padding: 1.15rem 1.5rem
+    padding: 1rem 1rem
 }
 
 body[data-theme=dark] .sidebar-brand {

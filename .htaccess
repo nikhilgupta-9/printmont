@@ -1,4 +1,36 @@
 # In your root .htaccess (if any)
+
+# Admin pages (dashboard.php etc.) load a single ~3.6MB unminified js/app.js with
+# no compression or cache headers, so every page view re-downloads it in full.
+# Gzip cuts that transfer by ~70-80%, and far-future caching + ETag means repeat
+# admin page loads skip re-downloading it entirely once the browser has it cached.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml application/xml application/javascript application/x-javascript text/javascript application/json
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(jpg|jpeg|png|webp|svg|gif|ico)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+
+    # js/css are hand-edited often during development (e.g. css/light.css, js/settings.js).
+    # A long max-age here made the browser keep serving a stale copy after every edit, which
+    # looked like "the page broke" (toggles, styles) even though the file on disk was correct.
+    # no-cache still lets the browser skip re-downloading unchanged bytes via a 304, it just
+    # always asks the server first instead of trusting a 30-day-old copy blindly.
+    <FilesMatch "\.(js|css)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>
+
 RewriteEngine On
 
 # Let requests under /api/ 404 normally instead of falling through to the

@@ -81,6 +81,7 @@ $parent_options_sql = "SELECT id, name, level, parent_id FROM categories WHERE l
 $parent_options = $database->fetchAll($parent_options_sql) ?: [];
 
 // Helper function to generate query strings for pagination & filters
+if (!function_exists('buildQueryUrl')) {
 function buildQueryUrl($newParams = []) {
     $current = $_GET;
     foreach ($newParams as $k => $v) {
@@ -91,6 +92,7 @@ function buildQueryUrl($newParams = []) {
         }
     }
     return 'view-categories.php?' . http_build_query($current);
+}
 }
 
 // -------------------------------------------------------------
@@ -177,6 +179,7 @@ if ($view_mode === 'table') {
 }
 
 // Fetch Tree Hierarchy for Tree View
+if (!function_exists('fetchCategoryHierarchy')) {
 function fetchCategoryHierarchy($database, $parent_id = 0, $whereCustom = '') {
     $sql = "SELECT c.*, (SELECT COUNT(*) FROM categories ch WHERE ch.parent_id = c.id) as children_count 
             FROM categories c 
@@ -192,6 +195,7 @@ function fetchCategoryHierarchy($database, $parent_id = 0, $whereCustom = '') {
         $tree[] = $cat;
     }
     return $tree;
+}
 }
 
 $treeCategories = [];
@@ -354,6 +358,11 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
             right: 24px;
             z-index: 1080;
         }
+
+        .module-nav-pills { display: flex; gap: 8px; flex-wrap: wrap; background: #fff; padding: 6px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        .module-nav-link { padding: 8px 14px; font-size: 13px; font-weight: 600; color: #475569; text-decoration: none; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .module-nav-link:hover { color: #0d6efd; background: #e0edff; }
+        .module-nav-link.active { color: #fff; background: #0d6efd; }
     </style>
 </head>
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
@@ -364,6 +373,31 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
             
             <main class="content">
                 <div class="container-fluid p-0">
+
+                    <!-- Top Module Navigation Pills: 4 no. Manage Categories -->
+                    <div class="module-nav-pills mb-4">
+                        <a href="add-main-category.php" class="module-nav-link">
+                            <i class="fas fa-folder-plus text-primary"></i> 1. Main Category
+                        </a>
+                        <a href="view-categories.php?level=1" class="module-nav-link <?php echo ($level_filter === 1) ? 'active' : ''; ?>">
+                            <i class="fas fa-folder text-secondary"></i> 2. Main All Categories
+                        </a>
+                        <a href="add-sub-category.php" class="module-nav-link">
+                            <i class="fas fa-folder-tree text-success"></i> 3. Sub Category
+                        </a>
+                        <a href="view-categories.php?level=2" class="module-nav-link <?php echo ($level_filter === 2) ? 'active' : ''; ?>">
+                            <i class="fas fa-list text-secondary"></i> 4. Sub All Category
+                        </a>
+                        <a href="add-sub-sub-category.php" class="module-nav-link">
+                            <i class="fas fa-tags text-info"></i> 5. Sub Sub Category
+                        </a>
+                        <a href="view-categories.php?level=3" class="module-nav-link <?php echo ($level_filter === 3) ? 'active' : ''; ?>">
+                            <i class="fas fa-list-check text-secondary"></i> 6. Sub Sub All Category
+                        </a>
+                        <a href="home-page-categories.php" class="module-nav-link">
+                            <i class="fas fa-home text-warning"></i> 7. Home page Category (Desktop &amp; Mobile)
+                        </a>
+                    </div>
 
                     <!-- PAGE HEADER -->
                     <div class="row align-items-center mb-3">
@@ -623,8 +657,8 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                     <th>Category Details</th>
                                                     <th>Level</th>
                                                     <th>Parent Path</th>
-                                                    <th>Mobile Topbar</th>
-                                                    <th>Menu Show</th>
+                                                    <th>Topbar &amp; Menu</th>
+                                                    <th>Home Page</th>
                                                     <th>Status</th>
                                                     <th>Order</th>
                                                     <th style="width: 140px;" class="text-end">Actions</th>
@@ -657,6 +691,11 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                                 <?php if ($cat['children_count'] > 0): ?>
                                                                     <span class="badge bg-light text-secondary border" title="Has <?php echo $cat['children_count']; ?> child categories">
                                                                         <i class="fas fa-sitemap me-1"></i><?php echo $cat['children_count']; ?>
+                                                                    </span>
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($cat['desktop_menu_tag'])): ?>
+                                                                    <span class="badge" style="background-color:<?php echo htmlspecialchars($cat['desktop_menu_tag_bg'] ?: '#e11d48'); ?>;color:#fff;">
+                                                                        <?php echo htmlspecialchars($cat['desktop_menu_tag']); ?>
                                                                     </span>
                                                                 <?php endif; ?>
                                                             </div>
@@ -693,27 +732,47 @@ unset($_SESSION['success_message'], $_SESSION['error_message']);
                                                             <?php endif; ?>
                                                         </td>
 
-                                                        <!-- Mobile Topbar Display -->
+                                                        <!-- Topbar & Menu Display -->
                                                         <td>
-                                                            <?php if (($cat['mobile_topbar_status'] ?? 'show') === 'show'): ?>
-                                                                <span class="badge bg-info bg-opacity-10 text-info border border-info">
-                                                                    <i class="fas fa-mobile-alt me-1"></i>Show
-                                                                </span>
-                                                            <?php else: ?>
-                                                                <span class="badge bg-light text-muted border">Hide</span>
-                                                            <?php endif; ?>
+                                                            <div class="d-flex flex-column gap-1">
+                                                                <div class="d-flex align-items-center gap-1">
+                                                                    <small class="text-muted" style="width:38px;">Desk:</small>
+                                                                    <?php if (($cat['desktop_menu_status'] ?? 'show') === 'show'): ?>
+                                                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-1 py-0">Show</span>
+                                                                    <?php else: ?>
+                                                                        <span class="badge bg-light text-muted border px-1 py-0">Hide</span>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                                <div class="d-flex align-items-center gap-1">
+                                                                    <small class="text-muted" style="width:38px;">Mob:</small>
+                                                                    <?php if (($cat['mobile_topbar_status'] ?? 'show') === 'show'): ?>
+                                                                        <span class="badge bg-info bg-opacity-10 text-info border border-info px-1 py-0">Show</span>
+                                                                    <?php else: ?>
+                                                                        <span class="badge bg-light text-muted border px-1 py-0">Hide</span>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            </div>
                                                         </td>
 
-                                                        <!-- Header Menu Switch (AJAX) -->
+                                                        <!-- Home Page Display -->
                                                         <td>
-                                                            <div class="form-check form-switch mb-0" title="Toggle Desktop Top Menu visibility">
-                                                                <input class="form-check-input" type="checkbox" role="switch"
-                                                                       id="headerSwitch_<?php echo $cat['id']; ?>"
-                                                                       <?php echo ($cat['desktop_menu_status'] ?? 'show') === 'show' ? 'checked' : ''; ?>
-                                                                       onchange="toggleHeaderStatus(<?php echo $cat['id']; ?>, this)">
-                                                                <label class="form-check-label small ms-1 text-muted" id="headerLabel_<?php echo $cat['id']; ?>" for="headerSwitch_<?php echo $cat['id']; ?>">
-                                                                    <?php echo ($cat['desktop_menu_status'] ?? 'show') === 'show' ? 'Show' : 'Hide'; ?>
-                                                                </label>
+                                                            <div class="d-flex flex-column gap-1">
+                                                                <div class="d-flex align-items-center gap-1">
+                                                                    <small class="text-muted" style="width:38px;">Desk:</small>
+                                                                    <?php if (($cat['desktop_home_show'] ?? 'no') === 'yes'): ?>
+                                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success px-1 py-0">Yes</span>
+                                                                    <?php else: ?>
+                                                                        <span class="badge bg-light text-muted border px-1 py-0">No</span>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                                <div class="d-flex align-items-center gap-1">
+                                                                    <small class="text-muted" style="width:38px;">Mob:</small>
+                                                                    <?php if (($cat['mobile_home_show'] ?? 'no') === 'yes'): ?>
+                                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success px-1 py-0">Yes</span>
+                                                                    <?php else: ?>
+                                                                        <span class="badge bg-light text-muted border px-1 py-0">No</span>
+                                                                    <?php endif; ?>
+                                                                </div>
                                                             </div>
                                                         </td>
 

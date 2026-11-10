@@ -10,27 +10,19 @@ require_once(__DIR__ . '/config/database.php');
 require_once(__DIR__ . '/controllers/CategoryController.php');
 require_once(__DIR__ . '/controllers/ProductController.php');
 require_once(__DIR__ . '/config/customization-options-schema.php');
+require_once(__DIR__ . '/config/product-info-banners-schema.php');
 
 $database = new Database();
 $db       = $database->getConnection();
+ensureProductInfoBannersTable($db);
 
 $productController = new ProductController($db);
 $categoryCtrl      = new CategoryController($db);
 $mainCategories    = $categoryCtrl->getMainCategories();
-
-$filterOptions = [];
-$filterRes = $db->query("
-    SELECT pf.filter_key, pfv.value_name 
-    FROM product_filters pf 
-    JOIN product_filter_values pfv ON pf.id = pfv.filter_id 
-    WHERE pf.status = 'active' AND pfv.status = 'active'
-    ORDER BY pfv.display_order ASC, pfv.value_name ASC
-");
-if ($filterRes) {
-    while ($row = $filterRes->fetch_assoc()) {
-        $filterOptions[$row['filter_key']][] = $row['value_name'];
-    }
-}
+// All Sub Categories / Sub-Sub Categories (any parent) — used to build the "Multi-Category
+// Placement" checkbox grids for Section 4, grouped by their parent name.
+$allSubCategories    = $categoryCtrl->getSubCategories();
+$allSubSubCategories = $categoryCtrl->getSubSubCategories();
 
 // ── Customization library (customization-options.php) — section 7 ticks options from here ──
 ensureCustomizationOptionsTable($db);
@@ -64,11 +56,20 @@ $error_message   = '';
 $success_message = '';
 
 $assignedCatIds = [];
+$existingInfoBanners = [];
 if ($isEdit && !empty($editId)) {
     $assignedRes = $db->query("SELECT category_id FROM product_categories WHERE product_id = " . (int)$editId);
     if ($assignedRes) {
         while ($ar = $assignedRes->fetch_assoc()) {
             $assignedCatIds[] = (int)$ar['category_id'];
+        }
+    }
+
+    $infoBannerRes = $db->query("SELECT id, title, description, button_text, button_link, image
+        FROM product_info_banners WHERE product_id = " . (int)$editId . " ORDER BY display_order ASC, id ASC");
+    if ($infoBannerRes) {
+        while ($ib = $infoBannerRes->fetch_assoc()) {
+            $existingInfoBanners[] = $ib;
         }
     }
 }
@@ -93,6 +94,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $editThumb   = $isEdit ? ($editProduct['thumbnail_image'] ?? '') : '';
 $editMain    = $isEdit ? ($editProduct['main_images'] ?? []) : [];
 $editGallery = $isEdit ? (json_decode($editProduct['gallery_images'] ?? '[]', true) ?: []) : [];
+
+// Multi-select Sub Category / Sub Sub Category placement (Section 4) — JSON arrays of extra ids
+$assignedSubCatIds = $isEdit ? array_map('intval', json_decode($editProduct['additional_sub_category_ids'] ?? '[]', true) ?: []) : [];
+$assignedSubSubCatIds = $isEdit ? array_map('intval', json_decode($editProduct['additional_sub_sub_category_ids'] ?? '[]', true) ?: []) : [];
+
+// Existing variant data for Tab 2 (Colors with dedicated images, Sizes, Bulk Tiers)
+$existingColorVariants = [];
+if ($isEdit && !empty($editProduct['color_attributes'])) {
+    $existingColorVariants = json_decode($editProduct['color_attributes'], true) ?: [];
+}
+if (empty($existingColorVariants) && $isEdit && !empty($editProduct['color'])) {
+    $cParts = explode(',', $editProduct['color']);
+    foreach ($cParts as $cp) {
+        $cp = trim($cp);
+        if ($cp) {
+            $existingColorVariants[] = ['name' => $cp, 'hex' => '#000000', 'price' => 0, 'image' => '', 'text' => ''];
+        }
+    }
+}
+if ($isEdit && !empty($editProduct['color_images'])) {
+    $ciMap = json_decode($editProduct['color_images'], true) ?: [];
+    foreach ($existingColorVariants as &$ecv) {
+        if (empty($ecv['image']) && !empty($ciMap[$ecv['name']])) {
+            $ecv['image'] = $ciMap[$ecv['name']];
+        }
+    }
+    unset($ecv);
+}
+
+$existingSizeVariants = [];
+if ($isEdit && !empty($editProduct['size_attributes'])) {
+    $existingSizeVariants = json_decode($editProduct['size_attributes'], true) ?: [];
+}
+
+$existingBulkTiers = [];
+if ($isEdit && !empty($editProduct['bulk_price_variance'])) {
+    $existingBulkTiers = json_decode($editProduct['bulk_price_variance'], true) ?: [];
+} elseif ($isEdit && !empty($editProduct['quantity_price_breaks'])) {
+    $existingBulkTiers = json_decode($editProduct['quantity_price_breaks'], true) ?: [];
+}
 
 function pmImgSrc($path) {
     $path = (string) $path;
@@ -445,20 +486,20 @@ function pmImgSrc($path) {
                             </div>
                         </div>
 
-                        <!-- Quick Jump Section Pills -->
+                        <!-- Quick Jump Section Pills (Document 1-12 Architecture) -->
                         <div class="section-quick-pills" id="quickPillsBar">
                             <button type="button" class="quick-pill active" data-target="tab-1"><span class="pill-num">1</span> <i class="fa fa-circle-info"></i> General</button>
-                            <button type="button" class="quick-pill" data-target="tab-2"><span class="pill-num">2</span> <i class="fa fa-filter"></i> Filters</button>
-                            <button type="button" class="quick-pill" data-target="tab-3"><span class="pill-num">3</span> <i class="fa fa-sitemap"></i> Categories</button>
-                            <button type="button" class="quick-pill" data-target="tab-4"><span class="pill-num">4</span> <i class="fa fa-images"></i> Media</button>
-                            <button type="button" class="quick-pill" data-target="tab-5"><span class="pill-num">5</span> <i class="fa fa-magnifying-glass-chart"></i> SEO</button>
-                            <button type="button" class="quick-pill" data-target="tab-6"><span class="pill-num">6</span> <i class="fa fa-eye"></i> Visibility</button>
-                            <button type="button" class="quick-pill" data-target="tab-7"><span class="pill-num">7</span> <i class="fa fa-wand-magic-sparkles"></i> Customization</button>
-                            <button type="button" class="quick-pill" data-target="tab-8"><span class="pill-num">8</span> <i class="fa fa-puzzle-piece"></i> Addons</button>
-                            <button type="button" class="quick-pill" data-target="tab-9"><span class="pill-num">9</span> <i class="fa fa-sliders"></i> Attributes</button>
-                            <button type="button" class="quick-pill" data-target="tab-10"><span class="pill-num">10</span> <i class="fa fa-truck-fast"></i> Shipping</button>
-                            <button type="button" class="quick-pill" data-target="tab-11"><span class="pill-num">11</span> <i class="fa fa-rotate-left"></i> Cancellation</button>
-                            <button type="button" class="quick-pill" data-target="tab-12"><span class="pill-num">12</span> <i class="fa fa-money-bill-wave"></i> COD &amp; Review</button>
+                            <button type="button" class="quick-pill" data-target="tab-2"><span class="pill-num">2</span> <i class="fa fa-sliders"></i> Product Attributes</button>
+                            <button type="button" class="quick-pill" data-target="tab-3"><span class="pill-num">3</span> <i class="fa fa-list-check"></i> Features</button>
+                            <button type="button" class="quick-pill" data-target="tab-4"><span class="pill-num">4</span> <i class="fa fa-sitemap"></i> Links</button>
+                            <button type="button" class="quick-pill" data-target="tab-5"><span class="pill-num">5</span> <i class="fa fa-images"></i> Media</button>
+                            <button type="button" class="quick-pill" data-target="tab-6"><span class="pill-num">6</span> <i class="fa fa-magnifying-glass-chart"></i> SEO</button>
+                            <button type="button" class="quick-pill" data-target="tab-7"><span class="pill-num">7</span> <i class="fa fa-toggle-on"></i> Status Show &amp; Hide</button>
+                            <button type="button" class="quick-pill" data-target="tab-8"><span class="pill-num">8</span> <i class="fa fa-wand-magic-sparkles"></i> Customize</button>
+                            <button type="button" class="quick-pill" data-target="tab-9"><span class="pill-num">9</span> <i class="fa fa-truck-fast"></i> Shipping</button>
+                            <button type="button" class="quick-pill" data-target="tab-10"><span class="pill-num">10</span> <i class="fa fa-rotate-left"></i> Cancellation</button>
+                            <button type="button" class="quick-pill" data-target="tab-11"><span class="pill-num">11</span> <i class="fa fa-money-bill-wave"></i> COD</button>
+                            <button type="button" class="quick-pill" data-target="tab-12"><span class="pill-num">12</span> <i class="fa fa-puzzle-piece"></i> Addons</button>
                         </div>
                     </div>
 
@@ -543,31 +584,10 @@ function pmImgSrc($path) {
                                     </div>
                                 </div>
 
-                                <!-- Bulk Pricing Table -->
-                                <div class="mt-4">
-                                    <label class="form-label fw-semibold">Bulk Order Pricing Tiers</label>
-                                    <table class="table table-bordered table-sm dynamic-table" id="bulkPricingTable">
-                                        <thead>
-                                            <tr>
-                                                <th>Min Qty</th>
-                                                <th>Max Qty</th>
-                                                <th>Price per unit (₹)</th>
-                                                <th style="width:60px">% Off</th>
-                                                <th style="width:40px"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="bulkPricingBody">
-                                            <tr>
-                                                <td><input type="number" class="form-control form-control-sm" name="bulk_min_qty[]" placeholder="e.g. 10" min="1"></td>
-                                                <td><input type="number" class="form-control form-control-sm" name="bulk_max_qty[]" placeholder="e.g. 50" min="1"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm bulk-price" name="bulk_price[]" placeholder="0.00" min="0"></td>
-                                                <td><span class="bulk-disc text-success fw-bold" style="font-size:12px"></span></td>
-                                                <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">×</button></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                    <button type="button" class="btn btn-sm btn-outline-success add-row-btn" id="addBulkRow">+ Add Tier</button>
-                                </div>
+                                <!-- Bulk Order Pricing Tiers now live on Tab 2 (Filters & Master Attributes → "bulk_quantity" attribute),
+                                     so they aren't duplicated here. The old copy here and the Tab 2 copy shared the same
+                                     bulk_min_qty[]/bulk_max_qty[]/bulk_price[] field names, so every save merged both tables'
+                                     rows into one array and tiers doubled each time the product was edited and saved. -->
 
                                 <!-- Rich text editors -->
                                 <div class="mt-4">
@@ -586,176 +606,415 @@ function pmImgSrc($path) {
                                     <label class="form-label">Delivery Information</label>
                                     <textarea class="form-control" name="delivery_info" id="delivery_info" rows="4"></textarea>
                                 </div>
+
+                                <!-- Point 13: Product Information Image & Text Upload -->
+                                <div class="mt-4">
+                                    <label class="form-label fw-semibold">13. Product Information Image &amp; Text Upload</label>
+                                    <p class="text-muted small mt-0 mb-2">
+                                        Shown on the product page above Ratings &amp; Reviews. Add one or more banners — each can have an image, title, description and a button. Leave a row blank to skip it.
+                                    </p>
+                                    <div id="infoBannerList">
+                                        <?php foreach ($existingInfoBanners as $ib): ?>
+                                            <div class="info-banner-row border rounded p-3 mb-3">
+                                                <div class="row g-3">
+                                                    <div class="col-md-4">
+                                                        <label class="form-label small">Image</label>
+                                                        <?php if (!empty($ib['image'])): ?>
+                                                            <div class="image-thumb mb-2"><img src="<?php echo htmlspecialchars(pmImgSrc($ib['image'])); ?>" alt="" onerror="this.src='img/icons/icon-48x48.png'"></div>
+                                                        <?php endif; ?>
+                                                        <input type="hidden" name="info_banner_existing_image[]" value="<?php echo htmlspecialchars($ib['image'] ?? ''); ?>">
+                                                        <input type="file" class="form-control form-control-sm" name="info_banner_image[]" accept="image/*">
+                                                    </div>
+                                                    <div class="col-md-8">
+                                                        <div class="row g-2">
+                                                            <div class="col-md-6">
+                                                                <label class="form-label small">Title</label>
+                                                                <input type="text" class="form-control form-control-sm" name="info_banner_title[]" value="<?php echo htmlspecialchars($ib['title'] ?? ''); ?>" placeholder="Banner title">
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <label class="form-label small">Button Text</label>
+                                                                <input type="text" class="form-control form-control-sm" name="info_banner_button_text[]" value="<?php echo htmlspecialchars($ib['button_text'] ?? ''); ?>" placeholder="e.g. Learn More">
+                                                            </div>
+                                                            <div class="col-12">
+                                                                <label class="form-label small">Description</label>
+                                                                <textarea class="form-control form-control-sm" name="info_banner_description[]" rows="2" placeholder="Short description"><?php echo htmlspecialchars($ib['description'] ?? ''); ?></textarea>
+                                                            </div>
+                                                            <div class="col-12">
+                                                                <label class="form-label small">Button Link</label>
+                                                                <input type="text" class="form-control form-control-sm" name="info_banner_button_link[]" value="<?php echo htmlspecialchars($ib['button_link'] ?? ''); ?>" placeholder="/category/... or https://...">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="text-end mt-2">
+                                                    <input type="hidden" class="info-banner-remove-flag" name="info_banner_remove[]" value="0">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-info-banner">Remove this banner</button>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-success" id="addInfoBannerRow"><i class="fa fa-plus me-1"></i> Add Banner</button>
+                                </div>
+                                <script>
+                                (function () {
+                                    var list = document.getElementById('infoBannerList');
+                                    var addBtn = document.getElementById('addInfoBannerRow');
+                                    function rowTemplate() {
+                                        var div = document.createElement('div');
+                                        div.className = 'info-banner-row border rounded p-3 mb-3';
+                                        div.innerHTML =
+                                            '<div class="row g-3">' +
+                                                '<div class="col-md-4">' +
+                                                    '<label class="form-label small">Image</label>' +
+                                                    '<input type="hidden" name="info_banner_existing_image[]" value="">' +
+                                                    '<input type="file" class="form-control form-control-sm" name="info_banner_image[]" accept="image/*">' +
+                                                '</div>' +
+                                                '<div class="col-md-8">' +
+                                                    '<div class="row g-2">' +
+                                                        '<div class="col-md-6"><label class="form-label small">Title</label><input type="text" class="form-control form-control-sm" name="info_banner_title[]" placeholder="Banner title"></div>' +
+                                                        '<div class="col-md-6"><label class="form-label small">Button Text</label><input type="text" class="form-control form-control-sm" name="info_banner_button_text[]" placeholder="e.g. Learn More"></div>' +
+                                                        '<div class="col-12"><label class="form-label small">Description</label><textarea class="form-control form-control-sm" name="info_banner_description[]" rows="2" placeholder="Short description"></textarea></div>' +
+                                                        '<div class="col-12"><label class="form-label small">Button Link</label><input type="text" class="form-control form-control-sm" name="info_banner_button_link[]" placeholder="/category/... or https://..."></div>' +
+                                                    '</div>' +
+                                                '</div>' +
+                                            '</div>' +
+                                            '<div class="text-end mt-2">' +
+                                                '<input type="hidden" class="info-banner-remove-flag" name="info_banner_remove[]" value="0">' +
+                                                '<button type="button" class="btn btn-sm btn-outline-danger btn-remove-info-banner">Remove this banner</button>' +
+                                            '</div>';
+                                        return div;
+                                    }
+                                    addBtn.addEventListener('click', function () { list.appendChild(rowTemplate()); });
+                                    list.addEventListener('click', function (e) {
+                                        var btn = e.target.closest('.btn-remove-info-banner');
+                                        if (!btn) return;
+                                        var row = btn.closest('.info-banner-row');
+                                        row.querySelector('.info-banner-remove-flag').value = '1';
+                                        row.style.display = 'none';
+                                    });
+                                })();
+                                </script>
                         </div>
                     </div>
 
                     <!-- ══════════════════════════════════════════════
-                         SECTION 2 – FILTERS & MASTER TAGS
+                         SECTION 2 – PRODUCT ATTRIBUTES & VARIATIONS
                     ══════════════════════════════════════════════ -->
                     <div class="product-section-card" id="tab-2">
                         <div class="product-section-header">
                             <h5 class="product-section-title">
                                 <span class="product-section-badge">2</span>
-                                <i class="fa fa-filter text-info"></i> Filters &amp; Master Attributes
+                                <i class="fa fa-sliders text-primary"></i> Product Attributes
                             </h5>
-                            <span class="badge bg-light text-secondary border">Catalog Filters</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Sizes, Colors, Variants &amp; Specs</span>
                         </div>
                         <div class="product-section-body">
-                            <p class="text-muted small mb-3">These values appear as filterable attributes on the product listing page. Type or select from predefined master filters.</p>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Color</label>
-                                        <input type="text" class="form-control" name="color" list="list_color" placeholder="e.g. Red, Blue, Multi">
-                                        <datalist id="list_color">
-                                            <?php foreach ($filterOptions['color'] ?? [] as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>"></option>
-                                            <?php endforeach; ?>
-                                        </datalist>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Type</label>
-                                        <input type="text" class="form-control" name="type" list="list_type" placeholder="e.g. T-shirt, Mug, Notebook">
-                                        <datalist id="list_type">
-                                            <?php foreach ($filterOptions['type'] ?? [] as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>"></option>
-                                            <?php endforeach; ?>
-                                        </datalist>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Material</label>
-                                        <input type="text" class="form-control" name="material" list="list_material" placeholder="e.g. Cotton, Ceramic">
-                                        <datalist id="list_material">
-                                            <?php foreach ($filterOptions['material'] ?? [] as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>"></option>
-                                            <?php endforeach; ?>
-                                        </datalist>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Occasion</label>
-                                        <input type="text" class="form-control" name="occasion" list="list_occasion" placeholder="e.g. Birthday, Wedding">
-                                        <datalist id="list_occasion">
-                                            <?php foreach ($filterOptions['occasion'] ?? [] as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>"></option>
-                                            <?php endforeach; ?>
-                                        </datalist>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Brand</label>
-                                        <input type="text" class="form-control" name="brand" list="list_brand" placeholder="Brand name">
-                                        <datalist id="list_brand">
-                                            <?php foreach ($filterOptions['brand'] ?? [] as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>"></option>
-                                            <?php endforeach; ?>
-                                        </datalist>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Discount Range</label>
-                                        <select class="form-select" name="discount_type">
-                                            <option value="">— Select —</option>
-                                            <option value="upto_10">Up to 10%</option>
-                                            <option value="10_25">10% – 25%</option>
-                                            <option value="25_50">25% – 50%</option>
-                                            <option value="above_50">Above 50%</option>
-                                            <?php foreach ($filterOptions['discount'] ?? [] as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars(strtolower(preg_replace('/[^a-z0-9]+/i', '_', $opt))); ?>"><?php echo htmlspecialchars($opt); ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Shape</label>
-                                        <input type="text" class="form-control" name="shape" list="list_shape" placeholder="e.g. Round, Square">
-                                        <datalist id="list_shape">
-                                            <?php foreach ($filterOptions['shape'] ?? [] as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>"></option>
-                                            <?php endforeach; ?>
-                                        </datalist>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Gender</label>
-                                        <select class="form-select" name="gender">
-                                            <option value="">— Select —</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                            <option value="unisex">Unisex</option>
-                                            <option value="kids">Kids</option>
-                                            <?php foreach ($filterOptions['gender'] ?? [] as $opt): ?>
-                                                <?php $optSlug = strtolower(trim($opt)); ?>
-                                                <?php if (!in_array($optSlug, ['male', 'female', 'unisex', 'kids'])): ?>
-                                                    <option value="<?php echo htmlspecialchars($optSlug); ?>"><?php echo htmlspecialchars($opt); ?></option>
-                                                <?php endif; ?>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Gift Type</label>
-                                        <input type="text" class="form-control" name="gift_type" list="list_gift_type" placeholder="e.g. Personalized, Packaged">
-                                        <datalist id="list_gift_type">
-                                            <?php foreach ($filterOptions['gift_type'] ?? [] as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>"></option>
-                                            <?php endforeach; ?>
-                                        </datalist>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Ideal For</label>
-                                        <input type="text" class="form-control" name="ideal_for" list="list_ideal_for" placeholder="e.g. Men, Women, Students">
-                                        <datalist id="list_ideal_for">
-                                            <?php foreach ($filterOptions['ideal_for'] ?? [] as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>"></option>
-                                            <?php endforeach; ?>
-                                        </datalist>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Customization Technology</label>
-                                        <input type="text" class="form-control" name="customization_tech" list="list_customization_tech" placeholder="e.g. Screen Print, Embroidery">
-                                        <datalist id="list_customization_tech">
-                                            <?php foreach ($filterOptions['customization_tech'] ?? [] as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>"></option>
-                                            <?php endforeach; ?>
-                                        </datalist>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Customization Location</label>
-                                        <input type="text" class="form-control" name="customization_location" list="list_customization_location" placeholder="e.g. Front, Back, Sleeve">
-                                        <datalist id="list_customization_location">
-                                            <?php foreach ($filterOptions['customization_location'] ?? [] as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>"></option>
-                                            <?php endforeach; ?>
-                                        </datalist>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Capacity</label>
-                                        <input type="text" class="form-control" name="capacity" list="list_capacity" placeholder="e.g. 500ml, A4, 100 pages">
-                                        <datalist id="list_capacity">
-                                            <?php foreach ($filterOptions['capacity'] ?? [] as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>"></option>
-                                            <?php endforeach; ?>
-                                        </datalist>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Ink Color</label>
-                                        <input type="text" class="form-control" name="ink_color" list="list_ink_color" placeholder="e.g. Black, CMYK, Gold">
-                                        <datalist id="list_ink_color">
-                                            <?php foreach ($filterOptions['ink_color'] ?? [] as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>"></option>
-                                            <?php endforeach; ?>
-                                        </datalist>
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label">Features</label>
-                                        <textarea class="form-control" name="features" rows="2" placeholder="e.g. Waterproof, Eco-friendly, Washable"></textarea>
+                            <p class="text-muted small mb-3">
+                                Manage all physical product variants and specifications. Colors have dedicated variant images that swap live when selected on the storefront. Admin has full freedom to add custom attributes with prices.
+                            </p>
+
+                            <!-- 1. SIZES & SIZE CHART -->
+                            <div class="border rounded p-3 bg-light shadow-sm mb-4">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <label class="form-label fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                        <i class="fa fa-ruler-combined text-primary"></i> Product Sizes &amp; Dimensions
+                                    </label>
+                                    <div class="form-check form-switch m-0">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="show_sizes" id="tab2_show_sizes" value="1" <?php echo (!empty($editProduct['show_sizes']) || !empty($existingSizeVariants)) ? 'checked' : ''; ?> onchange="document.getElementById('sizeVariantsWrapper').style.display = this.checked ? 'block' : 'none';">
+                                        <label class="form-check-label small fw-semibold" for="tab2_show_sizes">Enable Sizes on Product</label>
                                     </div>
                                 </div>
+                                <p class="text-muted small mb-2">
+                                    Configure sizes (e.g. S, M, L, XL, XXL) available for this product with optional price add-ons.
+                                </p>
+
+                                <div id="sizeVariantsWrapper" style="<?php echo (!empty($editProduct['show_sizes']) || !empty($existingSizeVariants)) ? '' : 'display:none;'; ?>">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm dynamic-table bg-white align-middle mb-2" id="tab2SizeTable">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width:60%;">Size Name / Label</th>
+                                                    <th style="width:30%;">Price Add-on (₹)</th>
+                                                    <th style="width:10%; text-align:center;"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tab2SizeBody">
+                                                <?php if (!empty($existingSizeVariants)): ?>
+                                                    <?php foreach ($existingSizeVariants as $sRow): ?>
+                                                        <tr>
+                                                            <td>
+                                                                <input type="text" class="form-control form-control-sm" name="size_names[]" value="<?php echo htmlspecialchars($sRow['name'] ?? (is_string($sRow) ? $sRow : '')); ?>" placeholder="e.g. M / Large" required>
+                                                            </td>
+                                                            <td>
+                                                                <div class="input-group input-group-sm">
+                                                                    <span class="input-group-text">₹</span>
+                                                                    <input type="number" step="0.01" min="0" class="form-control" name="size_prices[]" value="<?php echo htmlspecialchars($sRow['price'] ?? 0); ?>" placeholder="0.00">
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" onclick="this.closest('tr').remove()" title="Remove size">
+                                                                    <i class="fa fa-times"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                <?php endif; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="pmAddSizeRow()">
+                                        <i class="fa fa-plus me-1"></i> Add Another Size
+                                    </button>
+
+                                    <!-- Size Image Upload (Size Chart) -->
+                                    <div class="mt-3 p-3 bg-white rounded border">
+                                        <label class="form-label fw-bold d-flex align-items-center gap-2 mb-1">
+                                            <i class="fa fa-chart-simple text-primary"></i> Size Guide / Size Chart Image Upload
+                                        </label>
+                                        <p class="text-muted small mb-2">Upload a size chart / measurement guide image. Customers will see a "Size Guide" button on the product details page.</p>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <?php if (!empty($editProduct['size_chart_image'])): ?>
+                                                <div class="d-flex align-items-center gap-2 border p-1 rounded bg-light">
+                                                    <a href="<?php echo htmlspecialchars(pmImgSrc($editProduct['size_chart_image'])); ?>" target="_blank" title="View Current Size Chart">
+                                                        <img src="<?php echo htmlspecialchars(pmImgSrc($editProduct['size_chart_image'])); ?>" alt="Size Chart" style="width:50px;height:50px;object-fit:cover;border-radius:4px;border:1px solid #cbd5e1;">
+                                                    </a>
+                                                    <div class="form-check m-0">
+                                                        <input class="form-check-input" type="checkbox" name="remove_size_chart_image" value="1" id="removeSizeChart">
+                                                        <label class="form-check-label small text-danger" for="removeSizeChart">Remove</label>
+                                                    </div>
+                                                </div>
+                                            <?php endif; ?>
+                                            <input type="file" class="form-control form-control-sm" name="size_chart_image" accept="image/png,image/jpeg,image/gif,image/webp">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. COLORS & VARIANT IMAGES -->
+                            <div class="border rounded p-3 bg-light shadow-sm mb-4">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <label class="form-label fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                        <i class="fa fa-palette text-primary"></i> Product Colors (Dedicated Color, Image, Price &amp; Text)
+                                        <span class="badge bg-primary text-white" style="font-size:10px;">Printo-Style Variants</span>
+                                    </label>
+                                    <div class="form-check form-switch m-0">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="show_colors" id="tab2_show_colors" value="1" <?php echo (!empty($editProduct['show_colors']) || !empty($existingColorVariants)) ? 'checked' : ''; ?> onchange="document.getElementById('colorVariantsWrapper').style.display = this.checked ? 'block' : 'none';">
+                                        <label class="form-check-label small fw-semibold" for="tab2_show_colors">Enable Colors on Product</label>
+                                    </div>
+                                </div>
+                                <p class="text-muted small mb-2">
+                                    Each product can have its own colors. For each color, upload a dedicated image (which automatically swaps when the customer selects that color on the storefront, like Printo.in), swatch hex code, price add-on, and custom notes.
+                                </p>
+
+                                <div id="colorVariantsWrapper" style="<?php echo (!empty($editProduct['show_colors']) || !empty($existingColorVariants)) ? '' : 'display:none;'; ?>">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm dynamic-table bg-white align-middle mb-2" id="tab2ColorTable">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width:22%;">Color Name</th>
+                                                    <th style="width:16%;">Swatch / Hex</th>
+                                                    <th style="width:28%;">Variant Image (Swaps on Storefront)</th>
+                                                    <th style="width:14%;">Price Add-on (₹)</th>
+                                                    <th style="width:15%;">Notes / Spec</th>
+                                                    <th style="width:5%; text-align:center;"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tab2ColorBody">
+                                                <?php if (!empty($existingColorVariants)): ?>
+                                                    <?php foreach ($existingColorVariants as $cIdx => $cRow): ?>
+                                                        <tr>
+                                                            <td>
+                                                                <input type="text" class="form-control form-control-sm" name="variant_color_name[]" value="<?php echo htmlspecialchars($cRow['name'] ?? ''); ?>" placeholder="e.g. Royal Blue" required>
+                                                            </td>
+                                                            <td>
+                                                                <div class="d-flex align-items-center gap-1">
+                                                                    <input type="color" class="form-control form-control-sm form-control-color p-0" name="variant_color_hex[]" value="<?php echo htmlspecialchars($cRow['hex'] ?? '#000000'); ?>" style="width:32px;height:31px;" onchange="this.nextElementSibling.value=this.value">
+                                                                    <input type="text" class="form-control form-control-sm font-monospace p-1" value="<?php echo htmlspecialchars($cRow['hex'] ?? '#000000'); ?>" style="font-size:11px;width:70px;" oninput="this.previousElementSibling.value=this.value">
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <div class="d-flex align-items-center gap-2">
+                                                                    <?php if (!empty($cRow['image'])): ?>
+                                                                        <a href="<?php echo htmlspecialchars(pmImgSrc($cRow['image'])); ?>" target="_blank" title="View variant image">
+                                                                            <img src="<?php echo htmlspecialchars(pmImgSrc($cRow['image'])); ?>" alt="" style="width:34px;height:34px;object-fit:cover;border-radius:4px;border:1px solid #cbd5e1;flex-shrink:0;">
+                                                                        </a>
+                                                                        <input type="hidden" name="existing_variant_color_images[]" value="<?php echo htmlspecialchars($cRow['image']); ?>">
+                                                                    <?php else: ?>
+                                                                        <input type="hidden" name="existing_variant_color_images[]" value="">
+                                                                    <?php endif; ?>
+                                                                    <input type="file" class="form-control form-control-sm" name="variant_color_images[]" accept="image/png,image/jpeg,image/gif,image/webp">
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <div class="input-group input-group-sm">
+                                                                    <span class="input-group-text">₹</span>
+                                                                    <input type="number" step="0.01" min="0" class="form-control" name="variant_color_price[]" value="<?php echo htmlspecialchars($cRow['price'] ?? 0); ?>" placeholder="0.00">
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <input type="text" class="form-control form-control-sm" name="variant_color_text[]" value="<?php echo htmlspecialchars($cRow['text'] ?? ''); ?>" placeholder="e.g. 100% Bio-Wash">
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" onclick="this.closest('tr').remove()" title="Remove color">
+                                                                    <i class="fa fa-times"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                <?php endif; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="pmAddColorVariantRow()">
+                                        <i class="fa fa-plus me-1"></i> Add Another Color
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 3. PRINTING & MATERIAL SPECIFICATIONS -->
+                            <p class="section-heading mb-2">Printing &amp; Material Specifications</p>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <label class="form-label">Materials Text Select</label>
+                                    <input type="text" class="form-control" name="attr_material" value="<?php echo htmlspecialchars($editProduct['material'] ?? ''); ?>" placeholder="e.g. Cotton, Plastic, Canvas, Ceramic">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Lamination Text Select</label>
+                                    <input type="text" class="form-control" name="attr_lamination" value="<?php echo htmlspecialchars(is_array($editProduct['lamination_attributes'] ?? null) ? implode(', ', $editProduct['lamination_attributes']) : ($editProduct['lamination_attributes'] ?? '')); ?>" placeholder="e.g. Glossy, Matte, Soft-touch">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Orientation Text Select</label>
+                                    <select class="form-select" name="attr_orientation">
+                                        <option value="">— Select —</option>
+                                        <option value="portrait" <?php echo ($editProduct['attr_orientation'] ?? '') === 'portrait' ? 'selected' : ''; ?>>Portrait</option>
+                                        <option value="landscape" <?php echo ($editProduct['attr_orientation'] ?? '') === 'landscape' ? 'selected' : ''; ?>>Landscape</option>
+                                        <option value="square" <?php echo ($editProduct['attr_orientation'] ?? '') === 'square' ? 'selected' : ''; ?>>Square</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Printing Location Text Select</label>
+                                    <input type="text" class="form-control" name="attr_printing_location" value="<?php echo htmlspecialchars(is_array($editProduct['printing_location'] ?? null) ? implode(', ', $editProduct['printing_location']) : ($editProduct['printing_location'] ?? '')); ?>" placeholder="e.g. Front, Back, Left Sleeve, Both Sides">
+                                </div>
+                            </div>
+
+                            <!-- 4. QUANTITY-BASED PRICING TIERS -->
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Quantity-Based Pricing Tiers (Quantity Text &amp; Price Add)</label>
+                                <p class="text-muted small mb-2">Offer automated volume discounts when customers purchase higher quantities.</p>
+                                <table class="table table-bordered table-sm dynamic-table bg-white align-middle" id="qtyTable">
+                                    <thead class="table-light"><tr><th>Minimum Quantity</th><th>Price per unit (₹)</th><th style="width:40px"></th></tr></thead>
+                                    <tbody id="qtyBody">
+                                        <?php 
+                                        $qtyTiers = !empty($editProduct['quantity_price_breaks']) ? (is_array($editProduct['quantity_price_breaks']) ? $editProduct['quantity_price_breaks'] : json_decode($editProduct['quantity_price_breaks'], true)) : [];
+                                        ?>
+                                        <?php if (!empty($qtyTiers)): ?>
+                                            <?php foreach ($qtyTiers as $qt): ?>
+                                                <tr>
+                                                    <td><input type="number" class="form-control form-control-sm" name="qty_tier_qty[]" value="<?php echo htmlspecialchars($qt['qty'] ?? ''); ?>" placeholder="e.g. 50" min="1"></td>
+                                                    <td><input type="number" step="0.01" class="form-control form-control-sm" name="qty_tier_price[]" value="<?php echo htmlspecialchars($qt['price'] ?? ''); ?>" placeholder="0.00" min="0"></td>
+                                                    <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" onclick="this.closest('tr').remove()">×</button></td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <tr>
+                                                <td><input type="number" class="form-control form-control-sm" name="qty_tier_qty[]" placeholder="e.g. 50" min="1"></td>
+                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="qty_tier_price[]" placeholder="0.00" min="0"></td>
+                                                <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" onclick="this.closest('tr').remove()">×</button></td>
+                                            </tr>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                                <button type="button" class="btn btn-sm btn-outline-success add-row-btn" onclick="addRow('qtyBody', qtyRowTemplate)">+ Add Tier</button>
+                            </div>
+
+                            <!-- 5. DYNAMIC CUSTOM ATTRIBUTES & PERSONALIZATION FIELDS BUILDER -->
+                            <div class="kv-section mt-4 p-3 border rounded bg-white shadow-sm mb-4">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                    <div>
+                                        <label class="form-label fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                            <i class="fa fa-layer-group text-primary"></i> Custom Product Attributes &amp; Personalization Fields
+                                            <span class="badge bg-success text-white" style="font-size:10px;">Admin Freedom</span>
+                                        </label>
+                                        <div class="text-muted small">
+                                            Add ANY custom product attribute or input field you want (e.g. Paper GSM, Corner Radius, Finish, Packaging Type, Custom Name, Instructions). Each option can carry a price add-on that dynamically updates the total price on the product page!
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="kv-head d-none d-md-grid">
+                                    <span>Label (left side)</span>
+                                    <span>Customer input (right side &amp; +price)</span>
+                                    <span>Preview on product page</span>
+                                    <span>Settings</span>
+                                </div>
+                                <div id="customKvList" class="kv-list"></div>
+                                <button type="button" class="btn btn-sm btn-outline-success add-row-btn mt-2" onclick="addKvRow()">
+                                    <i class="fa fa-plus me-1"></i> Add Attribute / Field
+                                </button>
+                            </div>
+
+                            <!-- 6. OR PICK SAVED OPTIONS (LIBRARY PICKER) -->
+                            <div class="border rounded p-3 bg-light shadow-sm">
+                                <input type="hidden" name="customization_assignments" id="customAssignments" value="[]">
+
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                    <div>
+                                        <label class="form-label fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                            <i class="fa fa-bookmark text-primary"></i> Or Pick Saved Options <span class="fw-normal text-muted">(Optional)</span>
+                                        </label>
+                                        <div class="text-muted small">Options used on multiple products can be saved once in the library and ticked here with optional custom price overrides. Manage master options in
+                                            <a href="customization-options.php" target="_blank" class="fw-semibold">Customization Options Manager <i class="fa fa-arrow-up-right-from-square"></i></a>.</div>
+                                    </div>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" id="customSelectedCount">0 selected</span>
+                                </div>
+
+                                <?php if (empty($customLibrary)): ?>
+                                    <div class="alert alert-warning mb-0">
+                                        No saved library options yet. Create them in
+                                        <a href="customization-options.php" target="_blank" class="alert-link">Customization Options Manager</a>
+                                        (use "Import starter set" for common ones), then reload this page.
+                                    </div>
+                                <?php else: ?>
+                                    <div class="d-flex flex-wrap gap-2 mb-2">
+                                        <input type="search" class="form-control form-control-sm" id="customSearch" placeholder="Search options..." style="max-width:280px" oninput="filterCustomLibrary()">
+                                        <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                            <input class="form-check-input" type="checkbox" id="customOnlySelected" onchange="filterCustomLibrary()">
+                                            <label class="form-check-label small" for="customOnlySelected">Show selected only</label>
+                                        </div>
+                                    </div>
+                                    <div id="customLibraryList" class="custom-library-list"></div>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════
-                         SECTION 3 – CATEGORY & PLACEMENT LINKS
+<!-- ══════════════════════════════════════════════
+                         SECTION 3 – FEATURES
                     ══════════════════════════════════════════════ -->
                     <div class="product-section-card" id="tab-3">
                         <div class="product-section-header">
                             <h5 class="product-section-title">
                                 <span class="product-section-badge">3</span>
-                                <i class="fa fa-sitemap text-warning"></i> Category &amp; Carousel Links
+                                <i class="fa fa-list-check text-info"></i> Features
+                            </h5>
+                        </div>
+                        <div class="product-section-body">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Features</label>
+                                    <textarea class="form-control" name="features" rows="2" placeholder="e.g. Waterproof, Eco-friendly, Washable"><?php echo $isEdit ? htmlspecialchars($editProduct['features'] ?? '') : ''; ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+<!-- ══════════════════════════════════════════════
+                         SECTION 4 – CATEGORY & PLACEMENT LINKS
+                    ══════════════════════════════════════════════ -->
+                    <div class="product-section-card" id="tab-4">
+                        <div class="product-section-header">
+                            <h5 class="product-section-title">
+                                <span class="product-section-badge">4</span>
+                                <i class="fa fa-sitemap text-warning"></i> Link Section Tab (Categories &amp; Carousels)
                             </h5>
                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="fa fa-asterisk me-1"></i>Category Required</span>
                         </div>
@@ -816,6 +1075,60 @@ function pmImgSrc($path) {
                                             <?php endforeach; ?>
                                         </div>
                                     </div>
+
+                                    <div class="col-12 mt-3">
+                                        <label class="form-label fw-bold"><i class="fa fa-tags text-primary me-1"></i> Multi Sub-Category Placement</label>
+                                        <div class="text-muted small mb-2">Assign this product across multiple sub-categories, in addition to the primary Sub Category above.</div>
+                                        <div class="row g-2 p-3 bg-light rounded border" style="max-height: 220px; overflow-y: auto;">
+                                            <?php
+                                            $mainCatNamesById = [];
+                                            foreach ($mainCategories as $mCat) { $mainCatNamesById[(int) $mCat['id']] = $mCat['name']; }
+                                            $lastSubParent = null;
+                                            ?>
+                                            <?php foreach ($allSubCategories as $sCat): ?>
+                                                <?php if ($lastSubParent !== (int) $sCat['parent_id']): $lastSubParent = (int) $sCat['parent_id']; ?>
+                                                    <div class="col-12 mt-2 mb-1">
+                                                        <small class="text-uppercase fw-bold text-muted"><?php echo htmlspecialchars($mainCatNamesById[(int) $sCat['parent_id']] ?? 'Other'); ?></small>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <div class="col-md-4 col-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="additional_sub_category_ids[]" value="<?php echo $sCat['id']; ?>" id="add_subcat_<?php echo $sCat['id']; ?>" <?php echo in_array((int) $sCat['id'], $assignedSubCatIds ?? []) ? 'checked' : ''; ?>>
+                                                        <label class="form-check-label small" for="add_subcat_<?php echo $sCat['id']; ?>">
+                                                            <?php echo htmlspecialchars($sCat['name']); ?>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 mt-3">
+                                        <label class="form-label fw-bold"><i class="fa fa-tags text-primary me-1"></i> Multi Sub-Sub-Category Placement</label>
+                                        <div class="text-muted small mb-2">Assign this product across multiple sub-sub-categories, in addition to the primary Sub Sub Category above.</div>
+                                        <div class="row g-2 p-3 bg-light rounded border" style="max-height: 220px; overflow-y: auto;">
+                                            <?php
+                                            $subCatNamesById = [];
+                                            foreach ($allSubCategories as $sCat) { $subCatNamesById[(int) $sCat['id']] = $sCat['name']; }
+                                            $lastSubSubParent = null;
+                                            ?>
+                                            <?php foreach ($allSubSubCategories as $ssCat): ?>
+                                                <?php if ($lastSubSubParent !== (int) $ssCat['parent_id']): $lastSubSubParent = (int) $ssCat['parent_id']; ?>
+                                                    <div class="col-12 mt-2 mb-1">
+                                                        <small class="text-uppercase fw-bold text-muted"><?php echo htmlspecialchars($subCatNamesById[(int) $ssCat['parent_id']] ?? 'Other'); ?></small>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <div class="col-md-4 col-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="additional_sub_sub_category_ids[]" value="<?php echo $ssCat['id']; ?>" id="add_subsubcat_<?php echo $ssCat['id']; ?>" <?php echo in_array((int) $ssCat['id'], $assignedSubSubCatIds ?? []) ? 'checked' : ''; ?>>
+                                                        <label class="form-check-label small" for="add_subsubcat_<?php echo $ssCat['id']; ?>">
+                                                            <?php echo htmlspecialchars($ssCat['name']); ?>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <p class="section-heading mt-4">Product Flags</p>
@@ -839,14 +1152,15 @@ function pmImgSrc($path) {
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════
-                         SECTION 4 – IMAGES & MEDIA
+                    
+<!-- ══════════════════════════════════════════════
+                         SECTION 5 – IMAGES & MEDIA
                     ══════════════════════════════════════════════ -->
-                    <div class="product-section-card" id="tab-4">
+                    <div class="product-section-card" id="tab-5">
                         <div class="product-section-header">
                             <h5 class="product-section-title">
-                                <span class="product-section-badge">4</span>
-                                <i class="fa fa-images text-success"></i> Images &amp; Media Uploads
+                                <span class="product-section-badge">5</span>
+                                <i class="fa fa-images text-success"></i> Image Section Tab (Media &amp; Gallery)
                             </h5>
                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="fa fa-asterisk me-1"></i>Thumbnail &amp; ALT Required</span>
                         </div>
@@ -935,14 +1249,15 @@ function pmImgSrc($path) {
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════
-                         SECTION 5 – SEO CONTENT & META
+                    
+<!-- ══════════════════════════════════════════════
+                         SECTION 6 – SEO CONTENT & META
                     ══════════════════════════════════════════════ -->
-                    <div class="product-section-card" id="tab-5">
+                    <div class="product-section-card" id="tab-6">
                         <div class="product-section-header">
                             <h5 class="product-section-title">
-                                <span class="product-section-badge">5</span>
-                                <i class="fa fa-magnifying-glass-chart text-primary"></i> SEO Content &amp; Meta Tags
+                                <span class="product-section-badge">6</span>
+                                <i class="fa fa-magnifying-glass-chart text-primary"></i> SEO Content Section Tab
                             </h5>
                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Search Optimization</span>
                         </div>
@@ -992,283 +1307,234 @@ function pmImgSrc($path) {
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════
-                         SECTION 6 – VISIBILITY & STATUS CONTROLS
-                    ══════════════════════════════════════════════ -->
-                    <div class="product-section-card" id="tab-6">
-                        <div class="product-section-header">
-                            <h5 class="product-section-title">
-                                <span class="product-section-badge">6</span>
-                                <i class="fa fa-eye text-primary"></i> Visibility &amp; Promotional Badges
-                            </h5>
-                            <span class="badge bg-light text-secondary border">Display Badges</span>
-                        </div>
-                        <div class="product-section-body">
-
-                                <div class="toggle-row">
-                                    <div class="toggle-label-wrap">
-                                        <strong>Printmont Assured (PM Assured) Badge</strong>
-                                        <small>Displays verified quality and trust PM Assured badge on product cards</small>
-                                    </div>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" role="switch" name="is_assured" id="is_assured" value="1" checked>
-                                    </div>
-                                </div>
-
-                                <div class="toggle-row">
-                                    <div class="toggle-label-wrap">
-                                        <strong>Show Remaining Stock Count</strong>
-                                        <small>Displays "Only 3 left!" urgency message on the product page</small>
-                                    </div>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" role="switch" name="show_quantity" id="show_quantity" value="1" checked>
-                                    </div>
-                                </div>
-
-                                <div class="toggle-row">
-                                    <div class="toggle-label-wrap">
-                                        <strong>Show Help / Support Button</strong>
-                                        <small>Displays a WhatsApp or call support button on the product page</small>
-                                    </div>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" role="switch" name="show_help_button" id="show_help_button" value="1">
-                                    </div>
-                                </div>
-
-                                <div class="toggle-row">
-                                    <div class="toggle-label-wrap">
-                                        <strong>Show Bulk Quantity Request Form</strong>
-                                        <small>Displays a bulk order inquiry form on the product page for B2B customers</small>
-                                    </div>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" role="switch" name="show_bulk_form" id="show_bulk_form" value="1">
-                                    </div>
-                                </div>
-                        </div>
-                    </div>
-
-                    <!-- ══════════════════════════════════════════════
-                         SECTION 7 – CUSTOMIZATION OPTIONS
+                    
+<!-- ══════════════════════════════════════════════
+                         SECTION 7 – STATUS SHOW AND HIDE BUTTON
                     ══════════════════════════════════════════════ -->
                     <div class="product-section-card" id="tab-7">
                         <div class="product-section-header">
                             <h5 class="product-section-title">
                                 <span class="product-section-badge">7</span>
-                                <i class="fa fa-wand-magic-sparkles text-warning"></i> Customization Options
+                                <i class="fa fa-toggle-on text-primary"></i> Status Show and Hide Button
                             </h5>
-                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Personalization</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Visibility &amp; Single Product Actions</span>
                         </div>
                         <div class="product-section-body">
+                            <p class="text-muted small mb-3">
+                                Control which buttons, forms, stock counters, and trust badges are visible to customers on the single product details page.
+                            </p>
 
-                                <div class="toggle-row">
-                                    <div class="toggle-label-wrap">
-                                        <strong>Enable Customization</strong>
-                                        <small>Shows the "Customizable" badge and the options below on the product page</small>
+                            <!-- 1. Add to Cart and Buy Now Button Show and Hide -->
+                            <div class="toggle-row">
+                                <div class="toggle-label-wrap">
+                                    <strong>1. Add to Cart and Buy Now Button Show and Hide</strong>
+                                    <small>Yes / No switch. When turned OFF (No), direct checkout buttons are hidden on the single product page and replaced with an "Enquire Now / Request Quote" button.</small>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="show_cart_buttons" id="show_cart_buttons" value="1" <?php echo (!isset($editProduct['show_cart_buttons']) || !empty($editProduct['show_cart_buttons'])) ? 'checked' : ''; ?>>
+                                </div>
+                            </div>
+
+                            <!-- 2. Hide and Show Product Left Quantity -->
+                            <div class="toggle-row">
+                                <div class="toggle-label-wrap">
+                                    <strong>2. Hide and Show Product Left Quantity</strong>
+                                    <small>Displays stock urgency count (e.g. "Only 3 left in stock!") on the single product details page.</small>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="show_quantity" id="show_quantity" value="1" <?php echo (!isset($editProduct['show_quantity']) || !empty($editProduct['show_quantity'])) ? 'checked' : ''; ?>>
+                                </div>
+                            </div>
+
+                            <!-- 3. Show Help Button -->
+                            <div class="toggle-row">
+                                <div class="toggle-label-wrap">
+                                    <strong>3. Show Help Button</strong>
+                                    <small>Displays customer support WhatsApp / call assistance button on the single product details page.</small>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="show_help_button" id="show_help_button" value="1" <?php echo !empty($editProduct['show_help_button']) ? 'checked' : ''; ?> onchange="document.getElementById('helpBtnConfig').style.display = this.checked ? 'block' : 'none';">
+                                </div>
+                            </div>
+                            <div id="helpBtnConfig" class="p-3 bg-light rounded border mb-3" style="<?php echo !empty($editProduct['show_help_button']) ? '' : 'display:none;'; ?>">
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Help Button Text</label>
+                                        <input type="text" class="form-control form-control-sm" name="help_button_text" value="<?php echo htmlspecialchars($editProduct['help_button_text'] ?? 'Need Help? Chat with us'); ?>" placeholder="Need Help? Chat with us">
                                     </div>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" role="switch" name="show_customization_label" id="show_customization_label" value="1" onchange="toggleCustomFields(this)">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Help Button Link / WhatsApp / Phone</label>
+                                        <input type="text" class="form-control form-control-sm" name="help_button_link" value="<?php echo htmlspecialchars($editProduct['help_button_link'] ?? 'https://wa.me/919999999999'); ?>" placeholder="https://wa.me/... or tel:...">
                                     </div>
                                 </div>
+                            </div>
 
-                                <div id="customizationDetails" style="display:none">
-                                    <div class="mb-3 mt-3">
-                                        <label class="form-label">Customization Badge Label</label>
-                                        <input type="text" class="form-control" name="customization_label" placeholder="e.g. Fully Customizable, Add Your Name">
-                                    </div>
-
-                                    <!-- Key-value fields written for this product: label (left) → what the customer gets (right) -->
-                                    <div class="kv-section mb-4">
-                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-                                            <div>
-                                                <label class="form-label fw-semibold mb-0">Customization Fields</label>
-                                                <div class="text-muted small">Left: the label the customer sees. Right: what they fill in — a simple input, a dropdown, chips and so on.</div>
-                                            </div>
-                                        </div>
-                                        <div class="kv-head d-none d-md-grid">
-                                            <span>Label (left side)</span>
-                                            <span>Customer input (right side)</span>
-                                            <span>Preview on product page</span>
-                                            <span></span>
-                                        </div>
-                                        <div id="customKvList" class="kv-list"></div>
-                                        <button type="button" class="btn btn-sm btn-outline-success add-row-btn mt-2" onclick="addKvRow()">
-                                            <i class="fa fa-plus me-1"></i> Add Field
-                                        </button>
-                                    </div>
-
-                                    <input type="hidden" name="customization_assignments" id="customAssignments" value="[]">
-
-                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-                                        <div>
-                                            <label class="form-label fw-semibold mb-0">Or pick saved options <span class="fw-normal text-muted">(optional)</span></label>
-                                            <div class="text-muted small">Options used on many products can be saved once and ticked here. Manage them in
-                                                <a href="customization-options.php" target="_blank">Customization Options <i class="fa fa-arrow-up-right-from-square"></i></a>.</div>
-                                        </div>
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle" id="customSelectedCount">0 selected</span>
-                                    </div>
-
-                                    <?php if (empty($customLibrary)): ?>
-                                        <div class="alert alert-warning mb-0">
-                                            No customization options yet. Create them in
-                                            <a href="customization-options.php" target="_blank" class="alert-link">Customization Options</a>
-                                            (use "Import starter set" for the common ones), then reload this page.
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="d-flex flex-wrap gap-2 mb-2">
-                                            <input type="search" class="form-control form-control-sm" id="customSearch" placeholder="Search options..." style="max-width:280px" oninput="filterCustomLibrary()">
-                                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
-                                                <input class="form-check-input" type="checkbox" id="customOnlySelected" onchange="filterCustomLibrary()">
-                                                <label class="form-check-label small" for="customOnlySelected">Show selected only</label>
-                                            </div>
-                                        </div>
-                                        <div id="customLibraryList" class="custom-library-list"></div>
-                                    <?php endif; ?>
+                            <!-- 4. Bulk Quantity Form Show -->
+                            <div class="toggle-row">
+                                <div class="toggle-label-wrap">
+                                    <strong>4. Bulk Quantity Form Show</strong>
+                                    <small>Displays B2B bulk quantity inquiry / quotation request form on the single product details page.</small>
                                 </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="show_bulk_form" id="show_bulk_form" value="1" <?php echo !empty($editProduct['show_bulk_form']) ? 'checked' : ''; ?>>
+                                </div>
+                            </div>
+
+                            <!-- 5. Show me the Inquire Fill Form -->
+                            <div class="toggle-row">
+                                <div class="toggle-label-wrap">
+                                    <strong>5. Show me the Inquire Fill Form</strong>
+                                    <small>Displays a dedicated "Enquire Now" inquiry form button on the single product details page for corporate &amp; custom inquiries.</small>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="show_inquiry_form" id="show_inquiry_form" value="1" <?php echo !empty($editProduct['show_inquiry_form']) ? 'checked' : ''; ?>>
+                                </div>
+                            </div>
+
+                            <!-- 6. PM Assured Badge -->
+                            <div class="toggle-row">
+                                <div class="toggle-label-wrap">
+                                    <strong>6. Printmont Assured (PM Assured) Badge</strong>
+                                    <small>Displays verified quality and trust PM Assured badge on the single product page and catalog cards.</small>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="is_assured" id="is_assured" value="1" <?php echo (!isset($editProduct['is_assured']) || !empty($editProduct['is_assured'])) ? 'checked' : ''; ?>>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════
-                         SECTION 8 – ADDON PRODUCTS
+<!-- ══════════════════════════════════════════════
+                         SECTION 8 – CUSTOMIZE STATUS
                     ══════════════════════════════════════════════ -->
                     <div class="product-section-card" id="tab-8">
                         <div class="product-section-header">
                             <h5 class="product-section-title">
                                 <span class="product-section-badge">8</span>
-                                <i class="fa fa-puzzle-piece text-info"></i> Addon &amp; Related Products
+                                <i class="fa fa-wand-magic-sparkles text-warning"></i> Customize Status Section Tab
                             </h5>
-                            <span class="badge bg-info-subtle text-info border border-info-subtle">Upsell / Cross-sell</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Design Buttons &amp; Studio</span>
                         </div>
                         <div class="product-section-body">
-                            <p class="text-muted small mb-3">Search and add products to show as "Frequently Bought Together" on the product detail page.</p>
+                            <p class="text-muted small mb-3">
+                                Control the design action buttons shown to customers under the Total price on the single product page (<strong>"Upload your design"</strong> and <strong>"Create your design"</strong>), and configure upload slot limits.
+                            </p>
 
-                                <input type="hidden" name="addon_product_ids" id="addonIdsInput" value="[]">
-
-                                <div class="position-relative">
-                                    <label class="form-label">Search Products</label>
-                                    <input type="text" class="form-control" id="addonSearch" placeholder="Type product name or SKU..." autocomplete="off">
-                                    <div class="addon-search-results d-none" id="addonResults"></div>
+                            <!-- 1. Upload Your Design Button -->
+                            <div class="border rounded p-3 bg-light shadow-sm mb-4">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="toggle-label-wrap">
+                                        <strong class="d-flex align-items-center gap-2">
+                                            <i class="fa fa-cloud-arrow-up text-primary"></i> 1. "Upload Your Design" Button
+                                            <span class="badge bg-primary text-white" style="font-size:10px;">Customer File Upload</span>
+                                        </strong>
+                                        <small>Enable or disable the "Upload your design" popup button under Total on the single product details page.</small>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="enable_upload_design" id="enable_upload_design" value="1" <?php echo (!isset($editProduct['enable_upload_design']) || !empty($editProduct['enable_upload_design'])) ? 'checked' : ''; ?> onchange="document.getElementById('uploadDesignConfig').style.display = this.checked ? 'block' : 'none';">
+                                    </div>
                                 </div>
 
-                                <div class="addon-cards mt-3" id="addonCards"></div>
+                                <div id="uploadDesignConfig" style="<?php echo (!isset($editProduct['enable_upload_design']) || !empty($editProduct['enable_upload_design'])) ? '' : 'display:none;'; ?>" class="mt-3 p-3 bg-white rounded border">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold small text-dark d-flex align-items-center gap-1">
+                                                <i class="fa fa-images text-primary"></i> Image Upload Inputs Count
+                                                <span class="badge bg-light text-muted border">Max Files</span>
+                                            </label>
+                                            <p class="text-muted small mb-2">Kitna image upload karne ka input dena he (Customer can upload up to this many design files in the popup):</p>
+                                            <div class="input-group input-group-sm" style="max-width: 240px;">
+                                                <span class="input-group-text"><i class="fa fa-file-image"></i></span>
+                                                <input type="number" class="form-control" name="upload_design_max_images" id="upload_design_max_images" min="1" max="14" value="<?php echo htmlspecialchars($editProduct['upload_design_max_images'] ?? 4); ?>" required>
+                                                <span class="input-group-text">Image Slot(s)</span>
+                                            </div>
+                                            <small class="text-muted d-block mt-1">e.g. 1 (Single Logo/Art), 2 (Front &amp; Back), 4 (Multi-view), up to 14.</small>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold small text-dark d-flex align-items-center gap-1">
+                                                <i class="fa fa-font text-info"></i> Custom Text Inputs Count
+                                                <span class="badge bg-light text-muted border">Text Fields</span>
+                                            </label>
+                                            <p class="text-muted small mb-2">Kitne input dena he (Customer can enter custom texts/instructions in the popup):</p>
+                                            <div class="input-group input-group-sm" style="max-width: 240px;">
+                                                <span class="input-group-text"><i class="fa fa-keyboard"></i></span>
+                                                <input type="number" class="form-control" name="upload_design_max_texts" id="upload_design_max_texts" min="0" max="12" value="<?php echo htmlspecialchars($editProduct['upload_design_max_texts'] ?? 2); ?>" required>
+                                                <span class="input-group-text">Text Input(s)</span>
+                                            </div>
+                                            <small class="text-muted d-block mt-1">Set 0 to hide text tab, or 1–12 for custom texts (e.g. Name, Number, Tagline).</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. Create Your Design (Visual Studio) Button -->
+                            <div class="border rounded p-3 bg-light shadow-sm mb-4">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="toggle-label-wrap">
+                                        <strong class="d-flex align-items-center gap-2">
+                                            <i class="fa fa-paint-brush text-warning"></i> 2. "Create Your Design" Button
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border" style="font-size:10px;">Visual Studio</span>
+                                        </strong>
+                                        <small>Enable or disable the interactive online design customizer studio button under Total on the single product page.</small>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="enable_customizer" id="enable_customizer" value="1" <?php echo (!isset($editProduct['enable_customizer']) || !empty($editProduct['enable_customizer'])) ? 'checked' : ''; ?> onchange="document.getElementById('customizerConfig').style.display = this.checked ? 'block' : 'none';">
+                                    </div>
+                                </div>
+
+                                <div id="customizerConfig" style="<?php echo (!isset($editProduct['enable_customizer']) || !empty($editProduct['enable_customizer'])) ? '' : 'display:none;'; ?>" class="mt-3 p-3 bg-white rounded border">
+                                    <div class="row g-3">
+                                        <div class="col-md-8">
+                                            <label class="form-label fw-bold small text-dark">Visual Customizer Canvas Template</label>
+                                            <select class="form-select form-select-sm" name="customizer_template_id" id="customizer_template_id">
+                                                <option value="">Auto-Detect by Category / Title (Recommended)</option>
+                                                <?php 
+                                                $allTpls = $db->query("SELECT id, title, category_keyword FROM customizer_templates WHERE status='active' ORDER BY is_default DESC, display_order ASC");
+                                                while ($allTpls && ($tpl = $allTpls->fetch_assoc())) {
+                                                    $sel = (!empty($editProduct['customizer_template_id']) && (int)$editProduct['customizer_template_id'] === (int)$tpl['id']) ? 'selected' : '';
+                                                    echo "<option value='{$tpl['id']}' {$sel}>" . htmlspecialchars($tpl['title']) . " ({$tpl['category_keyword']})</option>";
+                                                }
+                                                ?>
+                                            </select>
+                                            <small class="text-muted d-block mt-1">Manage canvas mockups &amp; printable zones in <a href="customizer-manager.php" target="_blank">Design Customizer Studio</a>.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. Customizable Trust Badge -->
+                            <div class="border rounded p-3 bg-light shadow-sm">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="toggle-label-wrap">
+                                        <strong class="d-flex align-items-center gap-2">
+                                            <i class="fa fa-award text-success"></i> 3. "Customizable" Trust Badge
+                                        </strong>
+                                        <small>Shows the "Customizable" badge pill above the title on the product page and catalog cards.</small>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="show_customization_label" id="show_customization_label" value="1" <?php echo (!isset($editProduct['show_customization_label']) || !empty($editProduct['show_customization_label'])) ? 'checked' : ''; ?> onchange="document.getElementById('badgeTextConfig').style.display = this.checked ? 'block' : 'none';">
+                                    </div>
+                                </div>
+
+                                <div id="badgeTextConfig" style="<?php echo (!isset($editProduct['show_customization_label']) || !empty($editProduct['show_customization_label'])) ? '' : 'display:none;'; ?>" class="mt-3 p-3 bg-white rounded border">
+                                    <label class="form-label fw-bold small text-dark">Customization Badge Label Text</label>
+                                    <input type="text" class="form-control form-control-sm" name="customization_label" id="customization_label" value="<?php echo htmlspecialchars($editProduct['customization_label'] ?? 'Customizable'); ?>" placeholder="e.g. Fully Customizable, Add Your Name">
+                                </div>
+                            </div>
+
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════
-                         SECTION 9 – PRODUCT ATTRIBUTES & VARIATIONS
+                    
+<!-- ══════════════════════════════════════════════
+                         SECTION 9 – SHIPPING CHARGES
                     ══════════════════════════════════════════════ -->
                     <div class="product-section-card" id="tab-9">
                         <div class="product-section-header">
                             <h5 class="product-section-title">
                                 <span class="product-section-badge">9</span>
-                                <i class="fa fa-sliders text-secondary"></i> Product Attributes &amp; Variations
-                            </h5>
-                            <span class="badge bg-light text-secondary border">Sizes, Colors &amp; Tiers</span>
-                        </div>
-                        <div class="product-section-body">
-
-                                <!-- Sizes -->
-                                <div class="mb-4">
-                                    <div class="toggle-row">
-                                        <div class="toggle-label-wrap">
-                                            <strong>Show Size Selector on Product Page</strong>
-                                        </div>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" role="switch" name="show_sizes" id="show_sizes" value="1" onchange="toggleSection('sizesSection',this)">
-                                        </div>
-                                    </div>
-                                    <div id="sizesSection" style="display:none" class="mt-2">
-                                        <table class="table table-bordered table-sm dynamic-table" id="sizesTable">
-                                            <thead><tr><th>Size Name</th><th>Price Add-on (₹)</th><th style="width:40px"></th></tr></thead>
-                                            <tbody id="sizesBody">
-                                                <tr>
-                                                    <td><input type="text" class="form-control form-control-sm" name="size_names[]" placeholder="e.g. S, M, L, XL, A4"></td>
-                                                    <td><input type="number" step="0.01" class="form-control form-control-sm" name="size_prices[]" placeholder="0.00" min="0"></td>
-                                                    <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">×</button></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                        <button type="button" class="btn btn-sm btn-outline-success add-row-btn" onclick="addRow('sizesBody', sizeRowTemplate)">+ Add Size</button>
-                                    </div>
-                                </div>
-
-                                <!-- Colors -->
-                                <div class="mb-4">
-                                    <div class="toggle-row">
-                                        <div class="toggle-label-wrap">
-                                            <strong>Show Color Selector on Product Page</strong>
-                                        </div>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" role="switch" name="show_colors" id="show_colors" value="1" onchange="toggleSection('colorsSection',this)">
-                                        </div>
-                                    </div>
-                                    <div id="colorsSection" style="display:none" class="mt-2">
-                                        <table class="table table-bordered table-sm dynamic-table" id="colorsTable">
-                                            <thead><tr><th>Color Name</th><th>Hex Code</th><th>Price Add-on (₹)</th><th style="width:40px"></th></tr></thead>
-                                            <tbody id="colorsBody">
-                                                <tr>
-                                                    <td><input type="text" class="form-control form-control-sm" name="color_names[]" placeholder="e.g. Red"></td>
-                                                    <td><input type="color" class="form-control form-control-sm form-control-color" name="color_hexes[]" value="#000000"></td>
-                                                    <td><input type="number" step="0.01" class="form-control form-control-sm" name="color_prices[]" placeholder="0.00" min="0"></td>
-                                                    <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">×</button></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                        <button type="button" class="btn btn-sm btn-outline-success add-row-btn" onclick="addRow('colorsBody', colorRowTemplate)">+ Add Color</button>
-                                    </div>
-                                </div>
-
-                                <!-- Other attributes -->
-                                <p class="section-heading">Printing & Material</p>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Material</label>
-                                        <input type="text" class="form-control" name="attr_material" placeholder="e.g. Cotton, Plastic, Paper">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Lamination</label>
-                                        <input type="text" class="form-control" name="attr_lamination" placeholder="e.g. Matte, Gloss, None">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Orientation</label>
-                                        <select class="form-select" name="attr_orientation">
-                                            <option value="">— Select —</option>
-                                            <option value="portrait">Portrait</option>
-                                            <option value="landscape">Landscape</option>
-                                            <option value="square">Square</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label">Printing Location</label>
-                                        <input type="text" class="form-control" name="attr_printing_location" placeholder="e.g. Front, Back, Left Sleeve, Both Sides">
-                                    </div>
-                                </div>
-
-                                <!-- Quantity pricing tiers -->
-                                <div class="mt-4">
-                                    <label class="form-label fw-semibold">Quantity-Based Pricing Tiers</label>
-                                    <table class="table table-bordered table-sm dynamic-table" id="qtyTable">
-                                        <thead><tr><th>Quantity</th><th>Price per unit (₹)</th><th style="width:40px"></th></tr></thead>
-                                        <tbody id="qtyBody">
-                                            <tr>
-                                                <td><input type="number" class="form-control form-control-sm" name="qty_tier_qty[]" placeholder="e.g. 50" min="1"></td>
-                                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="qty_tier_price[]" placeholder="0.00" min="0"></td>
-                                                <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">×</button></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                    <button type="button" class="btn btn-sm btn-outline-success add-row-btn" onclick="addRow('qtyBody', qtyRowTemplate)">+ Add Tier</button>
-                                </div>
-                        </div>
-                    </div>
-
-                    <!-- ══════════════════════════════════════════════
-                         SECTION 10 – SHIPPING CHARGES
-                    ══════════════════════════════════════════════ -->
-                    <div class="product-section-card" id="tab-10">
-                        <div class="product-section-header">
-                            <h5 class="product-section-title">
-                                <span class="product-section-badge">10</span>
-                                <i class="fa fa-truck-fast text-dark"></i> Shipping Charges &amp; Delivery
+                                <i class="fa fa-truck-fast text-dark"></i> Shipping Charges Section Tab
                             </h5>
                             <span class="badge bg-light text-secondary border">Delivery Rates</span>
                         </div>
@@ -1324,14 +1590,15 @@ function pmImgSrc($path) {
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════
-                         SECTION 11 – CANCEL CONDITIONS
+                    
+<!-- ══════════════════════════════════════════════
+                         SECTION 10 – CANCEL CONDITIONS
                     ══════════════════════════════════════════════ -->
-                    <div class="product-section-card" id="tab-11">
+                    <div class="product-section-card" id="tab-10">
                         <div class="product-section-header">
                             <h5 class="product-section-title">
-                                <span class="product-section-badge">11</span>
-                                <i class="fa fa-rotate-left text-danger"></i> Cancellation Policy
+                                <span class="product-section-badge">10</span>
+                                <i class="fa fa-rotate-left text-danger"></i> Cancel Condition Section Tab
                             </h5>
                             <span class="badge bg-light text-secondary border">Order Window</span>
                         </div>
@@ -1370,14 +1637,15 @@ function pmImgSrc($path) {
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════
-                         SECTION 12 – CASH ON DELIVERY & REVIEW
+                    
+<!-- ══════════════════════════════════════════════
+                         SECTION 11 – CASH ON DELIVERY
                     ══════════════════════════════════════════════ -->
-                    <div class="product-section-card" id="tab-12">
+                    <div class="product-section-card" id="tab-11">
                         <div class="product-section-header">
                             <h5 class="product-section-title">
-                                <span class="product-section-badge">12</span>
-                                <i class="fa fa-money-bill-wave text-success"></i> Cash on Delivery &amp; Final Review
+                                <span class="product-section-badge">11</span>
+                                <i class="fa fa-money-bill-wave text-success"></i> Cash on Delivery Section Tab
                             </h5>
                             <span class="badge bg-success-subtle text-success border border-success-subtle">Review &amp; Submit</span>
                         </div>
@@ -1418,7 +1686,35 @@ function pmImgSrc($path) {
                         </div>
                     </div>
 
-                    <!-- ── Sticky Bottom Action Bar ── -->
+                    
+<!-- ══════════════════════════════════════════════
+                         SECTION 12 – ADDONS & CROSS-SELLS
+                    ══════════════════════════════════════════════ -->
+                    <div class="product-section-card" id="tab-12">
+                        <div class="product-section-header">
+                            <h5 class="product-section-title">
+                                <span class="product-section-badge">12</span>
+                                <i class="fa fa-puzzle-piece text-info"></i> Addons &amp; Cross-sells Section
+                            </h5>
+                            <span class="badge bg-info-subtle text-info border border-info-subtle">Upsell / Cross-sell</span>
+                        </div>
+                        <div class="product-section-body">
+                            <p class="text-muted small mb-3">Search and add products to show as "Frequently Bought Together" on the product detail page.</p>
+
+                                <input type="hidden" name="addon_product_ids" id="addonIdsInput" value="[]">
+
+                                <div class="position-relative">
+                                    <label class="form-label">Search Products</label>
+                                    <input type="text" class="form-control" id="addonSearch" placeholder="Type product name or SKU..." autocomplete="off">
+                                    <div class="addon-search-results d-none" id="addonResults"></div>
+                                </div>
+
+                                <div class="addon-cards mt-3" id="addonCards"></div>
+                        </div>
+                    </div>
+
+                    
+<!-- ── Sticky Bottom Action Bar ── -->
                     <div class="product-bottom-bar mb-4">
                         <div class="d-flex align-items-center gap-2">
                             <a href="view-products.php" class="btn btn-outline-secondary">
@@ -1454,6 +1750,8 @@ function pmImgSrc($path) {
 <script>
 // Edit mode: the product being edited (null when adding a new product)
 const EDIT_PRODUCT = <?php echo $isEdit ? json_encode($editProduct, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_PARTIAL_OUTPUT_ON_ERROR) : 'null'; ?>;
+// Tab 2 "+ Add New Option" needs a saved product id — 0 while adding a brand-new product
+const PRODUCT_EDIT_ID = <?php echo $isEdit ? (int) $editId : 0; ?>;
 
 // ─── State & Addons ──────────────────────────────────────────────────────────
 const TOTAL_TABS    = 12;
@@ -1543,27 +1841,7 @@ function updateDiscount() {
 document.getElementById('regular_price').addEventListener('input', updateDiscount);
 document.getElementById('offer_price').addEventListener('input',   updateDiscount);
 
-// ─── Bulk pricing ── dynamic rows ────────────────────────────────────────────
-const bulkRowTemplate = `<tr>
-    <td><input type="number" class="form-control form-control-sm" name="bulk_min_qty[]" placeholder="e.g. 10" min="1"></td>
-    <td><input type="number" class="form-control form-control-sm" name="bulk_max_qty[]" placeholder="e.g. 50" min="1"></td>
-    <td><input type="number" step="0.01" class="form-control form-control-sm bulk-price" name="bulk_price[]" placeholder="0.00" min="0"></td>
-    <td><span class="bulk-disc text-success fw-bold" style="font-size:12px"></span></td>
-    <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">×</button></td>
-</tr>`;
-document.getElementById('addBulkRow').addEventListener('click', () => addRow('bulkPricingBody', bulkRowTemplate));
-
-// Auto-calc bulk discount %
-document.getElementById('bulkPricingBody').addEventListener('input', function(e) {
-    if (!e.target.classList.contains('bulk-price')) return;
-    const row  = e.target.closest('tr');
-    const mrp  = parseFloat(document.getElementById('regular_price').value) || 0;
-    const price = parseFloat(e.target.value) || 0;
-    const discEl = row.querySelector('.bulk-disc');
-    if (mrp > 0 && price > 0 && price < mrp) {
-        discEl.textContent = Math.round(((mrp - price) / mrp) * 100) + '% OFF';
-    } else { discEl.textContent = ''; }
-});
+// Bulk Order Pricing Tiers now live only on Tab 2 (pmAddBulkTierRow / tab2BulkBody) — see note above.
 
 // ─── Generic add/remove row ───────────────────────────────────────────────────
 function addRow(tbodyId, template) {
@@ -1674,8 +1952,6 @@ function onKvTypeChange(select) {
     const row = select.closest('.kv-row');
     row.querySelector('.kv-values').style.display = KV_CHOICE.includes(select.value) ? '' : 'none';
     renderKvPreview(select);
-    const toggle = document.getElementById('show_customization_label');
-    if (toggle && !toggle.checked && row.querySelector('.kv-label').value.trim()) { toggle.checked = true; toggleCustomFields(toggle); }
 }
 
 // Small preview of how the field looks on the product page
@@ -1699,6 +1975,75 @@ function renderKvPreview(el) {
 // Before submit: each row's option lines → hidden JSON
 function serializeKvRows() {
     document.querySelectorAll('#customKvList .kv-row').forEach(row => {
+        const type = row.querySelector('.kv-type').value;
+        row.querySelector('.kv-options-json').value = JSON.stringify(KV_CHOICE.includes(type) ? parseKvValues(row.querySelector('.kv-values-text').value) : []);
+    });
+}
+
+// ─── Tab 9 "Additional Product Attributes" — same field builder as Tab 7, separate data ────
+function addAttrKvRow(field) {
+    field = field || {};
+    const type = KV_TYPES.some(t => t.v === field.type) ? field.type : 'text';
+    const req = Number(field.required) ? 1 : 0;
+    const row = document.createElement('div');
+    row.className = 'kv-row';
+    row.innerHTML = `
+        <div>
+            <input type="text" class="form-control form-control-sm kv-label" name="attribute_labels[]" maxlength="80"
+                   placeholder="e.g. Weight, Finish" value="${escHtml(field.label || '')}" oninput="renderAttrKvPreview(this)">
+            <input type="text" class="form-control form-control-sm mt-2" name="attribute_help[]" maxlength="160"
+                   placeholder="Help text (optional)" value="${escHtml(field.help || '')}">
+        </div>
+        <div>
+            <select class="form-select form-select-sm kv-type" name="attribute_types[]" onchange="onAttrKvTypeChange(this)">
+                ${KV_TYPES.map(t => `<option value="${t.v}" ${t.v === type ? 'selected' : ''}>${t.l}</option>`).join('')}
+            </select>
+            <div class="kv-values">
+                <textarea class="form-control form-control-sm kv-values-text" rows="3" placeholder="One option per line, e.g.&#10;Matte&#10;Glossy" oninput="renderAttrKvPreview(this)">${escHtml(kvValuesToText(field.options))}</textarea>
+                <div class="kv-hint">One option per line.</div>
+            </div>
+            <input type="hidden" name="attribute_options[]" class="kv-options-json" value="[]">
+        </div>
+        <div class="kv-preview"><span class="kv-p-label"></span><span class="kv-p-ctrl"></span></div>
+        <div class="kv-tools">
+            <div class="form-check form-switch m-0" title="Customer must fill this">
+                <input type="hidden" name="attribute_required[]" value="${req}">
+                <input class="form-check-input" type="checkbox" ${req ? 'checked' : ''} onchange="this.previousElementSibling.value = this.checked ? 1 : 0">
+                <label class="form-check-label small">Req.</label>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.kv-row').remove()" title="Remove attribute">×</button>
+        </div>`;
+    const targetKv = document.getElementById('attrKvList') || document.getElementById('customKvList');
+    if (targetKv) targetKv.appendChild(row);
+    onAttrKvTypeChange(row.querySelector('.kv-type'));
+    return row;
+}
+
+function onAttrKvTypeChange(select) {
+    const row = select.closest('.kv-row');
+    row.querySelector('.kv-values').style.display = KV_CHOICE.includes(select.value) ? '' : 'none';
+    renderAttrKvPreview(select);
+}
+
+function renderAttrKvPreview(el) {
+    const row = el.closest('.kv-row');
+    const label = row.querySelector('.kv-label').value.trim() || 'Label';
+    const type = row.querySelector('.kv-type').value;
+    const opts = parseKvValues(row.querySelector('.kv-values-text').value);
+    const tag = o => escHtml(o.label) + (o.price > 0 ? ` (+₹${o.price})` : '');
+    let ctrl = '';
+    if (type === 'select') ctrl = `<select class="form-select form-select-sm" disabled>${opts.map(o => `<option>${tag(o)}</option>`).join('') || '<option>Add options</option>'}</select>`;
+    else if (type === 'multi') ctrl = opts.map(o => `<span class="kv-chip">${tag(o)}</span>`).join('') || '<span class="text-muted">Add options</span>';
+    else if (type === 'radio') ctrl = opts.map((o, i) => `<div><input type="radio" disabled ${i === 0 ? 'checked' : ''}> ${tag(o)}</div>`).join('') || '<span class="text-muted">Add options</span>';
+    else if (type === 'textarea') ctrl = '<textarea class="form-control form-control-sm" rows="2" disabled></textarea>';
+    else if (type === 'image') ctrl = '<span class="btn btn-sm btn-outline-primary disabled">⬆ Choose file</span>';
+    else ctrl = `<input class="form-control form-control-sm" disabled placeholder="${type === 'number' ? '0' : 'Value'}">`;
+    row.querySelector('.kv-p-label').textContent = label;
+    row.querySelector('.kv-p-ctrl').innerHTML = ctrl;
+}
+
+function serializeAttrKvRows() {
+    document.querySelectorAll('#attrKvList .kv-row').forEach(row => {
         const type = row.querySelector('.kv-type').value;
         row.querySelector('.kv-options-json').value = JSON.stringify(KV_CHOICE.includes(type) ? parseKvValues(row.querySelector('.kv-values-text').value) : []);
     });
@@ -1744,8 +2089,6 @@ function renderCustomLibrary() {
 
 function onCustomUseChange(cb) {
     const card = cb.closest('.cl-card');
-    const toggle = document.getElementById('show_customization_label');
-    if (cb.checked && toggle && !toggle.checked) { toggle.checked = true; toggleCustomFields(toggle); }
     card.classList.toggle('is-on', cb.checked);
     card.querySelector('.cl-body').style.display = cb.checked ? '' : 'none';
     updateCustomCount();
@@ -2012,6 +2355,115 @@ function fillRows(tbodyId, items, rowHtml) {
     tbody.innerHTML = items.map(rowHtml).join('');
 }
 
+function pmImgSrc(p) {
+    if (!p) return '';
+    return (p.startsWith('http') || p.startsWith('//')) ? p : p.replace(/^\/+/, '');
+}
+
+function pmAddColorVariantRow(name = '', hex = '#000000', price = 0, existingImg = '', text = '') {
+    const tbody = document.getElementById('tab2ColorBody');
+    if (!tbody) return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>
+            <input type="text" class="form-control form-control-sm" name="variant_color_name[]" value="${escHtml(name)}" placeholder="e.g. Royal Blue" required>
+        </td>
+        <td>
+            <div class="d-flex align-items-center gap-1">
+                <input type="color" class="form-control form-control-sm form-control-color p-0" name="variant_color_hex[]" value="${escHtml(hex || '#000000')}" style="width:32px;height:31px;" onchange="this.nextElementSibling.value=this.value">
+                <input type="text" class="form-control form-control-sm font-monospace p-1" value="${escHtml(hex || '#000000')}" style="font-size:11px;width:70px;" oninput="this.previousElementSibling.value=this.value">
+            </div>
+        </td>
+        <td>
+            <div class="d-flex align-items-center gap-2">
+                ${existingImg ? `
+                    <a href="${escHtml(pmImgSrc(existingImg))}" target="_blank" title="View variant image">
+                        <img src="${escHtml(pmImgSrc(existingImg))}" alt="" style="width:34px;height:34px;object-fit:cover;border-radius:4px;border:1px solid #cbd5e1;flex-shrink:0;">
+                    </a>
+                    <input type="hidden" name="existing_variant_color_images[]" value="${escHtml(existingImg)}">
+                ` : `<input type="hidden" name="existing_variant_color_images[]" value="">`}
+                <input type="file" class="form-control form-control-sm" name="variant_color_images[]" accept="image/png,image/jpeg,image/gif,image/webp">
+            </div>
+        </td>
+        <td>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text">₹</span>
+                <input type="number" step="0.01" min="0" class="form-control" name="variant_color_price[]" value="${escHtml(price || 0)}" placeholder="0.00">
+            </div>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm" name="variant_color_text[]" value="${escHtml(text || '')}" placeholder="e.g. 100% Bio-Wash">
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" onclick="this.closest('tr').remove()" title="Remove color">
+                <i class="fa fa-times"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(tr);
+    const sw = document.getElementById('tab2_show_colors');
+    if (sw) sw.checked = true;
+    const wrp = document.getElementById('colorVariantsWrapper');
+    if (wrp) wrp.style.display = 'block';
+}
+
+function pmAddSizeRow(name = '', price = 0) {
+    const tbody = document.getElementById('tab2SizeBody');
+    if (!tbody) return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>
+            <input type="text" class="form-control form-control-sm" name="size_names[]" value="${escHtml(name)}" placeholder="e.g. M / Large" required>
+        </td>
+        <td>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text">₹</span>
+                <input type="number" step="0.01" min="0" class="form-control" name="size_prices[]" value="${escHtml(price || 0)}" placeholder="0.00">
+            </div>
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" onclick="this.closest('tr').remove()" title="Remove size">
+                <i class="fa fa-times"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(tr);
+    const sw = document.getElementById('tab2_show_sizes');
+    if (sw) sw.checked = true;
+    const wrp = document.getElementById('sizeVariantsWrapper');
+    if (wrp) wrp.style.display = 'block';
+}
+
+function pmAddBulkTierRow(minQty = '', maxQty = '', price = '') {
+    const tbody = document.getElementById('tab2BulkBody');
+    if (!tbody) return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>
+            <input type="number" min="1" class="form-control form-control-sm" name="bulk_min_qty[]" value="${escHtml(minQty || '')}" placeholder="1" required>
+        </td>
+        <td>
+            <input type="number" min="0" class="form-control form-control-sm" name="bulk_max_qty[]" value="${escHtml(maxQty || 0)}" placeholder="0">
+        </td>
+        <td>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text">₹</span>
+                <input type="number" step="0.01" min="0" class="form-control" name="bulk_price[]" value="${escHtml(price || '')}" placeholder="0.00" required>
+            </div>
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" onclick="this.closest('tr').remove()" title="Remove tier">
+                <i class="fa fa-times"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(tr);
+    const sw = document.getElementById('tab2_show_bulk');
+    if (sw) sw.checked = true;
+    const wrp = document.getElementById('bulkTiersWrapper');
+    if (wrp) wrp.style.display = 'block';
+}
+
 function prefillProductForm(p) {
     const form = document.getElementById('productForm');
     const has = v => v !== null && v !== undefined && v !== '';
@@ -2046,14 +2498,6 @@ function prefillProductForm(p) {
     setVal('out_of_stock_status', p.out_of_stock_status);
     ['description', 'long_description', 'instructions', 'delivery_info'].forEach(f => setVal(f, p[f]));
 
-    fillRows('bulkPricingBody', parseList(p.bulk_price_variance), r => `<tr>
-        <td><input type="number" class="form-control form-control-sm" name="bulk_min_qty[]" min="1" value="${escHtml(r.min_qty ?? '')}"></td>
-        <td><input type="number" class="form-control form-control-sm" name="bulk_max_qty[]" min="1" value="${escHtml(r.max_qty ?? '')}"></td>
-        <td><input type="number" step="0.01" class="form-control form-control-sm bulk-price" name="bulk_price[]" min="0" value="${escHtml(r.price ?? '')}"></td>
-        <td><span class="bulk-disc text-success fw-bold" style="font-size:12px"></span></td>
-        <td><button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">×</button></td>
-    </tr>`);
-
     // 2. Filters
     ['color', 'type', 'material', 'occasion', 'brand', 'discount_type', 'shape', 'gender', 'gift_type', 'ideal_for',
      'customization_tech', 'customization_location', 'capacity', 'ink_color', 'features'].forEach(f => setVal(f, p[f]));
@@ -2077,17 +2521,29 @@ function prefillProductForm(p) {
     setVal('meta_keywords', p.meta_keywords);
     setVal('meta_description', p.meta_description);
 
-    // 6. Visibility
-    setCheck('show_quantity', p.show_quantity);
-    setCheck('show_help_button', p.show_help_button);
+    // 7. Status Show and Hide Button
+    setCheck('show_cart_buttons', p.show_cart_buttons !== false && p.show_cart_buttons !== 0 && p.show_cart_buttons !== '0');
+    setCheck('show_quantity', p.show_quantity !== false && p.show_quantity !== 0 && p.show_quantity !== '0');
+    setCheck('show_help_button', p.show_help_button, 'helpBtnConfig');
+    setVal('help_button_text', p.help_button_text);
+    setVal('help_button_link', p.help_button_link);
     setCheck('show_bulk_form', p.show_bulk_form);
+    setCheck('show_inquiry_form', p.show_inquiry_form);
 
-    // 7. Customization
-    setCheck('show_customization_label', p.show_customization_label, 'customizationDetails');
+    // 8. Customization & Design Buttons (Tab 8)
+    setCheck('enable_upload_design', p.enable_upload_design !== false && p.enable_upload_design !== 0 && p.enable_upload_design !== '0', 'uploadDesignConfig');
+    setVal('upload_design_max_images', p.upload_design_max_images ?? 4);
+    setVal('upload_design_max_texts', p.upload_design_max_texts ?? 2);
+    setCheck('enable_customizer', p.enable_customizer !== false && p.enable_customizer !== 0 && p.enable_customizer !== '0', 'customizerConfig');
+    setVal('customizer_template_id', p.customizer_template_id || '');
+    setCheck('show_customization_label', p.show_customization_label, 'badgeTextConfig');
     setVal('customization_label', p.customization_label);
+
+    // Tab 2: Product Attributes, Custom Fields & Saved Library Options
     const savedCustom = parseList(p.customization_fields);
     applyCustomAssignments(savedCustom);
     savedCustom.filter(f => f && !f.option_id && f.label).forEach(f => addKvRow(f));
+    parseList(p.product_attributes_fields).filter(f => f && f.label).forEach(f => addKvRow(f));
 
     // 8. Addons: show saved ones straight away, then fill in names/prices
     parseList(p.addon_product_ids).map(Number).filter(Boolean).forEach(id => {
@@ -2103,6 +2559,23 @@ function prefillProductForm(p) {
             .catch(() => {});
     });
     renderAddonCards();
+
+    // Tab 2 Variants
+    if (document.getElementById('tab2ColorBody') && !document.getElementById('tab2ColorBody').children.length) {
+        parseList(p.color_attributes).forEach(r => {
+            pmAddColorVariantRow(r.name ?? r ?? '', r.hex ?? '#000000', r.price ?? 0, r.image ?? '', r.text ?? '');
+        });
+    }
+    if (document.getElementById('tab2SizeBody') && !document.getElementById('tab2SizeBody').children.length) {
+        parseList(p.size_attributes).forEach(r => {
+            pmAddSizeRow(r.name ?? r ?? '', r.price ?? 0);
+        });
+    }
+    if (document.getElementById('tab2BulkBody') && !document.getElementById('tab2BulkBody').children.length) {
+        parseList(p.bulk_price_variance || p.quantity_price_breaks).forEach(r => {
+            pmAddBulkTierRow(r.min_qty ?? r.qty ?? '', r.max_qty ?? '', r.price ?? '');
+        });
+    }
 
     // 9. Attributes
     setCheck('show_sizes', p.show_sizes, 'sizesSection');
@@ -2152,7 +2625,6 @@ function prefillProductForm(p) {
     } else {
         document.getElementById('cancelPreview').innerHTML = '<strong>This product cannot be cancelled once ordered.</strong>';
     }
-    document.querySelectorAll('#bulkPricingBody .bulk-price').forEach(el => el.dispatchEvent(new Event('input', { bubbles: true })));
 }
 
 // ─── CKEditor & Form Init ───────────────────────────────────────────────────
@@ -2197,6 +2669,7 @@ function initAddProductPage() {
             // 0. Customization: key-value rows + ticked library options → hidden JSON
             serializeKvRows();
             serializeCustomOptions();
+            serializeAttrKvRows();
 
             // 1. Sync CKEditors
             if (typeof CKEDITOR !== 'undefined') {
@@ -2242,6 +2715,7 @@ if (document.readyState === 'loading') {
 } else {
     initAddProductPage();
 }
+
 </script>
 </body>
 </html>

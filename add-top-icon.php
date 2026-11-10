@@ -17,17 +17,26 @@ $error   = '';
 $success = $_SESSION['success_message'] ?? '';
 unset($_SESSION['success_message']);
 
-// Handle AJAX Status Toggle (Desktop or Mobile)
+// Handle AJAX Status Toggle (Desktop, Mobile, or Sidebar)
 if (isset($_POST['action']) && $_POST['action'] === 'toggle_top_icon_status') {
     header('Content-Type: application/json');
     $catId = (int)($_POST['id'] ?? 0);
-    $device = $_POST['device'] ?? 'desktop'; // desktop or mobile
+    $device = $_POST['device'] ?? 'desktop'; // desktop, mobile, or sidebar
     $newStatus = (isset($_POST['status']) && $_POST['status'] === 'show') ? 'show' : 'hide';
 
     if ($catId > 0) {
-        $col = ($device === 'mobile') ? 'mobile_topbar_status' : 'desktop_menu_status';
+        if ($device === 'mobile') {
+            $col = 'mobile_topbar_status';
+            $val = $newStatus;
+        } elseif ($device === 'sidebar') {
+            $col = 'mobile_sidebar_status';
+            $val = ($newStatus === 'show') ? 'yes' : 'no';
+        } else {
+            $col = 'desktop_menu_status';
+            $val = $newStatus;
+        }
         $stmt = $conn->prepare("UPDATE categories SET `{$col}` = ? WHERE id = ?");
-        $stmt->bind_param("si", $newStatus, $catId);
+        $stmt->bind_param("si", $val, $catId);
         if ($stmt->execute()) {
             echo json_encode([
                 'success' => true, 
@@ -107,15 +116,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_top_icon'])) {
             $mobileIconImg = uploadNavbarIconImg('mobile_image', 'top-icon-mobile', $selected['mobile_image'] ?? '');
         }
 
+        // Mobile Sidebar fields
+        $sidebarTitle = trim($_POST['mobile_sidebar_title'] ?? '');
+        $sidebarStatus = $_POST['mobile_sidebar_status'] ?? 'yes';
+        $sidebarOrder = (int)($_POST['mobile_sidebar_order'] ?? 0);
+
+        // Remove or Upload Mobile Sidebar Image
+        if (!empty($_POST['remove_mobile_sidebar_image'])) {
+            if (!empty($selected['mobile_sidebar_image']) && file_exists(__DIR__ . '/' . $selected['mobile_sidebar_image']) && strpos($selected['mobile_sidebar_image'], 'http') === false) {
+                @unlink(__DIR__ . '/' . $selected['mobile_sidebar_image']);
+            }
+            $sidebarIconImg = null;
+        } else {
+            $sidebarIconImg = uploadNavbarIconImg('mobile_sidebar_image', 'top-icon-sidebar', $selected['mobile_sidebar_image'] ?? '');
+        }
+
         // 🔒 SAFETY: ONLY navbar columns are updated. Original 'name' and 'image' are NEVER touched!
         $updateData = [
             'desktop_menu_title'   => $desktopTitle ?: null,
+            'desktop_image'        => $desktopIconImg ?: null,
             'desktop_menu_image'   => $desktopMenuImg ?: null,
             'desktop_menu_status'  => $desktopStatus,
             'desktop_menu_order'   => $desktopOrder,
             'mobile_topbar_title'  => $mobileTitle ?: null,
+            'mobile_image'         => $mobileIconImg ?: null,
             'mobile_topbar_status' => $mobileStatus,
             'mobile_topbar_order'  => $mobileOrder,
+            'mobile_sidebar_title' => $sidebarTitle ?: null,
+            'mobile_sidebar_image' => $sidebarIconImg ?: null,
+            'mobile_sidebar_status'=> $sidebarStatus,
+            'mobile_sidebar_order' => $sidebarOrder,
         ];
 
         $controller->updateCategory($selectedId, $updateData);
@@ -133,11 +163,13 @@ $topIconsListRes = $conn->query("SELECT * FROM categories WHERE level = 1 ORDER 
 $allTopIcons = [];
 $desktopActiveCount = 0;
 $mobileActiveCount = 0;
+$sidebarActiveCount = 0;
 if ($topIconsListRes) {
     while ($row = $topIconsListRes->fetch_assoc()) {
         $allTopIcons[] = $row;
         if (($row['desktop_menu_status'] ?? 'show') === 'show') $desktopActiveCount++;
         if (($row['mobile_topbar_status'] ?? 'show') === 'show') $mobileActiveCount++;
+        if (($row['mobile_sidebar_status'] ?? 'yes') === 'yes') $sidebarActiveCount++;
     }
 }
 
@@ -165,33 +197,29 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
     <link rel="icon" type="image/png" href="favicon.png" />
     <title>Header Category Menu &bull; Top Icon Manager | PrintMont</title>
     
-    <!-- Fonts: Plus Jakarta Sans & Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="js/settings.js"></script>
     
     <style>
         :root {
-            --pm-primary: #0b53a1;
-            --pm-primary-dark: #073b75;
-            --pm-primary-light: #e0edff;
-            --pm-accent: #0284c7;
-            --pm-success: #10b981;
-            --pm-warning: #f59e0b;
-            --pm-danger: #ef4444;
-            --pm-dark: #0f172a;
+            --pm-primary: var(--bs-primary, #3b7ddd);
+            --pm-primary-dark: #2f64b1;
+            --pm-primary-light: #d8e5f8;
+            --pm-accent: var(--bs-info, #17a2b8);
+            --pm-success: var(--bs-success, #1cbb8c);
+            --pm-warning: var(--bs-warning, #fcb92c);
+            --pm-danger: var(--bs-danger, #dc3545);
+            --pm-dark: #343a40;
             --pm-card-bg: #ffffff;
             --pm-border: #e2e8f0;
-            --pm-bg-subtle: #f8fafc;
+            --pm-bg-subtle: #f8f9fa;
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f1f5f9;
-            color: #334155;
+            font-family: var(--bs-body-font-family);
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
             opacity: 1 !important;
         }
 
@@ -661,6 +689,101 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
             from { transform: translateX(100px); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+
+        /* Keep this module visually consistent with the AdminKit admin shell. */
+        .content { background: var(--bs-body-bg); }
+        .content > .container-fluid { max-width: 1600px; }
+        .content h2, .content h3, .content h4, .content h5 { font-family: var(--bs-body-font-family); }
+        .content h2.h3 { font-size: 1.35rem; font-weight: 600 !important; color: #343a40 !important; }
+        .content p { font-size: .875rem; }
+        .content .small, .content small { font-size: .8125rem; }
+        .content .text-muted { color: #6c757d !important; }
+
+        .module-nav-pills { display: flex; flex-wrap: wrap; gap: 4px; max-width: 100%; padding: 4px; border-radius: .3rem; border-color: var(--bs-border-color); box-shadow: none; }
+        .module-nav-link { padding: .45rem .65rem; border-radius: .25rem; font-size: .8125rem; font-weight: 500; white-space: nowrap; }
+        .module-nav-link.active { box-shadow: none; }
+
+        .config-box, .preview-sticky-card { border: 1px solid var(--bs-border-color); border-radius: .3rem; box-shadow: 0 .1rem .2rem rgba(0,0,0,.05); }
+        .config-box:hover { border-color: #dee2e6; }
+        .config-box-header { padding: .85rem 1rem; background: #fff; }
+        .config-box-body { padding: 1rem; }
+        .config-box-title { font-size: .95rem; font-weight: 600; gap: .65rem; }
+
+        .category-hero-banner { padding: 1rem 1.25rem; color: #495057; background: #fff; border: 1px solid var(--bs-border-color); border-left: 3px solid var(--bs-primary); border-radius: .3rem; box-shadow: 0 .1rem .2rem rgba(0,0,0,.05); }
+        .category-hero-banner::after { display: none; }
+        .category-hero-banner .text-white { color: #343a40 !important; }
+        .category-hero-banner .text-white-50 { color: #6c757d !important; }
+        .category-hero-banner .hero-cat-avatar { width: 56px; height: 56px; border: 1px solid #dee2e6; border-radius: .3rem; box-shadow: none; }
+        .category-hero-banner code { color: #6c757d; }
+        .stepper-nav-btn { padding: .4rem .65rem; color: #495057; background: #fff; border-color: #dee2e6; border-radius: .25rem; font-size: .8125rem; backdrop-filter: none; }
+        .stepper-nav-btn:hover { color: var(--bs-primary); background: #f8f9fa; border-color: #ced4da; transform: none; }
+
+        .cat-chip-card { width: 118px; padding: .6rem; border-radius: .3rem; border-width: 1px; }
+        .cat-chip-card:hover { transform: translateY(-1px); box-shadow: 0 .2rem .4rem rgba(0,0,0,.08); }
+        .cat-chip-card.active { box-shadow: inset 0 0 0 1px var(--bs-primary); }
+        .cat-chip-img { width: 38px; height: 38px; border-radius: .25rem; }
+        .cat-chip-name { font-size: .75rem; font-weight: 600; }
+
+        .device-segmented-control { gap: .35rem; padding: .25rem; background: #e9ecef; border-radius: .3rem; margin-bottom: 1rem; }
+        .device-segment-btn { min-width: 0; padding: .6rem .7rem; gap: .45rem; border: 1px solid transparent; border-radius: .25rem; font-size: .8125rem; font-weight: 500; }
+        .device-segment-btn.active.desktop-active, .device-segment-btn.active.mobile-active, .device-segment-btn.active.info-active { color: #fff; background: var(--bs-primary); box-shadow: none; }
+        .device-segment-btn .badge { font-size: .6875rem !important; font-weight: 500; }
+
+        .content .form-label { margin-bottom: .35rem; font-size: .8125rem; font-weight: 600 !important; color: #495057 !important; }
+        .content .form-control, .content .form-select, .content .input-group-text { min-height: 38px; padding: .45rem .7rem; border-color: #ced4da; border-radius: .25rem; font-family: var(--bs-body-font-family); font-size: .875rem; line-height: 1.4; }
+        .content .input-group > .form-control, .content .input-group > .form-select, .content .input-group > .input-group-text, .content .input-group > .btn { min-height: 38px; font-size: .875rem; }
+        .content .form-control:focus, .content .form-select:focus { border-color: #9dbce9; box-shadow: 0 0 0 .2rem rgba(59,125,221,.15); }
+        .content .form-control-lg, .content .form-select-lg, .content .input-group-lg > .form-control, .content .input-group-lg > .form-select, .content .input-group-lg > .input-group-text, .content .input-group-lg > .btn { min-height: 42px; padding: .5rem .75rem; font-size: .9rem; }
+        .content .btn { border-radius: .25rem; font-family: var(--bs-body-font-family); font-size: .8125rem; font-weight: 500; line-height: 1.4; }
+        .content .btn-sm { padding: .3rem .55rem; font-size: .75rem; }
+        .content .btn-lg { padding: .55rem .9rem; font-size: .9rem; }
+        .content .btn-primary { box-shadow: none; }
+        .content .badge { font-weight: 500; }
+        .sticky-action-bar { border-color: #dee2e6; border-radius: .3rem; padding: .75rem 1rem; box-shadow: 0 .25rem .75rem rgba(0,0,0,.08); }
+        .preview-header-bar { padding: .65rem .85rem; font-size: .8125rem; }
+        .preview-canvas { padding: 1rem .75rem; }
+        .table { font-size: .8125rem; }
+        .table > :not(caption) > * > * { padding: .65rem .75rem; }
+        .switch-toggle-btn { min-height: 32px; padding: .3rem .6rem; border-radius: .25rem; font-size: .75rem; font-weight: 500; }
+        .switch-toggle-btn.btn-status-show { color: #146c43; background: #d1e7dd; border: 1px solid #a3cfbb; }
+        .switch-toggle-btn.btn-status-show:hover:not(:disabled) { background: #badbcc; }
+        .switch-toggle-btn.btn-status-hide { color: #b02a37; background: #f8d7da; border: 1px solid #f1aeb5; }
+        .switch-toggle-btn.btn-status-hide:hover:not(:disabled) { background: #f1aeb5; }
+        .switch-toggle-btn:disabled { opacity: .65; cursor: wait; }
+        #pmToast { font-family: var(--bs-body-font-family); font-size: .875rem; border-radius: .3rem; }
+
+        @media (max-width: 991.98px) {
+            .content > .container-fluid { padding-right: .75rem !important; padding-left: .75rem !important; }
+            .module-nav-pills { width: 100%; flex-wrap: nowrap; overflow-x: auto; }
+            .module-nav-link { flex: 0 0 auto; }
+            .category-hero-banner { padding: .85rem; }
+            .device-segmented-control { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .device-segment-btn { flex-direction: column; text-align: center; padding: .55rem .25rem; font-size: .75rem; }
+            .device-segment-btn .badge { margin: 0 !important; }
+            .preview-sticky-card { position: static; }
+            .sticky-action-bar { position: sticky; bottom: .5rem; gap: .75rem; margin-top: 1rem; }
+            .config-box-header > .d-flex.align-items-center.gap-2 { width: 100%; flex-wrap: wrap; }
+            .config-box-header .input-group[style*="width"] { width: 100% !important; }
+            .config-box-header .btn-group { max-width: 100%; overflow-x: auto; }
+        }
+        @media (max-width: 575.98px) {
+            .content h2.h3 { font-size: 1.15rem; }
+            .content > .container-fluid { padding-right: .5rem !important; padding-left: .5rem !important; }
+            .config-box { margin-bottom: 1rem; }
+            .config-box-header { align-items: flex-start; gap: .5rem; padding: .75rem; }
+            .config-box-body { padding: .75rem; }
+            .config-box-title { font-size: .875rem; }
+            .category-hero-banner .hero-cat-avatar { width: 44px; height: 44px; }
+            .category-hero-banner h3 { font-size: 1rem; }
+            .category-hero-banner .d-flex.align-items-center.gap-2.mb-1 { flex-wrap: wrap; }
+            .stepper-nav-btn { padding: .35rem .5rem; font-size: .75rem; }
+            .device-segment-btn { font-size: .6875rem; }
+            .sticky-action-bar { align-items: stretch; flex-direction: column; padding: .75rem; }
+            .sticky-action-bar > .d-flex { align-items: flex-start !important; }
+            .sticky-action-bar .btn { width: 100%; }
+            .cat-chip-card { width: 104px; }
+            #pmToast { top: 12px; right: 12px; left: 12px; justify-content: center; }
+        }
     </style>
 </head>
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
@@ -696,19 +819,28 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
                         </p>
                     </div>
 
-                    <!-- Top Submenu Links -->
+                    <!-- Top Submenu Links: All 7 Items of Section 5 -->
                     <div class="module-nav-pills">
                         <a href="add-top-icon.php" class="module-nav-link active">
-                            <i class="fas fa-star text-warning"></i> Top Icon
+                            <i class="fas fa-star text-warning"></i> 1. Top Icon
                         </a>
                         <a href="add-menu-page.php" class="module-nav-link">
-                            <i class="fas fa-file-alt"></i> Top Menu Inside Pages
+                            <i class="fas fa-file-alt text-info"></i> 2. Top Menu Inside Pages
                         </a>
                         <a href="header-menu-design.php" class="module-nav-link">
-                            <i class="fas fa-palette"></i> Select Design
+                            <i class="fas fa-palette text-purple"></i> 3. Select Design
+                        </a>
+                        <a href="category-menu-description.php" class="module-nav-link">
+                            <i class="fas fa-align-left text-primary"></i> 4. Category Text Description
+                        </a>
+                        <a href="header-search-settings.php" class="module-nav-link">
+                            <i class="fas fa-search text-success"></i> 5. Search Box Text
                         </a>
                         <a href="header-menu-list.php" class="module-nav-link">
-                            <i class="fas fa-layer-group"></i> All menus
+                            <i class="fas fa-layer-group text-secondary"></i> 6. All menus
+                        </a>
+                        <a href="header-settings.php" class="module-nav-link">
+                            <i class="fas fa-sliders-h text-dark"></i> 7. Page Rules &amp; Visibility
                         </a>
                     </div>
                 </div>
@@ -871,17 +1003,22 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
                         <!-- Left Column: Device Switcher & Configuration Boxes -->
                         <div class="col-lg-7">
 
-                            <!-- Device Segmented Control: Desktop vs Mobile -->
+                            <!-- Device Segmented Control: Desktop vs Mobile vs Mobile Sidebar (Matches Spec 1 No. Top Icon) -->
                             <div class="device-segmented-control">
                                 <button type="button" class="device-segment-btn active desktop-active" id="segDesktopBtn" onclick="switchDeviceTab('desktop')">
                                     <i class="fas fa-desktop fs-6"></i>
-                                    <span>Desktop Navbar Settings</span>
+                                    <span>Desktop top bar</span>
                                     <span class="badge bg-white text-primary ms-1" style="font-size:10px;">Order #<?php echo (int)($selected['desktop_menu_order'] ?? 0); ?></span>
                                 </button>
                                 <button type="button" class="device-segment-btn" id="segMobileBtn" onclick="switchDeviceTab('mobile')">
                                     <i class="fas fa-mobile-screen fs-6"></i>
-                                    <span>Mobile Navbar Settings</span>
+                                    <span>Mobile top bar</span>
                                     <span class="badge bg-white text-success ms-1" style="font-size:10px;">Order #<?php echo (int)($selected['mobile_topbar_order'] ?? 0); ?></span>
+                                </button>
+                                <button type="button" class="device-segment-btn" id="segSidebarBtn" onclick="switchDeviceTab('sidebar')">
+                                    <i class="fas fa-bars-staggered fs-6"></i>
+                                    <span>Mobile sidebar</span>
+                                    <span class="badge bg-white text-info ms-1" style="font-size:10px;">Order #<?php echo (int)($selected['mobile_sidebar_order'] ?? 0); ?></span>
                                 </button>
                             </div>
 
@@ -890,12 +1027,12 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
                             <!-- ============================================== -->
                             <div id="desktopConfigPanel">
 
-                                <!-- Box 2 (Desktop): Title Icon Name Add > Box -->
+                                <!-- Title Icon Name Add > Box -->
                                 <div class="config-box" style="border-left: 4px solid #0b53a1;">
                                     <div class="config-box-header">
                                         <h5 class="config-box-title">
                                             <i class="fas fa-heading text-primary"></i>
-                                            2. Title Icon Name Add &gt; Box (Desktop)
+                                            Title Icon Name Add &gt; Box (Desktop)
                                         </h5>
                                         <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:11px;" onclick="copyDefaultTitle('desktop')">
                                             <i class="fas fa-magic me-1"></i> Use "<?php echo htmlspecialchars($selected['name']); ?>"
@@ -925,16 +1062,15 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
                                     </div>
                                 </div>
 
-                                <!-- Box 5 & 6 (Desktop): Status & Sort Order -->
+                                <!-- Status show and Hide Add > Box -->
                                 <div class="row g-3 mb-4">
                                     
-                                    <!-- Box 5: Status Show and Hide -->
                                     <div class="col-md-7">
                                         <div class="config-box h-100">
                                             <div class="config-box-header">
                                                 <h5 class="config-box-title">
                                                     <i class="fas fa-eye text-info"></i>
-                                                    5. Status Show and Hide (Desktop)
+                                                    Status show and Hide Add &gt; Box (Desktop)
                                                 </h5>
                                             </div>
                                             <div class="config-box-body">
@@ -989,12 +1125,12 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
 
                                 </div>
 
-                                <!-- Box 3 (Desktop): Upload Image Add > Box (Top Icon Graphic) -->
+                                <!-- Upload Image Add > Box -->
                                 <div class="config-box">
                                     <div class="config-box-header">
                                         <h5 class="config-box-title">
                                             <i class="fas fa-cloud-arrow-up text-success"></i>
-                                            3. Upload Image Add &gt; Box (Desktop Top Icon)
+                                            Upload Image Add &gt; Box (Desktop Top Icon)
                                         </h5>
                                         <span class="badge bg-light text-muted border">1:1 Square &bull; Max 5MB</span>
                                     </div>
@@ -1048,12 +1184,12 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
                                     </div>
                                 </div>
 
-                                <!-- Box 4 (Desktop): Icon image Uploading Add > Box (Dropdown Mega Menu Graphic) -->
+                                <!-- Icon image Uploading Add > Box -->
                                 <div class="config-box">
                                     <div class="config-box-header">
                                         <h5 class="config-box-title">
                                             <i class="fas fa-panorama text-purple"></i>
-                                            4. Icon image Uploading Add &gt; Box (Desktop Dropdown Inside)
+                                            Icon image Uploading Add &gt; Box (Desktop Dropdown Inside)
                                         </h5>
                                         <span class="badge bg-light text-muted border">Mega Menu Banner Graphic</span>
                                     </div>
@@ -1092,12 +1228,12 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
                             <!-- ============================================== -->
                             <div id="mobileConfigPanel" style="display: none;">
 
-                                <!-- Box 2 (Mobile): Title Icon Name Add > Box -->
+                                <!-- Title Icon Name Add > Box (Mobile) -->
                                 <div class="config-box" style="border-left: 4px solid #10b981;">
                                     <div class="config-box-header">
                                         <h5 class="config-box-title">
                                             <i class="fas fa-heading text-success"></i>
-                                            2. Title Icon Name Add &gt; Box (Mobile)
+                                            Title Icon Name Add &gt; Box (Mobile)
                                         </h5>
                                         <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size:11px;" onclick="copyDefaultTitle('mobile')">
                                             <i class="fas fa-magic me-1"></i> Use "<?php echo htmlspecialchars($selected['name']); ?>"
@@ -1127,7 +1263,7 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
                                     </div>
                                 </div>
 
-                                <!-- Box 5 & 6 (Mobile): Status & Sort Order -->
+                                <!-- Status show and Hide Add > Box (Mobile) -->
                                 <div class="row g-3 mb-4">
                                     
                                     <!-- Mobile Status Show and Hide -->
@@ -1136,7 +1272,7 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
                                             <div class="config-box-header">
                                                 <h5 class="config-box-title">
                                                     <i class="fas fa-eye text-info"></i>
-                                                    5. Status Show and Hide (Mobile)
+                                                    Status show and Hide Add &gt; Box (Mobile)
                                                 </h5>
                                             </div>
                                             <div class="config-box-body">
@@ -1191,12 +1327,12 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
 
                                 </div>
 
-                                <!-- Box 3 (Mobile): Upload Image Add > Box (Mobile Icon Graphic) -->
+                                <!-- Upload Image Add > Box (Mobile) -->
                                 <div class="config-box">
                                     <div class="config-box-header">
                                         <h5 class="config-box-title">
                                             <i class="fas fa-cloud-arrow-up text-success"></i>
-                                            3. Upload Image Add &gt; Box (Mobile Top Icon)
+                                            Upload Image Add &gt; Box (Mobile Top Icon)
                                         </h5>
                                         <span class="badge bg-light text-muted border">Circular 1:1 Avatar &bull; Max 5MB</span>
                                     </div>
@@ -1252,6 +1388,167 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
 
                             </div>
 
+                            <!-- ============================================== -->
+                            <!-- SECTION C: MOBILE SIDEBAR MENU SETTINGS       -->
+                            <!-- ============================================== -->
+                            <div id="sidebarConfigPanel" style="display: none;">
+
+                                <!-- Title Icon Name Add > Box (Mobile Sidebar) -->
+                                <div class="config-box" style="border-left: 4px solid #0284c7;">
+                                    <div class="config-box-header">
+                                        <h5 class="config-box-title">
+                                            <i class="fas fa-heading text-info"></i>
+                                            Title Icon Name Add &gt; Box (Mobile Sidebar)
+                                        </h5>
+                                        <button type="button" class="btn btn-sm btn-outline-info py-0 px-2" style="font-size:11px;" onclick="copyDefaultTitle('sidebar')">
+                                            <i class="fas fa-magic me-1"></i> Use "<?php echo htmlspecialchars($selected['name']); ?>"
+                                        </button>
+                                    </div>
+                                    <div class="config-box-body">
+                                        <div class="input-group input-group-lg mb-2">
+                                            <span class="input-group-text bg-white text-muted">
+                                                <i class="fas fa-signature"></i>
+                                            </span>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="mobile_sidebar_title"
+                                                   name="mobile_sidebar_title"
+                                                   placeholder="<?php echo htmlspecialchars($selected['name']); ?> (Default)"
+                                                   value="<?php echo htmlspecialchars($selected['mobile_sidebar_title'] ?? ''); ?>"
+                                                   oninput="updateLivePreview()">
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">
+                                                Mobile offcanvas navigation drawer me category label ke roop me dikhega.
+                                            </small>
+                                            <small class="text-info fw-semibold">
+                                                Current: <span id="currentSidebarTitleDisplay"><?php echo htmlspecialchars($selected['mobile_sidebar_title'] ?: ($selected['mobile_topbar_title'] ?: $selected['name'])); ?></span>
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Status show and Hide Add > Box (Mobile Sidebar) -->
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-7">
+                                        <div class="config-box h-100">
+                                            <div class="config-box-header">
+                                                <h5 class="config-box-title">
+                                                    <i class="fas fa-eye text-info"></i>
+                                                    Status show and Hide Add &gt; Box (Mobile Sidebar)
+                                                </h5>
+                                            </div>
+                                            <div class="config-box-body">
+                                                <div class="btn-group w-100" role="group">
+                                                    <input type="radio" class="btn-check" name="mobile_sidebar_status" id="sidebar_status_show" value="yes" 
+                                                           <?php echo (($selected['mobile_sidebar_status'] ?? 'yes') === 'yes') ? 'checked' : ''; ?> 
+                                                           onchange="updateLivePreview()">
+                                                    <label class="btn btn-outline-info fw-bold py-2" for="sidebar_status_show">
+                                                        <i class="fas fa-check-circle me-1"></i> SHOW in Sidebar
+                                                    </label>
+
+                                                    <input type="radio" class="btn-check" name="mobile_sidebar_status" id="sidebar_status_hide" value="no" 
+                                                           <?php echo (($selected['mobile_sidebar_status'] ?? 'yes') === 'no') ? 'checked' : ''; ?> 
+                                                           onchange="updateLivePreview()">
+                                                    <label class="btn btn-outline-danger fw-bold py-2" for="sidebar_status_hide">
+                                                        <i class="fas fa-eye-slash me-1"></i> HIDE from Sidebar
+                                                    </label>
+                                                </div>
+                                                <small class="text-muted d-block mt-2">
+                                                    Mobile drawer / hamburger menu me category ko dikhana ya hide karna.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-5">
+                                        <div class="config-box h-100">
+                                            <div class="config-box-header">
+                                                <h5 class="config-box-title">
+                                                    <i class="fas fa-sort-numeric-down text-secondary"></i>
+                                                    Sort Order (Sidebar)
+                                                </h5>
+                                            </div>
+                                            <div class="config-box-body">
+                                                <div class="input-group input-group-lg">
+                                                    <button type="button" class="btn btn-outline-secondary px-3" onclick="stepNumber('mobile_sidebar_order', -1)">-</button>
+                                                    <input type="number" 
+                                                           class="form-control text-center fw-bold fs-5" 
+                                                           id="mobile_sidebar_order"
+                                                           name="mobile_sidebar_order" 
+                                                           min="0" 
+                                                           value="<?php echo (int)($selected['mobile_sidebar_order'] ?? 0); ?>">
+                                                    <button type="button" class="btn btn-outline-secondary px-3" onclick="stepNumber('mobile_sidebar_order', 1)">+</button>
+                                                </div>
+                                                <small class="text-muted d-block mt-2">
+                                                    Sidebar drawer sequence order.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Upload Image Add > Box (Sidebar Icon Graphic) -->
+                                <div class="config-box">
+                                    <div class="config-box-header">
+                                        <h5 class="config-box-title">
+                                            <i class="fas fa-cloud-arrow-up text-info"></i>
+                                            Upload Image Add &gt; Box (Sidebar Icon Graphic)
+                                        </h5>
+                                        <span class="badge bg-light text-muted border">28x28 Rounded Avatar</span>
+                                    </div>
+                                    <div class="config-box-body">
+                                        <?php 
+                                            $currSidebarImg = !empty($selected['mobile_sidebar_image']) ? $selected['mobile_sidebar_image'] : (!empty($selected['mobile_image']) ? $selected['mobile_image'] : (!empty($selected['desktop_image']) ? $selected['desktop_image'] : $selected['image']));
+                                            $hasCustomSidebar = !empty($selected['mobile_sidebar_image']);
+                                        ?>
+                                        <div class="row align-items-center g-3 mb-3">
+                                            <div class="col-auto">
+                                                <div class="checkerboard-canvas" style="width:56px;height:56px;border-radius:8px;">
+                                                    <img src="<?php echo htmlspecialchars($currSidebarImg ?: 'https://placehold.co/48x48?text=Icon'); ?>" 
+                                                         id="activeSidebarThumb"
+                                                         style="max-width:44px;max-height:44px;object-fit:cover;border-radius:6px;" 
+                                                         alt="Current Sidebar Icon">
+                                                </div>
+                                            </div>
+                                            <div class="col">
+                                                <div class="fw-bold text-dark mb-1">
+                                                    Active Sidebar Icon:
+                                                    <?php if ($hasCustomSidebar): ?>
+                                                        <span class="badge bg-info-subtle text-info border border-info-subtle ms-1">Custom Sidebar Icon</span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-secondary-subtle text-secondary border ms-1">Inheriting from Mobile/Catalog</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="text-muted small">
+                                                    Mobile offcanvas drawer me category row ke aage avatar icon ke roop me dikhta hai.
+                                                </div>
+                                                <?php if ($hasCustomSidebar): ?>
+                                                    <div class="form-check mt-1">
+                                                        <input class="form-check-input" type="checkbox" name="remove_mobile_sidebar_image" value="1" id="rmSidebarImg">
+                                                        <label class="form-check-label text-danger small" for="rmSidebarImg">
+                                                            <i class="fas fa-trash-can me-1"></i> Remove custom sidebar icon
+                                                        </label>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+
+                                        <!-- Sidebar Upload Dropzone -->
+                                        <div class="upload-dropzone">
+                                            <input type="file" name="mobile_sidebar_image" accept="image/*" onchange="handleImgPreview(this, 'prvSidebarIcon', 'liveSidebarMockImg')">
+                                            <div class="py-2">
+                                                <i class="fas fa-cloud-arrow-up fs-2 text-info mb-2"></i>
+                                                <div class="fw-bold text-dark">Click to browse or Drag &amp; Drop Sidebar icon</div>
+                                                <div class="text-muted small">PNG, WEBP, SVG (Square 1:1 recommended)</div>
+                                            </div>
+                                            <img id="prvSidebarIcon" class="dropzone-thumb-preview mt-2" style="display:none;border-radius:6px;max-height:50px;" alt="Preview">
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
                         </div>
 
                         <!-- Right Column: Interactive Real-Time Live Header Preview -->
@@ -1270,6 +1567,9 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
                                         </button>
                                         <button type="button" class="btn btn-sm btn-outline-light" id="btnPrvMobile" onclick="switchPreviewMode('mobile')">
                                             <i class="fas fa-mobile-alt me-1"></i> Mobile
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-light" id="btnPrvSidebar" onclick="switchPreviewMode('sidebar')">
+                                            <i class="fas fa-bars-staggered me-1"></i> Sidebar
                                         </button>
                                     </div>
                                 </div>
@@ -1399,6 +1699,76 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
                                         </div>
                                     </div>
 
+                                    <!-- 3. MOBILE SIDEBAR LIVE MOCKUP -->
+                                    <div id="mockupSidebarWrap" style="display: none;">
+                                        <div class="d-flex align-items-center justify-content-between mb-2 px-1">
+                                            <span class="text-muted fw-bold" style="font-size:11px;">MOBILE OFFCANVAS SIDEBAR DRAWER:</span>
+                                            <span class="badge <?php echo (($selected['mobile_sidebar_status'] ?? 'yes') === 'yes') ? 'bg-info' : 'bg-danger'; ?>" style="font-size:10px;" id="mockSidebarStatusBadge">
+                                                <?php echo (($selected['mobile_sidebar_status'] ?? 'yes') === 'yes') ? 'SHOW (ACTIVE)' : 'HIDE (INACTIVE)'; ?>
+                                            </span>
+                                        </div>
+
+                                        <div class="mock-mobile-device" style="border-radius:12px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+                                            <!-- Drawer Header -->
+                                            <div style="background:#0b53a1;color:#ffffff;padding:12px 14px;">
+                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;">
+                                                            <i class="fas fa-user" style="font-size:12px;"></i>
+                                                        </div>
+                                                        <span class="fw-bold" style="font-size:13px;">Hi Guest</span>
+                                                    </div>
+                                                    <i class="fas fa-times opacity-75"></i>
+                                                </div>
+                                                <div class="d-flex gap-3 small text-white-50" style="font-size:11px;">
+                                                    <span>Track Order</span>
+                                                    <span>&bull;</span>
+                                                    <span>Login / Signup</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Drawer Category List -->
+                                            <div class="bg-white p-2">
+                                                <div class="d-flex align-items-center justify-content-between p-2 rounded mb-1 text-muted" style="font-size:12px;">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="rounded bg-light p-1" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-th-large text-primary" style="font-size:11px;"></i></span>
+                                                        <span>All Categories</span>
+                                                    </div>
+                                                    <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
+                                                </div>
+
+                                                <!-- ACTIVE EDITING SIDEBAR ITEM (Real-time Updated) -->
+                                                <div class="d-flex align-items-center justify-content-between p-2 rounded mb-1 border" id="mockSidebarHighlightCard" style="background:#f0f9ff;border-color:#bae6fd !important;font-size:12.5px;opacity: <?php echo (($selected['mobile_sidebar_status'] ?? 'yes') === 'yes') ? '1' : '0.4'; ?>;">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <img src="<?php echo htmlspecialchars($currSidebarImg ?: 'https://placehold.co/28x28?text=Icon'); ?>" 
+                                                             id="liveSidebarMockImg" 
+                                                             style="width:26px;height:26px;object-fit:cover;border-radius:5px;" 
+                                                             alt="Live Sidebar Mock Icon"
+                                                             onerror="this.src='https://placehold.co/28x28?text=Icon'">
+                                                        <span class="fw-bold text-dark" id="liveSidebarMockTitle">
+                                                            <?php echo htmlspecialchars($selected['mobile_sidebar_title'] ?: ($selected['mobile_topbar_title'] ?: $selected['name'])); ?>
+                                                        </span>
+                                                        <span class="badge bg-primary ms-1" style="font-size:9px;">Active</span>
+                                                    </div>
+                                                    <i class="fas fa-chevron-down text-primary" style="font-size:10px;"></i>
+                                                </div>
+
+                                                <div class="d-flex align-items-center justify-content-between p-2 rounded text-muted" style="font-size:12px;">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="rounded bg-light p-1" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-gift text-secondary" style="font-size:11px;"></i></span>
+                                                        <span>Corporate Gifts</span>
+                                                    </div>
+                                                    <i class="fas fa-chevron-right text-muted" style="font-size:10px;"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="text-center mt-2">
+                                            <small class="text-muted" style="font-size:11px;">
+                                                <i class="fas fa-bars me-1 text-info"></i> Mobile hamburger navigation offcanvas drawer.
+                                            </small>
+                                        </div>
+                                    </div>
+
                                 </div>
 
                                 <div class="p-3 bg-light border-top">
@@ -1497,36 +1867,41 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
                                 <tr>
                                     <th>Category (🔒 Catalog Safe)</th>
                                     <th>Desktop Title &amp; Icon</th>
-                                    <th style="width:100px;">Desktop Order</th>
-                                    <th style="width:130px;">Desktop Status</th>
+                                    <th style="width:95px;">Desk Order</th>
+                                    <th style="width:115px;">Desk Status</th>
                                     <th>Mobile Title &amp; Icon</th>
-                                    <th style="width:100px;">Mobile Order</th>
-                                    <th style="width:130px;">Mobile Status</th>
-                                    <th style="width:90px;" class="text-end">Action</th>
+                                    <th style="width:95px;">Mob Order</th>
+                                    <th style="width:115px;">Mob Status</th>
+                                    <th style="width:115px;">Sidebar Status</th>
+                                    <th style="width:85px;" class="text-end">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (empty($allTopIcons)): ?>
                                     <tr>
-                                        <td colspan="8" class="text-center py-4 text-muted">No categories found in database.</td>
+                                        <td colspan="9" class="text-center py-4 text-muted">No categories found in database.</td>
                                     </tr>
                                 <?php else: ?>
                                     <?php foreach ($allTopIcons as $item): ?>
                                         <?php 
                                             $isDeskShow = ($item['desktop_menu_status'] ?? 'show') === 'show'; 
                                             $isMobShow = ($item['mobile_topbar_status'] ?? 'show') === 'show'; 
+                                            $isSidebarShow = ($item['mobile_sidebar_status'] ?? 'yes') === 'yes';
                                             $isCurrentlyEditing = ($selected && (int)$selected['id'] === (int)$item['id']);
                                             
                                             $deskTitle = $item['desktop_menu_title'] ?: $item['name'];
                                             $mobTitle = $item['mobile_topbar_title'] ?: $deskTitle;
+                                            $sidebarTitle = !empty($item['mobile_sidebar_title']) ? $item['mobile_sidebar_title'] : $mobTitle;
 
                                             $deskImg = !empty($item['desktop_image']) ? $item['desktop_image'] : $item['image'];
                                             $mobImg = !empty($item['mobile_image']) ? $item['mobile_image'] : $deskImg;
+                                            $sideImg = !empty($item['mobile_sidebar_image']) ? $item['mobile_sidebar_image'] : $mobImg;
                                         ?>
                                         <tr class="top-icon-row <?php echo $isCurrentlyEditing ? 'table-primary table-opacity-10' : ''; ?>"
                                             data-name="<?php echo strtolower(htmlspecialchars($item['name'])); ?>"
                                             data-desk-status="<?php echo $isDeskShow ? 'show' : 'hide'; ?>"
-                                            data-mob-status="<?php echo $isMobShow ? 'show' : 'hide'; ?>">
+                                            data-mob-status="<?php echo $isMobShow ? 'show' : 'hide'; ?>"
+                                            data-sidebar-status="<?php echo $isSidebarShow ? 'show' : 'hide'; ?>">
                                             
                                             <!-- Category Column -->
                                             <td>
@@ -1609,6 +1984,16 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
                                                 </button>
                                             </td>
 
+                                            <!-- Mobile Sidebar Status Toggle -->
+                                            <td>
+                                                <button type="button" 
+                                                        class="switch-toggle-btn <?php echo $isSidebarShow ? 'btn-status-show' : 'btn-status-hide'; ?>"
+                                                        onclick="toggleTopIconStatusAjax(<?php echo (int)$item['id']; ?>, 'sidebar', '<?php echo $isSidebarShow ? 'hide' : 'show'; ?>', this)">
+                                                    <i class="fas <?php echo $isSidebarShow ? 'fa-check' : 'fa-times'; ?>"></i>
+                                                    <span><?php echo $isSidebarShow ? 'Show' : 'Hide'; ?></span>
+                                                </button>
+                                            </td>
+
                                             <!-- Action Button -->
                                             <td class="text-end">
                                                 <a href="add-top-icon.php?category_id=<?php echo (int)$item['id']; ?>" class="btn btn-sm btn-outline-primary py-1 px-2" style="font-size:12px;">
@@ -1632,39 +2017,40 @@ if ($selectedId > 0 && !empty($allTopIcons)) {
 
 <script src="js/app.js"></script>
 <script>
-// Switch between Desktop and Mobile Settings Panels
+// Switch between Desktop, Mobile, and Sidebar Settings Panels
 function switchDeviceTab(tab) {
-    const isDesktop = (tab === 'desktop');
-    
-    document.getElementById('desktopConfigPanel').style.display = isDesktop ? 'block' : 'none';
-    document.getElementById('mobileConfigPanel').style.display = isDesktop ? 'none' : 'block';
+    document.getElementById('desktopConfigPanel').style.display = (tab === 'desktop') ? 'block' : 'none';
+    document.getElementById('mobileConfigPanel').style.display = (tab === 'mobile') ? 'block' : 'none';
+    const sidePanel = document.getElementById('sidebarConfigPanel');
+    if (sidePanel) sidePanel.style.display = (tab === 'sidebar') ? 'block' : 'none';
 
     const deskBtn = document.getElementById('segDesktopBtn');
     const mobBtn = document.getElementById('segMobileBtn');
+    const sideBtn = document.getElementById('segSidebarBtn');
 
-    if (isDesktop) {
-        deskBtn.className = 'device-segment-btn active desktop-active';
-        mobBtn.className = 'device-segment-btn';
-        switchPreviewMode('desktop');
-    } else {
-        deskBtn.className = 'device-segment-btn';
-        mobBtn.className = 'device-segment-btn active mobile-active';
-        switchPreviewMode('mobile');
-    }
+    if (deskBtn) deskBtn.className = 'device-segment-btn' + (tab === 'desktop' ? ' active desktop-active' : '');
+    if (mobBtn) mobBtn.className = 'device-segment-btn' + (tab === 'mobile' ? ' active mobile-active' : '');
+    if (sideBtn) sideBtn.className = 'device-segment-btn' + (tab === 'sidebar' ? ' active info-active' : '');
+
+    switchPreviewMode(tab);
 }
 
-// Switch Live Preview Mockup Mode
+// Switch Live Preview Mockup Mode (Desktop, Mobile, or Sidebar)
 function switchPreviewMode(mode) {
-    const isDesk = (mode === 'desktop');
-    document.getElementById('mockupDesktopWrap').style.display = isDesk ? 'block' : 'none';
-    document.getElementById('mockupMobileWrap').style.display = isDesk ? 'none' : 'block';
+    const deskWrap = document.getElementById('mockupDesktopWrap');
+    const mobWrap = document.getElementById('mockupMobileWrap');
+    const sideWrap = document.getElementById('mockupSidebarWrap');
+
+    if (deskWrap) deskWrap.style.display = (mode === 'desktop') ? 'block' : 'none';
+    if (mobWrap) mobWrap.style.display = (mode === 'mobile') ? 'block' : 'none';
+    if (sideWrap) sideWrap.style.display = (mode === 'sidebar') ? 'block' : 'none';
 
     const btnDesk = document.getElementById('btnPrvDesktop');
     const btnMob = document.getElementById('btnPrvMobile');
-    if (btnDesk && btnMob) {
-        btnDesk.classList.toggle('active', isDesk);
-        btnMob.classList.toggle('active', !isDesk);
-    }
+    const btnSide = document.getElementById('btnPrvSidebar');
+    if (btnDesk) btnDesk.classList.toggle('active', mode === 'desktop');
+    if (btnMob) btnMob.classList.toggle('active', mode === 'mobile');
+    if (btnSide) btnSide.classList.toggle('active', mode === 'sidebar');
 }
 
 // Copy Default Category Title
@@ -1676,8 +2062,14 @@ function copyDefaultTitle(device) {
             input.value = defaultName;
             updateLivePreview();
         }
-    } else {
+    } else if (device === 'mobile') {
         const input = document.getElementById('mobile_topbar_title');
+        if (input) {
+            input.value = defaultName;
+            updateLivePreview();
+        }
+    } else if (device === 'sidebar') {
+        const input = document.getElementById('mobile_sidebar_title');
         if (input) {
             input.value = defaultName;
             updateLivePreview();
@@ -1738,6 +2130,26 @@ function updateLivePreview() {
         mobBadge.innerText = isShow ? 'SHOW (ACTIVE)' : 'HIDE (INACTIVE)';
         mobBadge.className = isShow ? 'badge bg-success' : 'badge bg-danger';
         mobHighlight.style.opacity = isShow ? '1' : '0.4';
+    }
+
+    // Mobile Sidebar Title & Status
+    const sideTitleInput = document.getElementById('mobile_sidebar_title');
+    const liveSideTitle = document.getElementById('liveSidebarMockTitle');
+    const sideTitleDisplay = document.getElementById('currentSidebarTitleDisplay');
+    const sideStatusChecked = document.querySelector('input[name="mobile_sidebar_status"]:checked');
+    const sideBadge = document.getElementById('mockSidebarStatusBadge');
+    const sideHighlight = document.getElementById('mockSidebarHighlightCard');
+
+    if (sideTitleInput && liveSideTitle) {
+        const txt = sideTitleInput.value.trim() || (mobTitleInput ? mobTitleInput.value.trim() : '') || defaultName;
+        liveSideTitle.innerText = txt;
+        if (sideTitleDisplay) sideTitleDisplay.innerText = txt;
+    }
+    if (sideStatusChecked && sideBadge && sideHighlight) {
+        const isShow = (sideStatusChecked.value === 'yes');
+        sideBadge.innerText = isShow ? 'SHOW (ACTIVE)' : 'HIDE (INACTIVE)';
+        sideBadge.className = isShow ? 'badge bg-info' : 'badge bg-danger';
+        sideHighlight.style.opacity = isShow ? '1' : '0.4';
     }
 }
 
@@ -1802,6 +2214,7 @@ function toggleTopIconStatusAjax(id, device, newStatus, btn) {
                 if (row) {
                     if (device === 'desktop') row.setAttribute('data-desk-status', 'show');
                     if (device === 'mobile') row.setAttribute('data-mob-status', 'show');
+                    if (device === 'sidebar') row.setAttribute('data-sidebar-status', 'show');
                 }
             } else {
                 btn.className = 'switch-toggle-btn btn-status-hide';
@@ -1810,6 +2223,7 @@ function toggleTopIconStatusAjax(id, device, newStatus, btn) {
                 if (row) {
                     if (device === 'desktop') row.setAttribute('data-desk-status', 'hide');
                     if (device === 'mobile') row.setAttribute('data-mob-status', 'hide');
+                    if (device === 'sidebar') row.setAttribute('data-sidebar-status', 'hide');
                 }
             }
             showToast(data.message || 'Status updated successfully.');
@@ -1849,6 +2263,7 @@ function filterDeviceView(mode, btn) {
     rows.forEach(r => {
         const desk = r.getAttribute('data-desk-status');
         const mob = r.getAttribute('data-mob-status');
+        const side = r.getAttribute('data-sidebar-status');
 
         if (mode === 'all') {
             r.style.display = '';
@@ -1856,6 +2271,8 @@ function filterDeviceView(mode, btn) {
             r.style.display = (desk === 'show') ? '' : 'none';
         } else if (mode === 'mob-show') {
             r.style.display = (mob === 'show') ? '' : 'none';
+        } else if (mode === 'sidebar-show') {
+            r.style.display = (side === 'show') ? '' : 'none';
         }
     });
 }

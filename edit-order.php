@@ -89,23 +89,39 @@ if ($_POST) {
     <title>Edit Order #<?php echo $order['order_number']; ?> | Printmont</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&amp;display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .order-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .order-header { background: #fff; color: #212529; border: 1px solid #e3e8ef; border-radius: 12px; box-shadow: 0 1px 3px rgba(15, 23, 42, .04); }
         .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
         .status-pending { background-color: #fff3cd; color: #856404; }
         .status-processing { background-color: #cce7ff; color: #004085; }
+        .status-confirmed { background-color: #e0e7ff; color: #3730a3; }
         .status-shipped { background-color: #d1ecf1; color: #0c5460; }
         .status-delivered { background-color: #d4edda; color: #155724; }
-        .status-cancelled { background-color: #f8d7da; color: #721c24; }
+        .status-cancelled, .status-refunded { background-color: #f8d7da; color: #721c24; }
         .payment-paid { background-color: #d4edda; color: #155724; }
         .payment-pending { background-color: #fff3cd; color: #856404; }
-        .payment-failed { background-color: #f8d7da; color: #721c24; }
+        .payment-failed, .payment-refunded { background-color: #f8d7da; color: #721c24; }
         .product-image { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
         .calculation-row { border-bottom: 1px solid #dee2e6; padding: 8px 0; }
         .calculation-total { border-top: 2px solid #007bff; font-weight: bold; }
+        .edit-order-items { min-width: 560px; }
+        @media (max-width: 767.98px) {
+            main.content { padding: 1rem .75rem !important; }
+            .order-header .card-body { padding: 1rem !important; }
+            .order-header h2 { font-size: 1.2rem; overflow-wrap: anywhere; }
+            .order-header .col-md-6 + .col-md-6 { text-align: left !important; margin-top: .8rem; }
+            .order-header .status-badge { display: inline-flex; margin-bottom: .35rem; }
+            #orderForm > .row { --bs-gutter-x: .75rem; }
+            #orderForm .card-header { padding: .8rem .9rem; }
+            #orderForm .card-body { padding: .9rem; }
+            #orderForm .form-control, #orderForm .form-select { min-height: 42px; font-size: 16px; }
+            #orderForm textarea.form-control { min-height: 100px; }
+            .edit-order-items { min-width: 560px; }
+        }
     </style>
 </head>
-<body>
+<body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
     <div class="wrapper">
         <?php include_once "includes/side-navbar.php"; ?>
         <div class="main">
@@ -120,16 +136,16 @@ if ($_POST) {
                                 <div class="card-body">
                                     <div class="row align-items-center">
                                         <div class="col-md-6">
-                                            <h2 class="card-title text-white mb-1">Edit Order #<?php echo htmlspecialchars($order['order_number']); ?></h2>
-                                            <p class="text-white-50 mb-0">
+                                            <h2 class="card-title text-dark fw-bold mb-1">Edit Order #<?php echo htmlspecialchars($order['order_number']); ?></h2>
+                                            <p class="text-muted mb-0">
                                                 Placed on <?php echo date('F j, Y \a\t g:i A', strtotime($order['created_at'])); ?>
                                             </p>
                                         </div>
                                         <div class="col-md-6 text-md-end">
-                                            <span class="status-badge status-<?php echo $order['status']; ?> me-2">
+                                            <span class="status-badge status-<?php echo htmlspecialchars($order['status']); ?> me-2">
                                                 <?php echo ucfirst($order['status']); ?>
                                             </span>
-                                            <span class="status-badge payment-<?php echo $order['payment_status']; ?>">
+                                            <span class="status-badge payment-<?php echo htmlspecialchars($order['payment_status']); ?>">
                                                 <?php echo ucfirst($order['payment_status']); ?>
                                             </span>
                                         </div>
@@ -217,7 +233,7 @@ if ($_POST) {
                                     </div>
                                     <div class="card-body">
                                         <div class="table-responsive">
-                                            <table class="table table-striped">
+                                            <table class="table table-striped edit-order-items">
                                                 <thead>
                                                     <tr>
                                                         <th>Product</th>
@@ -325,10 +341,12 @@ if ($_POST) {
                                             <label class="form-label">Order Status</label>
                                             <select name="status" class="form-control" required>
                                                 <option value="pending" <?php echo $order['status'] == 'pending' ? 'selected' : ''; ?>>Pending</option>
+                                                <option value="confirmed" <?php echo $order['status'] == 'confirmed' ? 'selected' : ''; ?>>Confirmed</option>
                                                 <option value="processing" <?php echo $order['status'] == 'processing' ? 'selected' : ''; ?>>Processing</option>
                                                 <option value="shipped" <?php echo $order['status'] == 'shipped' ? 'selected' : ''; ?>>Shipped</option>
                                                 <option value="delivered" <?php echo $order['status'] == 'delivered' ? 'selected' : ''; ?>>Delivered</option>
                                                 <option value="cancelled" <?php echo $order['status'] == 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
+                                                <option value="refunded" <?php echo $order['status'] == 'refunded' ? 'selected' : ''; ?>>Refunded</option>
                                             </select>
                                         </div>
                                         
@@ -338,6 +356,7 @@ if ($_POST) {
                                                 <option value="pending" <?php echo $order['payment_status'] == 'pending' ? 'selected' : ''; ?>>Pending</option>
                                                 <option value="paid" <?php echo $order['payment_status'] == 'paid' ? 'selected' : ''; ?>>Paid</option>
                                                 <option value="failed" <?php echo $order['payment_status'] == 'failed' ? 'selected' : ''; ?>>Failed</option>
+                                                <option value="refunded" <?php echo $order['payment_status'] == 'refunded' ? 'selected' : ''; ?>>Refunded</option>
                                             </select>
                                         </div>
                                         
@@ -431,7 +450,7 @@ if ($_POST) {
             const discount = parseFloat(document.querySelector('input[name="discount_amount"]').value) || 0;
             
             const grandTotal = subtotal + tax + shipping - discount;
-            document.getElementById('grandTotal').textContent = '$' + grandTotal.toFixed(2);
+            document.getElementById('grandTotal').textContent = '₹ ' + grandTotal.toFixed(2);
         }
 
         // Add event listeners to calculation inputs

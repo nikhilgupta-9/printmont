@@ -19,6 +19,16 @@ $filters = [
     'date_from' => $_GET['date_from'] ?? '',
     'date_to' => $_GET['date_to'] ?? ''
 ];
+$orderViewTitles = [
+    'pending' => 'Pending Orders',
+    'confirmed' => 'Confirmed Orders',
+    'processing' => 'In Production',
+    'shipped' => 'Shipped Orders',
+    'delivered' => 'Delivered Orders',
+    'cancelled' => 'Cancelled Orders',
+    'refunded' => 'Refunded Orders',
+];
+$orderViewTitle = $orderViewTitles[$filters['status']] ?? ($filters['payment_status'] === 'paid' ? 'Paid Orders' : 'All Orders');
 
 // Handle CSV Export
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
@@ -109,19 +119,17 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Sales & Orders Management | Printmont Admin</title>
+    <title><?php echo htmlspecialchars($orderViewTitle); ?> | Printmont Admin</title>
     
     <!-- Dynamic Brand Favicon (Rule 1) -->
     <link rel="shortcut icon" href="<?php echo htmlspecialchars($activeFaviconUrl); ?>?v=<?php echo time(); ?>" />
     <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($activeFaviconUrl); ?>?v=<?php echo time(); ?>" />
 
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="js/settings.js"></script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        
         .kpi-card {
             background: #ffffff;
             border-radius: 12px;
@@ -220,7 +228,7 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
         .badge-confirmed { background-color: #e0e7ff; color: #3730a3; }
         .badge-shipped { background-color: #f3e8ff; color: #6b21a8; }
         .badge-delivered { background-color: #dcfce7; color: #166534; }
-        .badge-cancelled { background-color: #fee2e2; color: #991b1b; }
+        .badge-cancelled, .badge-refunded { background-color: #fee2e2; color: #991b1b; }
         .badge-refunded { background-color: #f1f5f9; color: #475569; }
 
         .badge-pay {
@@ -231,7 +239,7 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
         }
         .badge-pay-paid { background: #dcfce7; color: #15803d; }
         .badge-pay-pending { background: #fef3c7; color: #b45309; }
-        .badge-pay-failed { background: #fee2e2; color: #b91c1c; }
+        .badge-pay-failed, .badge-pay-refunded { background: #fee2e2; color: #b91c1c; }
 
         .method-pill {
             font-size: 10.5px;
@@ -272,6 +280,93 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
             border-radius: 6px;
             transition: all 0.2s ease;
         }
+
+        .order-page-heading h1 { letter-spacing: -.025em; }
+        .nav-tabs-custom { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+        .nav-tabs-custom .nav-item { flex: 0 0 auto; }
+        .nav-tabs-custom .nav-link { white-space: nowrap; }
+        .filter-box .form-control, .filter-box .form-select, .filter-box .btn { min-height: 36px; }
+        .order-table { min-width: 1160px; }
+        .orders-table-card { border-radius: 12px; overflow: hidden; }
+        .orders-table-card .card-header { gap: 12px; }
+        @media (max-width: 767.98px) {
+            main.content { padding: 1rem .75rem !important; }
+            .order-page-heading { align-items: flex-start !important; }
+            .order-page-heading > div { width: 100%; }
+            .order-page-heading h1 { font-size: 1.3rem; }
+            .order-page-actions { display: flex; gap: .5rem; }
+            .order-page-actions .btn { flex: 1 1 0; margin: 0 !important; }
+            .kpi-card .card-body { padding: .9rem !important; }
+            .kpi-card h3 { font-size: 1.2rem; }
+            .nav-tabs-custom { margin-right: -.75rem; padding-right: .75rem; }
+            .nav-tabs-custom .nav-link { padding: .65rem .8rem; font-size: .8rem; }
+            .filter-box .card-body { padding: .85rem !important; }
+            .filter-box .form-control, .filter-box .form-select { min-height: 42px; font-size: 16px; }
+            .filter-actions { display: flex; }
+            .filter-actions > * { flex: 1 1 0; min-height: 42px; }
+            .orders-table-card .card-header { align-items: flex-start !important; }
+            .orders-table-card .card-header > div:last-child { white-space: nowrap; }
+            .order-table { min-width: 0; }
+            .order-table thead { display: none; }
+            .order-table tbody { display: block; padding: .7rem; }
+            .order-table tbody tr.no-orders-row { display: block; border: 0; }
+            .order-table tbody tr.no-orders-row td { display: block; width: 100%; }
+            .order-table tbody tr:not(.no-orders-row) {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                gap: .2rem .75rem;
+                margin-bottom: .7rem;
+                padding: .55rem .7rem;
+                border: 1px solid #e6ebf2;
+                border-radius: 10px;
+                background: #fff;
+                box-shadow: 0 1px 3px rgba(15, 23, 42, .035);
+            }
+            .order-table tbody tr:last-child { margin-bottom: 0; }
+            .order-table tbody tr:not(.no-orders-row) td {
+                display: block;
+                min-width: 0;
+                padding: .48rem 0 !important;
+                border: 0 !important;
+                white-space: normal;
+                overflow-wrap: anywhere;
+                text-align: left !important;
+            }
+            .order-table tbody tr:not(.no-orders-row) td::before {
+                display: block;
+                margin-bottom: .22rem;
+                color: #778399;
+                font-size: .65rem;
+                font-weight: 700;
+                letter-spacing: .045em;
+                text-transform: uppercase;
+            }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(1) { display: none; }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(2) { grid-column: 1 / -1; }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(2)::before { content: 'Order'; }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(3) { grid-column: 1 / -1; }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(3)::before { content: 'Customer'; }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(4) { grid-column: 1 / -1; }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(4)::before { content: 'Items'; }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(5)::before { content: 'Amount'; }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(6)::before { content: 'Payment'; }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(7)::before { content: 'Order status'; }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(8) { grid-column: 1 / -1; }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(8)::before { content: 'Courier / tracking'; }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(9) { grid-column: 1 / -1; padding-top: .55rem !important; border-top: 1px solid #edf0f4 !important; }
+            .order-table tbody tr:not(.no-orders-row) td:nth-child(9)::before { content: 'Order actions'; }
+            .order-table .btn-group { display: flex; gap: .4rem; }
+            .order-table .btn-action-icon { width: 40px; height: 38px; }
+            .orders-table-card .card-body.p-0 { padding: 0 !important; }
+            .orders-table-card .table-responsive { overflow: visible; }
+            .orders-table-card .pagination { flex-wrap: wrap; }
+            .orders-table-card .card-body > .p-3 { align-items: flex-start !important; }
+        }
+        @media (max-width: 380px) {
+            .order-table tbody { padding: .5rem; }
+            .order-table tbody tr:not(.no-orders-row) { padding: .45rem .55rem; }
+            .order-page-actions .btn { font-size: .75rem; padding: .45rem .35rem; }
+        }
     </style>
 </head>
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
@@ -284,12 +379,12 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
                 <div class="container-fluid p-0">
                     
                     <!-- Top Page Title & Actions -->
-                    <div class="row mb-3 align-items-center">
+                    <div class="row mb-3 align-items-center order-page-heading">
                         <div class="col-md-6">
-                            <h3 class="fw-bold mb-1 text-dark">Sales & Orders Management</h3>
-                            <p class="text-muted mb-0 font-13">Monitor, process, fulfill, and track all customer orders and shipments in real-time.</p>
+                            <h1 class="h3 fw-bold mb-1 text-dark"><?php echo htmlspecialchars($orderViewTitle); ?></h1>
+                            <p class="text-muted mb-0 font-13">Review customer details, payment, order items and dispatch status from one list.</p>
                         </div>
-                        <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                        <div class="col-md-6 text-md-end mt-2 mt-md-0 order-page-actions">
                             <a href="?<?php echo http_build_query(array_merge($_GET, ['export' => 'csv'])); ?>" class="btn btn-outline-success btn-sm me-2 fw-semibold">
                                 <i class="fas fa-file-csv me-1"></i> Export to CSV
                             </a>
@@ -301,7 +396,7 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
 
                     <!-- KPI Statistics Row -->
                     <div class="row g-3 mb-4">
-                        <div class="col-xl-3 col-sm-6">
+                        <div class="col-6 col-xl-3">
                             <div class="card kpi-card mb-0">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center justify-content-between">
@@ -317,7 +412,7 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
                                 </div>
                             </div>
                         </div>
-                        <div class="col-xl-3 col-sm-6">
+                        <div class="col-6 col-xl-3">
                             <div class="card kpi-card mb-0">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center justify-content-between">
@@ -333,7 +428,7 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
                                 </div>
                             </div>
                         </div>
-                        <div class="col-xl-3 col-sm-6">
+                        <div class="col-6 col-xl-3">
                             <div class="card kpi-card mb-0">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center justify-content-between">
@@ -349,7 +444,7 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
                                 </div>
                             </div>
                         </div>
-                        <div class="col-xl-3 col-sm-6">
+                        <div class="col-6 col-xl-3">
                             <div class="card kpi-card mb-0">
                                 <div class="card-body p-3">
                                     <div class="d-flex align-items-center justify-content-between">
@@ -388,14 +483,27 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
                         function tabUrl($st) {
                             $q = $_GET;
                             $q['status'] = $st;
+                            unset($q['payment_status']);
+                            $q['page'] = 1;
+                            return '?' . http_build_query($q);
+                        }
+                        function paidTabUrl() {
+                            $q = $_GET;
+                            unset($q['status']);
+                            $q['payment_status'] = 'paid';
                             $q['page'] = 1;
                             return '?' . http_build_query($q);
                         }
                     ?>
                     <ul class="nav nav-tabs nav-tabs-custom mb-3">
                         <li class="nav-item">
-                            <a class="nav-link <?php echo empty($activeStatus) ? 'active' : ''; ?>" href="<?php echo tabUrl(''); ?>">
+                            <a class="nav-link <?php echo empty($activeStatus) && $filters['payment_status'] !== 'paid' ? 'active' : ''; ?>" href="<?php echo tabUrl(''); ?>">
                                 All Orders <span class="badge bg-secondary"><?php echo $stats['total_orders'] ?? 0; ?></span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo $filters['payment_status'] === 'paid' ? 'active' : ''; ?>" href="<?php echo paidTabUrl(); ?>">
+                                <i class="fas fa-circle-check fa-xs text-success"></i> Paid <span class="badge bg-success"><?php echo $stats['paid_orders'] ?? 0; ?></span>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -419,8 +527,13 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?php echo in_array($activeStatus, ['cancelled', 'refunded']) ? 'active' : ''; ?>" href="<?php echo tabUrl('cancelled'); ?>">
-                                <i class="fas fa-ban fa-xs text-danger"></i> Cancelled / Return <span class="badge bg-danger"><?php echo ($stats['cancelled_orders'] ?? 0) + ($stats['refunded_orders'] ?? 0); ?></span>
+                            <a class="nav-link <?php echo $activeStatus === 'cancelled' ? 'active' : ''; ?>" href="<?php echo tabUrl('cancelled'); ?>">
+                                <i class="fas fa-ban fa-xs text-danger"></i> Cancelled <span class="badge bg-danger"><?php echo $stats['cancelled_orders'] ?? 0; ?></span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo $activeStatus === 'refunded' ? 'active' : ''; ?>" href="<?php echo tabUrl('refunded'); ?>">
+                                <i class="fas fa-rotate-left fa-xs text-muted"></i> Refunded <span class="badge bg-secondary"><?php echo $stats['refunded_orders'] ?? 0; ?></span>
                             </a>
                         </li>
                     </ul>
@@ -471,7 +584,7 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
                                     <input type="date" name="date_to" class="form-control form-control-sm" value="<?php echo $filters['date_to']; ?>">
                                 </div>
 
-                                <div class="col-md-1 d-flex gap-1">
+                                <div class="col-md-1 d-flex gap-1 filter-actions">
                                     <button type="submit" class="btn btn-primary btn-sm w-100" title="Apply Filters">
                                         <i class="fas fa-filter"></i>
                                     </button>
@@ -484,7 +597,7 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
                     </div>
 
                     <!-- Orders Table Card -->
-                    <div class="card shadow-sm border-0">
+                    <div class="card shadow-sm border-0 orders-table-card">
                         <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                             <div>
                                 <h5 class="card-title mb-0 fw-bold">Orders Register</h5>
@@ -512,7 +625,7 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
                                     </thead>
                                     <tbody>
                                         <?php if (empty($orders)): ?>
-                                            <tr>
+                                            <tr class="no-orders-row">
                                                 <td colspan="9" class="text-center py-5">
                                                     <div class="text-muted">
                                                         <i class="fas fa-box-open fa-3x mb-3 text-light-emphasis"></i>
@@ -610,7 +723,7 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
                                                     <td>
                                                         <?php 
                                                             $payStatus = strtolower($order['payment_status'] ?? 'pending');
-                                                            $payClass = ($payStatus === 'paid') ? 'badge-pay-paid' : (($payStatus === 'failed') ? 'badge-pay-failed' : 'badge-pay-pending');
+                                                            $payClass = in_array($payStatus, ['paid', 'pending', 'failed', 'refunded'], true) ? 'badge-pay-' . $payStatus : 'badge-pay-pending';
                                                         ?>
                                                         <span class="badge-pay <?php echo $payClass; ?>">
                                                             <i class="fas <?php echo $payStatus === 'paid' ? 'fa-check-circle' : 'fa-clock'; ?> me-1"></i>
@@ -652,20 +765,21 @@ $activeFaviconUrl = !empty($activeFavicon['file_path']) ? ($activeFavicon['file_
                                                     <td class="text-end">
                                                         <div class="btn-group btn-group-sm">
                                                             <a href="view-order.php?id=<?php echo $order['id']; ?>" 
-                                                               class="btn btn-outline-primary btn-action-icon" title="View Order Details">
+                                                               class="btn btn-outline-primary btn-action-icon" title="View Order Details" aria-label="View order details">
                                                                <i class="fas fa-eye"></i>
                                                             </a>
                                                             <a href="print-invoice.php?id=<?php echo $order['id']; ?>" 
                                                                target="_blank"
-                                                               class="btn btn-outline-success btn-action-icon" title="Print Tax Invoice">
+                                                               class="btn btn-outline-success btn-action-icon" title="Print Tax Invoice" aria-label="Print tax invoice">
                                                                <i class="fas fa-file-invoice"></i>
                                                             </a>
                                                             <a href="edit-order.php?id=<?php echo $order['id']; ?>" 
-                                                               class="btn btn-outline-warning btn-action-icon" title="Edit Order">
+                                                               class="btn btn-outline-warning btn-action-icon" title="Edit Order" aria-label="Edit order">
                                                                <i class="fas fa-pen-to-square"></i>
                                                             </a>
                                                             <a href="delete-order.php?id=<?php echo $order['id']; ?>" 
                                                                class="btn btn-outline-danger btn-action-icon" 
+                                                               aria-label="Delete order"
                                                                onclick="return confirm('Are you sure you want to permanently delete order #<?php echo $order['order_number']; ?>?');"
                                                                title="Delete Order">
                                                                <i class="fas fa-trash-can"></i>

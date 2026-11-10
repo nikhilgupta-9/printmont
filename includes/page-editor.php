@@ -100,6 +100,8 @@ $pe_payload = [
 
 <div class="pe-toasts" id="peToasts" aria-live="polite"></div>
 
+<!-- Same CKEditor build the rest of the admin uses (blog posts, products, policies). -->
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 <script>
     window.PAGE_EDITOR = <?php echo json_encode($pe_payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 </script>

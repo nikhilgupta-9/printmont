@@ -4,6 +4,8 @@ require_once(__DIR__ . '/../models/ProductModel.php');
 require_once(__DIR__ . '/../models/CategoryModel.php');
 require_once(__DIR__ . '/../config/customization-options-schema.php');
 require_once(__DIR__ . '/../config/product-sales-schema.php');
+require_once(__DIR__ . '/../config/product-info-banners-schema.php');
+require_once(__DIR__ . '/../includes/image-upload-helper.php');
 
 class ProductController
 {
@@ -225,6 +227,37 @@ class ProductController
         }
         $discountPct = ($mrp > $sellingPrice) ? (int)round((($mrp - $sellingPrice) / $mrp) * 100) : 0;
 
+        // Format Color attributes and variant images with full URLs
+        $rawColors = !empty($product['color_attributes']) ? json_decode($product['color_attributes'], true) : (!empty($product['color']) ? [['name' => $product['color'], 'hex' => '#000000', 'price' => 0, 'image' => '', 'text' => '']] : []);
+        $formattedColors = [];
+        $formattedColorImages = [];
+
+        if (is_array($rawColors)) {
+            foreach ($rawColors as $c) {
+                if (is_string($c)) {
+                    $c = ['name' => $c, 'hex' => '#000000', 'price' => 0, 'image' => '', 'text' => ''];
+                }
+                $imgUrl = '';
+                if (!empty($c['image'])) {
+                    $imgUrl = (strpos($c['image'], 'http') === 0) ? $c['image'] : $baseUrl . ltrim($c['image'], '/');
+                }
+                $c['image'] = $imgUrl;
+                $formattedColors[] = $c;
+                if ($imgUrl && !empty($c['name'])) {
+                    $formattedColorImages[$c['name']] = $imgUrl;
+                }
+            }
+        }
+
+        $rawColorImages = !empty($product['color_images']) ? json_decode($product['color_images'], true) : [];
+        if (is_array($rawColorImages)) {
+            foreach ($rawColorImages as $k => $v) {
+                if (!empty($v)) {
+                    $formattedColorImages[$k] = (strpos($v, 'http') === 0) ? $v : $baseUrl . ltrim($v, '/');
+                }
+            }
+        }
+
         return [
             'sale' => $sale,
             'id' => (int) $product['id'],
@@ -262,18 +295,28 @@ class ProductController
             'assured' => (bool) ($product['is_assured'] ?? true),
             'min_quantity' => (int) ($product['minimum_quantity'] ?? 1),
             'out_of_stock_status' => $product['out_of_stock_status'] ?? 'in_stock',
+            'show_cart_buttons' => !isset($product['show_cart_buttons']) || (bool) $product['show_cart_buttons'],
             'show_left_quantity' => (bool) ($product['show_quantity'] ?? false),
             'show_help_button' => (bool) ($product['show_help_button'] ?? false),
             'help_button_text' => $product['help_button_text'] ?? 'Need Help?',
             'help_button_link' => $product['help_button_link'] ?? '',
             'show_bulk_form' => (bool) ($product['show_bulk_form'] ?? false),
+            'show_inquiry_form' => (bool) ($product['show_inquiry_form'] ?? false),
             'customization_label_status' => (bool) ($product['show_customization_label'] ?? false),
+            'enable_upload_design' => isset($product['enable_upload_design']) ? (bool) $product['enable_upload_design'] : true,
+            'upload_design_max_images' => isset($product['upload_design_max_images']) ? max(1, (int) $product['upload_design_max_images']) : 4,
+            'upload_design_max_texts' => isset($product['upload_design_max_texts']) ? max(0, (int) $product['upload_design_max_texts']) : 2,
+            'enable_customizer' => isset($product['enable_customizer']) ? (bool) $product['enable_customizer'] : true,
+            'customizer_template_id' => !empty($product['customizer_template_id']) ? (int) $product['customizer_template_id'] : null,
             'customization_label' => $product['customization_label'] ?? 'Customizable',
             'customization_data' => $this->resolveCustomizationFields($product['customization_fields'] ?? null),
+            'custom_attributes' => !empty($product['product_attributes_fields']) ? (is_array($product['product_attributes_fields']) ? $product['product_attributes_fields'] : (json_decode($product['product_attributes_fields'], true) ?: [])) : [],
+            'product_attributes_fields' => !empty($product['product_attributes_fields']) ? (is_array($product['product_attributes_fields']) ? $product['product_attributes_fields'] : (json_decode($product['product_attributes_fields'], true) ?: [])) : [],
             'size_status' => (bool) ($product['show_sizes'] ?? false),
             'sizes' => !empty($product['size_attributes']) ? json_decode($product['size_attributes'], true) : [],
-            'colors' => !empty($product['color_attributes']) ? json_decode($product['color_attributes'], true) : (!empty($product['color']) ? [['name' => $product['color'], 'hex' => '#000000', 'price' => 0]] : []),
-            'color_images' => !empty($product['color_images']) ? json_decode($product['color_images'], true) : [],
+            'size_chart_image' => !empty($product['size_chart_image']) ? ((strpos($product['size_chart_image'], 'http') === 0) ? $product['size_chart_image'] : $baseUrl . ltrim($product['size_chart_image'], '/')) : null,
+            'colors' => $formattedColors,
+            'color_images' => $formattedColorImages,
             'materials' => !empty($product['material_attributes']) ? json_decode($product['material_attributes'], true) : (!empty($product['material']) ? [$product['material']] : []),
             'lamination' => !empty($product['lamination_attributes']) ? json_decode($product['lamination_attributes'], true) : [],
             'orientation' => !empty($product['orientation_attributes']) ? json_decode($product['orientation_attributes'], true) : [],
@@ -412,11 +455,19 @@ class ProductController
 
             // ── Image uploads ──────────────────────────────────────────────
             $thumbnailImage = '';
+            $sizeChartImage = null;
             $mainImages     = [];
             $galleryImages  = [];
 
             if (!empty($files['thumbnail_image']['name'])) {
                 $thumbnailImage = $this->uploadImage($files['thumbnail_image'], 'thumbnail');
+            }
+            if (!empty($files['size_chart_image']['name'])) {
+                try {
+                    $sizeChartImage = $this->uploadImage($files['size_chart_image'], 'size_charts');
+                } catch (Exception $e) {
+                    error_log("Failed to upload size chart image: " . $e->getMessage());
+                }
             }
             if (!empty($files['main_images']['name'][0])) {
                 $mainImages = $this->uploadMultipleImages($files['main_images'], 'main');
@@ -452,6 +503,9 @@ class ProductController
             // ── Customization fields (JSON) ───────────────────────────────
             $customizationFields = $this->buildCustomizationFields($data);
 
+            // ── Additional Product Attributes (JSON, Tab 9) ───────────────
+            $productAttributeFields = $this->buildProductAttributeFields($data);
+
             // ── Size attributes (JSON) ────────────────────────────────────
             $sizeAttributes = [];
             if (!empty($data['size_names']) && is_array($data['size_names'])) {
@@ -465,15 +519,47 @@ class ProductController
                 }
             }
 
-            // ── Color attributes (JSON) ───────────────────────────────────
+            // ── Color attributes & per-product variant images (JSON) ───────
             $colorAttributes = [];
-            if (!empty($data['color_names']) && is_array($data['color_names'])) {
+            $colorImagesMap  = [];
+            if (!empty($data['variant_color_name']) && is_array($data['variant_color_name'])) {
+                foreach ($data['variant_color_name'] as $i => $name) {
+                    $name = trim($name);
+                    if ($name === '') continue;
+                    $hex = $data['variant_color_hex'][$i] ?? '#000000';
+                    $price = floatval($data['variant_color_price'][$i] ?? 0);
+                    $text = trim($data['variant_color_text'][$i] ?? '');
+                    $imagePath = trim($data['existing_variant_color_images'][$i] ?? '');
+
+                    // Upload new variant image if supplied
+                    if (isset($files['variant_color_images']['error'][$i]) && $files['variant_color_images']['error'][$i] === UPLOAD_ERR_OK) {
+                        $uploadedPath = $this->uploadVariantImage($files['variant_color_images'], $i, $name);
+                        if ($uploadedPath) {
+                            $imagePath = $uploadedPath;
+                        }
+                    }
+
+                    $colorAttributes[] = [
+                        'name'  => $name,
+                        'hex'   => $hex,
+                        'price' => $price,
+                        'image' => $imagePath,
+                        'text'  => $text,
+                    ];
+                    if (!empty($imagePath)) {
+                        $colorImagesMap[$name] = $imagePath;
+                    }
+                }
+            } elseif (!empty($data['color_names']) && is_array($data['color_names'])) {
                 foreach ($data['color_names'] as $i => $name) {
-                    if (!empty($name)) {
+                    $name = trim($name);
+                    if ($name !== '') {
                         $colorAttributes[] = [
                             'name'  => $name,
                             'hex'   => $data['color_hexes'][$i] ?? '#000000',
                             'price' => floatval($data['color_prices'][$i] ?? 0),
+                            'image' => '',
+                            'text'  => '',
                         ];
                     }
                 }
@@ -516,8 +602,8 @@ class ProductController
                 'bulk_price_variance'    => !empty($bulkPricing) ? json_encode($bulkPricing) : '',
                 'sku'                    => trim($data['sku_code']),
 
-                // Tab 2 – Filters
-                'color'                  => trim($data['color'] ?? ''),
+                // Tab 2 – Filters & Master Attributes
+                'color'                  => !empty($colorAttributes) ? implode(', ', array_column($colorAttributes, 'name')) : trim($data['color'] ?? ''),
                 'type'                   => trim($data['type'] ?? ''),
                 'material'               => trim($data['material'] ?? ''),
                 'occasion'               => trim($data['occasion'] ?? ''),
@@ -537,6 +623,8 @@ class ProductController
                 'category_id'            => !empty($data['category_id']) ? intval($data['category_id']) : null,
                 'sub_category_id'        => !empty($data['sub_category_id']) ? intval($data['sub_category_id']) : null,
                 'sub_sub_category_id'    => !empty($data['sub_sub_category_id']) ? intval($data['sub_sub_category_id']) : null,
+                'additional_sub_category_ids' => isset($data['additional_sub_category_ids']) ? json_encode(array_map('intval', $data['additional_sub_category_ids'])) : null,
+                'additional_sub_sub_category_ids' => isset($data['additional_sub_sub_category_ids']) ? json_encode(array_map('intval', $data['additional_sub_sub_category_ids'])) : null,
                 'homepage_category_id'   => !empty($data['homepage_category_id']) ? intval($data['homepage_category_id']) : null,
                 'homepage_carousel_id'   => !empty($data['homepage_carousel_id']) ? intval($data['homepage_carousel_id']) : null,
                 'status'                 => $data['status'] ?? 'active',
@@ -552,20 +640,31 @@ class ProductController
                 'thumbnail_image'        => $thumbnailImage,
                 'gallery_images'         => !empty($galleryImages) ? json_encode(array_values($galleryImages)) : null,
 
-                // Tab 5 – SEO
+                // Tab 6 – SEO
                 'meta_title'             => trim($data['meta_title'] ?? ''),
                 'meta_keywords'          => trim($data['meta_keywords'] ?? ''),
                 'meta_description'       => trim($data['meta_description'] ?? ''),
 
-                // Tab 6 – Visibility
+                // Tab 7 – Status Show and Hide Button
+                'show_cart_buttons'      => isset($data['show_cart_buttons']) ? 1 : 0,
                 'show_quantity'          => isset($data['show_quantity']) ? 1 : 0,
                 'show_help_button'       => isset($data['show_help_button']) ? 1 : 0,
                 'show_bulk_form'         => isset($data['show_bulk_form']) ? 1 : 0,
+                'show_inquiry_form'      => isset($data['show_inquiry_form']) ? 1 : 0,
+                'size_chart_image'       => $sizeChartImage,
 
-                // Tab 7 – Customization
+                // Tab 8 – Customization
                 'show_customization_label' => isset($data['show_customization_label']) ? 1 : 0,
+                'enable_upload_design'   => isset($data['enable_upload_design']) ? 1 : 0,
+                'upload_design_max_images' => isset($data['upload_design_max_images']) ? max(1, (int) $data['upload_design_max_images']) : 4,
+                'upload_design_max_texts' => isset($data['upload_design_max_texts']) ? max(0, (int) $data['upload_design_max_texts']) : 2,
+                'enable_customizer'      => isset($data['enable_customizer']) ? 1 : 0,
+                'customizer_template_id' => !empty($data['customizer_template_id']) ? (int) $data['customizer_template_id'] : null,
                 'customization_label'    => trim($data['customization_label'] ?? ''),
                 'customization_fields'   => !empty($customizationFields) ? json_encode($customizationFields) : null,
+
+                // Tab 9 – Additional Product Attributes
+                'product_attributes_fields' => !empty($productAttributeFields) ? json_encode($productAttributeFields) : null,
 
                 // Tab 8 – Addons
                 'addon_product_ids'      => $addonIds,
@@ -575,6 +674,7 @@ class ProductController
                 'show_colors'            => isset($data['show_colors']) ? 1 : 0,
                 'size_attributes'        => !empty($sizeAttributes) ? json_encode($sizeAttributes) : null,
                 'color_attributes'       => !empty($colorAttributes) ? json_encode($colorAttributes) : null,
+                'color_images'           => !empty($colorImagesMap) ? json_encode($colorImagesMap) : null,
                 'material_attributes'    => !empty($data['attr_material']) ? json_encode([$data['attr_material']]) : null,
                 'lamination_attributes'  => !empty($data['attr_lamination']) ? json_encode([$data['attr_lamination']]) : null,
                 'orientation_attributes' => !empty($data['attr_orientation']) ? json_encode([$data['attr_orientation']]) : null,
@@ -607,6 +707,9 @@ class ProductController
 
             // Sync multi-category assignments in product_categories
             $this->syncProductCategories($productId, $data['category_id'] ?? 0, $data['additional_category_ids'] ?? []);
+
+            // Tab 1, point 13 – Product Information Image & Text Upload (shown above Ratings & Reviews)
+            $this->saveProductInfoBanners($productId, $data, $files);
 
             return ['success' => true, 'product_id' => $productId, 'message' => 'Product added successfully!'];
 
@@ -654,42 +757,18 @@ class ProductController
 
     private function uploadImage($file, $type = 'product')
     {
-        $uploadDir = 'uploads/products/' . $type . '/';
-
-        // Create directory if it doesn't exist
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+        if (empty($file) || empty($file['name'])) return '';
+        $relativeDir = 'uploads/products/' . trim((string)$type, '/');
+        $result = saveUploadedImageAsWebp(
+            $file,
+            __DIR__ . '/../' . $relativeDir,
+            $relativeDir,
+            ['max_bytes' => 5 * 1024 * 1024, 'quality' => 84]
+        );
+        if (!$result['success']) {
+            throw new Exception($result['error']);
         }
-
-        if ($file['error'] === UPLOAD_ERR_OK) {
-            // Validate file type
-            $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            $fileType = mime_content_type($file['tmp_name']);
-
-            if (!in_array($fileType, $allowedTypes)) {
-                throw new Exception("Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.");
-            }
-
-            // Validate file size (5MB max)
-            if ($file['size'] > 5 * 1024 * 1024) {
-                throw new Exception("File size too large. Maximum size is 5MB.");
-            }
-
-            // Generate unique filename
-            $fileExt = pathinfo($file['name'], PATHINFO_EXTENSION);
-            $fileName = uniqid('product_' . $type . '_') . '.' . $fileExt;
-            $filePath = $uploadDir . $fileName;
-
-            if (move_uploaded_file($file['tmp_name'], $filePath)) {
-                return $filePath;
-            } else {
-                throw new Exception("Failed to upload image: " . $file['name']);
-            }
-        } elseif ($file['error'] !== UPLOAD_ERR_NO_FILE) {
-            throw new Exception("Upload error: " . $this->getUploadError($file['error']));
-        }
-
-        return '';
+        return $result['path'];
     }
 
     private function uploadMultipleImages($files, $type = 'product')
@@ -719,6 +798,128 @@ class ProductController
         }
 
         return $uploadedImages;
+    }
+
+    private function uploadInfoBannerImage($file)
+    {
+        if (empty($file) || empty($file['name'])) return '';
+        $relativeDir = 'uploads/products/info-banners';
+        $result = saveUploadedImageAsWebp(
+            $file,
+            __DIR__ . '/../' . $relativeDir,
+            $relativeDir,
+            ['max_bytes' => 5 * 1024 * 1024, 'quality' => 84]
+        );
+        if (!$result['success']) throw new Exception($result['error']);
+        return $result['path'];
+    }
+
+    /**
+     * Upload an individual product color variant image (uploads/products/variants/)
+     */
+    private function uploadVariantImage($filesArray, $index, $colorName)
+    {
+        $tmpName = $filesArray['tmp_name'][$index] ?? '';
+        $origName = $filesArray['name'][$index] ?? '';
+        if (empty($tmpName) || !file_exists($tmpName)) return null;
+
+        $relativeDir = 'uploads/products/variants';
+        $file = [
+            'name' => $origName,
+            'type' => $filesArray['type'][$index] ?? '',
+            'tmp_name' => $tmpName,
+            'error' => $filesArray['error'][$index] ?? UPLOAD_ERR_OK,
+            'size' => $filesArray['size'][$index] ?? (filesize($tmpName) ?: 0),
+        ];
+        $result = saveUploadedImageAsWebp(
+            $file,
+            __DIR__ . '/../' . $relativeDir,
+            $relativeDir,
+            ['max_bytes' => 5 * 1024 * 1024, 'quality' => 84]
+        );
+        return $result['success'] ? $result['path'] : null;
+    }
+
+    /**
+     * Tab 1, point 13 – Product Information Image & Text Upload.
+     * Shown on the product page above Ratings & Reviews (frontend: ProductInfoBanners.jsx).
+     * Rows post as parallel arrays (info_banner_title[], info_banner_image[], ...), one entry
+     * per banner; a blank/removed row is skipped. Replaces the whole set for this product on
+     * every save, deleting only the image files that were actually dropped or replaced.
+     */
+    private function saveProductInfoBanners($productId, $data, $files)
+    {
+        if (!$this->db || $productId <= 0) return;
+        ensureProductInfoBannersTable($this->db);
+
+        $titles       = (array) ($data['info_banner_title'] ?? []);
+        $descriptions = (array) ($data['info_banner_description'] ?? []);
+        $buttonTexts  = (array) ($data['info_banner_button_text'] ?? []);
+        $buttonLinks  = (array) ($data['info_banner_button_link'] ?? []);
+        $existingImgs = (array) ($data['info_banner_existing_image'] ?? []);
+        $removeFlags  = (array) ($data['info_banner_remove'] ?? []);
+        $fileNames    = $files['info_banner_image']['name'] ?? [];
+
+        $rowCount = max(count($titles), count($existingImgs), count($fileNames), count($descriptions));
+
+        $oldImages = [];
+        $existingRows = $this->db->query("SELECT image FROM product_info_banners WHERE product_id = " . (int) $productId);
+        while ($existingRows && ($row = $existingRows->fetch_assoc())) {
+            if (!empty($row['image'])) $oldImages[] = $row['image'];
+        }
+
+        $keptImages = [];
+        $rowsToInsert = [];
+
+        for ($i = 0; $i < $rowCount; $i++) {
+            if (!empty($removeFlags[$i])) continue;
+
+            $title = trim($titles[$i] ?? '');
+            $description = trim($descriptions[$i] ?? '');
+            $buttonText = trim($buttonTexts[$i] ?? '');
+            $buttonLink = trim($buttonLinks[$i] ?? '');
+            $existingImage = trim($existingImgs[$i] ?? '');
+
+            $uploadedImage = '';
+            if (!empty($fileNames[$i])) {
+                $uploadedImage = $this->uploadInfoBannerImage([
+                    'name'     => $files['info_banner_image']['name'][$i],
+                    'type'     => $files['info_banner_image']['type'][$i],
+                    'tmp_name' => $files['info_banner_image']['tmp_name'][$i],
+                    'error'    => $files['info_banner_image']['error'][$i],
+                    'size'     => $files['info_banner_image']['size'][$i],
+                ]);
+            }
+
+            $image = $uploadedImage ?: $existingImage;
+            if ($title === '' && $description === '' && $buttonText === '' && $image === '') {
+                continue; // blank trailing row
+            }
+
+            if ($image !== '') $keptImages[] = $image;
+            $rowsToInsert[] = [$title, $description, $buttonText, $buttonLink, $image];
+        }
+
+        $this->db->query("DELETE FROM product_info_banners WHERE product_id = " . (int) $productId);
+
+        foreach ($oldImages as $oldImage) {
+            if (!in_array($oldImage, $keptImages, true) && file_exists($oldImage)) {
+                @unlink($oldImage);
+            }
+        }
+
+        if (!empty($rowsToInsert)) {
+            $stmt = $this->db->prepare(
+                "INSERT INTO product_info_banners (product_id, title, description, button_text, button_link, image, display_order, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'active')"
+            );
+            foreach ($rowsToInsert as $order => $row) {
+                [$title, $description, $buttonText, $buttonLink, $image] = $row;
+                $stmt->bind_param('isssssi', $productId, $title, $description, $buttonText, $buttonLink, $image, $order);
+                $stmt->execute();
+            }
+            $stmt->close();
+        }
     }
 
     private function getUploadError($errorCode)
@@ -834,6 +1035,58 @@ class ProductController
         return array_merge($assigned, $fields);
     }
 
+    /**
+     * Additional Product Attributes from the admin form (product.php → Tab 9), one entry per row:
+     *   attribute_labels[]    "Weight"
+     *   attribute_types[]     select | radio | color | multi | text | textarea | number | image | both
+     *   attribute_required[]  0/1 (one hidden value per row, so rows never shift)
+     *   attribute_help[]      short hint shown under the field
+     *   attribute_options[]   JSON list of choices: [{"label":"Matte","hex":"","price":0}, ...]
+     * Separate from customization_fields (Tab 7) — these describe the product itself rather than
+     * something the customer personalizes, and are stored in their own column.
+     */
+    private function buildProductAttributeFields($data)
+    {
+        $allowedTypes = ['select', 'radio', 'color', 'multi', 'text', 'textarea', 'number', 'image', 'both'];
+        $choiceTypes  = ['select', 'radio', 'color', 'multi'];
+        $fields = [];
+
+        foreach ((array) ($data['attribute_labels'] ?? []) as $i => $label) {
+            $label = trim((string) $label);
+            if ($label === '') continue;
+
+            $type = $data['attribute_types'][$i] ?? 'text';
+            if (!in_array($type, $allowedTypes, true)) $type = 'text';
+
+            $field = [
+                'label'    => $label,
+                'type'     => $type,
+                'required' => !empty($data['attribute_required'][$i]) ? 1 : 0,
+                'help'     => trim((string) ($data['attribute_help'][$i] ?? '')),
+            ];
+
+            if (in_array($type, $choiceTypes, true)) {
+                $options = [];
+                foreach ((json_decode($data['attribute_options'][$i] ?? '[]', true) ?: []) as $opt) {
+                    $optLabel = trim((string) ($opt['label'] ?? ''));
+                    if ($optLabel === '') continue;
+                    $hex = (string) ($opt['hex'] ?? '');
+                    $options[] = [
+                        'label' => $optLabel,
+                        'hex'   => preg_match('/^#[0-9a-fA-F]{6}$/', $hex) ? $hex : '',
+                        'price' => floatval($opt['price'] ?? 0),
+                    ];
+                }
+                if (empty($options)) continue;
+                $field['options'] = $options;
+            }
+
+            $fields[] = $field;
+        }
+
+        return $fields;
+    }
+
     public function updateProduct($id, $data, $files)
     {
         try {
@@ -871,6 +1124,25 @@ class ProductController
                     unlink($thumbnailImage);
                 }
                 $thumbnailImage = $this->uploadImage($files['thumbnail_image'], 'thumbnail');
+            }
+
+            // Size chart image handling
+            $sizeChartImage = $existingProduct['size_chart_image'] ?? null;
+            if (!empty($data['remove_size_chart_image']) && empty($files['size_chart_image']['name'])) {
+                if ($sizeChartImage && file_exists($sizeChartImage)) {
+                    @unlink($sizeChartImage);
+                }
+                $sizeChartImage = null;
+            }
+            if (!empty($files['size_chart_image']['name'])) {
+                if ($sizeChartImage && file_exists($sizeChartImage)) {
+                    @unlink($sizeChartImage);
+                }
+                try {
+                    $sizeChartImage = $this->uploadImage($files['size_chart_image'], 'size_charts');
+                } catch (Exception $e) {
+                    error_log("Failed to upload size chart image: " . $e->getMessage());
+                }
             }
 
             // Handle existing main images from form
@@ -917,13 +1189,17 @@ class ProductController
             // Remove empty values from gallery images
             $galleryImages = array_filter($galleryImages);
 
-            // Handle additional categories
-            $additionalCategoryIds = isset($data['additional_category_ids']) ? json_encode($data['additional_category_ids']) : ($existingProduct['additional_category_ids'] ?? null);
-            $additionalSubCategoryIds = isset($data['additional_sub_category_ids']) ? json_encode($data['additional_sub_category_ids']) : ($existingProduct['additional_sub_category_ids'] ?? null);
-            $additionalSubSubCategoryIds = isset($data['additional_sub_sub_category_ids']) ? json_encode($data['additional_sub_sub_category_ids']) : ($existingProduct['additional_sub_sub_category_ids'] ?? null);
+            // Handle additional categories (ids stored as JSON integers so JSON_CONTAINS type-matches
+            // the integer category id passed in from storefront category queries)
+            $additionalCategoryIds = isset($data['additional_category_ids']) ? json_encode(array_map('intval', $data['additional_category_ids'])) : ($existingProduct['additional_category_ids'] ?? null);
+            $additionalSubCategoryIds = isset($data['additional_sub_category_ids']) ? json_encode(array_map('intval', $data['additional_sub_category_ids'])) : ($existingProduct['additional_sub_category_ids'] ?? null);
+            $additionalSubSubCategoryIds = isset($data['additional_sub_sub_category_ids']) ? json_encode(array_map('intval', $data['additional_sub_sub_category_ids'])) : ($existingProduct['additional_sub_sub_category_ids'] ?? null);
 
             // Handle customization fields
             $customizationFields = $this->buildCustomizationFields($data);
+
+            // Handle additional product attributes (Tab 9)
+            $productAttributeFields = $this->buildProductAttributeFields($data);
 
             // Handle bulk pricing
             $bulkPricing = [];
@@ -961,15 +1237,46 @@ class ProductController
                 }
             }
 
-            // Handle color attributes
+            // Handle color attributes & variant images
             $colorAttributes = [];
-            if (!empty($data['color_names']) && is_array($data['color_names'])) {
+            $colorImagesMap = [];
+            if (!empty($data['variant_color_name']) && is_array($data['variant_color_name'])) {
+                foreach ($data['variant_color_name'] as $index => $color) {
+                    $color = trim($color);
+                    if ($color === '') continue;
+                    $hex = $data['variant_color_hex'][$index] ?? '#000000';
+                    $price = floatval($data['variant_color_price'][$index] ?? 0);
+                    $text = trim($data['variant_color_text'][$index] ?? '');
+                    $imagePath = trim($data['existing_variant_color_images'][$index] ?? '');
+
+                    if (isset($files['variant_color_images']['error'][$index]) && $files['variant_color_images']['error'][$index] === UPLOAD_ERR_OK) {
+                        $uploadedPath = $this->uploadVariantImage($files['variant_color_images'], $index, $color);
+                        if ($uploadedPath) {
+                            $imagePath = $uploadedPath;
+                        }
+                    }
+
+                    $colorAttributes[] = [
+                        'name'  => $color,
+                        'hex'   => $hex,
+                        'price' => $price,
+                        'image' => $imagePath,
+                        'text'  => $text,
+                    ];
+                    if (!empty($imagePath)) {
+                        $colorImagesMap[$color] = $imagePath;
+                    }
+                }
+            } elseif (!empty($data['color_names']) && is_array($data['color_names'])) {
                 foreach ($data['color_names'] as $index => $color) {
-                    if (!empty($color)) {
+                    $color = trim($color);
+                    if ($color !== '') {
                         $colorAttributes[] = [
                             'name'  => $color,
                             'hex'   => $data['color_hexes'][$index] ?? ($data['color_codes'][$index] ?? '#000000'),
                             'price' => floatval($data['color_prices'][$index] ?? 0),
+                            'image' => '',
+                            'text'  => '',
                         ];
                     }
                 }
@@ -977,9 +1284,11 @@ class ProductController
                 foreach ($data['colors'] as $index => $color) {
                     if (!empty($color)) {
                         $colorAttributes[] = [
-                            'name'  => $color,
-                            'hex'   => $data['color_codes'][$index] ?? '#000000',
-                            'price' => floatval($data['color_prices'][$index] ?? 0),
+                            'name'  => is_array($color) ? ($color['name'] ?? '') : $color,
+                            'hex'   => is_array($color) ? ($color['hex'] ?? '#000000') : '#000000',
+                            'price' => is_array($color) ? floatval($color['price'] ?? 0) : floatval($data['color_prices'][$index] ?? 0),
+                            'image' => is_array($color) ? ($color['image'] ?? '') : '',
+                            'text'  => is_array($color) ? ($color['text'] ?? '') : '',
                         ];
                     }
                 }
@@ -1090,7 +1399,7 @@ class ProductController
 
                 // Filters & Attributes
                 'brand' => trim($data['brand'] ?? $existingProduct['brand'] ?? ''),
-                'color' => trim($data['color'] ?? $existingProduct['color'] ?? ''),
+                'color' => !empty($colorAttributes) ? implode(', ', array_column($colorAttributes, 'name')) : trim($data['color'] ?? $existingProduct['color'] ?? ''),
                 'type' => trim($data['type'] ?? $existingProduct['type'] ?? ''),
                 'material' => trim($data['material'] ?? $existingProduct['material'] ?? ''),
                 'occasion' => trim($data['occasion'] ?? $existingProduct['occasion'] ?? ''),
@@ -1118,18 +1427,27 @@ class ProductController
                 'bulk_price_variance' => !empty($bulkPricing) ? json_encode($bulkPricing) : ($fullForm ? '[]' : (isset($data['bulk_price_variance']) ? trim($data['bulk_price_variance']) : ($existingProduct['bulk_price_variance'] ?? ''))),
                 'sku' => trim($data['sku_code'] ?? $existingProduct['sku']),
 
-                // Status & Display
+                // Status & Display (Tab 7)
                 'status' => $data['status'] ?? $existingProduct['status'] ?? 'active',
+                'show_cart_buttons' => $flag('show_cart_buttons', 1),
                 'show_quantity' => $flag('show_quantity', 1),
-                'show_bulk_form' => $flag('show_bulk_form', 0),
                 'show_help_button' => $flag('show_help_button', 0),
+                'show_bulk_form' => $flag('show_bulk_form', 0),
+                'show_inquiry_form' => $flag('show_inquiry_form', 0),
+                'size_chart_image' => $sizeChartImage,
                 'help_button_text' => trim($data['help_button_text'] ?? $existingProduct['help_button_text'] ?? 'Need Help?'),
                 'help_button_link' => trim($data['help_button_link'] ?? $existingProduct['help_button_link'] ?? '/contact-us'),
 
                 // Customization
                 'show_customization_label' => $flag('show_customization_label', 0),
+                'enable_upload_design' => $flag('enable_upload_design', 1),
+                'upload_design_max_images' => isset($data['upload_design_max_images']) ? max(1, (int) $data['upload_design_max_images']) : (isset($existingProduct['upload_design_max_images']) ? (int) $existingProduct['upload_design_max_images'] : 4),
+                'upload_design_max_texts' => isset($data['upload_design_max_texts']) ? max(0, (int) $data['upload_design_max_texts']) : (isset($existingProduct['upload_design_max_texts']) ? (int) $existingProduct['upload_design_max_texts'] : 2),
+                'enable_customizer' => $flag('enable_customizer', 1),
+                'customizer_template_id' => !empty($data['customizer_template_id']) ? (int) $data['customizer_template_id'] : null,
                 'customization_label' => trim($data['customization_label'] ?? $existingProduct['customization_label'] ?? ''),
                 'customization_fields' => $listValue($customizationFields, 'customization_fields'),
+                'product_attributes_fields' => $listValue($productAttributeFields, 'product_attributes_fields'),
 
                 // Addons
                 'addon_product_ids' => $addonProductIds,
@@ -1141,6 +1459,7 @@ class ProductController
                 // Attribute values (JSON)
                 'size_attributes' => $listValue($sizeAttributes, 'size_attributes'),
                 'color_attributes' => $listValue($colorAttributes, 'color_attributes'),
+                'color_images' => !empty($colorImagesMap) ? json_encode($colorImagesMap) : ($fullForm ? '{}' : ($existingProduct['color_images'] ?? null)),
                 'material_attributes' => $listValue($materialAttributes, 'material_attributes'),
                 'lamination_attributes' => $listValue($laminationAttributes, 'lamination_attributes'),
                 'orientation_attributes' => $listValue($orientationAttributes, 'orientation_attributes'),
@@ -1187,6 +1506,8 @@ class ProductController
             if ($success) {
                 // Sync multi-category assignments in product_categories
                 $this->syncProductCategories($id, $data['category_id'] ?? 0, $data['additional_category_ids'] ?? []);
+                // Tab 1, point 13 – Product Information Image & Text Upload (shown above Ratings & Reviews)
+                $this->saveProductInfoBanners($id, $data, $files);
                 return ['success' => true, 'message' => 'Product updated successfully!'];
             } else {
                 throw new Exception("Failed to update product");

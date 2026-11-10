@@ -49671,6 +49671,9 @@
                         })(e),
                         o = n["data-feather"];
                       delete n["data-feather"];
+                      if (!r.default || !r.default[o]) {
+                        return;
+                      }
                       var a = r.default[o].toSvg(
                           i({}, t, n, {
                             class: (0, l.default)(t.class, n.class),

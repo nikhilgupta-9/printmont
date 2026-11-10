@@ -79,6 +79,15 @@ require_once 'services/PageEditor.php';
                         'table' => 'careers',
                         'unit'  => 'roles',
                     ],
+                    [
+                        'label' => 'Website Content',
+                        'note'  => 'Free-form sections for any page — admin picks the page, the design pattern and the content.',
+                        'edit'  => 'website-content.php',
+                        'view'  => '/',
+                        'table' => 'content_blocks',
+                        'unit'  => 'sections',
+                        'why'   => 'Not one page or one shape — every row names its own page and pattern.',
+                    ],
                 ];
 
                 /** How many rows a page holds, and how many are hidden. */

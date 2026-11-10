@@ -131,12 +131,35 @@ class ApiMenuController {
                 'order'               => (int) (($c['desktop_menu_order'] > 0) ? $c['desktop_menu_order'] : ($c['display_order'] ?? 0)),
                 'image'               => $img($c['image'] ?? ''),
                 'menu_image'          => $img($c['desktop_menu_image'] ?: ($c['image'] ?? '')),
+                'tag'                 => $c['desktop_menu_tag'] ?? '',
+                'tag_bg'              => $c['desktop_menu_tag_bg'] ?? '',
+                'description'         => $c['desktop_menu_desc'] ?? '',
+                'description_status'  => $c['desktop_menu_desc_status'] ?? 'show',
+                'home_show'           => ($c['desktop_home_show'] ?? 'no') === 'yes',
+                'home_design'         => $c['desktop_home_design'] ?? '',
+                'home_order'          => (int) ($c['desktop_home_order'] ?? 0),
+                'home_tag'            => $c['desktop_home_tag'] ?? '',
+                'bg_color'            => $c['desktop_bg_color'] ?? '',
+                'bg_image'            => $img($c['desktop_bg_image'] ?? ''),
+                'home_image'          => $img($c['desktop_image'] ?? ''),
             ],
             'mobile' => [
                 'title'               => $mobileName,
                 'status'              => $c['mobile_topbar_status'] ?? 'show',
                 'order'               => (int) (($c['mobile_topbar_order'] > 0) ? $c['mobile_topbar_order'] : ($c['display_order'] ?? 0)),
                 'image'               => $img($c['image'] ?? ''),
+                'sidebar_status'      => $c['mobile_sidebar_status'] ?? 'yes',
+                'sidebar_title'       => !empty($c['mobile_sidebar_title']) ? $c['mobile_sidebar_title'] : $mobileName,
+                'sidebar_image'       => $img($c['mobile_sidebar_image'] ?? ''),
+                'description'         => $c['mobile_menu_desc'] ?? '',
+                'description_status'  => $c['mobile_menu_desc_status'] ?? 'show',
+                'home_show'           => ($c['mobile_home_show'] ?? 'no') === 'yes',
+                'home_design'         => $c['mobile_home_design'] ?? '',
+                'home_format'         => $c['mobile_home_format'] ?? '4',
+                'home_order'          => (int) ($c['mobile_home_order'] ?? 0),
+                'bg_color'            => $c['mobile_bg_color'] ?? '',
+                'bg_image'            => $img($c['mobile_bg_image'] ?? ''),
+                'home_image'          => $img($c['mobile_image'] ?? ''),
             ],
         ];
 
@@ -172,11 +195,13 @@ class ApiMenuController {
             $colImg = ($i === 1) ? ($c['desktop_menu_image'] ?? null) : ($c["desktop_menu_image_{$i}"] ?? null);
             $colTitle = $c["desktop_menu_title_{$i}"] ?? null;
             $colUrl = $c["desktop_menu_url_{$i}"] ?? null;
+            $colOrder = (int)($c["desktop_menu_order_{$i}"] ?? $i);
             if (!empty($colImg)) {
                 $banners[] = [
                     'image' => $img($colImg),
                     'title' => $colTitle ?: $desktopName,
                     'url'   => !empty($colUrl) ? $colUrl : (!empty($c['custom_url']) ? $c['custom_url'] : ('/category/' . $c['slug'])),
+                    'order' => $colOrder,
                 ];
             }
         }
@@ -203,9 +228,19 @@ class ApiMenuController {
                 'view_design_enabled' => ($c['desktop_menu_view'] ?? '') === 'yes',
                 'design'              => $c['desktop_menu_design'] ?? '',
                 'tag'                 => $c['desktop_menu_tag'] ?? '',
+                'tag_bg'              => $c['desktop_menu_tag_bg'] ?? '',
+                'description'         => $c['desktop_menu_desc'] ?? '',
+                'description_status'  => $c['desktop_menu_desc_status'] ?? 'show',
                 'image'               => $img($c['image'] ?? ''),
                 'menu_image'          => $img(!empty($c['desktop_menu_image']) ? $c['desktop_menu_image'] : ($c['image'] ?? '')),
                 'showcase_banners'    => $banners,
+                'home_show'           => ($c['desktop_home_show'] ?? 'no') === 'yes',
+                'home_design'         => $c['desktop_home_design'] ?? '',
+                'home_order'          => (int) ($c['desktop_home_order'] ?? 0),
+                'home_tag'            => $c['desktop_home_tag'] ?? '',
+                'bg_color'            => $c['desktop_bg_color'] ?? '',
+                'bg_image'            => $img($c['desktop_bg_image'] ?? ''),
+                'home_image'          => $img($c['desktop_image'] ?? ''),
             ],
             'mobile' => [
                 'title'               => $mobileName,
@@ -213,8 +248,20 @@ class ApiMenuController {
                 'order'               => (int) (($c['mobile_topbar_order'] ?? 0) > 0 ? $c['mobile_topbar_order'] : ($c['display_order'] ?? 0)),
                 'view_design_enabled' => ($c['mobile_menu_view'] ?? '') === 'yes',
                 'design'              => $c['mobile_menu_design'] ?? '',
+                'sidebar_status'      => $c['mobile_sidebar_status'] ?? 'yes',
+                'sidebar_title'       => !empty($c['mobile_sidebar_title']) ? $c['mobile_sidebar_title'] : $mobileName,
+                'sidebar_image'       => $img($c['mobile_sidebar_image'] ?? ''),
                 'sidebar_order'       => (int) (($c['mobile_sidebar_order'] ?? 0) > 0 ? $c['mobile_sidebar_order'] : ($c['display_order'] ?? 0)),
+                'description'         => $c['mobile_menu_desc'] ?? '',
+                'description_status'  => $c['mobile_menu_desc_status'] ?? 'show',
                 'image'               => $img($c['image'] ?? ''),
+                'home_show'           => ($c['mobile_home_show'] ?? 'no') === 'yes',
+                'home_design'         => $c['mobile_home_design'] ?? '',
+                'home_format'         => $c['mobile_home_format'] ?? '4',
+                'home_order'          => (int) ($c['mobile_home_order'] ?? 0),
+                'bg_color'            => $c['mobile_bg_color'] ?? '',
+                'bg_image'            => $img($c['mobile_bg_image'] ?? ''),
+                'home_image'          => $img($c['mobile_image'] ?? ''),
             ],
         ];
     }

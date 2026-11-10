@@ -93,6 +93,12 @@ if ($res) {
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Module Top Navigation Pills (Document 8 Manage Carousels) */
+        .module-nav-pills { display: flex; gap: 8px; flex-wrap: wrap; background: #fff; padding: 6px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        .module-nav-link { padding: 8px 14px; font-size: 13px; font-weight: 600; color: #475569; text-decoration: none; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .module-nav-link:hover { color: #00529b; background: #e0edff; }
+        .module-nav-link.active { color: #fff; background: #00529b; }
+
         .badge-design {
             font-size: 11px;
             font-weight: 600;
@@ -133,10 +139,27 @@ if ($res) {
             
             <main class="content">
                 <div class="container-fluid p-0">
+
+                    <!-- Document 8 Carousel Navigation Pills -->
+                    <div class="module-nav-pills mb-4">
+                        <a href="add-carousel.php?type=product" class="module-nav-link">
+                            <i class="fas fa-boxes"></i> 1. Add New Products Carousel
+                        </a>
+                        <a href="add-carousel.php?type=category" class="module-nav-link">
+                            <i class="fas fa-folder"></i> 2. Add New Category Carousel
+                        </a>
+                        <a href="carousels.php" class="module-nav-link active">
+                            <i class="fas fa-list"></i> 3. All Carousels
+                        </a>
+                        <a href="add-carousel.php?type=product&target=dashboard" class="module-nav-link">
+                            <i class="fas fa-tachometer-alt"></i> 4. User Dashboard: Product &amp; Category Carousel
+                        </a>
+                    </div>
+
                     <div class="row mb-3 align-items-center">
                         <div class="col-auto">
-                            <h1 class="h3 mb-0"><strong>Product</strong> Carousels</h1>
-                            <p class="text-muted small">Manage home and page product carousels, responsive designs & categories.</p>
+                            <h1 class="h3 mb-0"><strong>Carousels</strong> Management</h1>
+                            <p class="text-muted small">Manage responsive product and category carousels across Desktop &amp; Mobile views.</p>
                         </div>
                         <div class="col-auto ms-auto">
                             <a href="add-carousel.php" class="btn btn-primary px-3">
@@ -232,7 +255,22 @@ if ($res) {
                                                 <tr>
                                                     <td><span class="text-muted fw-bold">#<?php echo $c['id']; ?></span></td>
                                                     <td>
-                                                        <div class="fw-bold text-dark"><?php echo htmlspecialchars($c['title']); ?></div>
+                                                        <div class="fw-bold text-dark d-flex align-items-center gap-1 flex-wrap">
+                                                            <span><?php echo htmlspecialchars($c['title']); ?></span>
+                                                            <span class="badge <?php echo ($c['carousel_type'] ?? 'product') === 'category' ? 'bg-warning-subtle text-warning-emphasis' : 'bg-primary-subtle text-primary'; ?> border" style="font-size:10px;">
+                                                                <?php echo ($c['carousel_type'] ?? 'product') === 'category' ? 'Category Carousel' : 'Products Carousel'; ?>
+                                                            </span>
+                                                            <?php if (!empty($c['page_target'])): ?>
+                                                                <span class="badge bg-secondary-subtle text-secondary border" style="font-size:10px;">
+                                                                    Scope: <?php echo ucfirst(str_replace('_', ' ', $c['page_target'])); ?>
+                                                                </span>
+                                                            <?php endif; ?>
+                                                            <?php if (!empty($c['desktop_anchor_type'])): ?>
+                                                                <span class="badge bg-info-subtle text-info-emphasis border" style="font-size:10px;">
+                                                                    <i class="fas fa-arrows-alt-v fa-xs"></i> <?php echo ucfirst($c['desktop_anchor_position'] ?? 'after'); ?> <?php echo htmlspecialchars($c['desktop_anchor_type']); ?>
+                                                                </span>
+                                                            <?php endif; ?>
+                                                        </div>
                                                         <small class="text-muted">slug: <?php echo htmlspecialchars($c['slug']); ?></small>
                                                     </td>
                                                     <td>
@@ -245,6 +283,7 @@ if ($res) {
                                                     <td>
                                                         <div class="small fw-semibold"><?php echo htmlspecialchars($c['mobile_category_name'] ?: 'All Products / Custom'); ?></div>
                                                         <span class="badge-design"><?php echo strtoupper($c['mobile_home_design'] ?: 'DESIGN-1'); ?></span>
+                                                        <span class="badge bg-light text-dark border" style="font-size: 10px;">Fmt: <?php echo htmlspecialchars($c['mobile_carousel_format'] ?? '2.5'); ?></span>
                                                         <span class="badge <?php echo $c['mobile_status'] === 'active' ? 'bg-success' : 'bg-secondary'; ?>" style="font-size: 10px;">
                                                             Mob: <?php echo $c['mobile_status']; ?>
                                                         </span>

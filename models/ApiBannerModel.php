@@ -115,9 +115,12 @@ class ApiBannerModel {
 
         $banners = $this->db->fetchAll(
             "SELECT id, title, description,
-                    image_url_desktop, image_url_mobile,
+                    COALESCE(NULLIF(image_url_desktop, ''), desktop_image, '') as image_url_desktop,
+                    COALESCE(NULLIF(image_url_mobile, ''), mobile_image, NULLIF(image_url_desktop, ''), desktop_image, '') as image_url_mobile,
+                    COALESCE(NULLIF(desktop_image, ''), image_url_desktop, '') as desktop_image,
+                    COALESCE(NULLIF(mobile_image, ''), image_url_mobile, '') as mobile_image,
                     target_url, display_order, desktop_design, mobile_design,
-                    button_arrows, auto_running, auto_run_speed
+                    button_arrows, auto_running, auto_run_speed, alt_text
              FROM banners
              WHERE section_id = ? AND status = 'active'
                AND (start_date IS NULL OR start_date <= NOW())
@@ -231,9 +234,12 @@ class ApiBannerModel {
             if (empty($banners)) {
                 $banners = $this->db->fetchAll(
                     "SELECT id, title, description,
-                            image_url_desktop, image_url_mobile,
+                            COALESCE(NULLIF(image_url_desktop, ''), desktop_image, '') as image_url_desktop,
+                            COALESCE(NULLIF(image_url_mobile, ''), mobile_image, NULLIF(image_url_desktop, ''), desktop_image, '') as image_url_mobile,
+                            COALESCE(NULLIF(desktop_image, ''), image_url_desktop, '') as desktop_image,
+                            COALESCE(NULLIF(mobile_image, ''), image_url_mobile, '') as mobile_image,
                             target_url, display_order, desktop_design, mobile_design,
-                            button_arrows, auto_running, auto_run_speed
+                            button_arrows, auto_running, auto_run_speed, alt_text
                      FROM banners
                      WHERE section_id = ? AND status = 'active'
                        AND (start_date IS NULL OR start_date <= NOW())

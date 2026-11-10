@@ -1,0 +1,28 @@
+{
+    "search_mode": "rotating",
+    "rotation_interval": 3.2,
+    "static_placeholder": "Search for customized t-shirts, mugs, gifts and corporate items...",
+    "placeholders": [
+        "Search for Customized T-Shirts, Hoodies & Polos...",
+        "Search for Photo Mugs, Magic Mugs & Drinkware...",
+        "Search for Corporate Joining Kits & Gift Combos...",
+        "Search for Personalized Photo Frames & Canvas...",
+        "Search for Visiting Cards, Diaries & Engraved Pens...",
+        "Search for Stickers, Labels, Badges & Signages..."
+    ],
+    "popular_searches": [
+        "Custom T-Shirt",
+        "Coffee Mug",
+        "Photo Frame",
+        "Visiting Cards",
+        "Corporate Gift",
+        "Hoodies",
+        "Water Bottle",
+        "Keychains"
+    ],
+    "search_box_style": "expanded",
+    "show_clear_btn": true,
+    "enable_history": true,
+    "max_history_items": 6,
+    "updated_at": "2026-11-05 15:00:00"
+}

@@ -67,8 +67,22 @@ $availableUsers = [
     <title>Add Customer | Printmont</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&amp;display=swap" rel="stylesheet">
     <link class="js-stylesheet" href="css/light.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @media (max-width: 767.98px) {
+            main.content { padding: 1rem .75rem !important; }
+            .customer-form-heading { align-items: flex-start !important; gap: .75rem; }
+            .customer-form-heading h1 { font-size: 1.3rem; }
+            .customer-form-heading .btn { white-space: nowrap; }
+            .customer-form-card .card-header, .customer-form-card .card-body { padding: .9rem !important; }
+            .customer-form-card .form-control, .customer-form-card .form-select { min-height: 42px; font-size: 16px; }
+            .customer-form-card textarea.form-control { min-height: 96px; }
+            .customer-form-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+            .customer-form-actions .btn { min-height: 42px; }
+        }
+    </style>
 </head>
-<body>
+<body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
     <div class="wrapper">
         <?php include_once "includes/side-navbar.php"; ?>
         <div class="main">
@@ -76,9 +90,9 @@ $availableUsers = [
             
             <main class="content">
                 <div class="container-fluid p-0">
-                    <div class="row mb-2 mb-xl-3">
-                        <div class="col-auto d-none d-sm-block">
-                            <h3><strong>Add</strong> Customer</h3>
+                    <div class="row mb-2 mb-xl-3 customer-form-heading">
+                        <div class="col-auto">
+                            <h1 class="h3 mb-0"><strong>Add</strong> Customer</h1>
                         </div>
                         <div class="col-auto ms-auto text-end mt-n1">
                             <a href="customers.php" class="btn btn-secondary">
@@ -104,7 +118,7 @@ $availableUsers = [
 
                     <div class="row">
                         <div class="col-12 col-lg-8">
-                            <div class="card">
+                            <div class="card customer-form-card">
                                 <div class="card-header">
                                     <h5 class="card-title">Customer Information</h5>
                                     <h6 class="card-subtitle text-muted">Add a new customer to the system.</h6>
@@ -198,7 +212,7 @@ $availableUsers = [
                                                       placeholder="Additional notes about this customer"><?php echo htmlspecialchars($_POST['notes'] ?? ''); ?></textarea>
                                         </div>
 
-                                        <div class="mb-3">
+                                        <div class="mb-3 customer-form-actions">
                                             <button type="submit" name="add_customer" class="btn btn-primary">
                                                 <i class="fas fa-save"></i> Add Customer
                                             </button>

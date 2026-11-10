@@ -168,7 +168,13 @@ foreach ($flatCategories as $cat) {
             padding: 0.55rem 1rem;
             border: 1px solid #cbd5e1;
         }
+
+        .module-nav-pills { display: flex; gap: 8px; flex-wrap: wrap; background: #fff; padding: 6px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        .module-nav-link { padding: 8px 14px; font-size: 13px; font-weight: 600; color: #475569; text-decoration: none; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .module-nav-link:hover { color: #0b53a1; background: #e0edff; }
+        .module-nav-link.active { color: #fff; background: #0b53a1; }
     </style>
+    <link rel="stylesheet" href="css/header-admin-theme.css">
 </head>
 <body data-theme="default" data-layout="fluid" data-sidebar-position="left" data-sidebar-layout="default">
 <div class="wrapper">
@@ -179,21 +185,33 @@ foreach ($flatCategories as $cat) {
         <main class="content p-3 p-md-4">
             <div class="container-fluid p-0">
 
-                <!-- Header Actions -->
+                <!-- Header Actions (Matches Spec Section 5 in order) -->
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
                     <div>
-                        <h3 class="fw-bold mb-1">Header Category Menu — All Menus</h3>
+                        <h3 class="fw-bold mb-1">Header Category Menu &bull; 6. All Menus</h3>
                         <p class="text-muted mb-0">Full hierarchy of Top Icons (Home Page) and Inside Pages Top Menu across desktop &amp; mobile.</p>
                     </div>
-                    <div class="d-flex flex-wrap gap-2">
-                        <a href="add-top-icon.php" class="btn btn-primary">
-                            <i data-feather="plus-circle" class="me-1"></i> Top Icon
+                    <div class="module-nav-pills">
+                        <a href="add-top-icon.php" class="module-nav-link">
+                            <i class="fas fa-star text-warning"></i> 1. Top Icon
                         </a>
-                        <a href="add-menu-page.php" class="btn btn-outline-success">
-                            <i data-feather="plus" class="me-1"></i> Top Menu Inside Pages
+                        <a href="add-menu-page.php" class="module-nav-link">
+                            <i class="fas fa-file-alt text-info"></i> 2. Top Menu Inside Pages
                         </a>
-                        <a href="header-menu-design.php" class="btn btn-outline-primary">
-                            <i data-feather="layout" class="me-1"></i> Select Design
+                        <a href="header-menu-design.php" class="module-nav-link">
+                            <i class="fas fa-palette text-purple"></i> 3. Select Design
+                        </a>
+                        <a href="category-menu-description.php" class="module-nav-link">
+                            <i class="fas fa-align-left text-primary"></i> 4. Category Text Description
+                        </a>
+                        <a href="header-search-settings.php" class="module-nav-link">
+                            <i class="fas fa-search text-success"></i> 5. Search Box Text
+                        </a>
+                        <a href="header-menu-list.php" class="module-nav-link active">
+                            <i class="fas fa-layer-group text-secondary"></i> 6. All menus
+                        </a>
+                        <a href="header-settings.php" class="module-nav-link">
+                            <i class="fas fa-sliders-h text-dark"></i> 7. Page Rules &amp; Visibility
                         </a>
                     </div>
                 </div>
@@ -404,8 +422,12 @@ foreach ($flatCategories as $cat) {
                                                     </div>
 
                                                     <!-- Edit & Action buttons -->
-                                                    <a href="<?php echo $editUrl; ?>" class="btn btn-sm btn-outline-primary py-1 px-2" title="Edit Category">
+                                                    <a href="<?php echo $editUrl; ?>" class="btn btn-sm btn-outline-primary py-1 px-2" title="Configure Top Icon / Inside Page">
                                                         <i data-feather="edit-2" style="width: 14px; height: 14px;"></i> Edit
+                                                    </a>
+
+                                                    <a href="category-menu-description.php?category_id=<?php echo $nodeId; ?>" class="btn btn-sm btn-outline-secondary py-1 px-2" title="Configure Text Description">
+                                                        <i data-feather="align-left" style="width: 14px; height: 14px;"></i> Desc
                                                     </a>
 
                                                     <?php if ($isLevel1): ?>

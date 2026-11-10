@@ -22,13 +22,13 @@ class ProductModel
         // SEO
         'meta_title', 'meta_keywords', 'meta_description',
         // Visibility / Status toggles
-        'show_quantity', 'show_bulk_form', 'show_help_button', 'help_button_text', 'help_button_link',
+        'show_quantity', 'show_bulk_form', 'show_help_button', 'help_button_text', 'help_button_link', 'show_cart_buttons', 'show_inquiry_form',
         // Customization
-        'show_customization_label', 'customization_label', 'customization_fields',
+        'show_customization_label', 'customization_label', 'customization_fields', 'enable_customizer', 'customizer_template_id', 'enable_upload_design', 'upload_design_max_images', 'upload_design_max_texts',
         // Addons
         'addon_product_ids',
         // Attributes
-        'show_sizes', 'show_colors',
+        'show_sizes', 'show_colors', 'size_chart_image',
         'size_attributes', 'color_attributes', 'color_images', 'material_attributes',
         'lamination_attributes', 'orientation_attributes', 'printing_location', 'quantity_price_breaks',
         // Shipping
