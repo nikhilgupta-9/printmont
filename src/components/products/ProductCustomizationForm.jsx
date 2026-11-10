@@ -1,5 +1,5 @@
-import React, { useEffect, useId, useState } from 'react';
-import { FaUpload, FaCheckCircle, FaTimes, FaSpinner, FaTimesCircle } from 'react-icons/fa';
+import React, { useEffect, useState } from 'react';
+import { FaUpload, FaCheckCircle, FaTimes, FaSpinner, FaTimesCircle, FaChevronDown } from 'react-icons/fa';
 import { API_ENDPOINTS } from '../../config/apiEndpoints';
 import './ProductCustomizationForm.css';
 
@@ -22,8 +22,17 @@ const priceTag = (price) => (Number(price) > 0 ? ` (+₹${Number(price).toLocale
 
 const ProductCustomizationForm = ({ fields, values, onChange }) => {
   const [uploadingLabel, setUploadingLabel] = useState(null);
-  // Desktop and mobile layouts both render this form; unique radio names stop their groups from clashing
-  const formId = useId();
+  // Which dropdown (single-select or multi-select) is currently open — one field label, or null
+  const [openDropdownLabel, setOpenDropdownLabel] = useState(null);
+
+  useEffect(() => {
+    if (!openDropdownLabel) return;
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.pcf-multi-dropdown, .pcf-single-dropdown')) setOpenDropdownLabel(null);
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [openDropdownLabel]);
 
   // Pre-select the first value of single-choice options (and of required chip groups),
   // so the shown price already matches what will be ordered
@@ -74,84 +83,127 @@ const ProductCustomizationForm = ({ fields, values, onChange }) => {
 
   if (!fields || fields.length === 0) return null;
 
+  // Single-choice dropdown — custom white panel (not the OS-native <select> list), caret centered on the right
+  const renderSingleSelect = (field, label, value, opts) => {
+    const isOpen = openDropdownLabel === label;
+    const selected = opts.find((o) => o.label === value.value);
+    return (
+      <div className="pcf-single-dropdown">
+        <button
+          type="button"
+          className="pcf-single-dropdown__toggle"
+          onClick={() => setOpenDropdownLabel(isOpen ? null : label)}
+          aria-expanded={isOpen}
+        >
+          <span>{selected ? `${selected.label}${priceTag(selected.price)}` : `Select ${label}`}</span>
+          <FaChevronDown size={10} className={isOpen ? 'is-open' : ''} />
+        </button>
+        {isOpen && (
+          <div className="pcf-single-dropdown__panel">
+            {!field.required && (
+              <button
+                type="button"
+                className={`pcf-single-dropdown__option ${!value.value ? 'is-active' : ''}`}
+                onClick={() => {
+                  updateField(label, { value: '' });
+                  setOpenDropdownLabel(null);
+                }}
+              >
+                Select {label}
+              </button>
+            )}
+            {opts.map((o) => (
+              <button
+                key={o.label}
+                type="button"
+                className={`pcf-single-dropdown__option ${value.value === o.label ? 'is-active' : ''}`}
+                onClick={() => {
+                  updateField(label, { value: o.label });
+                  setOpenDropdownLabel(null);
+                }}
+              >
+                {o.label}{priceTag(o.price)}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderControl = (field) => {
     const { label, type } = field;
     const value = values[label] || {};
     const opts = optionsOf(field);
 
     if (type === 'select') {
-      return (
-        <select
-          className="pcf-select"
-          value={value.value || ''}
-          onChange={(e) => updateField(label, { value: e.target.value })}
-        >
-          {!field.required && <option value="">Select {label}</option>}
-          {opts.map((o) => (
-            <option key={o.label} value={o.label}>{o.label}{priceTag(o.price)}</option>
-          ))}
-        </select>
-      );
+      return renderSingleSelect(field, label, value, opts);
     }
 
+    // Radio buttons — plain list of selectable circles, not a dropdown
     if (type === 'radio') {
       return (
-        <div className="pcf-radios">
+        <div className="pcf-radio-group" role="radiogroup" aria-label={label}>
           {opts.map((o) => (
-            <label key={o.label} className={`pcf-radio ${value.value === o.label ? 'is-active' : ''}`}>
+            <label key={o.label} className={`pcf-radio-option ${value.value === o.label ? 'is-active' : ''}`}>
               <input
                 type="radio"
-                name={`pcf-${formId}-${label}`}
+                name={`pcf-radio-${label}`}
                 checked={value.value === o.label}
                 onChange={() => updateField(label, { value: o.label })}
               />
-              {o.label}{priceTag(o.price)}
+              <span>{o.label}{priceTag(o.price)}</span>
             </label>
           ))}
         </div>
       );
     }
 
+    // Colour — always a dropdown, same as 'select'
     if (type === 'color') {
-      const selected = opts.find((o) => o.label === value.value);
-      return (
-        <div>
-          <div className="pcf-swatches">
-            {opts.map((o) => (
-              <button
-                key={o.label}
-                type="button"
-                className={`pcf-swatch ${value.value === o.label ? 'is-active' : ''}`}
-                style={{ background: o.hex || '#ccc' }}
-                title={`${o.label}${priceTag(o.price)}`}
-                aria-label={o.label}
-                onClick={() => updateField(label, { value: o.label })}
-              />
-            ))}
-          </div>
-          {selected && <div className="pcf-selected">{selected.label}{priceTag(selected.price)}</div>}
-        </div>
-      );
+      return renderSingleSelect(field, label, value, opts);
     }
 
+    // Multi-select chips — a bordered tag box with the chosen values as removable pills;
+    // clicking the empty area opens a panel to add more (matches the reference layout).
     if (type === 'multi') {
       const chosen = value.values || [];
+      const isOpen = openDropdownLabel === label;
       return (
-        <div className="pcf-chips">
-          {opts.map((o) => {
-            const on = chosen.includes(o.label);
-            return (
-              <button
-                key={o.label}
-                type="button"
-                className={`pcf-chip ${on ? 'is-active' : ''}`}
-                onClick={() => toggleChip(label, o.label)}
-              >
-                {o.label}{priceTag(o.price)}
-                {on && <FaTimesCircle size={12} />}
-              </button>
-            );
-          })}
+        <div className="pcf-multi-dropdown">
+          <div className="pcf-tag-box" onClick={() => setOpenDropdownLabel(isOpen ? null : label)}>
+            {chosen.length === 0 && <span className="pcf-tag-box__placeholder">Select {label}</span>}
+            {chosen.map((v) => (
+              <span key={v} className="pcf-tag">
+                {v}
+                <button
+                  type="button"
+                  className="pcf-tag__remove"
+                  onClick={(e) => { e.stopPropagation(); toggleChip(label, v); }}
+                  aria-label={`Remove ${v}`}
+                >
+                  <FaTimesCircle size={13} />
+                </button>
+              </span>
+            ))}
+          </div>
+          {isOpen && (
+            <div className="pcf-multi-dropdown__panel">
+              {opts.map((o) => {
+                const on = chosen.includes(o.label);
+                return (
+                  <label key={o.label} className={`pcf-multi-dropdown__option ${on ? 'is-active' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={() => toggleChip(label, o.label)}
+                    />
+                    {o.label}{priceTag(o.price)}
+                  </label>
+                );
+              })}
+            </div>
+          )}
         </div>
       );
     }

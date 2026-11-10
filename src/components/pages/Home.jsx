@@ -1,5 +1,6 @@
 import React from 'react'
 import Categories from './category-list/Categories.jsx'
+import FooterContentBlocks from '../contentBlocks/FooterContentBlocks.jsx'
 import {
   ResponsiveHeroCarousel,
   SmallBannerCarousel,
@@ -12,7 +13,6 @@ import {
   FeaturedProductGrid,
   CustomerReviewCarousel,
   GiftFinderSection,
-  BrandDirectorySection,
   BulkOrderWidget,
   SectionRenderer,
   LazySection,
@@ -186,7 +186,7 @@ const Home = () => {
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 3" />}>
-                   <BrandDirectorySection />
+                   <FooterContentBlocks pageKey="home" />
                  </LazySection>
 
                  <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 3" />}>

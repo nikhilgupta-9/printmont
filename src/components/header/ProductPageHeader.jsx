@@ -397,7 +397,7 @@ const ProductPageHeader = ({
                                         e.preventDefault();
                                         handleBackClick();
                                     }}
-                                    className="btn btn-link p-0 text-white border-0 d-flex align-items-center justify-content-center me-2"
+                                    className="btn btn-link p-0 text-white border-0 d-flex align-items-center justify-content-right gap-1"
                                     style={{ 
                                         minWidth: '44px', 
                                         minHeight: '44px', 

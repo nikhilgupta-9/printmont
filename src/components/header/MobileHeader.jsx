@@ -147,6 +147,7 @@ const MobileHeader = () => {
   const isSidebarVisible = (cat) => {
     if (!cat) return false;
     if (cat.status && (cat.status === 'inactive' || cat.status === 'deactive' || cat.status === 'disabled')) return false;
+    if (cat.mobile?.sidebar_status === 'no' || cat.mobile_sidebar_status === 'no') return false;
     const mobStatus = cat.mobile?.status ?? cat.mobile_topbar_status;
     if (mobStatus === 'hide') return false;
     return true;

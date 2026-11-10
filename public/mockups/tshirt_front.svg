@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 700" width="100%" height="100%">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="12" stdDeviation="15" flood-color="#0f172a" flood-opacity="0.12" />
+    </filter>
+    <linearGradient id="fabricShading" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#f8fafc" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="crease" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#000" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- T-Shirt Body -->
+  <g filter="url(#shadow)">
+    <!-- Main base shirt -->
+    <path class="pm-mockup-base" d="M 200,90 
+             C 240,110 360,110 400,90 
+             L 510,165 
+             L 455,255 
+             L 405,215 
+             L 420,630 
+             C 420,640 405,645 390,645 
+             L 210,645 
+             C 195,645 180,640 180,630 
+             L 195,215 
+             L 145,255 
+             L 90,165 Z" 
+          fill="var(--mockup-color, #f8fafc)" stroke="#cbd5e1" stroke-width="2" stroke-linejoin="round" />
+    
+    <!-- Fabric gradient overlay -->
+    <path d="M 200,90 C 240,110 360,110 400,90 L 510,165 L 455,255 L 405,215 L 420,630 C 420,640 405,645 390,645 L 210,645 C 195,645 180,640 180,630 L 195,215 L 145,255 L 90,165 Z" 
+          fill="url(#fabricShading)" />
+
+    <!-- Crew Neck Collar -->
+    <path d="M 200,90 C 245,145 355,145 400,90 C 375,125 225,125 200,90 Z" 
+          fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5" />
+    
+    <!-- Inner collar shadow -->
+    <path d="M 230,95 C 265,115 335,115 370,95 C 350,110 250,110 230,95 Z" 
+          fill="#475569" opacity="0.3" />
+
+    <!-- Left sleeve seam -->
+    <path d="M 195,215 C 175,175 160,140 145,125" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="3,2" fill="none" />
+    <!-- Right sleeve seam -->
+    <path d="M 405,215 C 425,175 440,140 455,125" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="3,2" fill="none" />
+
+    <!-- Soft torso fold creases -->
+    <path d="M 195,280 Q 210,340 190,420" stroke="#000" stroke-width="1" opacity="0.06" fill="none" />
+    <path d="M 405,280 Q 390,340 410,420" stroke="#000" stroke-width="1" opacity="0.06" fill="none" />
+    
+    <!-- Bottom Hem Stitching -->
+    <line x1="185" y1="632" x2="415" y2="632" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3" />
+    <line x1="185" y1="636" x2="415" y2="636" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3" />
+  </g>
+</svg>

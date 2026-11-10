@@ -40,7 +40,7 @@
 }
 
 .mpd-pad {
-  padding: var(--mpd-s3) var(--mpd-g);
+  padding: var(--mpd-s1) var(--mpd-g);
 }
 
 /* Full-width 8px grey gap inside a section */
@@ -73,7 +73,7 @@
 /* ── 1. Gallery ────────────────────────────────────────────────── */
 .mpd-gallery {
   position: relative;
-  background: #fff;
+  background: #f0f0f0;
 }
 
 .mpd-gallery__img {
@@ -82,7 +82,7 @@
   aspect-ratio: 1 / 1;
   max-height: 560px;
   object-fit: contain;
-  background: #fff;
+  background: #f0f0f0;
 }
 
 .mpd-gallery__badges {
@@ -172,8 +172,8 @@
 
 .mpd-title {
   margin: 0 0 var(--mpd-s2);
-  font-size: 18px;
-  font-weight: 400;
+  font-size: 19px;
+  font-weight: 500;
   line-height: 1.35;
   color: var(--mpd-text);
 }
@@ -187,7 +187,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--mpd-s2);
-  margin-bottom: var(--mpd-s3);
+  margin-bottom: var(--mpd-s2);
 }
 
 .mpd-rating {
@@ -218,7 +218,7 @@
 }
 
 .mpd-assured {
-  height: 20px;
+  height: 32px;
   object-fit: contain;
 }
 
@@ -820,7 +820,7 @@
 
 .mpd-details__list li::marker { color: #bdbdbd; }
 
-.mpd-cbt {
+.mpd-pib {
   margin-top: var(--mpd-s3);
 }
 

@@ -1,5 +1,6 @@
 import React from "react";
 import ErrorBoundary from "../common/ErrorBoundary";
+import FooterContentBlocks from "../contentBlocks/FooterContentBlocks";
 import {
   ResponsiveHeroCarousel,
   MobileHeroSlider,
@@ -15,7 +16,6 @@ import {
   FeaturedProductGrid,
   CustomerReviewCarousel,
   GiftFinderSection,
-  BrandDirectorySection,
   BulkOrderWidget,
   BannerCategorySlider,
   CategorySlideRow,
@@ -588,7 +588,7 @@ function renderSectionContent({
 
     case "brand_directory":
     case "why_us":
-      return <BrandDirectorySection />;
+      return <FooterContentBlocks pageKey="home" />;
 
     case "gift_finder":
       return <GiftFinderSection />;

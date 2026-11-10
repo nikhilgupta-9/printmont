@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useMemo, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
 import "swiper/css";
@@ -28,7 +28,7 @@ import SmallBannerCarousel from "../home/banners/SmallBannerCarousel";
 import RecentlyViewedProducts from "./RecentlyViewedProducts";
 import ProductReview from "./ProductReview";
 import ProductQASection from "./ProductQASection";
-import CategoryBannerTexts from "./CategoryBannerTexts";
+import ProductInfoBanners from "./ProductInfoBanners";
 import SaleCountdown from "./SaleCountdown";
 import GiftVoucherOffer from "./GiftVoucherOffer";
 import useProductLayout from "./useProductLayout";
@@ -66,6 +66,9 @@ export default function MobileProductDetails({
   setSelectedSize,
   selectedColor,
   setSelectedColor,
+  handleColorChange,
+  activeImage,
+  setActiveImage,
   selectedMaterial,
   setMaterial,
   selectedLocations,
@@ -89,16 +92,55 @@ export default function MobileProductDetails({
   checkDelivery,
   handleApplyCoupon,
   setShowBulkModal,
-  setShowDesignModal,
   setShowUploadModal,
+  selectedCustomAttributes = {},
+  setSelectedCustomAttributes = () => {},
+  setShowSizeChartModal = () => {},
   isInCart,
   addToCart,
   buyNow,
   removeItem
 }) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("description");
   const [copiedCode, setCopiedCode] = useState("");
   const { sections: layoutSections } = useProductLayout("mobile", 3000);
+  const [swiperInstance, setSwiperInstance] = useState(null);
+
+  const galleryImages = useMemo(() => {
+    const list = Array.isArray(productData?.images) ? [...productData.images] : [];
+    if (activeImage && !list.some(img => resolveImageUrl(img) === resolveImageUrl(activeImage))) {
+      list.unshift(activeImage);
+    }
+    return list;
+  }, [productData?.images, activeImage]);
+
+  useEffect(() => {
+    if (swiperInstance && activeImage) {
+      const idx = galleryImages.findIndex(img => resolveImageUrl(img) === resolveImageUrl(activeImage));
+      if (idx !== -1) {
+        swiperInstance.slideTo(idx);
+      }
+    }
+  }, [activeImage, swiperInstance, galleryImages]);
+
+  const onColorSelect = (val) => {
+    if (handleColorChange) {
+      handleColorChange(val);
+    } else {
+      setSelectedColor(val);
+      let targetImg = null;
+      if (productData?.color_images && productData.color_images[val]) {
+        targetImg = productData.color_images[val];
+      } else if (Array.isArray(productData?.colors)) {
+        const matched = productData.colors.find((c) => optionValue(c) === val);
+        if (matched && matched.image) targetImg = matched.image;
+      }
+      if (targetImg && setActiveImage) {
+        setActiveImage(targetImg);
+      }
+    }
+  };
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -152,8 +194,14 @@ export default function MobileProductDetails({
                 <FaShare size={14} />
               </button>
             </div>
-            <Swiper pagination={{ clickable: true }} modules={[Pagination]} slidesPerView={1} className="mpd-gallery__swiper">
-              {(productData.images || []).map((img, i) => (
+            <Swiper
+              pagination={{ clickable: true }}
+              modules={[Pagination]}
+              slidesPerView={1}
+              className="mpd-gallery__swiper"
+              onSwiper={setSwiperInstance}
+            >
+              {(galleryImages || []).map((img, i) => (
                 <SwiperSlide key={i}>
                   <img src={resolveImageUrl(img)} alt={`${productData.title} ${i + 1}`} className="mpd-gallery__img" />
                 </SwiperSlide>
@@ -196,8 +244,12 @@ export default function MobileProductDetails({
               <div className="mpd-stock mpd-stock--out">Currently out of stock</div>
             ) : productData.out_of_stock_status === 'pre_order' ? (
               <div className="mpd-stock">Available for pre-order</div>
-            ) : productData.show_left_quantity && productData.stock_quantity <= 10 ? (
-              <div className="mpd-stock mpd-stock--out">Hurry, only {productData.stock_quantity} left!</div>
+            ) : productData.show_left_quantity ? (
+              <div className={`mpd-stock ${productData.stock_quantity <= 10 ? 'mpd-stock--out' : ''}`}>
+                {productData.stock_quantity <= 10
+                  ? `Hurry, only ${productData.stock_quantity} left!`
+                  : `${productData.stock_quantity} in stock`}
+              </div>
             ) : null}
           </div>
         );
@@ -227,9 +279,21 @@ export default function MobileProductDetails({
         return (
           <div className="mpd-pad mpd-options">
             {hasSizes && (
-              <div className="mpd-row">
-                <span className="mpd-row__label">Size</span>
-                <select className="mpd-select" value={selectedSize} onChange={(e) => setSelectedSize(e.target.value)}>
+              <div className="mpd-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                  <span className="mpd-row__label">Size</span>
+                  {productData.size_chart_image && (
+                    <button
+                      type="button"
+                      className="btn btn-link btn-sm p-0 text-decoration-none text-primary"
+                      style={{ fontSize: '12px', fontWeight: 600 }}
+                      onClick={() => setShowSizeChartModal(true)}
+                    >
+                      Size Guide
+                    </button>
+                  )}
+                </div>
+                <select className="mpd-select" style={{ width: '100%' }} value={selectedSize} onChange={(e) => setSelectedSize(e.target.value)}>
                   {productData.sizes.map((sz, i) => (
                     <option key={i} value={optionValue(sz)}>{optionLabel(sz)}</option>
                   ))}
@@ -237,14 +301,160 @@ export default function MobileProductDetails({
               </div>
             )}
             {productData.colors && productData.colors.length > 0 && (
-              <div className="mpd-row">
-                <span className="mpd-row__label">Colour</span>
-                <select className="mpd-select" value={selectedColor} onChange={(e) => setSelectedColor(e.target.value)}>
-                  {productData.colors.map((c, i) => (
-                    <option key={i} value={optionValue(c)}>{optionLabel(c)}</option>
-                  ))}
-                </select>
+              <div className="mpd-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                  <span className="mpd-row__label">
+                    Colour: <strong style={{ color: '#1e293b', fontWeight: 600 }}>{selectedColor || optionLabel(productData.colors[0])}</strong>
+                  </span>
+                  {(() => {
+                    const selObj = productData.colors.find((c) => optionValue(c) === selectedColor);
+                    return selObj && Number(selObj.price) > 0 ? (
+                      <span className="badge bg-success-subtle text-success small" style={{ fontSize: '0.75rem', padding: '2px 6px', background: '#ecfdf5', color: '#059669', borderRadius: '4px' }}>
+                        +₹{selObj.price}
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                  <span
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      border: '1px solid #cbd5e1',
+                      flexShrink: 0,
+                      backgroundColor: (productData.colors.find((c) => optionValue(c) === selectedColor) || productData.colors[0]).hex || '#000000'
+                    }}
+                  />
+                  <select
+                    className="mpd-select"
+                    style={{ width: '100%' }}
+                    value={selectedColor || optionValue(productData.colors[0])}
+                    onChange={(e) => onColorSelect(e.target.value)}
+                  >
+                    {productData.colors.map((c, idx) => (
+                      <option key={idx} value={optionValue(c)}>{optionLabel(c)}</option>
+                    ))}
+                  </select>
+                </div>
+                {(() => {
+                  const selObj = productData.colors.find((c) => optionValue(c) === selectedColor);
+                  return selObj && selObj.text ? (
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic', marginTop: '2px' }}>
+                      {selObj.text}
+                    </div>
+                  ) : null;
+                })()}
               </div>
+            )}
+
+            {/* Dynamic Custom Product Attributes (Tab 2) */}
+            {productData.custom_attributes && productData.custom_attributes.length > 0 && (
+              productData.custom_attributes.map((attr, aIdx) => {
+                const curVal = selectedCustomAttributes[attr.label] || '';
+                return (
+                  <div key={aIdx} className="mpd-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px', marginTop: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                      <span className="mpd-row__label">
+                        {attr.label}
+                        {attr.required ? <span style={{ color: '#ef4444', marginLeft: '2px' }}>*</span> : null}:
+                        {curVal ? <strong style={{ color: '#1e293b', marginLeft: '4px' }}>{curVal}</strong> : null}
+                      </span>
+                      {(() => {
+                        const optObj = (attr.options || []).find((o) => (o.label || o) === curVal);
+                        return optObj && Number(optObj.price) > 0 ? (
+                          <span style={{ fontSize: '0.75rem', padding: '2px 6px', background: '#ecfdf5', color: '#059669', borderRadius: '4px', fontWeight: 600 }}>
+                            +₹{optObj.price}
+                          </span>
+                        ) : null;
+                      })()}
+                    </div>
+
+                    {attr.type === 'select' && (
+                      <select
+                        className="mpd-select"
+                        style={{ width: '100%' }}
+                        value={curVal}
+                        onChange={(e) => setSelectedCustomAttributes({ ...selectedCustomAttributes, [attr.label]: e.target.value })}
+                      >
+                        <option value="">— Select {attr.label} —</option>
+                        {(attr.options || []).map((opt, oIdx) => {
+                          const oLabel = opt.label || opt;
+                          const oPrice = Number(opt.price || 0);
+                          return (
+                            <option key={oIdx} value={oLabel}>
+                              {oLabel} {oPrice > 0 ? `(+₹${oPrice})` : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    )}
+
+                    {(attr.type === 'radio' || attr.type === 'multi') && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', width: '100%' }}>
+                        {(attr.options || []).map((opt, oIdx) => {
+                          const oLabel = opt.label || opt;
+                          const oPrice = Number(opt.price || 0);
+                          const isChecked = curVal === oLabel;
+                          return (
+                            <button
+                              key={oIdx}
+                              type="button"
+                              className={`btn btn-sm ${isChecked ? 'btn-primary' : 'btn-outline-secondary'}`}
+                              style={{ fontSize: '12px', padding: '4px 8px' }}
+                              onClick={() => setSelectedCustomAttributes({ ...selectedCustomAttributes, [attr.label]: oLabel })}
+                            >
+                              {oLabel} {oPrice > 0 ? `(+₹${oPrice})` : ''}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {attr.type === 'color' && (
+                      <select
+                        className="mpd-select"
+                        style={{ width: '100%' }}
+                        value={curVal}
+                        onChange={(e) => setSelectedCustomAttributes({ ...selectedCustomAttributes, [attr.label]: e.target.value })}
+                      >
+                        <option value="">— Select {attr.label} —</option>
+                        {(attr.options || []).map((opt, oIdx) => {
+                          const oLabel = opt.label || opt;
+                          const oPrice = Number(opt.price || 0);
+                          return (
+                            <option key={oIdx} value={oLabel}>
+                              {oLabel} {oPrice > 0 ? `(+₹${oPrice})` : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    )}
+
+                    {(attr.type === 'text' || attr.type === 'number') && (
+                      <input
+                        type={attr.type}
+                        className="form-control form-control-sm"
+                        placeholder={`Enter ${attr.label}`}
+                        value={curVal}
+                        onChange={(e) => setSelectedCustomAttributes({ ...selectedCustomAttributes, [attr.label]: e.target.value })}
+                      />
+                    )}
+
+                    {attr.type === 'textarea' && (
+                      <textarea
+                        className="form-control form-control-sm"
+                        rows="2"
+                        placeholder={`Enter ${attr.label}`}
+                        value={curVal}
+                        onChange={(e) => setSelectedCustomAttributes({ ...selectedCustomAttributes, [attr.label]: e.target.value })}
+                      />
+                    )}
+
+                    {attr.help && <small style={{ color: '#64748b', fontSize: '11px' }}>{attr.help}</small>}
+                  </div>
+                );
+              })
             )}
             {productData.materials && productData.materials.length > 0 && (
               <div className="mpd-row">
@@ -291,7 +501,7 @@ export default function MobileProductDetails({
               </div>
             )}
 
-            {isCustomizable && productData.customization_data && productData.customization_data.length > 0 && (
+            {productData.customization_data && productData.customization_data.length > 0 && (
               <div className="mpd-options__custom">
                 <ProductCustomizationForm fields={productData.customization_data} values={customizationValues} onChange={setCustomizationValues} />
               </div>
@@ -369,35 +579,40 @@ export default function MobileProductDetails({
         );
 
       case "customization_buttons":
-        if (!productData.show_bulk_form && !isCustomizable) return null;
+        const hasDesignBtns = Boolean(productData.enable_upload_design || productData.enable_customizer);
+        if (!productData.show_bulk_form && !hasDesignBtns) return null;
         return (
           <div className="mpd-pad mpd-ctas">
+            {hasDesignBtns && (
+              <>
+                {productData.enable_upload_design && (
+                  <button type="button" className="mpd-design-btn mpd-design-btn--upload" onClick={() => setShowUploadModal(true)}>
+                    <FaUpload size={15} /> Upload your design
+                  </button>
+                )}
+                {productData.enable_customizer && (
+                  <button type="button" className="mpd-design-btn mpd-design-btn--create" onClick={() => navigate(`/customize/${productData?.slug}`)}>
+                    <FaPencilAlt size={14} /> Create your design
+                  </button>
+                )}
+                {(designData?.preview_url || (designData?.images && designData.images.length > 0) || (designData?.texts && designData.texts.length > 0)) && (
+                  <div className="mpd-design-summary">
+                    <FaCheckCircle />
+                    <span>
+                      {designData?.preview_url ? 'Custom Visual Design Ready' : [
+                        designData?.images?.length ? `${designData.images.length} design${designData.images.length > 1 ? 's' : ''}` : null,
+                        designData?.texts?.length ? `${designData.texts.length} text${designData.texts.length > 1 ? 's' : ''}` : null
+                      ].filter(Boolean).join(' · ') + ' added'}
+                    </span>
+                    <button type="button" onClick={() => navigate(`/customize/${productData?.slug}`)}>Edit in Studio</button>
+                  </div>
+                )}
+              </>
+            )}
             {productData.show_bulk_form && (
               <button type="button" className="mpd-bulk-link" onClick={() => setShowBulkModal(true)}>
                 Interested in Bulk Discounts? Enquire Now <FaInfoCircle size={12} />
               </button>
-            )}
-            {isCustomizable && (
-              <>
-                <button type="button" className="mpd-design-btn mpd-design-btn--upload" onClick={() => setShowUploadModal(true)}>
-                  <FaUpload size={15} /> Upload your design
-                </button>
-                <button type="button" className="mpd-design-btn mpd-design-btn--create" onClick={() => setShowDesignModal(true)}>
-                  <FaPencilAlt size={14} /> Create your design
-                </button>
-                {(designData.images.length > 0 || designData.texts.length > 0) && (
-                  <div className="mpd-design-summary">
-                    <FaCheckCircle />
-                    <span>
-                      {[
-                        designData.images.length ? `${designData.images.length} design${designData.images.length > 1 ? 's' : ''}` : null,
-                        designData.texts.length ? `${designData.texts.length} text${designData.texts.length > 1 ? 's' : ''}` : null
-                      ].filter(Boolean).join(' · ')} added
-                    </span>
-                    <button type="button" onClick={() => setShowUploadModal(true)}>Edit</button>
-                  </div>
-                )}
-              </>
             )}
           </div>
         );
@@ -581,8 +796,8 @@ export default function MobileProductDetails({
                 )
               )}
             </div>
-            {/* Category banners (admin: category-banner-texts.php): under every tab, only for this category */}
-            <CategoryBannerTexts productId={productData.id} className="mpd-cbt" />
+            {/* Admin: Add/Edit Product → section 1, point 13 "Product Information Image & Text Upload" */}
+            <ProductInfoBanners productId={productData.id} className="mpd-pib" />
           </div>
         );
 
@@ -701,18 +916,31 @@ export default function MobileProductDetails({
 
       {/* Add to cart / Buy now: always fixed at the bottom */}
       <div className="mpd-cta">
-        {isInCart ? (
-          <button type="button" className="mpd-cta__btn mpd-cta__btn--remove" onClick={() => removeItem(productData.id)}>
-            REMOVE FROM CART
+        {productData.show_cart_buttons === false ? (
+          <button
+            type="button"
+            className="mpd-cta__btn mpd-cta__btn--buy"
+            style={{ width: '100%', background: '#0b53a1', borderColor: '#0b53a1' }}
+            onClick={() => setShowBulkModal(true)}
+          >
+            REQUEST QUOTE / ENQUIRE
           </button>
         ) : (
-          <button type="button" className="mpd-cta__btn mpd-cta__btn--cart" disabled={isOutOfStock} onClick={addToCart}>
-            <BsCart4 size={16} /> ADD TO CART
-          </button>
+          <>
+            {isInCart ? (
+              <button type="button" className="mpd-cta__btn mpd-cta__btn--remove" onClick={() => removeItem(productData.id)}>
+                REMOVE FROM CART
+              </button>
+            ) : (
+              <button type="button" className="mpd-cta__btn mpd-cta__btn--cart" disabled={isOutOfStock} onClick={addToCart}>
+                <BsCart4 size={16} /> ADD TO CART
+              </button>
+            )}
+            <button type="button" className="mpd-cta__btn mpd-cta__btn--buy" disabled={isOutOfStock} onClick={buyNow}>
+              BUY NOW
+            </button>
+          </>
         )}
-        <button type="button" className="mpd-cta__btn mpd-cta__btn--buy" disabled={isOutOfStock} onClick={buyNow}>
-          BUY NOW
-        </button>
       </div>
     </div>
   );

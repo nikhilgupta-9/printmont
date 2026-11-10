@@ -414,7 +414,81 @@
 .pdd .pdf-attr-control {
   width: auto;
   flex: 1;
-  max-width: 360px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--pdd-s2);
+}
+
+.pdd .pdf-select {
+  width: 100%;
+}
+
+/* Colour dropdown — a small swatch dot sits before it showing the selected hex;
+   the dropdown takes the remaining width instead of 100% so the dot still fits. */
+.pdf-attr-swatch-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--pdd-border-strong);
+  flex-shrink: 0;
+}
+
+.pdd .pdf-select.pdf-select--with-swatch {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Multi-select tag box (Tab 2 "multi" attributes) — bordered field with removable pills,
+   same look/width as the dropdowns above it so every attribute row lines up. */
+.pdf-attr-tag-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid var(--pdd-border-strong);
+  border-radius: 4px;
+  background: #fff;
+}
+
+.pdf-attr-tag-box__placeholder {
+  font-size: 13px;
+  color: var(--pdd-muted);
+}
+
+.pdf-attr-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 6px 0 12px;
+  border-radius: 20px;
+  background: var(--pdd-blue);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pdf-attr-tag__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  opacity: 0.85;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pdf-attr-tag__remove:hover {
+  opacity: 1;
 }
 
 .pdd .pdf-select {
@@ -425,38 +499,50 @@
 }
 
 .pdd-qty {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
+  width: 100%;
   height: 36px;
   border: 1px solid var(--pdd-border-strong);
   border-radius: 4px;
-  overflow: hidden;
   background: #fff;
 }
 
-.pdd-qty button {
-  width: 36px;
-  height: 100%;
-  border: 0;
-  background: #f5f5f5;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--pdd-text);
-}
-
-.pdd-qty button:disabled {
-  color: #c2c2c2;
-}
-
 .pdd-qty input {
-  width: 64px;
+  width: 100%;
   height: 100%;
   border: 0;
-  text-align: center;
+  text-align: left;
   font-weight: 700;
   font-size: 14px !important;
-  padding: 0 !important;
+  padding: 0 28px 0 10px !important;
   outline: 0;
+  background: transparent;
+  
+}
+
+.pdd-qty__caret {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 100%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #0c53a1;
+  pointer-events: auto;
+}
+.pdd-qty__caret svg {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+.pdd-qty__caret svg.is-open {
+  transform: rotate(180deg);
 }
 
 .pdd-sub-label {
@@ -902,9 +988,40 @@
   text-align: left;
 }
 .pdd-tiers__table tr.is-active td {
-  background: #f0faf2;
-  color: var(--pdd-green);
+  background: #eef4fb;
+  color: #0c53a1;
   font-weight: 700;
+}
+.pdd-tiers__table tbody tr {
+  cursor: pointer;
+}
+
+/* "Buy more, save more" dropdown panel anchored inside the Quantity input */
+.pdd-tiers-dropdown__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 999;
+  background: #ffffff !important;
+  opacity: 1;
+  border: 1px solid var(--pdd-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: var(--pdd-s2);
+}
+.pdd-tiers-dropdown__panel-label {
+  display: block;
+  margin-bottom: var(--pdd-s2);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pdd-muted);
+}
+.pdd-tiers-dropdown__panel .pdd-tiers__table {
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 /* Addon products */
@@ -1094,7 +1211,7 @@
   object-fit: contain;
 }
 
-/* ── Sticky Add to cart / Buy now: only as wide as the image column ── */
+/* ── Sticky Add to cart / Buy now: only as wide as the main product image ── */
 .pdd-cta-bar {
   position: sticky;
   bottom: 0;
@@ -1107,7 +1224,9 @@
 
 .pdd-cta-bar .pdd-cta {
   grid-column: 1;
-  margin: 0;
+  /* Left column also holds the 64px thumbnail rail + its gap before the main image;
+     inset by that same amount so the bar lines up under the image, not the thumbs too */
+  margin: 0 0 0 calc(64px + var(--pdd-s3));
   padding: var(--pdd-s2);
   background: #fff;
   border: 1px solid var(--pdd-border);
@@ -1152,8 +1271,8 @@
   align-items: center;
 }
 
-/* multi-line controls (chips, radios, textarea) line their label up with the first line */
-.pdd .pdd-options .pcf-row:has(.pcf-chips, .pcf-radios, textarea, .pcf-swatches) {
+/* multi-line controls (chips, radios, textarea, colour swatches) line their label up with the first line */
+.pdd .pdd-options .pcf-row:has(.pcf-multi-dropdown, .pcf-radio-group, textarea) {
   align-items: start;
 }
 
@@ -1161,7 +1280,7 @@
   padding-top: 0;
 }
 
-.pdd .pdd-options .pcf-row:has(.pcf-chips, .pcf-radios, textarea, .pcf-swatches) .pcf-label {
+.pdd .pdd-options .pcf-row:has(.pcf-multi-dropdown, .pcf-radio-group, textarea) .pcf-label {
   padding-top: var(--pdd-s2);
 }
 

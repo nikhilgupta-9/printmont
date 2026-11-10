@@ -1,5 +1,6 @@
 import React from 'react'
 import Categories from './category-list/Categories'
+import FooterContentBlocks from '../contentBlocks/FooterContentBlocks'
 import {
   ResponsiveHeroCarousel,
   MobileHeroSlider,
@@ -13,7 +14,6 @@ import {
   CategoryProductMosaic,
   FeaturedProductGrid,
   CustomerReviewCarousel,
-  BrandDirectorySection,
   BulkOrderWidget,
   SectionRenderer,
   GiftFinderSection,
@@ -754,7 +754,7 @@ const MobHome = () => {
 
             {/* 69. Brand Directory Section */}
             <LazySection skeleton={<BannerSkeleton aspectRatio="16 / 3" />}>
-              <BrandDirectorySection />
+              <FooterContentBlocks pageKey="home" />
             </LazySection>
 
             {/* 70. Bulk Order Widget */}

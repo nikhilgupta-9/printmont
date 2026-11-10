@@ -834,11 +834,19 @@ const Categories = ({
                                       <div className="fnp-mega-links-list">
                                         {subChildren.map((m, mIdx) => {
                                           const tag = m.desktop?.tag || m.desktop_menu_tag;
+                                          const tagBg = m.desktop?.tag_bg || m.desktop_menu_tag_bg;
                                           const showTag = tag || (mIdx === 0 && (sIdx === 1 || colIdx === 1 || colIdx === 3));
                                           return (
                                             <Link key={m.id || mIdx} to={m.url || `/category/${m.slug}`} className="fnp-mega-link">
                                               <span className="fnp-mega-link-name">{m.desktop?.title || m.desktop_menu_title || m.name}</span>
-                                              {showTag && <span className="fnp-tag-pill">{tag || "New"}</span>}
+                                              {showTag && (
+                                                <span 
+                                                  className="fnp-tag-pill"
+                                                  style={tagBg ? { backgroundColor: tagBg, color: '#ffffff' } : {}}
+                                                >
+                                                  {tag || "New"}
+                                                </span>
+                                              )}
                                             </Link>
                                           );
                                         })}

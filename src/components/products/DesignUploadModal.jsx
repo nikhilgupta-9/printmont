@@ -5,21 +5,31 @@ import toast from "react-hot-toast";
 import { API_ENDPOINTS } from "../../config/apiEndpoints";
 import "./DesignUploadModal.css";
 
-const IMAGE_SLOTS = 14;
-const TEXT_SLOTS = 12;
 const MIN_BYTES = 100 * 1024;
 const MAX_BYTES = 10 * 1024 * 1024;
 const ALLOWED = ["image/jpeg", "image/png"];
 
-const emptyImages = () => Array(IMAGE_SLOTS).fill(null);
-const emptyTexts = () => Array(TEXT_SLOTS).fill("");
+const emptyImages = (count) => Array(Math.max(0, count)).fill(null);
+const emptyTexts = (count) => Array(Math.max(0, count)).fill("");
 
-// "Upload your design" / "Create your design" popup on the product page.
+// "Upload your design" popup on the product page.
+// Admin dynamically sets maxImages and maxTexts per product.
 // value / onSave: { images: [{ url, name }], texts: [string] } (filled slots only)
-const DesignUploadModal = ({ show, onHide, initialTab = "upload", value, onSave }) => {
-  const [tab, setTab] = useState(initialTab);
-  const [images, setImages] = useState(emptyImages);
-  const [texts, setTexts] = useState(emptyTexts);
+const DesignUploadModal = ({
+  show,
+  onHide,
+  initialTab = "upload",
+  maxImages = 4,
+  maxTexts = 2,
+  value,
+  onSave
+}) => {
+  const imageCount = Math.max(0, parseInt(maxImages ?? 4));
+  const textCount = Math.max(0, parseInt(maxTexts ?? 2));
+
+  const [tab, setTab] = useState(imageCount > 0 ? (initialTab || "upload") : "text");
+  const [images, setImages] = useState(() => emptyImages(imageCount));
+  const [texts, setTexts] = useState(() => emptyTexts(textCount));
   const [uploadingSlot, setUploadingSlot] = useState(null);
   const fileInput = useRef(null);
   const targetSlot = useRef(0);
@@ -27,14 +37,14 @@ const DesignUploadModal = ({ show, onHide, initialTab = "upload", value, onSave 
   // Load the saved designs into the slots each time the popup opens
   useEffect(() => {
     if (!show) return;
-    setTab(initialTab);
-    const imgs = emptyImages();
-    (value?.images || []).slice(0, IMAGE_SLOTS).forEach((img, i) => { imgs[i] = img; });
-    const txt = emptyTexts();
-    (value?.texts || []).slice(0, TEXT_SLOTS).forEach((t, i) => { txt[i] = t; });
+    setTab(imageCount > 0 ? (initialTab || "upload") : "text");
+    const imgs = emptyImages(imageCount);
+    (value?.images || []).slice(0, imageCount).forEach((img, i) => { imgs[i] = img; });
+    const txt = emptyTexts(textCount);
+    (value?.texts || []).slice(0, textCount).forEach((t, i) => { txt[i] = t; });
     setImages(imgs);
     setTexts(txt);
-  }, [show, initialTab, value]);
+  }, [show, initialTab, value, imageCount, textCount]);
 
   const pickFile = (slot) => {
     if (uploadingSlot !== null) return;
@@ -95,29 +105,31 @@ const DesignUploadModal = ({ show, onHide, initialTab = "upload", value, onSave 
           <FaTimes />
         </button>
 
-        <div className="dum-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "upload"}
-            className={`dum-tab ${tab === "upload" ? "is-active" : ""}`}
-            onClick={() => setTab("upload")}
-          >
-            Upload Designs
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "text"}
-            className={`dum-tab ${tab === "text" ? "is-active" : ""}`}
-            onClick={() => setTab("text")}
-          >
-            Enter Text
-          </button>
-        </div>
+        {imageCount > 0 && textCount > 0 && (
+          <div className="dum-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "upload"}
+              className={`dum-tab ${tab === "upload" ? "is-active" : ""}`}
+              onClick={() => setTab("upload")}
+            >
+              Upload Designs ({imageCount})
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "text"}
+              className={`dum-tab ${tab === "text" ? "is-active" : ""}`}
+              onClick={() => setTab("text")}
+            >
+              Enter Text ({textCount})
+            </button>
+          </div>
+        )}
 
         <div className="dum-panel">
-          {tab === "upload" ? (
+          {tab === "upload" && imageCount > 0 ? (
             <div className="dum-slots">
               {images.map((img, i) => (
                 <div
@@ -127,7 +139,7 @@ const DesignUploadModal = ({ show, onHide, initialTab = "upload", value, onSave 
                   role={img ? undefined : "button"}
                   tabIndex={img ? -1 : 0}
                   onKeyDown={(e) => { if (!img && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); pickFile(i); } }}
-                  aria-label={img ? img.name : `Upload design ${i + 1}`}
+                  aria-label={img ? img.name : `Upload design slot ${i + 1}`}
                 >
                   {uploadingSlot === i ? (
                     <Spinner animation="border" variant="primary" />
@@ -147,6 +159,7 @@ const DesignUploadModal = ({ show, onHide, initialTab = "upload", value, onSave 
                     <>
                       <FaImage className="dum-slot-icon" />
                       <FaPlusCircle className="dum-plus" />
+                      <span className="dum-slot-label" style={{ fontSize: '10px', marginTop: '4px', color: '#64748b' }}>Slot {i + 1}</span>
                     </>
                   )}
                 </div>
@@ -159,8 +172,8 @@ const DesignUploadModal = ({ show, onHide, initialTab = "upload", value, onSave 
                   key={i}
                   type="text"
                   className="dum-text"
-                  maxLength={60}
-                  placeholder="Enter your text name here."
+                  maxLength={80}
+                  placeholder={`Custom Text / Instruction Input #${i + 1}`}
                   value={t}
                   onChange={(e) => {
                     const next = [...texts];

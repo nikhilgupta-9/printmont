@@ -7,7 +7,7 @@
 
 .pcf-row {
   display: grid;
-  grid-template-columns: 160px minmax(0, 360px);
+  grid-template-columns: 160px 1fr;
   gap: 16px;
   align-items: start;
   padding: 8px 0;
@@ -22,6 +22,7 @@
 
 .pcf-control {
   min-width: 0;
+  width: 100%;
 }
 
 .pcf-select,
@@ -37,6 +38,82 @@
   outline: none;
 }
 
+/* Single-choice dropdown (select / radio / color) — fully custom, not the OS-native <select> list */
+.pcf-single-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.pcf-single-dropdown__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 13px;
+  color: #212121;
+  text-align: left;
+}
+
+.pcf-single-dropdown__toggle[aria-expanded="true"] {
+  border-color: #0c53a1;
+}
+
+.pcf-single-dropdown__toggle svg {
+  flex-shrink: 0;
+  color: #0c53a1;
+  transition: transform 0.15s ease;
+}
+
+.pcf-single-dropdown__toggle svg.is-open {
+  transform: rotate(180deg);
+}
+
+.pcf-single-dropdown__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 999;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #ffffff !important;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 8px;
+}
+
+.pcf-single-dropdown__option {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 13px;
+  color: #212121;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pcf-single-dropdown__option:hover {
+  background: #f5f5f5;
+}
+
+.pcf-single-dropdown__option.is-active {
+  background: #eef4fb;
+  color: #0c53a1;
+  font-weight: 700;
+}
+
 textarea.pcf-input {
   padding: 8px;
   resize: vertical;
@@ -44,7 +121,7 @@ textarea.pcf-input {
 
 .pcf-select:focus,
 .pcf-input:focus {
-  border-color: #2874f0;
+  border-color: #0c53a1;
 }
 
 .pcf-help {
@@ -54,81 +131,156 @@ textarea.pcf-input {
   color: #878787;
 }
 
-/* Radio buttons */
-.pcf-radios,
-.pcf-chips,
-.pcf-swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+/* Multi-select dropdown (checkbox list) — styled like the Quantity "Buy more, save more" dropdown */
+.pcf-multi-dropdown {
+  position: relative;
+  width: 100%;
 }
 
-.pcf-radio {
-  display: inline-flex;
+.pcf-multi-dropdown__toggle {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 0 16px 0 8px;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  height: 36px;
+  padding: 0 8px;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.pcf-radio input {
-  margin: 0;
-}
-
-.pcf-radio.is-active {
-  border-color: #2874f0;
-  background: #f0f5ff;
-}
-
-/* Colour swatches */
-.pcf-swatches {
-  padding-top: 4px;
-}
-
-.pcf-swatch {
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid #d0d0d0;
-  box-shadow: inset 0 0 0 2px #fff;
-  cursor: pointer;
-}
-
-.pcf-swatch.is-active {
-  outline: 2px solid #2874f0;
-  outline-offset: 2px;
-}
-
-.pcf-selected {
-  margin-top: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #212121;
-}
-
-/* Multi-select chips */
-.pcf-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 32px;
-  padding: 0 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 16px;
   background: #fff;
   font-size: 13px;
   color: #212121;
+  text-align: left;
 }
 
-.pcf-chip.is-active {
-  border-color: #5b2a86;
-  background: #5b2a86;
+.pcf-multi-dropdown__toggle[aria-expanded="true"] {
+  border-color: #0c53a1;
+}
+
+.pcf-multi-dropdown__toggle svg {
+  flex-shrink: 0;
+  color: #0c53a1;
+  transition: transform 0.15s ease;
+}
+
+.pcf-multi-dropdown__toggle svg.is-open {
+  transform: rotate(180deg);
+}
+
+.pcf-multi-dropdown__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 999;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #ffffff !important;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 8px;
+}
+
+.pcf-multi-dropdown__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #212121;
+  cursor: pointer;
+}
+
+.pcf-multi-dropdown__option input {
+  margin: 0;
+}
+
+.pcf-multi-dropdown__option:hover {
+  background: #f5f5f5;
+}
+
+.pcf-multi-dropdown__option.is-active {
+  background: #eef4fb;
+  color: #0c53a1;
+  font-weight: 700;
+}
+
+/* Radio buttons */
+.pcf-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pcf-radio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #212121;
+  cursor: pointer;
+}
+
+.pcf-radio-option input {
+  margin: 0;
+  accent-color: #0c53a1;
+}
+
+.pcf-radio-option.is-active {
+  color: #0c53a1;
+  font-weight: 600;
+}
+
+/* Multi-select tag box — bordered field holding the chosen values as removable pills */
+.pcf-tag-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.pcf-tag-box__placeholder {
+  font-size: 13px;
+  color: #878787;
+}
+
+.pcf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 6px 0 12px;
+  border-radius: 20px;
+  background: #0c53a1;
   color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pcf-tag__remove {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  opacity: 0.85;
+  padding: 0;
+  cursor: pointer;
+}
+
+.pcf-tag__remove:hover {
+  opacity: 1;
 }
 
 /* Upload */
@@ -145,9 +297,9 @@ textarea.pcf-input {
   width: fit-content;
   min-height: 36px;
   padding: 0 16px;
-  border: 1px dashed #2874f0;
+  border: 1px dashed #0c53a1;
   border-radius: 4px;
-  color: #2874f0;
+  color: #0c53a1;
   font-size: 13px;
   font-weight: 600;
 }

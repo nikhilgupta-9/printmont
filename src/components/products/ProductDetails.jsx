@@ -3,7 +3,7 @@ import { Container, Row, Col, Modal, Spinner, Alert, Form } from 'react-bootstra
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { API_ENDPOINTS, resolveImageUrl } from '../../config/apiEndpoints';
-import CategoryBannerTexts from './CategoryBannerTexts';
+import ProductInfoBanners from './ProductInfoBanners';
 import ProductAddons from './ProductAddons';
 import DesignUploadModal from './DesignUploadModal';
 import SaleCountdown from './SaleCountdown';
@@ -50,7 +50,9 @@ import {
   FaHeadset,
   FaPencilAlt,
   FaThumbsUp,
-  FaThumbsDown
+  FaThumbsDown,
+  FaRulerHorizontal,
+  FaEnvelope
 } from 'react-icons/fa';
 import { RiDiscountPercentFill } from 'react-icons/ri';
 
@@ -79,6 +81,9 @@ const optionValue = (item) => {
   if (typeof item === 'string') return item;
   return item.name ?? item.label ?? item.size ?? item.material ?? item.color ?? String(item);
 };
+
+// Custom attribute values are a string for single-choice types and an array for 'multi'
+const isCustomAttrEmpty = (val) => (Array.isArray(val) ? val.length === 0 : !val);
 
 const ProductDetails = () => {
   const navigate = useNavigate();
@@ -126,6 +131,10 @@ const ProductDetails = () => {
     regional_shipping_msg: '',
     national_shipping_msg: '',
     show_bulk_form: true,
+    show_cart_buttons: true,
+    show_inquiry_form: false,
+    size_chart_image: null,
+    custom_attributes: [],
     show_help_button: false,
     help_button_text: 'Need Help?',
     help_button_link: '/contact',
@@ -189,7 +198,6 @@ const ProductDetails = () => {
   const [showCartSuccessModal, setShowCartSuccessModal] = useState(false);
   const [addedCartDetails, setAddedCartDetails] = useState(null);
   const [showBulkModal, setShowBulkModal] = useState(false);
-  const [showDesignModal, setShowDesignModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadedArtwork, setUploadedArtwork] = useState(null);
   // Designs from the "Upload your design / Create your design" popup: { images: [{url, name}], texts: [] }
@@ -312,6 +320,8 @@ const ProductDetails = () => {
   const [selectedLocations, setSelectedLocations] = useState([]);
   const [frontPrintSize, setFrontPrintSize] = useState('');
   const [backPrintSize, setBackPrintSize] = useState('');
+  const [selectedCustomAttributes, setSelectedCustomAttributes] = useState({});
+  const [showSizeChartModal, setShowSizeChartModal] = useState(false);
 
   // Customization fields values { [label]: { text?: string, fileUrl?: string, fileName?: string } }
   const [customizationValues, setCustomizationValues] = useState({});
@@ -319,6 +329,19 @@ const ProductDetails = () => {
   // Size split for bulk if clothing sizes exist
   const [sizeSplit, setSizeSplit] = useState({});
   const [quantity, setQuantity] = useState(1);
+  const [showTiersDropdown, setShowTiersDropdown] = useState(false);
+  const tiersDropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!showTiersDropdown) return;
+    const handleOutsideClick = (e) => {
+      if (tiersDropdownRef.current && !tiersDropdownRef.current.contains(e.target)) {
+        setShowTiersDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showTiersDropdown]);
 
   // Fetch product data directly from backend API
   useEffect(() => {
@@ -399,12 +422,21 @@ const ProductDetails = () => {
           regional_shipping_msg: p.regional_shipping_msg || '',
           national_shipping_msg: p.national_shipping_msg || '',
           show_bulk_form: p.show_bulk_form !== undefined ? Boolean(p.show_bulk_form) : true,
+          show_cart_buttons: p.show_cart_buttons !== undefined ? Boolean(p.show_cart_buttons) : true,
+          show_inquiry_form: Boolean(p.show_inquiry_form),
+          size_chart_image: p.size_chart_image || null,
+          custom_attributes: Array.isArray(p.custom_attributes) ? p.custom_attributes : (Array.isArray(p.product_attributes_fields) ? p.product_attributes_fields : []),
           show_help_button: Boolean(p.show_help_button),
           help_button_text: p.help_button_text || 'Need Help?',
           help_button_link: p.help_button_link || '/contact',
-          // Customization settings
+          // Customization settings & Design Buttons
           customization_label_status: hasCustomization,
           customization_label: p.customization_label || 'Customizable',
+          enable_upload_design: p.enable_upload_design !== undefined ? Boolean(p.enable_upload_design) : true,
+          upload_design_max_images: p.upload_design_max_images !== undefined ? Math.max(1, parseInt(p.upload_design_max_images)) : 4,
+          upload_design_max_texts: p.upload_design_max_texts !== undefined ? Math.max(0, parseInt(p.upload_design_max_texts)) : 2,
+          enable_customizer: p.enable_customizer !== undefined ? Boolean(p.enable_customizer) : true,
+          customizer_template_id: p.customizer_template_id || null,
           customization_data: Array.isArray(p.customization_data) ? p.customization_data : [],
           customization_tech: p.customization_tech || '',
           customization_location: p.customization_location || '',
@@ -462,7 +494,12 @@ const ProductDetails = () => {
         }
 
         if (formatted.colors && formatted.colors.length > 0) {
-          setSelectedColor(optionValue(formatted.colors[0]));
+          const initColor = optionValue(formatted.colors[0]);
+          setSelectedColor(initColor);
+          const colorImg = (formatted.color_images && formatted.color_images[initColor]) || formatted.colors[0].image;
+          if (colorImg) {
+            setActiveImage(colorImg);
+          }
         } else {
           setSelectedColor(formatted.color || '');
         }
@@ -642,6 +679,21 @@ const ProductDetails = () => {
   }, []);
 
   // Calculate dynamic unit price based on bulk pricing tier
+  // Color selection with instant variant image swapping
+  const handleColorChange = (colorVal) => {
+    setSelectedColor(colorVal);
+    let targetImg = null;
+    if (productData.color_images && productData.color_images[colorVal]) {
+      targetImg = productData.color_images[colorVal];
+    } else if (Array.isArray(productData.colors)) {
+      const matched = productData.colors.find((c) => optionValue(c) === colorVal);
+      if (matched && matched.image) targetImg = matched.image;
+    }
+    if (targetImg) {
+      setActiveImage(targetImg);
+    }
+  };
+
   // Price per piece for the current quantity and options:
   // bulk tier (min–max qty) → else quantity tier (from qty upwards) → else offer price,
   // plus the admin "price add-on" of the selected size and colour.
@@ -668,11 +720,31 @@ const ProductDetails = () => {
       if (qtyTier) unit = parseFloat(qtyTier.price);
     }
 
-    const customExtra = productData.customization_label_status
+    const customExtra = (productData.customization_data && productData.customization_data.length > 0)
       ? customizationExtraPrice(productData.customization_data, customizationValues)
       : 0;
-    return unit + optionAddOn(productData.sizes, selectedSize) + optionAddOn(productData.colors, selectedColor) + customExtra;
+    return unit + optionAddOn(productData.sizes, selectedSize) + optionAddOn(productData.colors, selectedColor) + customExtra + customAttributesAddOn;
   };
+
+  // Calculate price add-ons from selected custom product attributes (Tab 2)
+  const customAttributesAddOn = useMemo(() => {
+    let total = 0;
+    if (!productData.custom_attributes || !Array.isArray(productData.custom_attributes)) return 0;
+    for (const attr of productData.custom_attributes) {
+      const selectedVal = selectedCustomAttributes[attr.label];
+      if (!selectedVal || !attr.options || !Array.isArray(attr.options)) continue;
+      if (Array.isArray(selectedVal)) {
+        selectedVal.forEach((val) => {
+          const opt = attr.options.find((o) => (o.label || o) === val);
+          if (opt && Number(opt.price) > 0) total += Number(opt.price);
+        });
+      } else {
+        const opt = attr.options.find((o) => (o.label || o) === selectedVal);
+        if (opt && Number(opt.price) > 0) total += Number(opt.price);
+      }
+    }
+    return total;
+  }, [productData.custom_attributes, selectedCustomAttributes]);
 
   const dynamicUnitPrice = calculateDynamicUnitPrice();
 
@@ -765,9 +837,18 @@ const ProductDetails = () => {
       return;
     }
 
-    if (productData.customization_label_status && !isCustomizationComplete(productData.customization_data, customizationValues)) {
+    if (productData.customization_data && productData.customization_data.length > 0 && !isCustomizationComplete(productData.customization_data, customizationValues)) {
       toast.error('Please fill in required customization fields.');
       return;
+    }
+
+    if (productData.custom_attributes && Array.isArray(productData.custom_attributes)) {
+      for (const attr of productData.custom_attributes) {
+        if (attr.required && isCustomAttrEmpty(selectedCustomAttributes[attr.label])) {
+          toast.error(`Please select ${attr.label}`);
+          return;
+        }
+      }
     }
 
     if (addToCart) {
@@ -784,6 +865,7 @@ const ProductDetails = () => {
         backPrintSize,
         sizeSplit,
         customization: customizationValues,
+        customAttributes: selectedCustomAttributes,
         uploadedArtwork: uploadedArtwork?.name || null,
         designUploads: designData.images,
         designTexts: designData.texts
@@ -816,9 +898,18 @@ const ProductDetails = () => {
       return;
     }
 
-    if (productData.customization_label_status && !isCustomizationComplete(productData.customization_data, customizationValues)) {
+    if (productData.customization_data && productData.customization_data.length > 0 && !isCustomizationComplete(productData.customization_data, customizationValues)) {
       toast.error('Please fill in required customization fields.');
       return;
+    }
+
+    if (productData.custom_attributes && Array.isArray(productData.custom_attributes)) {
+      for (const attr of productData.custom_attributes) {
+        if (attr.required && isCustomAttrEmpty(selectedCustomAttributes[attr.label])) {
+          toast.error(`Please select ${attr.label}`);
+          return;
+        }
+      }
     }
 
     if (addToCart) {
@@ -835,6 +926,7 @@ const ProductDetails = () => {
         backPrintSize,
         sizeSplit,
         customization: customizationValues,
+        customAttributes: selectedCustomAttributes,
         uploadedArtwork: uploadedArtwork?.name || null,
         designUploads: designData.images,
         designTexts: designData.texts
@@ -905,6 +997,7 @@ const ProductDetails = () => {
           setSelectedSize={setSelectedSize}
           selectedColor={selectedColor}
           setSelectedColor={setSelectedColor}
+          handleColorChange={handleColorChange}
           selectedMaterial={selectedMaterial}
           setMaterial={setSelectedMaterial}
           selectedType={selectedType}
@@ -937,7 +1030,9 @@ const ProductDetails = () => {
           checkDelivery={handleCheckPincode}
           handleApplyCoupon={handleCopyCoupon}
           setShowBulkModal={setShowBulkModal}
-          setShowDesignModal={setShowDesignModal}
+          selectedCustomAttributes={selectedCustomAttributes}
+          setSelectedCustomAttributes={setSelectedCustomAttributes}
+          setShowSizeChartModal={setShowSizeChartModal}
           setShowUploadModal={setShowUploadModal}
           isInCart={isInCart}
           addToCart={handleAddToCart}
@@ -1148,7 +1243,9 @@ const ProductDetails = () => {
                     <div className="pdd-stock pdd-stock--pre">Available for pre-order</div>
                   ) : productData.show_left_quantity && (
                     <div className={`pdd-stock ${productData.stock_quantity <= 10 ? 'pdd-stock--low' : ''}`}>
-                      {productData.stock_quantity <= 10 ? `Hurry, only ${productData.stock_quantity} left!` : 'In stock'}
+                      {productData.stock_quantity <= 10
+                        ? `Hurry, only ${productData.stock_quantity} left!`
+                        : `${productData.stock_quantity} in stock`}
                     </div>
                   )}
                 </div>
@@ -1187,8 +1284,20 @@ const ProductDetails = () => {
                   <div className="pdf-attr-table">
                     {productData.size_status && productData.sizes && productData.sizes.length > 0 && (
                       <div className="pdf-attr-row">
-                        <span className="pdf-attr-label">Select Size</span>
-                        <div className="pdf-attr-control">
+                        <div className="d-flex align-items-center justify-content-between w-100 mb-1">
+                          <span className="pdf-attr-label">Select Size</span>
+                          {productData.size_chart_image && (
+                            <button
+                              type="button"
+                              className="btn btn-link btn-sm p-0 text-decoration-none text-primary d-inline-flex align-items-center gap-1"
+                              style={{ fontSize: '13px', fontWeight: 600 }}
+                              onClick={() => setShowSizeChartModal(true)}
+                            >
+                              <FaRulerHorizontal size={13} /> Size Guide
+                            </button>
+                          )}
+                        </div>
+                        <div className="pdf-attr-control w-100">
                           <select className="pdf-select" value={selectedSize} onChange={(e) => setSelectedSize(e.target.value)}>
                             {productData.sizes.map((sz, idx) => (
                               <option key={idx} value={optionValue(sz)}>{optionLabel(sz)}</option>
@@ -1198,17 +1307,191 @@ const ProductDetails = () => {
                       </div>
                     )}
 
-                    {productData.colors && productData.colors.length > 0 && (
-                      <div className="pdf-attr-row">
-                        <span className="pdf-attr-label">Colour</span>
-                        <div className="pdf-attr-control">
-                          <select className="pdf-select" value={selectedColor} onChange={(e) => setSelectedColor(e.target.value)}>
-                            {productData.colors.map((c, idx) => (
-                              <option key={idx} value={optionValue(c)}>{optionLabel(c)}</option>
-                            ))}
-                          </select>
+                    {productData.colors && productData.colors.length > 0 && (() => {
+                      const selObj = productData.colors.find((c) => optionValue(c) === selectedColor) || productData.colors[0];
+                      return (
+                        <div className={`pdf-attr-row ${selObj.text ? 'flex-wrap' : ''}`}>
+                          <span className="pdf-attr-label">Colour</span>
+                          <div className="pdf-attr-control d-flex align-items-center gap-2">
+                            <span
+                              className="pdf-attr-swatch-dot"
+                              style={{ backgroundColor: selObj.hex || '#000000' }}
+                            />
+                            <select
+                              className="pdf-select pdf-select--with-swatch"
+                              value={selectedColor || optionValue(productData.colors[0])}
+                              onChange={(e) => handleColorChange(e.target.value)}
+                            >
+                              {productData.colors.map((c, idx) => (
+                                <option key={idx} value={optionValue(c)}>{optionLabel(c)}</option>
+                              ))}
+                            </select>
+                            {Number(selObj.price) > 0 && (
+                              <span className="badge bg-success-subtle text-success small flex-shrink-0">+₹{selObj.price}</span>
+                            )}
+                          </div>
+                          {selObj.text && (
+                            <small className="text-muted w-100 mt-1"><i className="fa fa-info-circle me-1"></i>{selObj.text}</small>
+                          )}
                         </div>
-                      </div>
+                      );
+                    })()}
+
+                    {/* Dynamic Custom Product Attributes (Tab 2) */}
+                    {productData.custom_attributes && productData.custom_attributes.length > 0 && (
+                      productData.custom_attributes.map((attr, aIdx) => {
+                        const curVal = selectedCustomAttributes[attr.label] || '';
+                        return (
+                          <div key={aIdx} className="pdf-attr-row flex-column align-items-start gap-1">
+                            <div className="d-flex align-items-center justify-content-between w-100">
+                              <span className="pdf-attr-label">
+                                {attr.label}
+                                {attr.required ? <span className="text-danger ms-1">*</span> : null}:
+                                {curVal ? <strong className="text-dark ms-1">{curVal}</strong> : null}
+                              </span>
+                              {(() => {
+                                const optObj = (attr.options || []).find((o) => (o.label || o) === curVal);
+                                return optObj && Number(optObj.price) > 0 ? (
+                                  <span className="badge bg-success-subtle text-success small">+₹{optObj.price}</span>
+                                ) : null;
+                              })()}
+                            </div>
+
+                            {attr.type === 'select' && (
+                              <div className="pdf-attr-control w-100">
+                                <select
+                                  className="pdf-select"
+                                  value={curVal}
+                                  onChange={(e) => setSelectedCustomAttributes({ ...selectedCustomAttributes, [attr.label]: e.target.value })}
+                                >
+                                  <option value="">— Select {attr.label} —</option>
+                                  {(attr.options || []).map((opt, oIdx) => {
+                                    const oLabel = opt.label || opt;
+                                    const oPrice = Number(opt.price || 0);
+                                    return (
+                                      <option key={oIdx} value={oLabel}>
+                                        {oLabel} {oPrice > 0 ? `(+₹${oPrice})` : ''}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                              </div>
+                            )}
+
+                            {attr.type === 'radio' && (
+                              <div className="d-flex flex-wrap gap-2 w-100 mt-1">
+                                {(attr.options || []).map((opt, oIdx) => {
+                                  const oLabel = opt.label || opt;
+                                  const oPrice = Number(opt.price || 0);
+                                  const isChecked = curVal === oLabel;
+                                  return (
+                                    <button
+                                      key={oIdx}
+                                      type="button"
+                                      className={`btn btn-sm ${isChecked ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                      onClick={() => setSelectedCustomAttributes({ ...selectedCustomAttributes, [attr.label]: oLabel })}
+                                    >
+                                      {oLabel} {oPrice > 0 ? `(+₹${oPrice})` : ''}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {attr.type === 'color' && (
+                              <div className="pdf-attr-control w-100">
+                                <select
+                                  className="pdf-select"
+                                  value={curVal}
+                                  onChange={(e) => setSelectedCustomAttributes({ ...selectedCustomAttributes, [attr.label]: e.target.value })}
+                                >
+                                  <option value="">— Select {attr.label} —</option>
+                                  {(attr.options || []).map((opt, oIdx) => {
+                                    const oLabel = opt.label || opt;
+                                    const oPrice = Number(opt.price || 0);
+                                    return (
+                                      <option key={oIdx} value={oLabel}>
+                                        {oLabel} {oPrice > 0 ? `(+₹${oPrice})` : ''}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                              </div>
+                            )}
+
+                            {attr.type === 'multi' && (() => {
+                              const chosen = Array.isArray(curVal) ? curVal : (curVal ? [curVal] : []);
+                              const toggleAttrChip = (oLabel) => {
+                                const next = chosen.includes(oLabel) ? chosen.filter((v) => v !== oLabel) : [...chosen, oLabel];
+                                setSelectedCustomAttributes({ ...selectedCustomAttributes, [attr.label]: next });
+                              };
+                              return (
+                                <div className="pdf-attr-control w-100">
+                                  <div className="pdf-attr-tag-box">
+                                    {chosen.length === 0 && <span className="pdf-attr-tag-box__placeholder">Select {attr.label}</span>}
+                                    {chosen.map((v) => (
+                                      <span key={v} className="pdf-attr-tag">
+                                        {v}
+                                        <button
+                                          type="button"
+                                          className="pdf-attr-tag__remove"
+                                          onClick={() => toggleAttrChip(v)}
+                                          aria-label={`Remove ${v}`}
+                                        >
+                                          ×
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
+                                  <div className="d-flex flex-wrap gap-2 mt-2">
+                                    {(attr.options || []).map((opt, oIdx) => {
+                                      const oLabel = opt.label || opt;
+                                      const oPrice = Number(opt.price || 0);
+                                      const on = chosen.includes(oLabel);
+                                      return (
+                                        <button
+                                          key={oIdx}
+                                          type="button"
+                                          className={`btn btn-sm ${on ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                          onClick={() => toggleAttrChip(oLabel)}
+                                        >
+                                          {oLabel} {oPrice > 0 ? `(+₹${oPrice})` : ''}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+
+                            {(attr.type === 'text' || attr.type === 'number') && (
+                              <div className="pdf-attr-control w-100">
+                                <input
+                                  type={attr.type}
+                                  className="form-control form-control-sm"
+                                  placeholder={`Enter ${attr.label}`}
+                                  value={curVal}
+                                  onChange={(e) => setSelectedCustomAttributes({ ...selectedCustomAttributes, [attr.label]: e.target.value })}
+                                />
+                              </div>
+                            )}
+
+                            {attr.type === 'textarea' && (
+                              <div className="pdf-attr-control w-100">
+                                <textarea
+                                  className="form-control form-control-sm"
+                                  rows="2"
+                                  placeholder={`Enter ${attr.label}`}
+                                  value={curVal}
+                                  onChange={(e) => setSelectedCustomAttributes({ ...selectedCustomAttributes, [attr.label]: e.target.value })}
+                                />
+                              </div>
+                            )}
+
+                            {attr.help && <small className="text-muted" style={{ fontSize: '11px' }}>{attr.help}</small>}
+                          </div>
+                        );
+                      })
                     )}
 
                     {productData.materials && productData.materials.length > 0 && (
@@ -1269,7 +1552,7 @@ const ProductDetails = () => {
 
                   </div>
 
-                  {productData.customization_label_status && productData.customization_data && productData.customization_data.length > 0 && (
+                  {productData.customization_data && productData.customization_data.length > 0 && (
                     <div className="pdd-options__custom">
                       <ProductCustomizationForm
                         fields={productData.customization_data}
@@ -1284,27 +1567,79 @@ const ProductDetails = () => {
                     <div className="pdf-attr-row">
                       <span className="pdf-attr-label">Quantity</span>
                       <div className="pdf-attr-control">
-                        <div className="pdd-qty">
-                          <button
-                            type="button"
-                            onClick={() => setQuantity(Math.max(productData.min_quantity || 1, quantity - 1))}
-                            disabled={quantity <= (productData.min_quantity || 1)}
-                            aria-label="Decrease quantity"
-                          >
-                            −
-                          </button>
-                          <input
-                            type="number"
-                            min={productData.min_quantity || 1}
-                            max={productData.stock_quantity || 99999}
-                            value={quantity}
-                            onChange={(e) => {
-                              const val = Math.max(productData.min_quantity || 1, parseInt(e.target.value) || (productData.min_quantity || 1));
-                              setQuantity(val);
-                            }}
-                          />
-                          <button type="button" onClick={() => setQuantity(quantity + 1)} aria-label="Increase quantity">+</button>
-                        </div>
+                        {(() => {
+                          const hasTiers = productData.bulk_order_pricing.length > 0 || productData.quantity_pricing.length > 0;
+                          return (
+                            <div className="pdd-qty" ref={tiersDropdownRef}>
+                              <input
+                                type="number"
+                                min={productData.min_quantity || 1}
+                                max={productData.stock_quantity || 99999}
+                                value={quantity}
+                                onChange={(e) => {
+                                  const val = Math.max(productData.min_quantity || 1, parseInt(e.target.value) || (productData.min_quantity || 1));
+                                  setQuantity(val);
+                                }}
+                                onFocus={() => hasTiers && setShowTiersDropdown(true)}
+                                onClick={() => hasTiers && setShowTiersDropdown(true)}
+                              />
+                              {hasTiers && (
+                                <button
+                                  type="button"
+                                  className="pdd-qty__caret"
+                                  onClick={() => setShowTiersDropdown((v) => !v)}
+                                  aria-expanded={showTiersDropdown}
+                                  aria-label="Show quantity price tiers"
+                                >
+                                  <FaChevronDown size={10} className={showTiersDropdown ? 'is-open' : ''} />
+                                </button>
+                              )}
+
+                              {hasTiers && showTiersDropdown && (
+                                <div className="pdd-tiers-dropdown__panel">
+                                  <span className="pdd-tiers-dropdown__panel-label">Buy more, save more</span>
+                                  <table className="pdd-tiers__table">
+                                    <thead>
+                                      <tr><th>Quantity</th><th>Price / piece</th></tr>
+                                    </thead>
+                                    <tbody>
+                                      {productData.bulk_order_pricing.map((t, i) => {
+                                        const min = Number(t.min_qty ?? t.qty ?? 0);
+                                        const max = Number(t.max_qty) > 0 ? Number(t.max_qty) : null;
+                                        const active = quantity >= min && (max === null || quantity <= max);
+                                        return (
+                                          <tr
+                                            key={`b${i}`}
+                                            className={active ? 'is-active' : ''}
+                                            onClick={() => {
+                                              setQuantity(max ?? min);
+                                              setShowTiersDropdown(false);
+                                            }}
+                                          >
+                                            <td>{max ? `${min} – ${max}` : `${min}+`} pcs</td>
+                                            <td>₹{Number(t.price).toLocaleString('en-IN')}</td>
+                                          </tr>
+                                        );
+                                      })}
+                                      {productData.bulk_order_pricing.length === 0 && productData.quantity_pricing.map((t, i) => (
+                                        <tr
+                                          key={`q${i}`}
+                                          onClick={() => {
+                                            setQuantity(Number(t.qty ?? t.min_qty));
+                                            setShowTiersDropdown(false);
+                                          }}
+                                        >
+                                          <td>{Number(t.qty ?? t.min_qty)}+ pcs</td>
+                                          <td>₹{Number(t.price).toLocaleString('en-IN')}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -1338,38 +1673,8 @@ const ProductDetails = () => {
                   )}
                 </div>
 
-                {/* 3. Price tiers, price summary, bulk enquiry, design buttons */}
+                {/* 3. Price summary, bulk enquiry, design buttons (tier table moved into Quantity dropdown above) */}
                 <div className="pdd-block">
-                  {(productData.bulk_order_pricing.length > 0 || productData.quantity_pricing.length > 0) && (
-                    <div className="pdd-tiers">
-                      <span className="pdd-sub-label">Buy more, save more</span>
-                      <table className="pdd-tiers__table">
-                        <thead>
-                          <tr><th>Quantity</th><th>Price / piece</th></tr>
-                        </thead>
-                        <tbody>
-                          {productData.bulk_order_pricing.map((t, i) => {
-                            const min = Number(t.min_qty ?? t.qty ?? 0);
-                            const max = Number(t.max_qty) > 0 ? Number(t.max_qty) : null;
-                            const active = quantity >= min && (max === null || quantity <= max);
-                            return (
-                              <tr key={`b${i}`} className={active ? 'is-active' : ''}>
-                                <td>{max ? `${min} – ${max}` : `${min}+`} pcs</td>
-                                <td>₹{Number(t.price).toLocaleString('en-IN')}</td>
-                              </tr>
-                            );
-                          })}
-                          {productData.bulk_order_pricing.length === 0 && productData.quantity_pricing.map((t, i) => (
-                            <tr key={`q${i}`}>
-                              <td>{Number(t.qty ?? t.min_qty)}+ pcs</td>
-                              <td>₹{Number(t.price).toLocaleString('en-IN')}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-
                   <div className="pdd-summary">
                     <div className="pdd-summary__row">
                       <span>Per piece</span>
@@ -1395,35 +1700,39 @@ const ProductDetails = () => {
                     </div>
                   </div>
 
+                  {(productData.enable_upload_design || productData.enable_customizer) && (
+                    <>
+                      <div className="pdd-design-btns">
+                        {productData.enable_upload_design && (
+                          <button type="button" className="pdd-design-btn pdd-design-btn--upload" onClick={() => setShowUploadModal(true)}>
+                            <FaUpload size={13} /> Upload your design
+                          </button>
+                        )}
+                        {productData.enable_customizer && (
+                          <button type="button" className="pdd-design-btn pdd-design-btn--create" onClick={() => navigate(`/customize/${productData.slug || lookupKey}`)}>
+                            <FaPencilAlt size={12} /> Create your design
+                          </button>
+                        )}
+                      </div>
+                      {(designData?.preview_url || (designData?.images && designData.images.length > 0) || (designData?.texts && designData.texts.length > 0)) && (
+                        <div className="pdd-design-summary">
+                          <FaCheckCircle />
+                          <span>
+                            {designData?.preview_url ? 'Custom Visual Design Ready' : [
+                              designData?.images?.length ? `${designData.images.length} design${designData.images.length > 1 ? 's' : ''}` : null,
+                              designData?.texts?.length ? `${designData.texts.length} text${designData.texts.length > 1 ? 's' : ''}` : null
+                            ].filter(Boolean).join(' · ') + ' added'}
+                          </span>
+                          <button type="button" onClick={() => navigate(`/customize/${productData.slug || lookupKey}`)}>Edit in Studio</button>
+                        </div>
+                      )}
+                    </>
+                  )}
+
                   {productData.show_bulk_form && (
                     <button type="button" className="pdd-bulk-link" onClick={() => setShowBulkModal(true)}>
                       Interested in Bulk Discounts? Enquire Now <FaInfoCircle size={12} />
                     </button>
-                  )}
-
-                  {productData.customization_label_status && (
-                    <>
-                      <div className="pdd-design-btns">
-                        <button type="button" className="pdd-design-btn pdd-design-btn--upload" onClick={() => setShowUploadModal(true)}>
-                          <FaUpload size={13} /> Upload your design
-                        </button>
-                        <button type="button" className="pdd-design-btn pdd-design-btn--create" onClick={() => setShowDesignModal(true)}>
-                          <FaPencilAlt size={12} /> Create your design
-                        </button>
-                      </div>
-                      {(designData.images.length > 0 || designData.texts.length > 0) && (
-                        <div className="pdd-design-summary">
-                          <FaCheckCircle />
-                          <span>
-                            {[
-                              designData.images.length ? `${designData.images.length} design${designData.images.length > 1 ? 's' : ''}` : null,
-                              designData.texts.length ? `${designData.texts.length} text${designData.texts.length > 1 ? 's' : ''}` : null
-                            ].filter(Boolean).join(' · ')} added
-                          </span>
-                          <button type="button" onClick={() => setShowUploadModal(true)}>Edit</button>
-                        </div>
-                      )}
-                    </>
                   )}
                 </div>
 
@@ -1602,8 +1911,8 @@ const ProductDetails = () => {
                     )}
                   </div>
 
-                  {/* Category banners (admin: category-banner-texts.php): shown under every tab, only for products in that category */}
-                  <CategoryBannerTexts productId={productData?.id} className="pdd-cbt" />
+                  {/* Admin: Add/Edit Product → section 1, point 13 "Product Information Image & Text Upload" */}
+                  <ProductInfoBanners productId={productData?.id} className="pdd-pib" />
                 </div>
 
                 {/* 7. Ratings & reviews */}
@@ -1622,37 +1931,60 @@ const ProductDetails = () => {
                 lined up under the image column */}
             <div className="pdd-cta-bar">
               <div className="pdd-cta">
-                {isInCart ? (
+                {productData.show_cart_buttons === false ? (
                   <button
                     type="button"
-                    className="pdd-cta__btn pdd-cta__btn--remove"
-                    onClick={() => {
-                      if (removeItem) {
-                        removeItem(currentProductId);
-                        toast.error('Item removed from cart!', { duration: 2000, position: 'top-center' });
-                      }
-                    }}
+                    className="pdd-cta__btn pdd-cta__btn--buy w-100"
+                    style={{ background: '#0b53a1', borderColor: '#0b53a1', minHeight: '46px' }}
+                    onClick={() => setShowBulkModal(true)}
                   >
-                    <FaTrash size={14} /> Remove from cart
+                    <FaEnvelope size={16} /> Request Quote / Enquire Now
                   </button>
                 ) : (
+                  <>
+                    {isInCart ? (
+                      <button
+                        type="button"
+                        className="pdd-cta__btn pdd-cta__btn--remove"
+                        onClick={() => {
+                          if (removeItem) {
+                            removeItem(currentProductId);
+                            toast.error('Item removed from cart!', { duration: 2000, position: 'top-center' });
+                          }
+                        }}
+                      >
+                        <FaTrash size={14} /> Remove from cart
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="pdd-cta__btn pdd-cta__btn--cart"
+                        disabled={productData.out_of_stock_status === 'out_of_stock' || productData.stock_quantity <= 0}
+                        onClick={handleAddToCart}
+                      >
+                        <FaShoppingCart size={16} /> Add to cart
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="pdd-cta__btn pdd-cta__btn--buy"
+                      disabled={productData.out_of_stock_status === 'out_of_stock' || productData.stock_quantity <= 0}
+                      onClick={handleBuyNow}
+                    >
+                      <FaBolt size={16} /> Buy now
+                    </button>
+                  </>
+                )}
+                {productData.show_inquiry_form && productData.show_cart_buttons !== false && (
                   <button
                     type="button"
-                    className="pdd-cta__btn pdd-cta__btn--cart"
-                    disabled={productData.out_of_stock_status === 'out_of_stock' || productData.stock_quantity <= 0}
-                    onClick={handleAddToCart}
+                    className="btn btn-outline-primary fw-semibold d-inline-flex align-items-center justify-content-center gap-1 py-2 px-3"
+                    style={{ borderRadius: '8px', minHeight: '44px' }}
+                    onClick={() => setShowBulkModal(true)}
                   >
-                    <FaShoppingCart size={16} /> Add to cart
+                    <FaQuestionCircle size={14} /> Enquire Now
                   </button>
                 )}
-                <button
-                  type="button"
-                  className="pdd-cta__btn pdd-cta__btn--buy"
-                  disabled={productData.out_of_stock_status === 'out_of_stock' || productData.stock_quantity <= 0}
-                  onClick={handleBuyNow}
-                >
-                  <FaBolt size={16} /> Buy now
-                </button>
               </div>
             </div>
           </section>
@@ -1827,19 +2159,42 @@ const ProductDetails = () => {
         </Modal.Body>
       </Modal>
 
-      {/* Upload your design / Create your design popup (also opened from the mobile view) */}
+      {/* Upload your design popup (raw file slots) */}
       <DesignUploadModal
-        show={showUploadModal || showDesignModal}
-        initialTab={showDesignModal ? 'text' : 'upload'}
+        show={showUploadModal}
+        initialTab="upload"
+        maxImages={productData.upload_design_max_images ?? 4}
+        maxTexts={productData.upload_design_max_texts ?? 2}
         value={designData}
-        onHide={() => { setShowUploadModal(false); setShowDesignModal(false); }}
+        onHide={() => setShowUploadModal(false)}
         onSave={(data) => {
           setDesignData(data);
-          const count = data.images.length + data.texts.length;
+          const count = (data.images?.length || 0) + (data.texts?.length || 0);
           setUploadedArtwork(count ? { name: `${data.images.length} design(s), ${data.texts.length} text(s)` } : null);
           if (count) toast.success('Your designs have been added');
         }}
       />
+
+      {/* ── Size Guide Modal ── */}
+      <Modal show={showSizeChartModal} onHide={() => setShowSizeChartModal(false)} centered size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title className="fw-bold text-dark fs-5 d-flex align-items-center gap-2">
+            <FaRulerHorizontal className="text-primary" /> Size Guide &amp; Measurements
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center p-4">
+          {productData.size_chart_image ? (
+            <img
+              src={productData.size_chart_image}
+              alt="Size Guide"
+              className="img-fluid rounded border shadow-sm"
+              style={{ maxHeight: '70vh', objectFit: 'contain' }}
+            />
+          ) : (
+            <p className="text-muted">No size chart available for this product.</p>
+          )}
+        </Modal.Body>
+      </Modal>
 
     </div>
   );

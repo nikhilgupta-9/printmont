@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 700" width="100%" height="100%">
+  <defs>
+    <filter id="caseShadow" x="-10%" y="-5%" width="120%" height="115%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#0f172a" flood-opacity="0.16" />
+    </filter>
+    <linearGradient id="glossCase" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="250" cy="660" rx="140" ry="16" fill="#0f172a" opacity="0.12" />
+
+  <g filter="url(#caseShadow)">
+    <!-- Case Edge Lip / Outer bumper -->
+    <rect x="115" y="45" width="270" height="570" rx="46" fill="#334155" stroke="#1e293b" stroke-width="2" />
+
+    <!-- Back Case Printable Face -->
+    <rect class="pm-mockup-base" x="120" y="50" width="260" height="560" rx="42" 
+          fill="var(--mockup-color, #ffffff)" stroke="#cbd5e1" stroke-width="1.5" />
+    <rect x="120" y="50" width="260" height="560" rx="42" fill="url(#glossCase)" />
+
+    <!-- Camera Island Bumper Cutout (Top Left) -->
+    <g transform="translate(145, 75)">
+      <!-- Camera bump background -->
+      <rect x="0" y="0" width="80" height="95" rx="22" fill="#0f172a" stroke="#334155" stroke-width="2" />
+      <!-- Lens 1 -->
+      <circle cx="28" cy="28" r="14" fill="#1e293b" stroke="#475569" stroke-width="2" />
+      <circle cx="28" cy="28" r="7" fill="#020617" />
+      <circle cx="25" cy="25" r="3" fill="#38bdf8" opacity="0.7" />
+      <!-- Lens 2 -->
+      <circle cx="28" cy="67" r="14" fill="#1e293b" stroke="#475569" stroke-width="2" />
+      <circle cx="28" cy="67" r="7" fill="#020617" />
+      <circle cx="25" cy="64" r="3" fill="#38bdf8" opacity="0.7" />
+      <!-- Flash -->
+      <circle cx="58" cy="28" r="6" fill="#fef08a" stroke="#cbd5e1" stroke-width="1" />
+      <!-- Mic hole -->
+      <circle cx="58" cy="67" r="2.5" fill="#020617" />
+    </g>
+
+    <!-- Side buttons hints -->
+    <rect x="110" y="160" width="5" height="40" rx="2" fill="#64748b" />
+    <rect x="110" y="215" width="5" height="40" rx="2" fill="#64748b" />
+    <rect x="385" y="180" width="5" height="60" rx="2" fill="#64748b" />
+  </g>
+</svg>

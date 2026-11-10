@@ -30,7 +30,6 @@ export { default as FeaturedProductGrid } from "./products/FeaturedProductGrid";
 export { default as CustomerReviewCarousel } from "./products/CustomerReviewCarousel";
 
 export { default as GiftFinderSection } from "./sections/GiftFinderSection";
-export { default as BrandDirectorySection } from "./sections/BrandDirectorySection";
 export { default as BulkOrderWidget } from "./sections/BulkOrderWidget";
 export { default as SectionRenderer } from "./SectionRenderer";
 export { default as LazySection } from "./LazySection";

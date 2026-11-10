@@ -33,6 +33,7 @@ const ChangePassword = lazy(() => import("./components/user/ChangePassword"));
 const PanGstDetails = lazy(() => import("./components/user/PanGstDetails"));
 const GiftCard = lazy(() => import("./components/orders/GiftCard"));
 const ProductDetails = lazy(() => import("./components/products/ProductDetails"));
+const DesignStudioPage = lazy(() => import("./components/products/DesignStudioPage"));
 const AllProducts = lazy(() => import("./components/products/AllProducts"));
 const Cart = lazy(() => import("./components/orders/Cart"));
 const Blog = lazy(() => import("./components/pages/blog/Blog"));
@@ -346,6 +347,7 @@ function App() {
 
           {/* Product Detail dynamic routes */}
           <Route path="/product/:productSlug" element={<ProductDetails />} />
+          <Route path="/customize/:productSlug" element={<DesignStudioPage />} />
           <Route path="/:productSlug" element={<ProductDetails />} />
 
           {/* Account pages */}

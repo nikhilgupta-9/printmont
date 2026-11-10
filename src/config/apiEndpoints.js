@@ -85,12 +85,16 @@ export const API_ENDPOINTS = {
   // Reviews — GET ?product_id= for approved reviews + rating stats, POST to submit
   // a new one (goes into the same pending-approval queue the admin panel manages).
   PRODUCT_REVIEWS: (productId) => `${BASE_URL}/product-reviews-api.php?product_id=${productId}`,
-  CATEGORY_BANNER_TEXTS: (productId) => `${BASE_URL}/category-banner-text-api.php?product_id=${productId}`,
+  // Admin: Add/Edit Product → section 1, point 13 "Product Information Image & Text Upload"
+  PRODUCT_INFO_BANNERS: (productId) => `${BASE_URL}/product-info-banner-api.php?product_id=${productId}`,
   SUBMIT_REVIEW: `${BASE_URL}/product-reviews-api.php`,
   USER_REVIEWS: `${BASE_URL}/user-reviews-api.php`,
   // Uploads a single customization file (logo/artwork); returns { url } to attach
   // to the cart item's `attributes` — cart-api.php's JSON field can't hold raw bytes.
   CUSTOMIZATION_UPLOAD: `${BASE_URL}/customization-upload-api.php`,
+  CUSTOMIZER_GET_TEMPLATE: (productId, keyword = '') => `${BASE_URL}/customizer-api.php?action=get_template${productId ? `&product_id=${productId}` : ''}${keyword ? `&keyword=${encodeURIComponent(keyword)}` : ''}`,
+  CUSTOMIZER_SAVE_DESIGN: `${BASE_URL}/customizer-api.php?action=save_design`,
+  CUSTOMIZER_UPLOAD_LOGO: `${BASE_URL}/customizer-api.php?action=upload_logo`,
 
   // Home Product Sections
   HOME_PRODUCT_SECTIONS: (action) => `${BASE_URL}/products/products.php?action=${action}`,
@@ -166,6 +170,9 @@ export const API_ENDPOINTS = {
   // Marketing pages driven by page_sections (affiliate, business-solutions)
   PAGE_SECTIONS: (pageKey) => `${BASE_URL}/page-sections-api.php?page=${pageKey}`,
 
+  // Free-form, admin-managed content blocks (Website Content in admin) — any page, any pattern.
+  CONTENT_BLOCKS: (pageKey) => `${BASE_URL}/api/content-blocks-api.php?page=${encodeURIComponent(pageKey)}`,
+
   // CMS & Content (Logo, Header, Footer, etc.)
   BLOG_POSTS: `${BASE_URL}/blog-api.php/posts`,
   BLOG_POST_BY_SLUG: (slug) => `${BASE_URL}/blog-api.php/posts/${encodeURIComponent(slug)}`,
@@ -184,7 +191,6 @@ export const API_ENDPOINTS = {
   SITEMAP: `${BASE_URL}/sitemap-api.php`,
   QUICK_LINKS: `${BASE_URL}/quick-links-api.php`,
   HEADER_SETTINGS: `${BASE_URL}/header-settings-api.php`,
-  PRODUCT_FILTERS: `${BASE_URL}/product-filter-api.php`,
   FOOTER: `${BASE_URL}/footer-api.php`,
   // The backend exposes the public logo endpoint directly under /api.
   LOGO: `${BASE_URL}/logo-api.php`,
